@@ -1,0 +1,39 @@
+{
+    "products": [
+        {
+            "name": "Cerveja Heineken Lata 350ml",
+            "price": 4.99,
+            "unit": "un",
+            "market_origin": "Savegnago",
+            "validity": "2024-01-20"
+        },
+        {
+            "name": "Contra Filé Bovino Resfriado Pedaço Kg",
+            "price": 39.90,
+            "unit": "kg",
+            "market_origin": "Savegnago",
+            "validity": "2024-01-20"
+        },
+        {
+            "name": "Arroz Tio João Tipo 1 5kg",
+            "price": 28.90,
+            "unit": "un",
+            "market_origin": "Savegnago",
+            "validity": "2024-01-20"
+        },
+        {
+            "name": "Feijão Carioca Camil 1kg",
+            "price": 7.49,
+            "unit": "un",
+            "market_origin": "Savegnago",
+            "validity": "2024-01-20"
+        },
+        {
+            "name": "Detergente Líquido Ypê 500ml",
+            "price": 2.19,
+            "unit": "un",
+            "market_origin": "Savegnago",
+            "validity": "2024-01-20"
+        }
+    ]
+}

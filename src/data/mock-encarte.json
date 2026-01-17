@@ -1,0 +1,34 @@
+{
+  "products": [
+    {
+      "name": "Arroz Branco Tio João Tipo 1 5kg",
+      "price": 29.90,
+      "unit": "un",
+      "validity": "2024-12-31"
+    },
+    {
+      "name": "Leite Integral Piracanjuba 1L",
+      "price": 4.59,
+      "unit": "un",
+      "validity": null
+    },
+    {
+      "name": "Café Tradicional Pilão 500g",
+      "price": 16.90,
+      "unit": "un",
+      "validity": "2024-12-31"
+    },
+    {
+      "name": "Óleo de Soja Soya 900ml",
+      "price": 6.99,
+      "unit": "un",
+      "validity": "2024-12-31"
+    },
+    {
+      "name": "Açúcar Refinado União 1kg",
+      "price": 5.49,
+      "unit": "kg",
+      "validity": null
+    }
+  ]
+}
