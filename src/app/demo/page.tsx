@@ -14,6 +14,7 @@ export default function DemoPage() {
     const [logs, setLogs] = useState<string[]>([]);
     const [data, setData] = useState<any>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [images, setImages] = useState<string[]>([]);
     const [startTime, setStartTime] = useState<number | null>(null);
     const [elapsedTime, setElapsedTime] = useState<string | null>(null);
 
@@ -54,6 +55,11 @@ export default function DemoPage() {
 
                         setData(chunk.data);
                         setImageUrl(chunk.data.meta.imageUrl || null);
+                        if (chunk.data.meta.images) {
+                            setImages(chunk.data.meta.images);
+                        } else if (chunk.data.meta.imageUrl) {
+                            setImages([chunk.data.meta.imageUrl]);
+                        }
                     } else if (chunk.type === 'error') {
                         throw new Error(chunk.message);
                     }
@@ -115,6 +121,7 @@ export default function DemoPage() {
         setViewState('IDLE');
         setData(null);
         setImageUrl(null);
+        setImages([]);
     };
 
     return (
@@ -190,7 +197,7 @@ export default function DemoPage() {
                         <div className="absolute top-4 left-4 z-10 bg-black/50 text-white text-xs px-2 py-1 rounded backdrop-blur">
                             Fonte Original
                         </div>
-                        <ImageViewer url={imageUrl} />
+                        <ImageViewer images={images} />
                     </div>
 
                     {/* Right: Validation List */}

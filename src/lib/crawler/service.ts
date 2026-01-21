@@ -13,11 +13,17 @@ const openai = new OpenAI({
 
 async function optimizeImage(buffer: Buffer): Promise<string> {
   const processed = await sharp(buffer)
-    .resize(2048, 2048, { fit: 'inside' }) // Increased resolution for better OCR
-    .jpeg({ quality: 85, progressive: true })
+    .resize(3072, 3072, { 
+      fit: 'inside', 
+      withoutEnlargement: true,
+      kernel: 'lanczos3'
+    })
+    .sharpen({ sigma: 1.2 })
+    .normalize()
+    .png({ compressionLevel: 6, palette: false })
     .toBuffer();
   
-  return `data:image/jpeg;base64,${processed.toString('base64')}`;
+  return `data:image/png;base64,${processed.toString('base64')}`;
 }
 
 async function extractFromImage(base64Image: string, index: number) {
@@ -28,9 +34,28 @@ async function extractFromImage(base64Image: string, index: number) {
     messages: [
       {
         role: "system",
-        content: `Você é um extrator especialista em encartes de supermercado.
-        Extraia TODOS os produtos desta imagem.
-        Output JSON: { "products": [{ "name": "Produto", "price": 10.99, "unit": "kg|un|l", "validity": "YYYY-MM-DD", "market_origin": "Mercado" }] }`
+        content: `Você é um ESPECIALISTA SENIOR em encartes de supermercado brasileiro.
+
+CRITICAL: Esta é uma DEMONSTRAÇÃO. Precisão ABSOLUTA é mandatória.
+
+REGRAS DE OURO:
+1. Preços em JSON devem ser NUMÉRICOS (ex: 29.90). Mesmo que no encarte esteja "29,90", converta para 29.90.
+2. Se tiver dúvida no preço, use null (melhor omitir que errar).
+3. Unidades devem seguir ESTREITAMENTE: kg, un, l, g, ml, pack.
+   - litro -> l
+   - unidade/cada/un -> un
+   - pacote -> pack
+4. Ignore QR codes, logos, banners decorativos.
+5. "Leve 3 Pague 2" → extraia preço unitário normal.
+6. Validade: Procure por "Válido até" ou "Ofertas válidas para" no cabeçalho ou rodapé. Formato YYYY-MM-DD ou null.
+
+PADRÕES DE VALIDAÇÃO:
+- Preço entre R$ 0.10 e R$ 999.99 (fora disso: suspeito).
+- Nome com pelo menos 2 palavras (evite "Oferta", "Limpeza").
+- Sempre preencha market_origin se visível (ex: Savegnago).
+
+EXEMPLO OUTPUT (JSON strict):
+{ "products": [{ "name": "Sabão Brilhante 2,2kg", "price": 19.90, "unit": "un", "validity": "2026-01-21", "market_origin": "Savegnago" }] }`
       },
       {
         role: "user",
@@ -61,7 +86,7 @@ export async function processPdfBuffer(
   });
   
   let allProducts: any[] = [];
-  let previewImage = "";
+  let allImages: string[] = [];
 
   try {
     const context = await browser.newContext();
@@ -86,8 +111,8 @@ export async function processPdfBuffer(
       const pdf = await loadingTask.promise;
       const results: string[] = [];
 
-      // Process max 5 pages for speed and cost
-      const numPages = Math.min(pdf.numPages, 5);
+      // Process max 15 pages for complete catalog coverage in demos
+      const numPages = Math.min(pdf.numPages, 15);
 
       for (let i = 1; i <= numPages; i++) {
         const pageObj = await pdf.getPage(i);
@@ -105,7 +130,7 @@ export async function processPdfBuffer(
           viewport: viewport
         }).promise;
 
-        results.push(canvas.toDataURL('image/jpeg', 0.85));
+        results.push(canvas.toDataURL('image/png'));
       }
       return results;
     }, pdfBase64);
@@ -120,7 +145,7 @@ export async function processPdfBuffer(
       const rawBase64 = base64Data.split(',')[1];
       const optimized = await optimizeImage(Buffer.from(rawBase64, 'base64'));
       
-      if (i === 0) previewImage = optimized;
+      allImages.push(optimized);
 
       try {
         const data = await extractFromImage(optimized, i);
@@ -145,7 +170,8 @@ export async function processPdfBuffer(
     meta: {
       isMock: false,
       source: 'gpt4o_pdfjs_browser_sharp',
-      imageUrl: previewImage || "https://via.placeholder.com/800"
+      imageUrl: allImages[0] || "https://via.placeholder.com/800",
+      images: allImages
     }
   };
 }
@@ -199,7 +225,7 @@ export async function crawlUrl(url: string, onProgress?: (msg: string) => void) 
 
     return {
         products,
-        meta: { isMock: false, source: 'gpt4o_screenshot', imageUrl: base64 }
+        meta: { isMock: false, source: 'gpt4o_screenshot', imageUrl: base64, images: [base64] }
     };
 
   } catch (error) {
