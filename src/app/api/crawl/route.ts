@@ -57,8 +57,9 @@ export async function POST(request: Request) {
               meta: {
                 isMock: true,
                 source: "crawl_error_fallback",
-                imageUrl: "https://via.placeholder.com/800",
-                images: ["https://via.placeholder.com/800"],
+                error: resolveErrorMessage(error),
+                imageUrl: "/file.svg",
+                images: ["/file.svg"],
               },
             },
           });

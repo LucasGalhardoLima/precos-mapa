@@ -1,7 +1,7 @@
 import { chromium } from "playwright";
 import OpenAI from "openai";
 import sharp from "sharp";
-import { EncarteProduct, EncarteSchema } from "@/lib/schemas";
+import { EncarteProduct, normalizeEncartePayload } from "@/lib/schemas";
 
 interface CrawlerMeta {
   isMock: boolean;
@@ -36,18 +36,32 @@ interface PdfLoadingTask {
 
 interface PdfJsRuntime {
   GlobalWorkerOptions: { workerSrc: string };
-  getDocument: (options: { data: string }) => PdfLoadingTask;
+  getDocument: (options: { data: string | Uint8Array }) => PdfLoadingTask;
+}
+
+interface PdfRenderResult {
+  images: string[];
+  totalPages: number;
+  processedPages: number;
 }
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const MAX_PDF_PAGES = 30;
+
 function extractErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
   return "Erro desconhecido";
+}
+
+function ensureOpenAiKey() {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY não configurada no servidor.");
+  }
 }
 
 async function optimizeImage(buffer: Buffer): Promise<string> {
@@ -66,6 +80,8 @@ async function optimizeImage(buffer: Buffer): Promise<string> {
 }
 
 async function extractFromImage(base64Image: string): Promise<unknown> {
+  ensureOpenAiKey();
+
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
     messages: [
@@ -97,11 +113,11 @@ Retorne JSON estrito no formato: { "products": [{ "name": "...", "price": 19.9, 
   return JSON.parse(content) as unknown;
 }
 
-async function renderPdfToImages(page: import("playwright").Page, pdfBase64: string): Promise<string[]> {
+async function renderPdfToImages(page: import("playwright").Page, pdfBase64: string): Promise<PdfRenderResult> {
   await page.goto("about:blank");
   await page.addScriptTag({ url: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" });
 
-  const images = await page.evaluate(async (base64) => {
+  const result = await page.evaluate(async ({ base64, maxPages }: { base64: string; maxPages: number }) => {
     const runtimeCandidate = (window as unknown as Record<string, unknown>)["pdfjs-dist/build/pdf"];
     if (!runtimeCandidate) {
       throw new Error("PDF.js runtime indisponível");
@@ -110,10 +126,16 @@ async function renderPdfToImages(page: import("playwright").Page, pdfBase64: str
     const pdfjs = runtimeCandidate as PdfJsRuntime;
     pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-    const loadingTask = pdfjs.getDocument({ data: atob(base64) });
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+
+    const loadingTask = pdfjs.getDocument({ data: bytes });
     const pdf = await loadingTask.promise;
     const pages: string[] = [];
-    const pageCount = Math.min(pdf.numPages, 15);
+    const pageCount = Math.min(pdf.numPages, maxPages);
 
     for (let index = 1; index <= pageCount; index += 1) {
       const pageItem = await pdf.getPage(index);
@@ -136,10 +158,14 @@ async function renderPdfToImages(page: import("playwright").Page, pdfBase64: str
       pages.push(canvas.toDataURL("image/png"));
     }
 
-    return pages;
-  }, pdfBase64);
+    return {
+      images: pages,
+      totalPages: pdf.numPages,
+      processedPages: pageCount,
+    };
+  }, { base64: pdfBase64, maxPages: MAX_PDF_PAGES });
 
-  return images;
+  return result;
 }
 
 export async function processPdfBuffer(
@@ -147,6 +173,8 @@ export async function processPdfBuffer(
   sourceName: string,
   onProgress?: (message: string) => void,
 ): Promise<CrawlerResult> {
+  ensureOpenAiKey();
+
   onProgress?.(`Iniciando análise do PDF: ${sourceName}`);
 
   const browser = await chromium.launch({
@@ -156,35 +184,49 @@ export async function processPdfBuffer(
 
   const allProducts: EncarteProduct[] = [];
   const allImages: string[] = [];
+  const pageErrors: string[] = [];
 
   try {
     const context = await browser.newContext();
     const page = await context.newPage();
     const pdfBase64 = Buffer.from(buffer).toString("base64");
 
-    const renderedImages = await renderPdfToImages(page, pdfBase64);
-    onProgress?.(`${renderedImages.length} páginas renderizadas em alta definição.`);
+    const rendered = await renderPdfToImages(page, pdfBase64);
+    if (rendered.totalPages > rendered.processedPages) {
+      onProgress?.(
+        `PDF com ${rendered.totalPages} páginas. Processando ${rendered.processedPages} primeiras (limite atual: ${MAX_PDF_PAGES}).`,
+      );
+    } else {
+      onProgress?.(`${rendered.processedPages} páginas renderizadas em alta definição.`);
+    }
 
-    for (let index = 0; index < renderedImages.length; index += 1) {
-      onProgress?.(`Analisando página ${index + 1} de ${renderedImages.length}...`);
+    for (let index = 0; index < rendered.images.length; index += 1) {
+      onProgress?.(`Analisando página ${index + 1} de ${rendered.processedPages}...`);
 
-      const rawBase64 = renderedImages[index].split(",")[1];
+      const rawBase64 = rendered.images[index].split(",")[1];
       const optimized = await optimizeImage(Buffer.from(rawBase64, "base64"));
       allImages.push(optimized);
 
       try {
         const extracted = await extractFromImage(optimized);
-        const validated = EncarteSchema.safeParse(extracted);
+        const normalized = normalizeEncartePayload(extracted);
 
-        if (validated.success) {
-          allProducts.push(...validated.data.products);
-          onProgress?.(`Sucesso: ${validated.data.products.length} ofertas extraídas da página ${index + 1}.`);
+        if (normalized.products.length > 0) {
+          allProducts.push(...normalized.products);
+          onProgress?.(`Sucesso: ${normalized.products.length} ofertas extraídas da página ${index + 1}.`);
         } else {
           onProgress?.(`Aviso: página ${index + 1} sem itens válidos após validação.`);
         }
-      } catch {
-        onProgress?.(`Erro na página ${index + 1}. Pulando...`);
+      } catch (error) {
+        const message = extractErrorMessage(error);
+        pageErrors.push(`Página ${index + 1}: ${message}`);
+        onProgress?.(`Erro na página ${index + 1}: ${message}`);
       }
+    }
+
+    if (allProducts.length === 0) {
+      const reason = pageErrors.length > 0 ? pageErrors.slice(0, 3).join(" | ") : "Nenhum item reconhecido nas páginas.";
+      throw new Error(`Extração sem produtos. ${reason}`);
     }
   } finally {
     await browser.close().catch(() => undefined);
@@ -202,6 +244,8 @@ export async function processPdfBuffer(
 }
 
 export async function crawlUrl(url: string, onProgress?: (message: string) => void): Promise<CrawlerResult> {
+  ensureOpenAiKey();
+
   onProgress?.(`Visitando URL: ${url}`);
 
   const browser = await chromium.launch({ headless: true });
@@ -244,9 +288,8 @@ export async function crawlUrl(url: string, onProgress?: (message: string) => vo
 
     const optimizedImage = await optimizeImage(screenshot);
     const extracted = await extractFromImage(optimizedImage);
-    const validated = EncarteSchema.safeParse(extracted);
-
-    const products = validated.success ? validated.data.products : [];
+    const normalized = normalizeEncartePayload(extracted);
+    const products = normalized.products;
     onProgress?.(`Extração concluída: ${products.length} ofertas encontradas.`);
 
     return {

@@ -6,13 +6,14 @@ import { ArrowRight, FileUp, Globe2, Loader2, ScanLine, Sparkles, Trash2 } from 
 import { useOffersStore } from "@/features/offers/offers-store";
 import { usePanelSession } from "@/features/panel/panel-session-context";
 import { formatCurrency } from "@/features/shared/format";
-import { EncarteResponse, ProductSchema } from "@/lib/schemas";
+import { EncarteResponse, normalizeEncartePayload } from "@/lib/schemas";
 
 type ImporterStep = "input" | "processing" | "review";
 
 interface ImportMeta {
   isMock?: boolean;
   source?: string;
+  error?: string;
   imageUrl?: string;
   images?: string[];
 }
@@ -76,16 +77,14 @@ function parseChunk(line: string): StreamChunk | null {
 
     if (payload.type === "done" && payload.data) {
       const maybeData = payload.data as ImporterPayload;
-      const validated = ProductSchema.array().safeParse(maybeData.products);
-      if (validated.success) {
-        return {
-          type: "done",
-          data: {
-            products: validated.data,
-            meta: maybeData.meta,
-          },
-        };
-      }
+      const normalized = normalizeEncartePayload(maybeData);
+      return {
+        type: "done",
+        data: {
+          products: normalized.products,
+          meta: maybeData.meta,
+        },
+      };
     }
 
     return null;
@@ -167,6 +166,9 @@ export function ImporterWorkbench() {
 
         setRawPayload(chunk.data);
         setProducts(toEditableProducts(chunk.data));
+        appendLog(
+          `Concluído: ${chunk.data.products.length} itens extraídos (${chunk.data.meta?.isMock ? `mock/${chunk.data.meta.source ?? "desconhecido"}` : "pipeline real"}).`,
+        );
         appendLog("Extração concluída e pronta para revisão.");
         setStep("review");
       }
@@ -329,6 +331,12 @@ export function ImporterWorkbench() {
             <p className="mt-1 text-sm text-[var(--color-muted)]">
               {rawPayload?.meta?.isMock ? "Dados em modo mock para apresentação." : "Dados extraídos em tempo real."}
             </p>
+            {rawPayload?.meta?.isMock ? (
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                Fallback ativo ({rawPayload.meta.source ?? "desconhecido"})
+                {rawPayload.meta.error ? `: ${rawPayload.meta.error}` : "."}
+              </div>
+            ) : null}
             <div className="mt-4 max-h-[520px] space-y-4 overflow-y-auto rounded-xl bg-[var(--color-surface)] p-3">
               {images.length === 0 ? (
                 <p className="text-sm text-[var(--color-muted)]">Sem prévia de imagem disponível.</p>

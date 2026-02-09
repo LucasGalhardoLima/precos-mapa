@@ -37,6 +37,7 @@ export async function POST(request: Request) {
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    const traceId = `upload-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
@@ -46,13 +47,21 @@ export async function POST(request: Request) {
         };
 
         try {
+          send({
+            type: "progress",
+            message: `Trace ${traceId}: arquivo recebido (${file.name}, ${Math.round(buffer.byteLength / 1024)} KB).`,
+          });
+
           const result = await processPdfBuffer(buffer, file.name, (message) => {
             send({ type: "progress", message });
           });
 
           send({ type: "done", data: result });
         } catch (error) {
-          send({ type: "progress", message: `Falha no processamento real. Ativando fallback mock: ${resolveErrorMessage(error)}` });
+          send({
+            type: "progress",
+            message: `Trace ${traceId}: falha no processamento real (${resolveErrorMessage(error)}). Ativando fallback mock.`,
+          });
           send({
             type: "done",
             data: {
@@ -60,8 +69,9 @@ export async function POST(request: Request) {
               meta: {
                 isMock: true,
                 source: "upload_error_fallback",
-                imageUrl: "https://via.placeholder.com/800",
-                images: ["https://via.placeholder.com/800"],
+                error: resolveErrorMessage(error),
+                imageUrl: "/file.svg",
+                images: ["/file.svg"],
               },
             },
           });

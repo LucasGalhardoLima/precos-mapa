@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import mockData from "@/data/mock-encarte.json";
-import { EncarteSchema } from "@/lib/schemas";
+import { normalizeEncartePayload } from "@/lib/schemas";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || "dummy",
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     }
 
     const parsed = JSON.parse(content) as unknown;
-    const result = EncarteSchema.parse(parsed);
+    const result = normalizeEncartePayload(parsed);
 
     return NextResponse.json(result);
   } catch (error) {
