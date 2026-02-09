@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "PreçoMapa",
+    "slug": "precomapa-mobile",
+    "scheme": "precomapa",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#0fbe78"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.precomapa.app"
+    },
+    "android": {
+      "package": "com.precomapa.app"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
