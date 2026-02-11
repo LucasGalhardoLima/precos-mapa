@@ -1,25 +1,40 @@
 {
   "expo": {
-    "name": "PreçoMapa",
-    "slug": "precomapa-mobile",
-    "scheme": "precomapa",
+    "name": "PrecoMapa",
+    "slug": "precomapa",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "precomapa",
     "splash": {
-      "backgroundColor": "#0fbe78"
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.precomapa.app"
+      "bundleIdentifier": "com.precomapa.consumer"
     },
     "android": {
-      "package": "com.precomapa.app"
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.precomapa.consumer",
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        }
+      }
     },
-    "plugins": ["expo-router"],
-    "experiments": {
-      "typedRoutes": true
-    }
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router"
+    ]
   }
 }

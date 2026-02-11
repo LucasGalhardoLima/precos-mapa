@@ -5,14 +5,13 @@
     "baseUrl": ".",
     "paths": {
       "@/*": [
-        "./src/*"
+        "./*"
       ]
     }
   },
   "include": [
-    "app",
-    "src",
-    "expo-env.d.ts",
-    ".expo/types/**/*.ts"
+    "**/*.ts",
+    "**/*.tsx",
+    "nativewind-env.d.ts"
   ]
 }
