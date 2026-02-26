@@ -116,17 +116,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     switch (event.type) {
       case "checkout.session.completed":
         await handleCheckoutCompleted(
-          event.data.object as Record<string, unknown>,
+          event.data.object as unknown as Record<string, unknown>,
         );
         break;
       case "customer.subscription.updated":
         await handleSubscriptionUpdated(
-          event.data.object as Record<string, unknown>,
+          event.data.object as unknown as Record<string, unknown>,
         );
         break;
       case "customer.subscription.deleted":
         await handleSubscriptionDeleted(
-          event.data.object as Record<string, unknown>,
+          event.data.object as unknown as Record<string, unknown>,
         );
         break;
       case "invoice.payment_succeeded":
