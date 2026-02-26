@@ -98,10 +98,12 @@ export default async function MarketDashboardPage() {
         <article className="rounded-2xl border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
           <h2 className="text-lg font-semibold text-[var(--color-ink)]">Ofertas recentes</h2>
           <div className="mt-4 space-y-3">
-            {recentOffers.map((offer: { id: string; promo_price: number; original_price: number; end_date: string; source: string; product: { name: string } | null }) => (
+            {recentOffers.map((offer) => {
+              const product = Array.isArray(offer.product) ? offer.product[0] : offer.product;
+              return (
               <div key={offer.id} className="flex items-center justify-between rounded-xl border border-[var(--color-line)] px-4 py-3">
                 <div>
-                  <p className="font-medium text-[var(--color-ink)]">{offer.product?.name ?? "Produto"}</p>
+                  <p className="font-medium text-[var(--color-ink)]">{product?.name ?? "Produto"}</p>
                   <p className="text-xs text-[var(--color-muted)]">
                     Ate {formatDateLabel(offer.end_date)} · {offer.source === "importador_ia" ? "Importador IA" : "Manual"}
                   </p>
@@ -111,7 +113,8 @@ export default async function MarketDashboardPage() {
                   <p className="text-xs text-[var(--color-muted)] line-through">{formatCurrency(offer.original_price)}</p>
                 </div>
               </div>
-            ))}
+              );
+            })}
             {recentOffers.length === 0 && (
               <p className="py-4 text-center text-sm text-[var(--color-muted)]">Nenhuma oferta ativa</p>
             )}
