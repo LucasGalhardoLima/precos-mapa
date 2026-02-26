@@ -48,9 +48,17 @@ interface PdfRenderResult {
   processedPages: number;
 }
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let _openai: OpenAI | null = null;
+
+function getOpenAi(): OpenAI {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY não configurada no servidor.");
+  }
+  if (!_openai) {
+    _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return _openai;
+}
 
 const MAX_PDF_PAGES = 30;
 
@@ -59,12 +67,6 @@ function extractErrorMessage(error: unknown): string {
     return error.message;
   }
   return "Erro desconhecido";
-}
-
-function ensureOpenAiKey() {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY não configurada no servidor.");
-  }
 }
 
 export async function optimizeImage(buffer: Buffer): Promise<string> {
@@ -83,9 +85,7 @@ export async function optimizeImage(buffer: Buffer): Promise<string> {
 }
 
 export async function extractFromImage(base64Image: string): Promise<unknown> {
-  ensureOpenAiKey();
-
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAi().chat.completions.create({
     model: "gpt-4o",
     messages: [
       {
@@ -178,7 +178,7 @@ export async function processPdfBuffer(
   sourceName: string,
   onProgress?: (message: string) => void,
 ): Promise<CrawlerResult> {
-  ensureOpenAiKey();
+  getOpenAi();
 
   onProgress?.(`Iniciando análise do PDF: ${sourceName}`);
 
@@ -301,7 +301,7 @@ export async function discoverAndDownloadPdf(url: string): Promise<{
 }
 
 export async function crawlUrl(url: string, onProgress?: (message: string) => void): Promise<CrawlerResult> {
-  ensureOpenAiKey();
+  getOpenAi();
 
   // Direct PDF URL — download and process without page navigation
   if (url.toLowerCase().endsWith(".pdf")) {
