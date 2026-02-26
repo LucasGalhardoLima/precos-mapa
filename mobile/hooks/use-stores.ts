@@ -1,10 +1,8 @@
-import { useMemo } from "react";
-import { stores } from "@/data/stores";
-import { promotions } from "@/data/promotions";
-import { products } from "@/data/products";
-import { calculateDistanceKm } from "@/hooks/use-location";
-import { getGamificationMessage } from "@/constants/messages";
-import type { StoreWithPromotions, EnrichedPromotion } from "@/types";
+import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/lib/supabase';
+import { calculateDistanceKm } from '@/hooks/use-location';
+import { getGamificationMessage } from '@/constants/messages';
+import type { Store, StoreWithPromotions, EnrichedPromotion, PromotionWithRelations } from '@/types';
 
 interface UseStoresParams {
   userLatitude: number;
@@ -13,9 +11,33 @@ interface UseStoresParams {
 
 export function useStores(params: UseStoresParams) {
   const { userLatitude, userLongitude } = params;
+  const [raw, setRaw] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const storesWithPromotions = useMemo((): StoreWithPromotions[] => {
-    return stores.map((store) => {
+  useEffect(() => {
+    async function fetch() {
+      const { data } = await supabase
+        .from('stores')
+        .select(`
+          *,
+          promotions:promotions(
+            *,
+            product:products(*)
+          )
+        `)
+        .eq('is_active', true)
+        .eq('promotions.status', 'active')
+        .gt('promotions.end_date', new Date().toISOString());
+
+      if (data) setRaw(data);
+      setIsLoading(false);
+    }
+
+    fetch();
+  }, []);
+
+  const stores = useMemo((): StoreWithPromotions[] => {
+    return raw.map((store) => {
       const distanceKm = calculateDistanceKm(
         userLatitude,
         userLongitude,
@@ -23,55 +45,47 @@ export function useStores(params: UseStoresParams) {
         store.longitude
       );
 
-      const storePromos = promotions
-        .filter((p) => p.storeId === store.id && p.status === "active")
-        .map((promo) => {
-          const product = products.find((p) => p.id === promo.productId);
-          if (!product) return null;
-
+      const storePromos: EnrichedPromotion[] = (store.promotions || [])
+        .filter((p: any) => p.product)
+        .map((promo: any) => {
           const discountPercent = Math.round(
-            (1 - promo.promoPrice / promo.originalPrice) * 100
+            (1 - promo.promo_price / promo.original_price) * 100
           );
           const belowNormalPercent = Math.max(
             0,
-            Math.round((1 - promo.promoPrice / product.referencePrice) * 100)
+            Math.round((1 - promo.promo_price / promo.product.reference_price) * 100)
           );
-          const hoursUntilEnd =
-            (new Date(promo.endDate).getTime() - Date.now()) / 3600000;
+          const endDate = new Date(promo.end_date);
+          const today = new Date();
+          const isExpiringSoon =
+            endDate.getFullYear() === today.getFullYear() &&
+            endDate.getMonth() === today.getMonth() &&
+            endDate.getDate() === today.getDate();
 
           return {
-            id: promo.id,
-            product,
+            ...promo,
             store,
-            originalPrice: promo.originalPrice,
-            promoPrice: promo.promoPrice,
-            startDate: promo.startDate,
-            endDate: promo.endDate,
-            verified: promo.verified,
             discountPercent,
             belowNormalPercent,
             gamificationMessage: getGamificationMessage(discountPercent),
             distanceKm,
-            isExpiringSoon: hoursUntilEnd <= 24 && hoursUntilEnd > 0,
-          } satisfies EnrichedPromotion;
-        })
-        .filter(Boolean) as EnrichedPromotion[];
+            isExpiringSoon,
+            isBestPrice: false,
+          } as EnrichedPromotion;
+        });
 
-      const topDeals = storePromos
+      const topDeals = [...storePromos]
         .sort((a, b) => b.discountPercent - a.discountPercent)
         .slice(0, 3);
 
       return {
-        store,
+        store: store as Store,
         activePromotionCount: storePromos.length,
         topDeals,
         distanceKm,
       };
     });
-  }, [userLatitude, userLongitude]);
+  }, [raw, userLatitude, userLongitude]);
 
-  return {
-    stores: storesWithPromotions,
-    isLoading: false,
-  };
+  return { stores, isLoading };
 }

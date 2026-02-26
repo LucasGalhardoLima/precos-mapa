@@ -1,0 +1,36 @@
+name: Import Store PDFs
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch active sources and trigger imports
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          SOURCES=$(curl -sf \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            "${SUPABASE_URL}/rest/v1/store_pdf_sources?is_active=eq.true&select=id")
+
+          COUNT=$(echo "$SOURCES" | jq length)
+          echo "Found ${COUNT} active sources"
+
+          echo "$SOURCES" | jq -r '.[].id' | while read SOURCE_ID; do
+            echo "Triggering source: ${SOURCE_ID}"
+            curl -sf -X POST \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              -d "{\"sourceId\": \"${SOURCE_ID}\"}" \
+              "${APP_URL}/api/cron/process-import" || echo "Failed to trigger ${SOURCE_ID}"
+          done
+
+          echo "Done. Triggered ${COUNT} sources."

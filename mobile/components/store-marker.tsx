@@ -1,6 +1,6 @@
-import { View, Text } from "react-native";
-import { Marker } from "react-native-maps";
-import type { StoreWithPromotions } from "@/types";
+import { View, Text } from 'react-native';
+import { Marker } from 'react-native-maps';
+import type { StoreWithPromotions } from '@/types';
 
 interface StoreMarkerProps {
   storeData: StoreWithPromotions;
@@ -22,10 +22,10 @@ export function StoreMarker({ storeData, onPress }: StoreMarkerProps) {
       <View className="items-center">
         <View
           className="w-10 h-10 rounded-full items-center justify-center border-2 border-white shadow-sm"
-          style={{ backgroundColor: store.logoColor }}
+          style={{ backgroundColor: store.logo_color }}
         >
           <Text className="text-white font-bold text-base">
-            {store.logoInitial}
+            {store.logo_initial}
           </Text>
         </View>
         <View className="bg-white rounded-md px-1.5 py-0.5 mt-0.5 shadow-sm">

@@ -1,8 +1,18 @@
-import { Tabs } from "expo-router";
-import { Home, MapPin, Heart, Bell } from "lucide-react-native";
+import { useEffect } from "react";
+import { Tabs, router } from "expo-router";
+import { Home, MapPin, Heart, Bell, User } from "lucide-react-native";
 import { Colors } from "@/constants/colors";
+import { useAuthStore } from "@precomapa/shared";
 
 export default function TabLayout() {
+  const session = useAuthStore((s) => s.session);
+
+  useEffect(() => {
+    if (session === null) {
+      router.replace("/onboarding");
+    }
+  }, [session]);
+
   return (
     <Tabs
       screenOptions={{
@@ -20,6 +30,7 @@ export default function TabLayout() {
           fontSize: 11,
           fontWeight: "600",
         },
+        animation: "shift",
       }}
     >
       <Tabs.Screen
@@ -55,6 +66,15 @@ export default function TabLayout() {
           title: "Alertas",
           tabBarIcon: ({ color, size }) => (
             <Bell size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Perfil",
+          tabBarIcon: ({ color, size }) => (
+            <User size={size} color={color} />
           ),
         }}
       />

@@ -2,20 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useRef } from "react";
 import {
+  AlertTriangle,
   BarChart3,
   Building2,
   Crown,
+  FileText,
   LayoutDashboard,
+  LogOut,
   ShieldCheck,
   Sparkles,
   Tags,
+  TrendingUp,
   UserCircle,
   Users,
   Wallet,
 } from "lucide-react";
-import { endMockSession, switchMarketContext, switchRole } from "@/features/auth/actions";
+import { signOut } from "@/features/auth/actions";
 import { MarketSummary, SessionContext } from "@/features/shared/types";
 
 interface NavItem {
@@ -39,12 +42,21 @@ const marketNavItems: NavItem[] = [
   { href: "/painel/plano", label: "Plano", icon: Wallet },
 ];
 
+// Super admin sees super nav + only these market items (no Dashboard/Criar Oferta/Analytics/Plano duplicates)
+const superMarketNavItems: NavItem[] = [
+  { href: "/painel/ofertas", label: "Todas as Ofertas", icon: Tags },
+  { href: "/painel/importador-ia", label: "Importador IA", icon: ShieldCheck },
+];
+
 const superNavItems: NavItem[] = [
-  { href: "/painel/super/dashboard", label: "Visão Global", icon: Crown },
+  { href: "/painel/super/dashboard", label: "Visao Global", icon: Crown },
   { href: "/painel/super/mercados", label: "Mercados", icon: Building2 },
-  { href: "/painel/super/usuarios", label: "Usuários", icon: Users },
+  { href: "/painel/super/usuarios", label: "Usuarios", icon: Users },
   { href: "/painel/super/planos", label: "Planos", icon: Wallet },
-  { href: "/painel/super/moderacao", label: "Moderação", icon: ShieldCheck },
+  { href: "/painel/super/moderacao", label: "Moderacao", icon: ShieldCheck },
+  { href: "/painel/super/indice", label: "Indice de Precos", icon: TrendingUp },
+  { href: "/painel/super/qualidade", label: "Qualidade Dados", icon: AlertTriangle },
+  { href: "/painel/super/pdf-sources", label: "Fontes PDF", icon: FileText },
 ];
 
 function isActiveRoute(pathname: string, href: string): boolean {
@@ -59,28 +71,23 @@ function isActiveRoute(pathname: string, href: string): boolean {
 
 export function PanelShell({ session, markets, children }: PanelShellProps) {
   const pathname = usePathname();
-  const marketFormRef = useRef<HTMLFormElement>(null);
-  const roleFormRef = useRef<HTMLFormElement>(null);
 
   const currentMarket = markets.find((market) => market.id === session.currentMarketId) ?? markets[0];
 
-  const allowedMarkets = useMemo(() => {
-    return markets.filter((market) => session.availableMarketIds.includes(market.id));
-  }, [markets, session.availableMarketIds]);
-
-  const visibleNav = session.role === "super_admin" ? [...superNavItems, ...marketNavItems] : marketNavItems;
+  const visibleNav = session.role === "super_admin" ? [...superNavItems, ...superMarketNavItems] : marketNavItems;
 
   return (
     <div className="min-h-screen bg-[var(--color-surface)] text-[var(--color-ink)]">
       <div className="mx-auto flex w-full max-w-[1500px] gap-6 px-4 py-6 md:px-6">
+        {/* Desktop sidebar */}
         <aside className="hidden w-[280px] shrink-0 rounded-3xl border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] lg:block">
           <div className="mb-8 flex items-center gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--color-primary)] text-white">
               <Building2 className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-muted)]">Painel Único</p>
-              <p className="text-xl font-semibold">PreçoMapa</p>
+              <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-muted)]">Painel</p>
+              <p className="text-xl font-semibold">PrecoMapa</p>
             </div>
           </div>
 
@@ -92,7 +99,7 @@ export function PanelShell({ session, markets, children }: PanelShellProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+                  className={`flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
                     active
                       ? "bg-[var(--color-primary-soft)] font-semibold text-[var(--color-primary-deep)]"
                       : "text-[var(--color-muted)] hover:bg-[var(--color-surface-strong)]"
@@ -105,19 +112,21 @@ export function PanelShell({ session, markets, children }: PanelShellProps) {
             })}
           </nav>
 
-          <form action={endMockSession} className="mt-8">
+          <form action={signOut} className="mt-8">
             <button
               type="submit"
-              className="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm font-medium text-[var(--color-muted)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-deep)]"
+              className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm font-medium text-[var(--color-muted)] transition hover:border-rose-300 hover:text-rose-600"
             >
-              Encerrar sessão mock
+              <LogOut className="h-4 w-4" />
+              Sair
             </button>
           </form>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col gap-4">
+          {/* Header */}
           <header className="rounded-3xl border border-[var(--color-line)] bg-white px-5 py-4 shadow-[var(--shadow-soft)]">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
                   <UserCircle className="h-5 w-5" />
@@ -127,60 +136,24 @@ export function PanelShell({ session, markets, children }: PanelShellProps) {
                   <p className="truncate text-xs text-[var(--color-muted)]">{session.userEmail}</p>
                 </div>
                 <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
                     session.role === "super_admin"
                       ? "bg-amber-100 text-amber-700"
                       : "bg-emerald-100 text-emerald-700"
                   }`}
                 >
-                  {session.role === "super_admin" ? "Super Admin" : "Admin Mercado"}
+                  {session.role === "super_admin" ? "Super Admin" : "Lojista"}
                 </span>
               </div>
+            </div>
 
-              <div className="grid gap-3 md:grid-cols-2">
-                <form ref={roleFormRef} action={switchRole} className="grid gap-1.5">
-                  <label className="text-xs font-medium text-[var(--color-muted)]" htmlFor="role-switcher">
-                    Perfil da sessão
-                  </label>
-                  <input name="marketId" value={session.currentMarketId} readOnly className="hidden" />
-                  <select
-                    id="role-switcher"
-                    name="role"
-                    defaultValue={session.role}
-                    className="rounded-xl border border-[var(--color-line)] bg-white px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:outline-none"
-                    onChange={() => roleFormRef.current?.requestSubmit()}
-                  >
-                    <option value="admin_mercado">Admin Mercado</option>
-                    <option value="super_admin">Super Admin</option>
-                  </select>
-                </form>
-
-                <form ref={marketFormRef} action={switchMarketContext} className="grid gap-1.5">
-                  <label className="text-xs font-medium text-[var(--color-muted)]" htmlFor="market-switcher">
-                    Mercado ativo
-                  </label>
-                  <input name="role" value={session.role} readOnly className="hidden" />
-                  <select
-                    id="market-switcher"
-                    name="marketId"
-                    defaultValue={session.currentMarketId}
-                    className="rounded-xl border border-[var(--color-line)] bg-white px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:outline-none"
-                    onChange={() => marketFormRef.current?.requestSubmit()}
-                  >
-                    {allowedMarkets.map((market) => (
-                      <option key={market.id} value={market.id}>
-                        {market.name} ({market.city}/{market.state})
-                      </option>
-                    ))}
-                  </select>
-                </form>
+            {currentMarket && session.role !== "super_admin" && (
+              <div className="mt-4 rounded-2xl bg-[var(--color-surface-strong)] px-4 py-3 text-sm text-[var(--color-muted)]">
+                Loja ativa: <strong className="text-[var(--color-ink)]">{currentMarket.name} ({currentMarket.city}/{currentMarket.state})</strong>
               </div>
-            </div>
+            )}
 
-            <div className="mt-4 rounded-2xl bg-[var(--color-surface-strong)] px-4 py-3 text-sm text-[var(--color-muted)]">
-              Contexto atual: <strong className="text-[var(--color-ink)]">{currentMarket.name}</strong>. Super admin pode alternar de mercado sem sair do painel.
-            </div>
-
+            {/* Mobile navigation */}
             <div className="mt-4 lg:hidden">
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {visibleNav.map((item) => {
@@ -189,7 +162,7 @@ export function PanelShell({ session, markets, children }: PanelShellProps) {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                      className={`flex min-h-[44px] shrink-0 items-center rounded-full border px-3 py-1.5 text-xs font-medium transition ${
                         active
                           ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary-deep)]"
                           : "border-[var(--color-line)] text-[var(--color-muted)]"
@@ -200,12 +173,13 @@ export function PanelShell({ session, markets, children }: PanelShellProps) {
                   );
                 })}
               </div>
-              <form action={endMockSession} className="mt-3">
+              <form action={signOut} className="mt-3">
                 <button
                   type="submit"
-                  className="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm font-medium text-[var(--color-muted)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-deep)]"
+                  className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm font-medium text-[var(--color-muted)] transition hover:border-rose-300 hover:text-rose-600"
                 >
-                  Encerrar sessão mock
+                  <LogOut className="h-4 w-4" />
+                  Sair
                 </button>
               </form>
             </div>

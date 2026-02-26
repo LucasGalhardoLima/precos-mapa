@@ -1,15 +1,18 @@
-import { View, Text, FlatList, ActivityIndicator } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { SearchBar } from "@/components/search-bar";
-import { FilterChips } from "@/components/filter-chips";
-import { CategoryTabs } from "@/components/category-tabs";
-import { DealCard } from "@/components/deal-card";
-import { usePromotions } from "@/hooks/use-promotions";
-import { useLocation } from "@/hooks/use-location";
-import { useAppStore } from "@/store/app-store";
-import { Colors } from "@/constants/colors";
-import type { EnrichedPromotion } from "@/types";
-import { ShoppingBag } from "lucide-react-native";
+import { View, Text, FlatList, Pressable } from 'react-native';
+import { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { SearchBar } from '@/components/search-bar';
+import { FilterChips } from '@/components/filter-chips';
+import { CategoryTabs } from '@/components/category-tabs';
+import { DealCard } from '@/components/deal-card';
+import { Paywall } from '@/components/paywall';
+import { usePromotions } from '@/hooks/use-promotions';
+import { useLocation } from '@/hooks/use-location';
+import { useAuthStore } from '@precomapa/shared';
+import { useFilterStore } from '@/store/app-store';
+import { Colors } from '@/constants/colors';
+import type { EnrichedPromotion } from '@/types';
+import { ShoppingBag, Crown } from 'lucide-react-native';
 
 function SkeletonCard() {
   return (
@@ -41,9 +44,12 @@ function EmptyState() {
 
 export default function HomeScreen() {
   const { latitude, longitude } = useLocation();
-  const searchQuery = useAppStore((s) => s.searchQuery);
-  const sortMode = useAppStore((s) => s.sortMode);
-  const selectedCategoryId = useAppStore((s) => s.selectedCategoryId);
+  const searchQuery = useFilterStore((s) => s.searchQuery);
+  const sortMode = useFilterStore((s) => s.sortMode);
+  const selectedCategoryId = useFilterStore((s) => s.selectedCategoryId);
+  const profile = useAuthStore((s) => s.profile);
+  const isFree = profile?.b2c_plan === 'free';
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const { promotions, isLoading, isEmpty } = usePromotions({
     query: searchQuery || undefined,
@@ -53,9 +59,9 @@ export default function HomeScreen() {
     userLongitude: longitude,
   });
 
-  // Get nearest 5 deals for "Perto de voce" when not searching
+  // Nearest deals for "Perto de voce" section
   const { promotions: nearbyDeals } = usePromotions({
-    sortMode: "nearest",
+    sortMode: 'nearest',
     userLatitude: latitude,
     userLongitude: longitude,
   });
@@ -71,7 +77,7 @@ export default function HomeScreen() {
   }) => <DealCard deal={item} index={index} />;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-secondary" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
       <View className="flex-1 px-4 pt-4">
         {/* Search */}
         <SearchBar />
@@ -83,6 +89,22 @@ export default function HomeScreen() {
         <View className="mt-2">
           <CategoryTabs />
         </View>
+
+        {/* Upgrade banner for free users */}
+        {isFree && (
+          <Pressable
+            onPress={() => setShowPaywall(true)}
+            className="bg-brand-green/5 border border-brand-green/20 rounded-xl px-4 py-3 mt-3 flex-row items-center gap-2"
+          >
+            <Crown size={16} color={Colors.brand.green} />
+            <Text className="text-xs text-text-secondary flex-1">
+              Desbloqueie favoritos ilimitados, alertas e mais.{' '}
+              <Text className="text-brand-green font-semibold">
+                Conheca o Plus
+              </Text>
+            </Text>
+          </Pressable>
+        )}
 
         {/* Content */}
         {isLoading ? (
@@ -122,6 +144,7 @@ export default function HomeScreen() {
           />
         )}
       </View>
+      <Paywall visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </SafeAreaView>
   );
 }

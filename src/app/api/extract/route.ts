@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import mockData from "@/data/mock-encarte.json";
 import { normalizeEncartePayload } from "@/lib/schemas";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "dummy",
-});
 
 function resolveErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -22,9 +17,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 
-    if (process.env.DEMO_MODE === "true" || !process.env.OPENAI_API_KEY) {
-      return NextResponse.json({ ...mockData, meta: { isMock: true, source: "demo_mode" } });
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ error: "OPENAI_API_KEY não configurada no servidor." }, { status: 500 });
     }
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -60,16 +57,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    return NextResponse.json(
-      {
-        ...mockData,
-        meta: {
-          isMock: true,
-          error: resolveErrorMessage(error),
-          source: "extract_error_fallback",
-        },
-      },
-      { status: 200 },
-    );
+    const message = resolveErrorMessage(error);
+    console.error("[extract] Falha na extração:", error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

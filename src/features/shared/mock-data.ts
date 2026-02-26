@@ -12,6 +12,8 @@ import {
   UserRole,
 } from "@/features/shared/types";
 
+export const DEMO_MARKET_ID = "mk-carol-matao";
+
 export const ROLE_PERMISSIONS: RolePermissions = {
   super_admin: [
     "dashboard:market:view",
@@ -369,11 +371,11 @@ export const defaultSessionByRole: Record<UserRole, { userName: string; userEmai
   super_admin: {
     userName: "Lucas Galhardo",
     userEmail: "lucas@precomapa.com",
-    availableMarketIds: mockMarkets.map((market) => market.id),
+    availableMarketIds: [DEMO_MARKET_ID],
   },
   admin_mercado: {
     userName: "Gerente Carol",
     userEmail: "admin@carolsuper.com.br",
-    availableMarketIds: ["mk-carol-matao"],
+    availableMarketIds: [DEMO_MARKET_ID],
   },
 };

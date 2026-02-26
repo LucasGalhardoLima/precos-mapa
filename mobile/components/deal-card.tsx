@@ -1,9 +1,9 @@
-import { View, Text } from "react-native";
-import { MotiView } from "moti";
-import { MapPin, Clock } from "lucide-react-native";
-import { Badge } from "@/components/ui/badge";
-import { Colors } from "@/constants/colors";
-import type { EnrichedPromotion } from "@/types";
+import { View, Text } from 'react-native';
+import { MotiView } from 'moti';
+import { MapPin, Clock } from 'lucide-react-native';
+import { Badge } from '@/components/ui/badge';
+import { Colors } from '@/constants/colors';
+import type { EnrichedPromotion } from '@/types';
 
 interface DealCardProps {
   deal: EnrichedPromotion;
@@ -16,9 +16,9 @@ export function DealCard({ deal, index = 0, compact = false }: DealCardProps) {
     <MotiView
       from={{ opacity: 0, translateY: 12 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: "timing", duration: 350, delay: index * 60 }}
+      transition={{ type: 'timing', duration: 350, delay: index * 60 }}
       className={`bg-white rounded-2xl border border-border ${
-        compact ? "p-3" : "p-4"
+        compact ? 'p-3' : 'p-4'
       }`}
     >
       {/* Header: Product + Store */}
@@ -26,7 +26,7 @@ export function DealCard({ deal, index = 0, compact = false }: DealCardProps) {
         <View className="flex-1 mr-3">
           <Text
             className={`font-semibold text-text-primary ${
-              compact ? "text-sm" : "text-base"
+              compact ? 'text-sm' : 'text-base'
             }`}
             numberOfLines={1}
           >
@@ -41,10 +41,10 @@ export function DealCard({ deal, index = 0, compact = false }: DealCardProps) {
         {/* Store Avatar */}
         <View
           className="w-8 h-8 rounded-full items-center justify-center"
-          style={{ backgroundColor: deal.store.logoColor }}
+          style={{ backgroundColor: deal.store.logo_color }}
         >
           <Text className="text-white font-bold text-sm">
-            {deal.store.logoInitial}
+            {deal.store.logo_initial}
           </Text>
         </View>
       </View>
@@ -58,21 +58,33 @@ export function DealCard({ deal, index = 0, compact = false }: DealCardProps) {
             {deal.distanceKm} km
           </Text>
         </View>
+        {deal.store.b2b_plan === 'free' && (
+          <Text className="text-xs text-text-tertiary ml-auto">
+            Dados basicos
+          </Text>
+        )}
       </View>
 
       {/* Price Row */}
       <View className="flex-row items-center gap-2 mt-3">
-        <Text className={`font-bold text-brand-green ${compact ? "text-lg" : "text-xl"}`}>
-          R$ {deal.promoPrice.toFixed(2)}
+        <Text className={`font-bold text-brand-green ${compact ? 'text-lg' : 'text-xl'}`}>
+          R$ {deal.promo_price.toFixed(2)}
         </Text>
-        <Text className="text-sm text-text-tertiary line-through">
-          R$ {deal.originalPrice.toFixed(2)}
-        </Text>
+        {deal.original_price > deal.promo_price && (
+          <Text className="text-sm text-text-tertiary line-through">
+            R$ {deal.original_price.toFixed(2)}
+          </Text>
+        )}
       </View>
 
       {/* Badges Row */}
       <View className="flex-row flex-wrap gap-1.5 mt-2">
-        <Badge variant="discount" label={`-${deal.discountPercent}%`} />
+        {deal.discountPercent > 0 && (
+          <Badge variant="discount" label={`-${deal.discountPercent}%`} />
+        )}
+        {deal.isBestPrice && (
+          <Badge variant="discount" label="Melhor Preco" />
+        )}
         {deal.verified && <Badge variant="verified" label="Verificado" />}
         {deal.belowNormalPercent > 0 && (
           <Badge
@@ -97,10 +109,10 @@ export function DealCard({ deal, index = 0, compact = false }: DealCardProps) {
         <View className="flex-row items-center gap-1 mt-2">
           <Clock size={12} color={Colors.text.tertiary} />
           <Text className="text-xs text-text-tertiary">
-            Valido ate{" "}
-            {new Date(deal.endDate).toLocaleDateString("pt-BR", {
-              day: "2-digit",
-              month: "2-digit",
+            Valido ate{' '}
+            {new Date(deal.end_date).toLocaleDateString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
             })}
           </Text>
         </View>

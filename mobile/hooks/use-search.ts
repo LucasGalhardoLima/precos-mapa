@@ -1,42 +1,60 @@
-import { useState, useEffect, useMemo } from "react";
-import { usePromotions } from "@/hooks/use-promotions";
-import { DEMO_USER_LOCATION } from "@/constants/messages";
-import { products } from "@/data/products";
+import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/lib/supabase';
+
+interface SearchResult {
+  id: string;
+  name: string;
+  similarity_score: number;
+}
 
 export function useSearch(query: string) {
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const { promotions } = usePromotions({
-    query,
-    userLatitude: DEMO_USER_LOCATION.latitude,
-    userLongitude: DEMO_USER_LOCATION.longitude,
-  });
-
-  const suggestions = useMemo(() => {
-    if (!query || query.length < 2) return [];
-    const q = query.toLowerCase().trim();
-    const matches = products
-      .filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          (p.brand?.toLowerCase().includes(q) ?? false)
-      )
-      .map((p) => p.name);
-    return [...new Set(matches)].slice(0, 5);
-  }, [query]);
-
   useEffect(() => {
-    if (!query) {
+    if (!query || query.length < 2) {
+      setSuggestions([]);
       setIsSearching(false);
       return;
     }
+
     setIsSearching(true);
-    const timer = setTimeout(() => setIsSearching(false), 200);
+
+    const timer = setTimeout(async () => {
+      try {
+        if (query.length >= 3) {
+          // Fuzzy search via pg_trgm + synonyms
+          const { data } = await supabase.rpc('search_products', {
+            query,
+          });
+
+          if (data) {
+            const names = (data as SearchResult[]).map((r) => r.name);
+            setSuggestions([...new Set(names)].slice(0, 5));
+          }
+        } else {
+          // Short query: simple ilike search
+          const { data } = await supabase
+            .from('products')
+            .select('name')
+            .ilike('name', `%${query}%`)
+            .limit(5);
+
+          if (data) {
+            setSuggestions(data.map((p) => p.name));
+          }
+        }
+      } catch {
+        setSuggestions([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 200);
+
     return () => clearTimeout(timer);
   }, [query]);
 
   return {
-    results: promotions,
     suggestions,
     isSearching,
   };

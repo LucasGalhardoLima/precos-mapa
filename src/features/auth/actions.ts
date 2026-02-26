@@ -1,72 +1,86 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { defaultSessionByRole, mockMarkets } from "@/features/shared/mock-data";
-import { UserRole } from "@/features/shared/types";
-import { MARKET_COOKIE_KEY, ROLE_COOKIE_KEY } from "@/features/auth/session";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase-server";
 
-const RoleSchema = z.enum(["super_admin", "admin_mercado"]);
-const MarketSchema = z.string().min(1);
+const supabaseAdmin = createSupabaseClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+);
 
-function parseRole(value: FormDataEntryValue | null): UserRole {
-  const parsed = RoleSchema.safeParse(value);
-  if (parsed.success) {
-    return parsed.data;
+const LoginSchema = z.object({
+  email: z.string().email("Email invalido"),
+  password: z.string().min(6, "Senha deve ter no minimo 6 caracteres"),
+});
+
+export async function signIn(formData: FormData): Promise<void> {
+  const result = LoginSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
+
+  if (!result.success) {
+    redirect(
+      "/painel/acesso?error=" +
+        encodeURIComponent(result.error.issues[0].message),
+    );
   }
-  return "admin_mercado";
-}
 
-function parseMarket(role: UserRole, marketValue: FormDataEntryValue | null): string {
-  const allowed = defaultSessionByRole[role].availableMarketIds;
-  const parsed = MarketSchema.safeParse(marketValue);
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({
+    email: result.data.email,
+    password: result.data.password,
+  });
 
-  if (parsed.success && allowed.includes(parsed.data)) {
-    return parsed.data;
+  if (error) {
+    redirect(
+      "/painel/acesso?error=" + encodeURIComponent("Credenciais invalidas"),
+    );
   }
 
-  return allowed[0] ?? mockMarkets[0].id;
-}
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect(
+      "/painel/acesso?error=" +
+        encodeURIComponent("Erro ao verificar perfil"),
+    );
+  }
 
-export async function startMockSession(formData: FormData): Promise<void> {
-  const role = parseRole(formData.get("role"));
-  const marketId = parseMarket(role, formData.get("marketId"));
+  // Use service-role client to bypass RLS for the role check
+  // (RLS auth.uid() may not be set yet in the same server action)
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
 
-  const cookieStore = await cookies();
-  cookieStore.set(ROLE_COOKIE_KEY, role, { path: "/", sameSite: "lax", httpOnly: false });
-  cookieStore.set(MARKET_COOKIE_KEY, marketId, { path: "/", sameSite: "lax", httpOnly: false });
-
-  redirect(role === "super_admin" ? "/painel/super/dashboard" : "/painel/dashboard");
-}
-
-export async function switchRole(formData: FormData): Promise<void> {
-  const role = parseRole(formData.get("role"));
-  const marketId = parseMarket(role, formData.get("marketId"));
-
-  const cookieStore = await cookies();
-  cookieStore.set(ROLE_COOKIE_KEY, role, { path: "/", sameSite: "lax", httpOnly: false });
-  cookieStore.set(MARKET_COOKIE_KEY, marketId, { path: "/", sameSite: "lax", httpOnly: false });
+  if (
+    !profile ||
+    (profile.role !== "business" && profile.role !== "super_admin")
+  ) {
+    await supabase.auth.signOut();
+    redirect(
+      "/painel/acesso?error=" +
+        encodeURIComponent("Acesso restrito a lojistas e administradores"),
+    );
+  }
 
   revalidatePath("/painel");
-  redirect(role === "super_admin" ? "/painel/super/dashboard" : "/painel/dashboard");
+  redirect(
+    profile.role === "super_admin"
+      ? "/painel/super/dashboard"
+      : "/painel/dashboard",
+  );
 }
 
-export async function switchMarketContext(formData: FormData): Promise<void> {
-  const role = parseRole(formData.get("role"));
-  const marketId = parseMarket(role, formData.get("marketId"));
-
-  const cookieStore = await cookies();
-  cookieStore.set(MARKET_COOKIE_KEY, marketId, { path: "/", sameSite: "lax", httpOnly: false });
-
+export async function signOut(): Promise<void> {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
   revalidatePath("/painel");
-}
-
-export async function endMockSession(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(ROLE_COOKIE_KEY);
-  cookieStore.delete(MARKET_COOKIE_KEY);
-
   redirect("/painel/acesso");
 }

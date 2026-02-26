@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { crawlUrl } from "@/lib/crawler/service";
-import mockSavegnago from "@/data/mocks/mock_savegnago.json";
 
 interface ProgressEvent {
   type: "progress";
@@ -49,20 +48,9 @@ export async function POST(request: Request) {
 
           send({ type: "done", data: result });
         } catch (error) {
-          send({ type: "progress", message: `Falha no crawler real. Ativando fallback mock: ${resolveErrorMessage(error)}` });
-          send({
-            type: "done",
-            data: {
-              ...mockSavegnago,
-              meta: {
-                isMock: true,
-                source: "crawl_error_fallback",
-                error: resolveErrorMessage(error),
-                imageUrl: "/file.svg",
-                images: ["/file.svg"],
-              },
-            },
-          });
+          const message = resolveErrorMessage(error);
+          console.error(`[crawl] Falha ao processar URL "${targetUrl}":`, error);
+          send({ type: "error", message: `Falha ao processar URL: ${message}` });
         } finally {
           controller.close();
         }

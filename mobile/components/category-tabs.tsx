@@ -9,7 +9,7 @@ import {
   Heart,
 } from "lucide-react-native";
 import { useCategories } from "@/hooks/use-categories";
-import { useAppStore } from "@/store/app-store";
+import { useFilterStore } from "@/store/app-store";
 import { Colors } from "@/constants/colors";
 import type { ComponentType } from "react";
 
@@ -25,8 +25,8 @@ const ICON_MAP: Record<string, ComponentType<{ size: number; color: string }>> =
 
 export function CategoryTabs() {
   const { categories } = useCategories();
-  const selectedCategoryId = useAppStore((s) => s.selectedCategoryId);
-  const setSelectedCategoryId = useAppStore((s) => s.setSelectedCategoryId);
+  const selectedCategoryId = useFilterStore((s) => s.selectedCategoryId);
+  const setSelectedCategoryId = useFilterStore((s) => s.setSelectedCategoryId);
 
   return (
     <ScrollView

@@ -1,8 +1,8 @@
-import { View, Text, ScrollView } from "react-native";
-import { MotiView } from "moti";
-import { useSocialProof } from "@/hooks/use-social-proof";
-import { Users, TrendingDown } from "lucide-react-native";
-import { Colors } from "@/constants/colors";
+import { View, Text, ScrollView } from 'react-native';
+import { MotiView } from 'moti';
+import { useSocialProof } from '@/hooks/use-social-proof';
+import { Users, TrendingDown } from 'lucide-react-native';
+import { Colors } from '@/constants/colors';
 
 export function SocialProof() {
   const { stats, testimonials } = useSocialProof();
@@ -13,7 +13,7 @@ export function SocialProof() {
       <MotiView
         from={{ opacity: 0, translateY: 10 }}
         animate={{ opacity: 1, translateY: 0 }}
-        transition={{ type: "timing", duration: 500 }}
+        transition={{ type: 'timing', duration: 500 }}
         className="flex-row gap-4 justify-center"
       >
         <View className="bg-brand-green/10 rounded-2xl px-5 py-4 items-center flex-1">
@@ -47,18 +47,18 @@ export function SocialProof() {
             key={t.id}
             from={{ opacity: 0, translateY: 15 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: "timing", duration: 400, delay: index * 100 }}
+            transition={{ type: 'timing', duration: 400, delay: index * 100 }}
             className="bg-white rounded-2xl p-4 w-72 border border-border"
           >
             <Text className="text-sm text-text-secondary leading-5">
-              "{t.text}"
+              &ldquo;{t.text}&rdquo;
             </Text>
             <View className="flex-row justify-between items-center mt-3">
               <Text className="text-sm font-semibold text-text-primary">
-                {t.userName}
+                {t.user_name}
               </Text>
               <Text className="text-xs font-bold text-brand-green">
-                Economizou R$ {t.savingsAmount}
+                Economizou R$ {t.savings_amount}
               </Text>
             </View>
           </MotiView>

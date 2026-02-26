@@ -1,7 +1,24 @@
-import { categories } from "@/data/categories";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import type { Category } from '@/types';
 
 export function useCategories() {
-  return {
-    categories: categories.sort((a, b) => a.sortOrder - b.sortOrder),
-  };
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetch() {
+      const { data } = await supabase
+        .from('categories')
+        .select('*')
+        .order('sort_order');
+
+      if (data) setCategories(data);
+      setIsLoading(false);
+    }
+
+    fetch();
+  }, []);
+
+  return { categories, isLoading };
 }

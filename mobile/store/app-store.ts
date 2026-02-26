@@ -1,39 +1,25 @@
-import { create } from "zustand";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { SortMode } from "@/types";
+import { create } from 'zustand';
+import type { SortMode } from '@precomapa/shared/types';
 
-interface AppState {
-  hasSeenOnboarding: boolean;
-  isAuthenticated: boolean;
+// Re-export auth store for convenience
+export { useAuthStore } from '@precomapa/shared/store/auth-store';
+
+interface FilterState {
   selectedCategoryId: string | null;
   sortMode: SortMode;
   searchQuery: string;
-  setHasSeenOnboarding: (value: boolean) => void;
-  setIsAuthenticated: (value: boolean) => void;
+
   setSelectedCategoryId: (id: string | null) => void;
   setSortMode: (mode: SortMode) => void;
   setSearchQuery: (query: string) => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  hasSeenOnboarding: false,
-  isAuthenticated: false,
+export const useFilterStore = create<FilterState>((set) => ({
   selectedCategoryId: null,
-  sortMode: "cheapest",
-  searchQuery: "",
-  setHasSeenOnboarding: (value) => {
-    AsyncStorage.setItem("hasSeenOnboarding", JSON.stringify(value));
-    set({ hasSeenOnboarding: value });
-  },
-  setIsAuthenticated: (value) => set({ isAuthenticated: value }),
+  sortMode: 'cheapest',
+  searchQuery: '',
+
   setSelectedCategoryId: (id) => set({ selectedCategoryId: id }),
   setSortMode: (mode) => set({ sortMode: mode }),
   setSearchQuery: (query) => set({ searchQuery: query }),
 }));
-
-// Hydrate persisted state on app start
-AsyncStorage.getItem("hasSeenOnboarding").then((value) => {
-  if (value !== null) {
-    useAppStore.setState({ hasSeenOnboarding: JSON.parse(value) });
-  }
-});

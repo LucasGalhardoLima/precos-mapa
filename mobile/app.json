@@ -15,7 +15,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.precomapa.consumer"
+      "bundleIdentifier": "com.precomapa.consumer",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Precisamos da sua localizacao para mostrar lojas e ofertas perto de voce.",
+        "NSLocationAlwaysUsageDescription": "Usamos sua localizacao para enviar alertas quando uma oferta aparece perto de voce."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,13 +33,47 @@
         "googleMaps": {
           "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
         }
-      }
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-apple-authentication",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Usamos sua localizacao para enviar alertas quando uma oferta aparece perto de voce.",
+          "locationWhenInUsePermission": "Precisamos da sua localizacao para mostrar lojas e ofertas perto de voce."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#16a34a"
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Acesse suas fotos para selecionar imagens de encartes.",
+          "cameraPermission": "Acesse sua câmera para fotografar encartes."
+        }
+      ],
+      "expo-dev-client",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.YOUR_IOS_CLIENT_ID"
+        }
+      ]
     ]
   }
 }

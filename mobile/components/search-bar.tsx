@@ -1,13 +1,13 @@
 import { View, TextInput, Pressable, Text } from "react-native";
 import { Search, X } from "lucide-react-native";
 import { useState, useEffect, useCallback } from "react";
-import { useAppStore } from "@/store/app-store";
+import { useFilterStore } from "@/store/app-store";
 import { useSearch } from "@/hooks/use-search";
 import { Colors } from "@/constants/colors";
 
 export function SearchBar() {
-  const searchQuery = useAppStore((s) => s.searchQuery);
-  const setSearchQuery = useAppStore((s) => s.setSearchQuery);
+  const searchQuery = useFilterStore((s) => s.searchQuery);
+  const setSearchQuery = useFilterStore((s) => s.setSearchQuery);
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const { suggestions } = useSearch(localQuery);

@@ -1,50 +1,59 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { defaultSessionByRole, mockMarkets, ROLE_PERMISSIONS } from "@/features/shared/mock-data";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase-server";
+import { ROLE_PERMISSIONS } from "@/features/shared/mock-data";
 import { Permission, SessionContext, UserRole } from "@/features/shared/types";
 
-export const ROLE_COOKIE_KEY = "pm_role";
-export const MARKET_COOKIE_KEY = "pm_market";
+// Service-role client bypasses RLS for server-side session checks
+const supabaseAdmin = createSupabaseClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+);
 
-const VALID_ROLES: UserRole[] = ["super_admin", "admin_mercado"];
-
-function isUserRole(value: string | undefined): value is UserRole {
-  if (!value) {
-    return false;
-  }
-  return VALID_ROLES.includes(value as UserRole);
-}
-
-function getDefaultMarketId(role: UserRole): string {
-  const defaults = defaultSessionByRole[role];
-  return defaults.availableMarketIds[0] ?? mockMarkets[0].id;
-}
-
-function ensureMarketAllowed(role: UserRole, marketId: string | undefined): string {
-  const defaults = defaultSessionByRole[role];
-  if (marketId && defaults.availableMarketIds.includes(marketId)) {
-    return marketId;
-  }
-  return getDefaultMarketId(role);
+function mapProfileRole(profileRole: string): UserRole | null {
+  if (profileRole === "super_admin") return "super_admin";
+  if (profileRole === "business") return "admin_mercado";
+  return null;
 }
 
 export async function getSessionContext(): Promise<SessionContext | null> {
-  const cookieStore = await cookies();
-  const roleCookie = cookieStore.get(ROLE_COOKIE_KEY)?.value;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!isUserRole(roleCookie)) {
-    return null;
+  if (!user) return null;
+
+  // Use admin client — RLS auth.uid() may not resolve with SSR cookies
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("display_name, role")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile) return null;
+
+  const role = mapProfileRole(profile.role);
+  if (!role) return null;
+
+  const { data: memberships } = await supabaseAdmin
+    .from("store_members")
+    .select("store_id")
+    .eq("user_id", user.id);
+
+  let storeIds = memberships?.map((m) => m.store_id) ?? [];
+
+  if (role === "super_admin") {
+    const { data: allStores } = await supabaseAdmin.from("stores").select("id");
+    storeIds = allStores?.map((s) => s.id) ?? [];
   }
 
-  const marketCookie = cookieStore.get(MARKET_COOKIE_KEY)?.value;
-  const defaults = defaultSessionByRole[roleCookie];
-
   return {
-    role: roleCookie,
-    userName: defaults.userName,
-    userEmail: defaults.userEmail,
-    availableMarketIds: defaults.availableMarketIds,
-    currentMarketId: ensureMarketAllowed(roleCookie, marketCookie),
+    role,
+    userName: profile.display_name || user.email?.split("@")[0] || "Usuario",
+    userEmail: user.email || "",
+    availableMarketIds: storeIds,
+    currentMarketId: storeIds[0] || "",
   };
 }
 
@@ -60,7 +69,9 @@ export function hasPermission(role: UserRole, permission: Permission): boolean {
   return ROLE_PERMISSIONS[role].includes(permission);
 }
 
-export async function requirePermission(permission: Permission): Promise<SessionContext> {
+export async function requirePermission(
+  permission: Permission,
+): Promise<SessionContext> {
   const session = await requireSessionContext();
   if (!hasPermission(session.role, permission)) {
     redirect("/painel/dashboard");

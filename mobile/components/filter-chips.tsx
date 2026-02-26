@@ -1,5 +1,5 @@
 import { ScrollView, Pressable, Text } from "react-native";
-import { useAppStore } from "@/store/app-store";
+import { useFilterStore } from "@/store/app-store";
 import type { SortMode } from "@/types";
 
 const FILTERS: { label: string; mode: SortMode }[] = [
@@ -9,8 +9,8 @@ const FILTERS: { label: string; mode: SortMode }[] = [
 ];
 
 export function FilterChips() {
-  const sortMode = useAppStore((s) => s.sortMode);
-  const setSortMode = useAppStore((s) => s.setSortMode);
+  const sortMode = useFilterStore((s) => s.sortMode);
+  const setSortMode = useFilterStore((s) => s.setSortMode);
 
   return (
     <ScrollView

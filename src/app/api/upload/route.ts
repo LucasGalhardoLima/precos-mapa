@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { processPdfBuffer } from "@/lib/crawler/service";
-import mockSavegnago from "@/data/mocks/mock_savegnago.json";
 
 interface ProgressEvent {
   type: "progress";
@@ -58,23 +57,9 @@ export async function POST(request: Request) {
 
           send({ type: "done", data: result });
         } catch (error) {
-          send({
-            type: "progress",
-            message: `Trace ${traceId}: falha no processamento real (${resolveErrorMessage(error)}). Ativando fallback mock.`,
-          });
-          send({
-            type: "done",
-            data: {
-              ...mockSavegnago,
-              meta: {
-                isMock: true,
-                source: "upload_error_fallback",
-                error: resolveErrorMessage(error),
-                imageUrl: "/file.svg",
-                images: ["/file.svg"],
-              },
-            },
-          });
+          const message = resolveErrorMessage(error);
+          console.error(`[upload] Trace ${traceId}: falha ao processar "${file.name}":`, error);
+          send({ type: "error", message: `Falha ao processar PDF: ${message}` });
         } finally {
           controller.close();
         }

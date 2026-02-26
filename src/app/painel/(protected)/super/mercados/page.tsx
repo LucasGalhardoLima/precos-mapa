@@ -1,58 +1,75 @@
+import { requirePermission } from "@/features/auth/session";
+import { createClient } from "@/lib/supabase-server";
 import { SectionHeader } from "@/features/panel/components/section-header";
-import { mockMarkets } from "@/features/shared/mock-data";
-import { formatPercent } from "@/features/shared/format";
+import { MercadosClient } from "./mercados-client";
 
-export default function SuperMarketsPage() {
+const PLAN_LABELS: Record<string, string> = {
+  free: "Free",
+  premium: "Premium",
+  premium_plus: "Premium+",
+  enterprise: "Enterprise",
+};
+
+export interface MarketRow {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  latitude: number;
+  longitude: number;
+  plan: string;
+  b2b_plan: string;
+  activeOffers: number;
+  status: "ativo" | "inativo";
+  is_active: boolean;
+}
+
+export default async function SuperMarketsPage() {
+  await requirePermission("market:manage");
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  const [{ data: stores }, { data: activePromos }] = await Promise.all([
+    supabase
+      .from("stores")
+      .select("id, name, address, city, state, latitude, longitude, b2b_plan, is_active")
+      .order("name"),
+    supabase
+      .from("promotions")
+      .select("store_id")
+      .eq("status", "active")
+      .gt("end_date", now),
+  ]);
+
+  // Count active promotions per store
+  const promoCounts = new Map<string, number>();
+  for (const p of activePromos ?? []) {
+    promoCounts.set(p.store_id, (promoCounts.get(p.store_id) ?? 0) + 1);
+  }
+
+  const markets: MarketRow[] = (stores ?? []).map((s) => ({
+    id: s.id as string,
+    name: s.name as string,
+    address: (s.address as string) ?? "",
+    city: s.city as string,
+    state: s.state as string,
+    latitude: s.latitude as number,
+    longitude: s.longitude as number,
+    plan: PLAN_LABELS[s.b2b_plan as string] ?? (s.b2b_plan as string),
+    b2b_plan: s.b2b_plan as string,
+    activeOffers: promoCounts.get(s.id as string) ?? 0,
+    status: (s.is_active ? "ativo" : "inativo") as "ativo" | "inativo",
+    is_active: s.is_active as boolean,
+  }));
+
   return (
     <div className="space-y-5">
       <SectionHeader
         title="Mercados"
-        subtitle="Gestão de contas dos supermercados com status, plano e performance consolidada."
+        subtitle="Gestao de contas dos supermercados com status, plano e ofertas ativas."
       />
-
-      <div className="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-white shadow-[var(--shadow-soft)]">
-        <table className="w-full min-w-[860px] text-left text-sm">
-          <thead className="bg-[var(--color-surface-strong)] text-xs uppercase tracking-[0.08em] text-[var(--color-muted)]">
-            <tr>
-              <th className="px-4 py-3">Mercado</th>
-              <th className="px-4 py-3">Plano</th>
-              <th className="px-4 py-3">Ofertas ativas</th>
-              <th className="px-4 py-3">Views</th>
-              <th className="px-4 py-3">Cliques</th>
-              <th className="px-4 py-3">Conversão</th>
-              <th className="px-4 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {mockMarkets.map((market) => (
-              <tr key={market.id} className="border-t border-[var(--color-line)]">
-                <td className="px-4 py-3">
-                  <p className="font-medium text-[var(--color-ink)]">{market.name}</p>
-                  <p className="text-xs text-[var(--color-muted)]">{market.city}/{market.state}</p>
-                </td>
-                <td className="px-4 py-3 text-[var(--color-muted)]">{market.plan}</td>
-                <td className="px-4 py-3 text-[var(--color-ink)]">{market.activeOffers}</td>
-                <td className="px-4 py-3 text-[var(--color-muted)]">{market.monthlyViews.toLocaleString("pt-BR")}</td>
-                <td className="px-4 py-3 text-[var(--color-muted)]">{market.monthlyClicks.toLocaleString("pt-BR")}</td>
-                <td className="px-4 py-3 text-[var(--color-ink)]">{formatPercent(market.conversionRate)}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                      market.status === "ativo"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : market.status === "pendente"
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-rose-100 text-rose-700"
-                    }`}
-                  >
-                    {market.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <MercadosClient markets={markets} />
     </div>
   );
 }

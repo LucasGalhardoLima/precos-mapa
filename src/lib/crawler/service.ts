@@ -4,10 +4,13 @@ import sharp from "sharp";
 import { EncarteProduct, normalizeEncartePayload } from "@/lib/schemas";
 
 interface CrawlerMeta {
-  isMock: boolean;
   source: string;
   imageUrl: string;
   images: string[];
+  pendingPdfUrls?: string[];
+  currentPdfName?: string;
+  currentPdfIndex?: number;
+  totalPdfs?: number;
 }
 
 interface CrawlerResult {
@@ -64,7 +67,7 @@ function ensureOpenAiKey() {
   }
 }
 
-async function optimizeImage(buffer: Buffer): Promise<string> {
+export async function optimizeImage(buffer: Buffer): Promise<string> {
   const processed = await sharp(buffer)
     .resize(3072, 3072, {
       fit: "inside",
@@ -79,7 +82,7 @@ async function optimizeImage(buffer: Buffer): Promise<string> {
   return `data:image/png;base64,${processed.toString("base64")}`;
 }
 
-async function extractFromImage(base64Image: string): Promise<unknown> {
+export async function extractFromImage(base64Image: string): Promise<unknown> {
   ensureOpenAiKey();
 
   const response = await openai.chat.completions.create({
@@ -95,8 +98,10 @@ REGRAS:
 3. Unidade deve ser uma destas: kg, un, l, g, ml, pack.
 4. Ignore logos e elementos decorativos.
 5. Validade no formato YYYY-MM-DD ou null.
+6. Se o produto mostrar preço anterior/original (ex: "de 5,99 por 3,99"), extraia como original_price. Se não houver, retorne null.
+7. Classifique cada produto em uma destas categorias: Bebidas, Limpeza, Alimentos, Hortifruti, Padaria, Higiene. Use "Alimentos" como padrão se não tiver certeza.
 
-Retorne JSON estrito no formato: { "products": [{ "name": "...", "price": 19.9, "unit": "un", "validity": "2026-01-21", "market_origin": "Savegnago" }] }`,
+Retorne JSON estrito no formato: { "products": [{ "name": "...", "price": 3.99, "original_price": 5.99, "unit": "un", "validity": "2026-01-21", "market_origin": "Savegnago", "category": "Alimentos" }] }`,
       },
       {
         role: "user",
@@ -235,7 +240,6 @@ export async function processPdfBuffer(
   return {
     products: allProducts,
     meta: {
-      isMock: false,
       source: "gpt4o_pdfjs_browser_sharp",
       imageUrl: allImages[0] ?? "https://via.placeholder.com/800",
       images: allImages,
@@ -243,8 +247,91 @@ export async function processPdfBuffer(
   };
 }
 
+export async function discoverAndDownloadPdf(url: string): Promise<{
+  pdfBuffer: Buffer;
+  filename: string;
+  resolvedPdfUrl: string;
+}> {
+  // Direct PDF URL — download without page navigation
+  if (url.toLowerCase().endsWith(".pdf")) {
+    const filename = decodeURIComponent(url.split("/").pop() ?? "encarte.pdf");
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Falha ao baixar PDF (HTTP ${response.status}): ${url}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return { pdfBuffer: Buffer.from(arrayBuffer), filename, resolvedPdfUrl: url };
+  }
+
+  // HTML page — navigate with Playwright and find PDF links
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+
+    const pdfUrls: string[] = [];
+    const anchors = await page.$$('a[href$=".pdf"]');
+    const seen = new Set<string>();
+    for (const anchor of anchors) {
+      let href = await anchor.getAttribute("href");
+      if (!href) continue;
+      if (!href.startsWith("http")) {
+        href = new URL(href, url).toString();
+      }
+      if (!seen.has(href)) {
+        seen.add(href);
+        pdfUrls.push(href);
+      }
+    }
+
+    if (pdfUrls.length === 0) {
+      throw new Error(`Nenhum PDF encontrado na página: ${url}`);
+    }
+
+    const firstPdfUrl = pdfUrls[0];
+    const filename = decodeURIComponent(firstPdfUrl.split("/").pop() ?? "encarte.pdf");
+
+    const pdfResponse = await page.request.get(firstPdfUrl);
+    const pdfBuffer = Buffer.from(await pdfResponse.body());
+
+    return { pdfBuffer, filename, resolvedPdfUrl: firstPdfUrl };
+  } finally {
+    await browser.close().catch(() => undefined);
+  }
+}
+
 export async function crawlUrl(url: string, onProgress?: (message: string) => void): Promise<CrawlerResult> {
   ensureOpenAiKey();
+
+  // Direct PDF URL — download and process without page navigation
+  if (url.toLowerCase().endsWith(".pdf")) {
+    const pdfName = decodeURIComponent(url.split("/").pop() ?? "PDF");
+    onProgress?.(`Baixando PDF direto: ${pdfName}`);
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Falha ao baixar PDF (HTTP ${response.status}): ${url}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    onProgress?.(`PDF baixado (${Math.round(buffer.byteLength / 1024)} KB). Iniciando processamento...`);
+
+    const result = await processPdfBuffer(buffer, pdfName, onProgress);
+
+    return {
+      products: result.products,
+      meta: {
+        source: "gpt4o_pdfjs_browser_sharp",
+        imageUrl: result.meta.images[0] ?? "https://via.placeholder.com/800",
+        images: result.meta.images,
+        pendingPdfUrls: [],
+        currentPdfName: pdfName,
+        currentPdfIndex: 1,
+        totalPdfs: 1,
+      },
+    };
+  }
 
   onProgress?.(`Visitando URL: ${url}`);
 
@@ -255,26 +342,53 @@ export async function crawlUrl(url: string, onProgress?: (message: string) => vo
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
     onProgress?.("Página carregada. Buscando encartes...");
 
-    let pdfUrl: string | null = null;
-
-    if (url.endsWith(".pdf")) {
-      pdfUrl = url;
-    } else {
-      const anchors = await page.$$('a[href$=".pdf"]');
-      if (anchors.length > 0) {
-        pdfUrl = await anchors[0].getAttribute("href");
+    const pdfUrls: string[] = [];
+    const anchors = await page.$$('a[href$=".pdf"]');
+    const seen = new Set<string>();
+    for (const anchor of anchors) {
+      let href = await anchor.getAttribute("href");
+      if (!href) continue;
+      if (!href.startsWith("http")) {
+        href = new URL(href, url).toString();
       }
-
-      if (pdfUrl && !pdfUrl.startsWith("http")) {
-        pdfUrl = new URL(pdfUrl, url).toString();
+      if (!seen.has(href)) {
+        seen.add(href);
+        pdfUrls.push(href);
       }
     }
 
-    if (pdfUrl) {
-      onProgress?.(`PDF localizado: ${pdfUrl}. Iniciando download...`);
-      const response = await page.request.get(pdfUrl);
-      const downloadedBuffer = await response.body();
-      return await processPdfBuffer(downloadedBuffer, pdfUrl, onProgress);
+    if (pdfUrls.length > 0) {
+      const totalPdfs = pdfUrls.length;
+      const firstPdfUrl = pdfUrls[0];
+      const pdfName = decodeURIComponent(firstPdfUrl.split("/").pop() ?? "PDF 1");
+
+      if (totalPdfs > 1) {
+        onProgress?.(`${totalPdfs} PDFs encontrados. Processando: ${pdfName}`);
+      } else {
+        onProgress?.(`1 PDF encontrado. Processando: ${pdfName}`);
+      }
+
+      const pdfResponse = await page.request.get(firstPdfUrl);
+      const downloadedBuffer = await pdfResponse.body();
+      const result = await processPdfBuffer(downloadedBuffer, pdfName, (msg) => {
+        onProgress?.(`PDF 1/${totalPdfs}: ${msg}`);
+      });
+
+      onProgress?.(`PDF 1/${totalPdfs}: ${result.products.length} ofertas extraídas.`);
+
+      return {
+        products: result.products,
+        meta: {
+
+          source: "gpt4o_pdfjs_browser_sharp",
+          imageUrl: result.meta.images[0] ?? "https://via.placeholder.com/800",
+          images: result.meta.images,
+          pendingPdfUrls: pdfUrls.slice(1),
+          currentPdfName: pdfName,
+          currentPdfIndex: 1,
+          totalPdfs,
+        },
+      };
     }
 
     onProgress?.("Nenhum PDF encontrado. Capturando página inteira...");
@@ -295,7 +409,6 @@ export async function crawlUrl(url: string, onProgress?: (message: string) => vo
     return {
       products,
       meta: {
-        isMock: false,
         source: "gpt4o_screenshot",
         imageUrl: optimizedImage,
         images: [optimizedImage],

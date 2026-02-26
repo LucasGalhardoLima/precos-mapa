@@ -1,8 +1,8 @@
-import { View, Text, FlatList } from "react-native";
-import { MotiView } from "moti";
-import { useFeaturedDeals } from "@/hooks/use-featured-deals";
-import { Badge } from "@/components/ui/badge";
-import type { EnrichedPromotion } from "@/types";
+import { View, Text, FlatList } from 'react-native';
+import { MotiView } from 'moti';
+import { useFeaturedDeals } from '@/hooks/use-featured-deals';
+import { Badge } from '@/components/ui/badge';
+import type { EnrichedPromotion } from '@/types';
 
 function CompactDealCard({
   deal,
@@ -15,7 +15,7 @@ function CompactDealCard({
     <MotiView
       from={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: "timing", duration: 350, delay: index * 80 }}
+      transition={{ type: 'timing', duration: 350, delay: index * 80 }}
       className="bg-white rounded-2xl p-4 w-56 border border-border mr-3"
     >
       <Text className="text-sm font-semibold text-text-primary" numberOfLines={1}>
@@ -26,9 +26,11 @@ function CompactDealCard({
       </Text>
       <View className="flex-row items-center gap-2 mt-2">
         <Text className="text-lg font-bold text-brand-green">
-          R$ {deal.promoPrice.toFixed(2)}
+          R$ {deal.promo_price.toFixed(2)}
         </Text>
-        <Badge variant="discount" label={`-${deal.discountPercent}%`} />
+        {deal.discountPercent > 0 && (
+          <Badge variant="discount" label={`-${deal.discountPercent}%`} />
+        )}
       </View>
     </MotiView>
   );

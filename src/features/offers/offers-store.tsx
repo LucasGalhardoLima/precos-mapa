@@ -50,7 +50,9 @@ function createOfferFromDraft(marketId: string, draft: PromotionDraft): Offer {
 
 function createOfferFromImporter(marketId: string, entry: EncarteResponse["products"][number]): Offer {
   const now = new Date();
-  const listPrice = Number((entry.price * 1.28).toFixed(2));
+  const listPrice = entry.original_price && entry.original_price > entry.price
+    ? entry.original_price
+    : Number((entry.price * 1.28).toFixed(2));
   return {
     id: `imp-${now.getTime()}-${Math.floor(Math.random() * 10000)}`,
     marketId,

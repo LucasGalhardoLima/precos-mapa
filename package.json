@@ -2,21 +2,32 @@
   "name": "precos-mapa",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "mobile",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@stripe/stripe-js": "^8.7.0",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.95.3",
     "framer-motion": "^12.26.2",
     "lucide-react": "^0.562.0",
     "next": "^16.1.6",
     "openai": "^6.16.0",
+    "pdfjs-dist": "^3.11.174",
     "playwright": "^1.57.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "resend": "^6.9.2",
     "sharp": "^0.34.5",
+    "stripe": "^20.3.1",
     "zod": "^4.3.5",
     "zustand": "^5.0.11"
   },
@@ -28,6 +39,7 @@
     "eslint": "^9",
     "eslint-config-next": "^16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   }
 }

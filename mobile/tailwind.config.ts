@@ -4,6 +4,7 @@ export default {
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
+    "../packages/shared/src/components/**/*.{ts,tsx}",
   ],
   presets: [require("nativewind/preset")],
   theme: {

@@ -22,7 +22,10 @@ export default function PublicDemoPage() {
           title="Demo Importador IA"
           subtitle="Versão pública da demonstração com dados de mercado mockados. Não requer login."
         />
-        <ImporterWorkbench />
+        <ImporterWorkbench
+          markets={[{ id: market.id, name: market.name, city: market.city, state: market.state }]}
+          defaultMarketId={market.id}
+        />
       </div>
     </PanelClientProviders>
   );

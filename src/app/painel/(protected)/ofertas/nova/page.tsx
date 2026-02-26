@@ -1,14 +1,24 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
-import { useOffersStore } from "@/features/offers/offers-store";
 import { SectionHeader } from "@/features/panel/components/section-header";
 import { usePanelSession } from "@/features/panel/panel-session-context";
-import { PromotionDraft } from "@/features/shared/types";
+import { createOffer } from "./create-action";
 
-const initialDraft: PromotionDraft = {
+interface OfferDraft {
+  productName: string;
+  brand: string;
+  category: string;
+  unit: string;
+  price: number;
+  listPrice: number;
+  validUntil: string;
+  note: string;
+}
+
+const initialDraft: OfferDraft = {
   productName: "",
   brand: "",
   category: "Mercearia",
@@ -20,32 +30,50 @@ const initialDraft: PromotionDraft = {
 };
 
 export default function NewOfferPage() {
-  const [draft, setDraft] = useState<PromotionDraft>(initialDraft);
+  const [draft, setDraft] = useState<OfferDraft>(initialDraft);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
   const session = usePanelSession();
-  const { createManualOffer } = useOffersStore();
   const router = useRouter();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!draft.productName || draft.price <= 0 || draft.listPrice <= 0 || !draft.validUntil) {
-      setFeedback("Preencha produto, preço, preço de referência e validade.");
+      setFeedback("Preencha produto, preco, preco de referencia e validade.");
       return;
     }
 
-    createManualOffer(session.currentMarketId, draft);
-    setFeedback("Oferta criada com sucesso no mercado ativo.");
-    setDraft(initialDraft);
+    startTransition(async () => {
+      const result = await createOffer({
+        storeId: session.currentMarketId,
+        productName: draft.productName,
+        brand: draft.brand,
+        category: draft.category,
+        unit: draft.unit,
+        promoPrice: draft.price,
+        originalPrice: draft.listPrice,
+        endDate: draft.validUntil,
+        note: draft.note,
+      });
 
-    setTimeout(() => {
-      router.push("/painel/ofertas");
-    }, 800);
+      if (result.error) {
+        setFeedback(result.error);
+        return;
+      }
+
+      setFeedback("Oferta criada com sucesso!");
+      setDraft(initialDraft);
+
+      setTimeout(() => {
+        router.push("/painel/ofertas");
+      }, 800);
+    });
   }
 
   return (
     <div className="space-y-5">
-      <SectionHeader title="Criar Oferta" subtitle="Cadastro manual de promoções com publicação imediata." />
+      <SectionHeader title="Criar Oferta" subtitle="Cadastro manual de promocoes com publicacao imediata." />
 
       <form onSubmit={handleSubmit} className="grid gap-4 rounded-2xl border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)] md:grid-cols-2">
         <label className="grid gap-1.5">
@@ -54,7 +82,7 @@ export default function NewOfferPage() {
             value={draft.productName}
             onChange={(event) => setDraft((prev) => ({ ...prev, productName: event.target.value }))}
             className="rounded-xl border border-[var(--color-line)] px-3 py-2.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
-            placeholder="Ex: Café Tradicional 500g"
+            placeholder="Ex: Cafe Tradicional 500g"
           />
         </label>
 
@@ -64,7 +92,7 @@ export default function NewOfferPage() {
             value={draft.brand}
             onChange={(event) => setDraft((prev) => ({ ...prev, brand: event.target.value }))}
             className="rounded-xl border border-[var(--color-line)] px-3 py-2.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
-            placeholder="Ex: Pilão"
+            placeholder="Ex: Pilao"
           />
         </label>
 
@@ -82,12 +110,7 @@ export default function NewOfferPage() {
           <span className="text-xs font-medium text-[var(--color-muted)]">Unidade</span>
           <select
             value={draft.unit}
-            onChange={(event) =>
-              setDraft((prev) => ({
-                ...prev,
-                unit: event.target.value as PromotionDraft["unit"],
-              }))
-            }
+            onChange={(event) => setDraft((prev) => ({ ...prev, unit: event.target.value }))}
             className="rounded-xl border border-[var(--color-line)] px-3 py-2.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
           >
             <option value="un">un</option>
@@ -100,7 +123,7 @@ export default function NewOfferPage() {
         </label>
 
         <label className="grid gap-1.5">
-          <span className="text-xs font-medium text-[var(--color-muted)]">Preço da oferta</span>
+          <span className="text-xs font-medium text-[var(--color-muted)]">Preco da oferta</span>
           <input
             type="number"
             min="0"
@@ -112,7 +135,7 @@ export default function NewOfferPage() {
         </label>
 
         <label className="grid gap-1.5">
-          <span className="text-xs font-medium text-[var(--color-muted)]">Preço de referência</span>
+          <span className="text-xs font-medium text-[var(--color-muted)]">Preco de referencia</span>
           <input
             type="number"
             min="0"
@@ -124,7 +147,7 @@ export default function NewOfferPage() {
         </label>
 
         <label className="grid gap-1.5">
-          <span className="text-xs font-medium text-[var(--color-muted)]">Válida até</span>
+          <span className="text-xs font-medium text-[var(--color-muted)]">Valida ate</span>
           <input
             type="date"
             value={draft.validUntil}
@@ -134,9 +157,9 @@ export default function NewOfferPage() {
         </label>
 
         <label className="grid gap-1.5 md:col-span-2">
-          <span className="text-xs font-medium text-[var(--color-muted)]">Observações</span>
+          <span className="text-xs font-medium text-[var(--color-muted)]">Observacoes</span>
           <textarea
-            value={draft.note ?? ""}
+            value={draft.note}
             onChange={(event) => setDraft((prev) => ({ ...prev, note: event.target.value }))}
             rows={3}
             className="rounded-xl border border-[var(--color-line)] px-3 py-2.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
@@ -144,18 +167,20 @@ export default function NewOfferPage() {
           />
         </label>
 
-        <div className="flex items-center justify-between md:col-span-2">
-          <p className="text-sm text-[var(--color-muted)]">Mercado ativo: {session.currentMarketId}</p>
+        <div className="flex items-center justify-end md:col-span-2">
           <button
             type="submit"
-            className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-deep)]"
+            disabled={isPending}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-deep)] disabled:opacity-50"
           >
             <Sparkles className="h-4 w-4" />
-            Publicar oferta
+            {isPending ? "Publicando..." : "Publicar oferta"}
           </button>
         </div>
 
-        {feedback ? <p className="md:col-span-2 text-sm text-[var(--color-primary-deep)]">{feedback}</p> : null}
+        {feedback ? (
+          <p className="text-sm text-[var(--color-primary-deep)] md:col-span-2">{feedback}</p>
+        ) : null}
       </form>
     </div>
   );

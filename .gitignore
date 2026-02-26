@@ -46,3 +46,7 @@ mobile/.expo/
 mobile/dist/
 mobile/ios/
 mobile/android/
+
+# supabase
+supabase/.temp/
+supabase/.branches/

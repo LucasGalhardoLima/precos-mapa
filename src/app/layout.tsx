@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PreçoMapa | Painel Inteligente",
+  title: "PrecoMapa | Inteligencia Regional de Precos",
   description:
-    "Produto único com RBAC para gestão de ofertas, importador IA de encartes e visão global da plataforma.",
+    "Plataforma independente de inteligencia de precos do varejo. Indice regional, comparacao de precos e dados abertos para consumidores, lojistas e imprensa.",
 };
 
 export default function RootLayout({

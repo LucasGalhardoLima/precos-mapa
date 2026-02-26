@@ -1,10 +1,11 @@
-import { View, Text } from "react-native";
-import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
-import { forwardRef, useMemo, useCallback } from "react";
-import { MapPin, ShoppingBag } from "lucide-react-native";
-import { DealCard } from "@/components/deal-card";
-import { Colors } from "@/constants/colors";
-import type { StoreWithPromotions } from "@/types";
+import { View, Text, Linking, Platform } from 'react-native';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { forwardRef, useMemo, useCallback } from 'react';
+import { MapPin, ShoppingBag, Navigation } from 'lucide-react-native';
+import { DealCard } from '@/components/deal-card';
+import { StyledButton } from '@/components/ui/button';
+import { Colors } from '@/constants/colors';
+import type { StoreWithPromotions } from '@/types';
 
 interface StoreBottomSheetProps {
   storeData: StoreWithPromotions | null;
@@ -13,7 +14,7 @@ interface StoreBottomSheetProps {
 
 export const StoreBottomSheet = forwardRef<BottomSheet, StoreBottomSheetProps>(
   function StoreBottomSheet({ storeData, onClose }, ref) {
-    const snapPoints = useMemo(() => ["40%", "85%"], []);
+    const snapPoints = useMemo(() => ['40%', '85%'], []);
 
     const handleSheetChanges = useCallback(
       (index: number) => {
@@ -21,6 +22,16 @@ export const StoreBottomSheet = forwardRef<BottomSheet, StoreBottomSheetProps>(
       },
       [onClose]
     );
+
+    const handleNavigate = useCallback(() => {
+      if (!storeData) return;
+      const { latitude, longitude } = storeData.store;
+      const url = Platform.select({
+        ios: `maps://app?daddr=${latitude},${longitude}`,
+        android: `google.navigation:q=${latitude},${longitude}`,
+      });
+      if (url) Linking.openURL(url);
+    }, [storeData]);
 
     if (!storeData) return null;
 
@@ -41,10 +52,10 @@ export const StoreBottomSheet = forwardRef<BottomSheet, StoreBottomSheetProps>(
           <View className="flex-row items-center gap-3 mb-4">
             <View
               className="w-12 h-12 rounded-full items-center justify-center"
-              style={{ backgroundColor: store.logoColor }}
+              style={{ backgroundColor: store.logo_color }}
             >
               <Text className="text-white font-bold text-lg">
-                {store.logoInitial}
+                {store.logo_initial}
               </Text>
             </View>
             <View className="flex-1">
@@ -72,6 +83,14 @@ export const StoreBottomSheet = forwardRef<BottomSheet, StoreBottomSheetProps>(
               </Text>
             </View>
           </View>
+
+          {/* Navigate Button */}
+          <StyledButton
+            title="Navegar ate a loja"
+            variant="secondary"
+            onPress={handleNavigate}
+            className="mb-5"
+          />
 
           {/* Top Deals */}
           <Text className="text-base font-semibold text-text-primary mb-3">

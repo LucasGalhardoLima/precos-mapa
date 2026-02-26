@@ -128,3 +128,75 @@ export interface PlanOverview {
   renewalDate: string;
   status: "ativo" | "atrasado" | "trial";
 }
+
+// ─── Price Intelligence (D1.5) ─────────────────────────────────
+
+export type IndexStatus = "draft" | "published" | "archived";
+
+export interface PriceIndex {
+  id: string;
+  city: string;
+  state: string;
+  periodStart: string;
+  periodEnd: string;
+  indexValue: number;
+  momChangePercent: number | null;
+  yoyChangePercent: number | null;
+  dataQualityScore: number;
+  productCount: number;
+  storeCount: number;
+  snapshotCount: number;
+  status: IndexStatus;
+  publishedAt: string | null;
+}
+
+export interface PriceIndexCategory {
+  id: string;
+  indexId: string;
+  categoryId: string;
+  categoryName?: string;
+  avgPrice: number;
+  minPrice: number;
+  maxPrice: number;
+  productCount: number;
+  momChangePercent: number | null;
+  weight: number;
+}
+
+export interface PriceIndexProduct {
+  id: string;
+  indexId: string;
+  productId: string;
+  productName?: string;
+  categoryName?: string;
+  avgPrice: number;
+  minPrice: number;
+  maxPrice: number;
+  snapshotDays: number;
+  momChangePercent: number | null;
+}
+
+export type QualityFlagType =
+  | "outlier_high"
+  | "outlier_low"
+  | "stale"
+  | "missing_data"
+  | "suspicious_pattern";
+
+export type QualityFlagSeverity = "low" | "medium" | "high" | "critical";
+
+export interface QualityFlag {
+  id: string;
+  productId: string;
+  productName?: string;
+  storeId?: string;
+  storeName?: string;
+  flagType: QualityFlagType;
+  severity: QualityFlagSeverity;
+  detail: string;
+  referenceValue: number | null;
+  actualValue: number | null;
+  isResolved: boolean;
+  resolvedAt: string | null;
+  createdAt: string;
+}

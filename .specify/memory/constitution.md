@@ -1,18 +1,13 @@
 <!--
 Sync Impact Report
 ===================
-Version change: 0.0.0 → 1.0.0 (MAJOR — initial ratification)
-Modified principles: N/A (first version)
-Added sections:
-  - Core Principles (5 principles)
-  - Technology & Architecture Constraints
-  - Development Workflow & Quality Gates
-  - Governance
+Version change: 1.0.0 → 1.1.0 (MINOR — mobile platform amendments)
+Modified principles:
+  - IV. Interface Consistency: Added moti+reanimated as mobile animation library
+  - Technology Constraints: Added NativeWind v4 + Tailwind CSS 3.4.x for RN mobile
+Added sections: N/A
 Removed sections: N/A
-Templates requiring updates:
-  - .specify/templates/plan-template.md — ✅ compatible (Constitution Check section exists)
-  - .specify/templates/spec-template.md — ✅ compatible (user stories + acceptance criteria align)
-  - .specify/templates/tasks-template.md — ✅ compatible (test tasks + phases align)
+Templates requiring updates: None (additive changes only)
 Follow-up TODOs: None
 -->
 
@@ -98,8 +93,9 @@ as bugs.
   amendment.
 - Layout patterns (panel shell, page headers, grid systems) MUST be
   consistent across all panel routes (`/painel/**`).
-- Motion and animation MUST use `framer-motion` with consistent
-  easing and duration values defined as shared constants.
+- Motion and animation MUST use `framer-motion` (web) or
+  `moti` + `react-native-reanimated` (React Native mobile) with
+  consistent easing and duration values defined as shared constants.
 
 **Rationale**: Consistency builds user trust and reduces cognitive
 load. A fragmented UI signals an unfinished product.
@@ -127,8 +123,10 @@ lean and comprehensible.
 ## Technology & Architecture Constraints
 
 - **Framework**: Next.js (App Router) with React 19+ and TypeScript 5+.
-- **Styling**: Tailwind CSS v4 only. No CSS modules, styled-components,
-  or inline styles except for dynamic values computed at runtime.
+- **Styling**: Tailwind CSS v4 (web). NativeWind v4 with Tailwind CSS
+  3.4.x for React Native mobile (v4 incompatible with RN). No CSS
+  modules, styled-components, or inline styles except for dynamic
+  values computed at runtime.
 - **State**: Zustand for client state; React Server Components for
   server-derived data. No Redux, MobX, or Context-based global state.
 - **Validation**: Zod for all runtime validation (API inputs, form data,
@@ -174,4 +172,4 @@ this constitution, the constitution prevails.
 - **Exceptions**: Temporary exceptions MUST be documented as
   `TODO(CONSTITUTION)` comments with a linked issue for resolution.
 
-**Version**: 1.0.0 | **Ratified**: 2026-02-10 | **Last Amended**: 2026-02-10
+**Version**: 1.1.0 | **Ratified**: 2026-02-10 | **Last Amended**: 2026-02-11
