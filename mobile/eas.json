@@ -1,0 +1,61 @@
+{
+  "cli": {
+    "version": ">= 14.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "http://localhost:54321",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-local-anon-key"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "buildConfiguration": "Release"
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-preview-anon-key"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "ios": {
+        "buildConfiguration": "Release"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-production-anon-key",
+        "EXPO_PUBLIC_RC_APPLE_KEY": "your-revenueCat-apple-key",
+        "EXPO_PUBLIC_RC_GOOGLE_KEY": "your-revenueCat-google-key",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "your-google-maps-key"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "your-apple-id@email.com",
+        "ascAppId": "your-app-store-connect-id",
+        "appleTeamId": "your-team-id"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "internal"
+      }
+    }
+  }
+}

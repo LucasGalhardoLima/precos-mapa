@@ -8,5 +8,4 @@ export interface CrawlerResult {
   image?: string; // base64
   url?: string;
   error?: string;
-  isMock?: boolean;
 }

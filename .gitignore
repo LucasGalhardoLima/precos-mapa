@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# mobile (Expo / React Native)
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/ios/
+mobile/android/
+
+# supabase
+supabase/.temp/
+supabase/.branches/
