@@ -229,7 +229,7 @@ export const stripeWebhookSchema = z.object({
   id: z.string(),
   type: z.string(),
   data: z.object({
-    object: z.record(z.unknown()),
+    object: z.record(z.string(), z.unknown()),
   }),
 });
 
