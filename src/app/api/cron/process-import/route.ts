@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { createHash } from "crypto";
 import { discoverAndDownloadPdf } from "@/lib/crawler/service";
 import { runMultiPassExtraction } from "@/lib/import-pipeline";
+import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { findOrCreateProduct } from "@/lib/product-match";
 import { normalizeCategory, EncarteProduct } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
 
 const CATEGORY_DEFAULTS: Record<string, { name: string; icon: string; sort_order: number }> = {
   cat_alimentos: { name: "Alimentos", icon: "wheat", sort_order: 0 },
@@ -36,7 +31,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 2. Fetch the store_pdf_sources record
-  const { data: source, error: fetchError } = await supabaseAdmin
+  const { data: source, error: fetchError } = await getSupabaseAdmin()
     .from("store_pdf_sources")
     .select("id, store_id, url, label, last_hash")
     .eq("id", sourceId)
@@ -58,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     // 5. Dedup: same hash as last time → skip
     if (source.last_hash === hash) {
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from("store_pdf_sources")
         .update({ last_checked_at: new Date().toISOString() })
         .eq("id", source.id);
@@ -67,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. DB dedup: already processed this exact PDF for this store?
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await getSupabaseAdmin()
       .from("pdf_imports")
       .select("id, status")
       .eq("store_id", source.store_id)
@@ -75,7 +70,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existing && existing.status === "done") {
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from("store_pdf_sources")
         .update({ last_hash: hash, last_checked_at: new Date().toISOString() })
         .eq("id", source.id);
@@ -89,7 +84,7 @@ export async function POST(request: NextRequest) {
       ? `${source.label.replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf`
       : discoveredFilename;
 
-    await supabaseAdmin.storage
+    await getSupabaseAdmin().storage
       .from("pdf-imports")
       .upload(storagePath, pdfBuffer, {
         contentType: "application/pdf",
@@ -100,7 +95,7 @@ export async function POST(request: NextRequest) {
     let importId: string;
 
     if (existing && (existing.status === "pending" || existing.status === "error")) {
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from("pdf_imports")
         .update({
           status: "processing",
@@ -111,7 +106,7 @@ export async function POST(request: NextRequest) {
         .eq("id", existing.id);
       importId = existing.id;
     } else {
-      const { data: inserted, error: insertError } = await supabaseAdmin
+      const { data: inserted, error: insertError } = await getSupabaseAdmin()
         .from("pdf_imports")
         .insert({
           store_id: source.store_id,
@@ -160,7 +155,7 @@ export async function POST(request: NextRequest) {
         consensus.consensusProducts,
       );
 
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from("pdf_imports")
         .update({
           ...passData,
@@ -171,7 +166,7 @@ export async function POST(request: NextRequest) {
         .eq("id", importId);
 
       // Log accuracy
-      await supabaseAdmin.from("ai_import_logs").insert({
+      await getSupabaseAdmin().from("ai_import_logs").insert({
         store_id: source.store_id,
         accuracy_percent: consensus.confidenceScore,
         total_ai_products: consensus.consensusProducts.length,
@@ -182,7 +177,7 @@ export async function POST(request: NextRequest) {
       revalidatePath("/painel/ofertas");
 
       // 12. Update source tracking
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from("store_pdf_sources")
         .update({ last_hash: hash, last_checked_at: new Date().toISOString() })
         .eq("id", source.id);
@@ -194,7 +189,7 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // 13. No consensus → needs_review
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from("pdf_imports")
         .update({
           ...passData,
@@ -203,7 +198,7 @@ export async function POST(request: NextRequest) {
         })
         .eq("id", importId);
 
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from("store_pdf_sources")
         .update({ last_hash: hash, last_checked_at: new Date().toISOString() })
         .eq("id", source.id);
@@ -237,14 +232,14 @@ async function publishProducts(
     const defaults = CATEGORY_DEFAULTS[catId];
     if (!defaults) continue;
 
-    const { data: catCheck } = await supabaseAdmin
+    const { data: catCheck } = await getSupabaseAdmin()
       .from("categories")
       .select("id")
       .eq("id", catId)
       .maybeSingle();
 
     if (!catCheck) {
-      await supabaseAdmin.from("categories").insert({ id: catId, ...defaults });
+      await getSupabaseAdmin().from("categories").insert({ id: catId, ...defaults });
     }
   }
 
@@ -253,7 +248,7 @@ async function publishProducts(
 
   for (const product of products) {
     try {
-      const { id: productId } = await findOrCreateProduct(supabaseAdmin, {
+      const { id: productId } = await findOrCreateProduct(getSupabaseAdmin(), {
         name: product.name,
         categoryId: normalizeCategory(product.category),
         referencePrice: product.original_price ?? product.price,
@@ -270,7 +265,7 @@ async function publishProducts(
 
       const originalPrice = product.original_price ?? product.price;
 
-      const { error: promoError } = await supabaseAdmin.from("promotions").insert({
+      const { error: promoError } = await getSupabaseAdmin().from("promotions").insert({
         store_id: storeId,
         product_id: productId,
         original_price: originalPrice,

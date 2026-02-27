@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { getStripe } from "@/lib/stripe";
+import { getSupabaseAdmin } from "@/lib/supabase-server";
 
 const processedEvents = new Set<string>();
 
@@ -29,14 +24,14 @@ async function handleCheckoutCompleted(
 
   if (!storeId) return;
 
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
   const priceId = subscription.items.data[0]?.price?.id ?? "";
   const plan = mapPriceToB2bPlan(priceId);
   const trialEnd = subscription.trial_end
     ? new Date(subscription.trial_end * 1000).toISOString()
     : null;
 
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from("stores")
     .update({
       b2b_plan: plan,
@@ -58,7 +53,7 @@ async function handleSubscriptionUpdated(
     ? new Date((subscription.trial_end as number) * 1000).toISOString()
     : null;
 
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from("stores")
     .update({
       b2b_plan: plan,
@@ -72,7 +67,7 @@ async function handleSubscriptionDeleted(
 ): Promise<void> {
   const subId = subscription.id as string;
 
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from("stores")
     .update({
       b2b_plan: "free",
@@ -92,7 +87,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   let event;
   try {
-    event = stripe.webhooks.constructEvent(
+    event = getStripe().webhooks.constructEvent(
       body,
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!,

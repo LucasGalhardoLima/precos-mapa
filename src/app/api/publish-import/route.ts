@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { findOrCreateProduct } from "@/lib/product-match";
-
-const supabaseAdmin = createSupabaseClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
 
 interface ProductInput {
   name: string;
@@ -41,14 +36,14 @@ export async function POST(request: Request) {
     const {
       data: { user },
       error: authError,
-    } = await supabaseAdmin.auth.getUser(body.accessToken);
+    } = await getSupabaseAdmin().auth.getUser(body.accessToken);
 
     if (authError || !user) {
       return NextResponse.json({ error: "Token inválido ou expirado." }, { status: 401 });
     }
 
     // Verify user is a member of the store
-    const { data: member } = await supabaseAdmin
+    const { data: member } = await getSupabaseAdmin()
       .from("store_members")
       .select("store_id")
       .eq("user_id", user.id)
@@ -64,14 +59,14 @@ export async function POST(request: Request) {
 
     // Ensure default category exists
     const DEFAULT_CAT_ID = "cat_alimentos";
-    const { data: catCheck } = await supabaseAdmin
+    const { data: catCheck } = await getSupabaseAdmin()
       .from("categories")
       .select("id")
       .eq("id", DEFAULT_CAT_ID)
       .maybeSingle();
 
     if (!catCheck) {
-      await supabaseAdmin.from("categories").insert({
+      await getSupabaseAdmin().from("categories").insert({
         id: DEFAULT_CAT_ID,
         name: "Alimentos",
         icon: "wheat",
@@ -87,7 +82,7 @@ export async function POST(request: Request) {
       let productId: string;
 
       try {
-        const { id } = await findOrCreateProduct(supabaseAdmin, {
+        const { id } = await findOrCreateProduct(getSupabaseAdmin(), {
           name: product.name,
           referencePrice: product.original_price ?? product.price,
         });
@@ -110,7 +105,7 @@ export async function POST(request: Request) {
 
       const originalPrice = product.original_price ?? product.price;
 
-      const { error: promoError } = await supabaseAdmin.from("promotions").insert({
+      const { error: promoError } = await getSupabaseAdmin().from("promotions").insert({
         store_id: body.storeId,
         product_id: productId,
         original_price: originalPrice,

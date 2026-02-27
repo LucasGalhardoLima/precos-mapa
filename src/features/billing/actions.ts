@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase-server";
 import { checkoutSchema } from "@/lib/schemas";
 
@@ -21,7 +21,7 @@ export async function createCheckoutSession(
     .eq("id", storeId)
     .single();
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     mode: "subscription",
     payment_method_types: ["card"],
     line_items: [{ price: priceId, quantity: 1 }],
@@ -59,7 +59,7 @@ export async function createCheckoutWithLaunchOffer(
     .eq("id", storeId)
     .single();
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     mode: "subscription",
     payment_method_types: ["card"],
     line_items: [{ price: priceId, quantity: 1 }],
@@ -84,7 +84,7 @@ export async function createCheckoutWithLaunchOffer(
 export async function redirectToPortal(
   stripeCustomerId: string,
 ): Promise<void> {
-  const session = await stripe.billingPortal.sessions.create({
+  const session = await getStripe().billingPortal.sessions.create({
     customer: stripeCustomerId,
     return_url: `${process.env.NEXT_PUBLIC_APP_URL}/painel/plano`,
   });
