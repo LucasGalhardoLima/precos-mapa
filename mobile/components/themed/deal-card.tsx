@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import type { EnrichedPromotion } from '@/types';
 import { useTheme } from '../../theme/use-theme';
@@ -89,9 +90,11 @@ export function DealCard({ deal, onPress, compact = false }: DealCardProps) {
 
   return (
     <Pressable onPress={onPress} style={compact ? styles.compactWrapper : undefined}>
-      <CardWrapper style={compact ? styles.compactCard : undefined}>
-        {content}
-      </CardWrapper>
+      <Animated.View sharedTransitionTag={`product-card-${deal.product_id}`}>
+        <CardWrapper style={compact ? styles.compactCard : undefined}>
+          {content}
+        </CardWrapper>
+      </Animated.View>
     </Pressable>
   );
 }
