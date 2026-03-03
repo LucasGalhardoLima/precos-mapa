@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Check, Circle, X } from 'lucide-react-native';
 
 import { useTheme } from '../../theme/use-theme';
+import { triggerHaptic } from '@/hooks/use-haptics';
 import { ReceiptSeparator } from '../encarte/receipt-separator';
 import { RuleDivider } from '../fintech/rule-divider';
 
@@ -66,7 +67,10 @@ export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) 
       <View style={[styles.row, { opacity: checkedOpacity }]}>
         {/* Toggle (check / circle) */}
         <Pressable
-          onPress={onToggle}
+          onPress={() => {
+            triggerHaptic();
+            onToggle();
+          }}
           disabled={isLocked}
           hitSlop={8}
           style={styles.toggleHit}

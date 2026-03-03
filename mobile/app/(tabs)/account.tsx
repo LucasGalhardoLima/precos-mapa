@@ -26,6 +26,8 @@ import {
 } from 'lucide-react-native';
 
 import { useTheme } from '@/theme/use-theme';
+import { triggerHaptic } from '@/hooks/use-haptics';
+import { ImpactFeedbackStyle } from 'expo-haptics';
 import { useAuthStore } from '@precomapa/shared';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useAlerts } from '@/hooks/use-alerts';
@@ -204,6 +206,11 @@ export default function AccountScreen() {
     );
   }, []);
 
+  const handleTogglePalette = useCallback(() => {
+    triggerHaptic(ImpactFeedbackStyle.Medium);
+    togglePalette();
+  }, [togglePalette]);
+
   const handleOpenTerms = useCallback(() => {
     Linking.openURL(TERMS_URL);
   }, []);
@@ -375,7 +382,7 @@ export default function AccountScreen() {
           iconColor={tokens.primary}
           label="Paleta visual"
           value={palette === 'encarte' ? 'Encarte' : 'Fintech'}
-          onPress={togglePalette}
+          onPress={handleTogglePalette}
           tokens={tokens}
         />
 

@@ -21,6 +21,8 @@ import {
 } from 'lucide-react-native';
 
 import { useTheme } from '@/theme/use-theme';
+import { triggerNotification } from '@/hooks/use-haptics';
+import { NotificationFeedbackType } from 'expo-haptics';
 import { useAlerts } from '@/hooks/use-alerts';
 import { useShoppingList } from '@/hooks/use-shopping-list';
 import { useLocation, calculateDistanceKm } from '@/hooks/use-location';
@@ -164,6 +166,7 @@ export default function ProductDetailScreen() {
       }
 
       await createAlert(id, targetPrice);
+      triggerNotification(NotificationFeedbackType.Success);
       setTargetPriceInput('');
       Alert.alert('Alerta criado', 'Você será notificado quando o preço cair.');
     } catch (err: unknown) {
@@ -202,6 +205,7 @@ export default function ProductDetailScreen() {
 
       if (listId) {
         await addItem(listId, id);
+        triggerNotification(NotificationFeedbackType.Success);
         Alert.alert('Adicionado', 'Produto adicionado à lista de compras.');
       }
     } catch {

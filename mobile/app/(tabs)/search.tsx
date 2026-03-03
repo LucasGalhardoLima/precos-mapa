@@ -12,6 +12,7 @@ import { Search, X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 import { useTheme } from '@/theme/use-theme';
+import { triggerHaptic } from '@/hooks/use-haptics';
 import { usePromotions } from '@/hooks/use-promotions';
 import { useLocation } from '@/hooks/use-location';
 import { SearchResults } from '@/components/search-results';
@@ -125,7 +126,10 @@ export default function SearchScreen() {
             return (
               <Pressable
                 key={tab.mode}
-                onPress={() => setSortMode(tab.mode)}
+                onPress={() => {
+                  triggerHaptic();
+                  setSortMode(tab.mode);
+                }}
                 style={[
                   styles.sortPill,
                   active

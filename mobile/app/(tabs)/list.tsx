@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { Plus, ShoppingCart, MapPin } from 'lucide-react-native';
 
 import { useTheme } from '@/theme/use-theme';
+import { triggerHaptic } from '@/hooks/use-haptics';
 import { useShoppingList } from '@/hooks/use-shopping-list';
 import { useLocation } from '@/hooks/use-location';
 import { useAuthStore } from '@precomapa/shared';
@@ -98,6 +99,7 @@ export default function ListScreen() {
 
   // Handlers
   const handleAddItem = useCallback(() => {
+    triggerHaptic();
     router.push('/search');
   }, [router]);
 
