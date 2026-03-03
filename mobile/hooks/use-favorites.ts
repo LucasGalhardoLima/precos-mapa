@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Alert } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@precomapa/shared';
 import type { FavoriteWithProduct } from '@/types';
@@ -33,37 +34,61 @@ export function useFavorites() {
     async (productId: string) => {
       if (!userId) return;
 
+      const snapshot = [...favorites];
+
+      const tempFavorite = {
+        id: 'temp-' + Date.now(),
+        user_id: userId,
+        product_id: productId,
+        created_at: new Date().toISOString(),
+        product: { promotions: [] } as unknown as FavoriteWithProduct['product'],
+      } as FavoriteWithProduct;
+
+      setFavorites((prev) => [...prev, tempFavorite]);
+
       const { error } = await supabase
         .from('user_favorites')
         .insert({ user_id: userId, product_id: productId });
 
       if (error) {
-        // RLS check_favorite_limit will throw if over limit
-        throw new Error(
-          error.message.includes('limit')
-            ? 'Limite de favoritos atingido. Faca upgrade para adicionar mais.'
-            : error.message
-        );
+        setFavorites(snapshot);
+        if (error.message.includes('limit')) {
+          throw new Error(
+            'Limite de favoritos atingido. Faca upgrade para adicionar mais.'
+          );
+        }
+        Alert.alert('Erro', 'Não foi possível atualizar os favoritos.');
+        return;
       }
 
-      await fetchFavorites();
+      fetchFavorites();
     },
-    [userId, fetchFavorites]
+    [userId, favorites, fetchFavorites]
   );
 
   const removeFavorite = useCallback(
     async (productId: string) => {
       if (!userId) return;
 
-      await supabase
+      const snapshot = [...favorites];
+
+      setFavorites((prev) => prev.filter((f) => f.product_id !== productId));
+
+      const { error } = await supabase
         .from('user_favorites')
         .delete()
         .eq('user_id', userId)
         .eq('product_id', productId);
 
-      await fetchFavorites();
+      if (error) {
+        setFavorites(snapshot);
+        Alert.alert('Erro', 'Não foi possível atualizar os favoritos.');
+        return;
+      }
+
+      fetchFavorites();
     },
-    [userId, fetchFavorites]
+    [userId, favorites, fetchFavorites]
   );
 
   const isFavorited = useCallback(
