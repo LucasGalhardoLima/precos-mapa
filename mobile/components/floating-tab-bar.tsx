@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { View, Pressable, Text, Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -8,7 +9,13 @@ import {
   ListChecks,
   User,
 } from 'lucide-react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { useTheme } from '../theme/use-theme';
+import { triggerHaptic } from '@/hooks/use-haptics';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -16,6 +23,9 @@ import { useTheme } from '../theme/use-theme';
 
 /** Height of the tab bar itself, excluding safe-area insets. */
 export const TAB_BAR_HEIGHT = 72;
+
+/** Spring configuration for tab animations. */
+const SPRING_CONFIG = { damping: 15, stiffness: 150 };
 
 // ---------------------------------------------------------------------------
 // Tab metadata
@@ -30,7 +40,72 @@ const TAB_CONFIG: Record<string, { Icon: typeof Home; label: string }> = {
 };
 
 // ---------------------------------------------------------------------------
-// Component
+// TabItem – animated individual tab
+// ---------------------------------------------------------------------------
+
+interface TabItemProps {
+  Icon: typeof Home;
+  label: string;
+  isFocused: boolean;
+  color: string;
+  primaryColor: string;
+  onPress: () => void;
+  onLongPress: () => void;
+  accessibilityLabel: string;
+}
+
+function TabItem({
+  Icon,
+  label,
+  isFocused,
+  color,
+  primaryColor,
+  onPress,
+  onLongPress,
+  accessibilityLabel,
+}: TabItemProps) {
+  const scale = useSharedValue(isFocused ? 1.2 : 1);
+  const dotOpacity = useSharedValue(isFocused ? 1 : 0);
+
+  useEffect(() => {
+    scale.value = withSpring(isFocused ? 1.2 : 1, SPRING_CONFIG);
+    dotOpacity.value = withSpring(isFocused ? 1 : 0, SPRING_CONFIG);
+  }, [isFocused, scale, dotOpacity]);
+
+  const iconAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const dotAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: dotOpacity.value,
+  }));
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={isFocused ? { selected: true } : {}}
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      style={styles.tab}
+    >
+      <Animated.View style={iconAnimatedStyle}>
+        <Icon size={22} color={color} />
+      </Animated.View>
+      <Text style={[styles.label, { color }]}>{label}</Text>
+      <Animated.View
+        style={[
+          styles.dot,
+          { backgroundColor: primaryColor },
+          dotAnimatedStyle,
+        ]}
+      />
+    </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FloatingTabBar
 // ---------------------------------------------------------------------------
 
 export function FloatingTabBar({
@@ -64,6 +139,7 @@ export function FloatingTabBar({
           const { Icon, label } = config;
 
           const onPress = () => {
+            triggerHaptic();
             const event = navigation.emit({
               type: 'tabPress',
               target: route.key,
@@ -83,25 +159,17 @@ export function FloatingTabBar({
           };
 
           return (
-            <Pressable
+            <TabItem
               key={route.key}
-              accessibilityRole="button"
-              accessibilityState={isFocused ? { selected: true } : {}}
-              accessibilityLabel={label}
+              Icon={Icon}
+              label={label}
+              isFocused={isFocused}
+              color={color}
+              primaryColor={tokens.primary}
               onPress={onPress}
               onLongPress={onLongPress}
-              style={styles.tab}
-            >
-              <Icon size={22} color={color} />
-              <Text
-                style={[
-                  styles.label,
-                  { color },
-                ]}
-              >
-                {label}
-              </Text>
-            </Pressable>
+              accessibilityLabel={label}
+            />
           );
         })}
       </View>
@@ -148,6 +216,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 10,
     fontWeight: '600',
+    marginTop: 2,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     marginTop: 2,
   },
 });
