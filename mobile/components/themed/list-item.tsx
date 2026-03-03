@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { MotiView } from 'moti';
 import { Check, Circle, X } from 'lucide-react-native';
 
 import { useTheme } from '../../theme/use-theme';
@@ -50,12 +51,16 @@ interface ListItemProps {
  * - Fintech: clean row with solid separator, same layout in a cleaner style.
  *
  * Locked state adds a semi-transparent overlay and disables interactions.
+ *
+ * Animations (Moti):
+ * - Checkmark icon scales in with a spring bounce when checked.
+ * - Row opacity fades to 0.45 when checked.
+ * - Subtle green background tint fades in when checked.
  */
 export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) {
   const { palette, tokens } = useTheme();
 
   const isEncarte = palette === 'encarte';
-  const checkedOpacity = item.checked ? 0.45 : 1;
 
   const quantityLabel =
     item.quantity != null
@@ -64,7 +69,25 @@ export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) 
 
   return (
     <View style={[styles.container, isLocked && styles.locked]}>
-      <View style={[styles.row, { opacity: checkedOpacity }]}>
+      {/* Checked background tint */}
+      <MotiView
+        animate={{
+          opacity: item.checked ? 1 : 0,
+        }}
+        transition={{ type: 'timing', duration: 200 }}
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: tokens.primaryLight, borderRadius: 6 },
+        ]}
+        pointerEvents="none"
+      />
+
+      {/* Row with animated opacity */}
+      <MotiView
+        animate={{ opacity: item.checked ? 0.45 : 1 }}
+        transition={{ type: 'timing', duration: 200 }}
+        style={styles.row}
+      >
         {/* Toggle (check / circle) */}
         <Pressable
           onPress={() => {
@@ -75,11 +98,34 @@ export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) 
           hitSlop={8}
           style={styles.toggleHit}
         >
-          {item.checked ? (
-            <Check size={20} color={tokens.primary} />
-          ) : (
-            <Circle size={20} color={tokens.textHint} />
-          )}
+          <View style={styles.iconContainer}>
+            {/* Circle icon — fades out when checked */}
+            <MotiView
+              animate={{
+                opacity: item.checked ? 0 : 1,
+                scale: item.checked ? 0.6 : 1,
+              }}
+              transition={{ type: 'timing', duration: 150 }}
+              style={styles.iconAbsolute}
+            >
+              <Circle size={20} color={tokens.textHint} />
+            </MotiView>
+
+            {/* Check icon — springs in when checked */}
+            <MotiView
+              animate={{
+                scale: item.checked ? 1 : 0,
+                opacity: item.checked ? 1 : 0,
+              }}
+              transition={{
+                scale: { type: 'spring', damping: 12, stiffness: 200 },
+                opacity: { type: 'timing', duration: 100 },
+              }}
+              style={styles.iconAbsolute}
+            >
+              <Check size={20} color={tokens.primary} />
+            </MotiView>
+          </View>
         </Pressable>
 
         {/* Product name + optional quantity */}
@@ -126,7 +172,7 @@ export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) 
         >
           <X size={18} color={tokens.textHint} />
         </Pressable>
-      </View>
+      </MotiView>
 
       {/* Separator — dotted (encarte) or solid (fintech) */}
       {isEncarte ? (
@@ -158,6 +204,16 @@ const styles = StyleSheet.create({
   },
   toggleHit: {
     padding: 2,
+  },
+  iconContainer: {
+    width: 20,
+    height: 20,
+    position: 'relative',
+  },
+  iconAbsolute: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
   },
   nameColumn: {
     flex: 1,
