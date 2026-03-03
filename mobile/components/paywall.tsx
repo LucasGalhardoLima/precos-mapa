@@ -284,10 +284,16 @@ export function Paywall({ visible, onClose }: PaywallProps) {
                 </View>
                 <Text style={styles.pricingCycleLabel}>Anual</Text>
                 <Text style={styles.pricingPrice}>
-                  {FALLBACK_ANNUAL_PRICE}
+                  {annualPackage?.product
+                    ? `R$ ${(annualPackage.product.price / 12).toFixed(2).replace('.', ',')}`
+                    : FALLBACK_ANNUAL_PRICE}
                 </Text>
                 <Text style={styles.pricingPeriod}>/mês</Text>
-                <Text style={styles.pricingTotal}>{FALLBACK_ANNUAL_TOTAL}</Text>
+                <Text style={styles.pricingTotal}>
+                  {annualPackage?.product?.priceString
+                    ? `${annualPackage.product.priceString}/ano`
+                    : FALLBACK_ANNUAL_TOTAL}
+                </Text>
               </Pressable>
             </View>
 
