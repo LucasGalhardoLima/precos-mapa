@@ -216,7 +216,7 @@ export default function HomeScreen() {
             <Text
               style={[styles.dealsSectionTitle, { color: tokens.textPrimary }]}
             >
-              Ofertas perto de voce
+              Ofertas perto de você
             </Text>
             <Pressable onPress={() => router.push('/search')}>
               <Text
