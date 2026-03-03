@@ -475,12 +475,15 @@ export default function ProductDetailScreen() {
             ) : (
               <View style={styles.promotionsList}>
                 {promotions.map((promo, index) => {
-                  const distanceKm = calculateDistanceKm(
-                    latitude,
-                    longitude,
-                    promo.store.latitude,
-                    promo.store.longitude,
-                  );
+                  const distanceKm =
+                    latitude && longitude
+                      ? calculateDistanceKm(
+                          latitude,
+                          longitude,
+                          promo.store.latitude,
+                          promo.store.longitude,
+                        )
+                      : null;
 
                   const discountPercent = Math.round(
                     (1 - promo.promo_price / promo.original_price) * 100,
@@ -525,17 +528,19 @@ export default function ProductDetailScreen() {
                         >
                           {promo.store.name}
                         </Text>
-                        <View style={styles.storeDistanceRow}>
-                          <MapPin size={12} color={tokens.textHint} />
-                          <Text
-                            style={[
-                              styles.storeDistance,
-                              { color: tokens.textHint },
-                            ]}
-                          >
-                            {distanceKm} km
-                          </Text>
-                        </View>
+                        {distanceKm != null && (
+                          <View style={styles.storeDistanceRow}>
+                            <MapPin size={12} color={tokens.textHint} />
+                            <Text
+                              style={[
+                                styles.storeDistance,
+                                { color: tokens.textHint },
+                              ]}
+                            >
+                              {distanceKm} km
+                            </Text>
+                          </View>
+                        )}
                       </View>
 
                       {/* Price + badge */}
