@@ -8,7 +8,7 @@ export type B2CPlan = 'free' | 'plus' | 'family';
 export type PromotionStatus = 'active' | 'expired' | 'pending_review';
 export type PromotionSource = 'manual' | 'importador_ia' | 'crawler';
 export type StoreMemberRole = 'owner' | 'admin' | 'staff';
-export type SortMode = 'cheapest' | 'nearest' | 'expiring';
+export type SortMode = 'cheapest' | 'nearest' | 'expiring' | 'discount';
 
 // =============================================================================
 // Database Row Types (matching Supabase tables)
@@ -181,6 +181,7 @@ export interface EnrichedPromotion extends PromotionWithRelations {
   distanceKm: number;
   isExpiringSoon: boolean;
   isBestPrice: boolean;
+  isLocked: boolean;
 }
 
 /** Store with computed promotion data (for map) */

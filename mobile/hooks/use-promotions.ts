@@ -3,10 +3,12 @@ import { supabase } from '@/lib/supabase';
 import { useRealtime } from '@/hooks/use-realtime';
 import { getGamificationMessage } from '@/constants/messages';
 import { calculateDistanceKm } from '@/hooks/use-location';
+import { useAuthStore } from '@precomapa/shared';
 import type { PromotionWithRelations, EnrichedPromotion, SortMode } from '@/types';
 
 interface UsePromotionsParams {
   query?: string;
+  productQuery?: string;
   categoryId?: string;
   sortMode?: SortMode;
   userLatitude: number;
@@ -49,6 +51,7 @@ function enrichPromotion(
     distanceKm,
     isExpiringSoon,
     isBestPrice: hasDiscount && promo.promo_price <= bestPrice,
+    isLocked: false,
   };
 }
 
@@ -71,6 +74,8 @@ function sortPromotions(
           new Date(a.end_date).getTime() - new Date(b.end_date).getTime() ||
           a.promo_price - b.promo_price
         );
+      case 'discount':
+        return b.discountPercent - a.discountPercent || a.promo_price - b.promo_price;
     }
   });
 }
@@ -80,6 +85,7 @@ export function usePromotions(params: UsePromotionsParams) {
   const [isLoading, setIsLoading] = useState(true);
   const {
     query,
+    productQuery,
     categoryId,
     sortMode = 'cheapest',
     userLatitude,
@@ -99,6 +105,10 @@ export function usePromotions(params: UsePromotionsParams) {
       q = q.ilike('product.name', `%${query}%`);
     }
 
+    if (productQuery) {
+      q = q.ilike('product.name', `%${productQuery}%`);
+    }
+
     if (categoryId && categoryId !== 'cat_todos') {
       q = q.eq('product.category_id', categoryId);
     }
@@ -107,7 +117,7 @@ export function usePromotions(params: UsePromotionsParams) {
 
     if (data) setRaw(data as PromotionWithRelations[]);
     setIsLoading(false);
-  }, [query, categoryId]);
+  }, [query, productQuery, categoryId]);
 
   useEffect(() => {
     fetchPromotions();
@@ -141,9 +151,34 @@ export function usePromotions(params: UsePromotionsParams) {
     [enriched, sortMode]
   );
 
+  const final = useMemo(() => {
+    // Group by store: keep cheapest per store when doing product search
+    let grouped: EnrichedPromotion[];
+    if (productQuery) {
+      const storeMap = new Map<string, EnrichedPromotion>();
+      for (const promo of sorted) {
+        if (!storeMap.has(promo.store_id)) {
+          storeMap.set(promo.store_id, promo);
+        }
+      }
+      grouped = [...storeMap.values()];
+    } else {
+      grouped = sorted;
+    }
+
+    // Apply isLocked for free-plan users (4th+ result)
+    const profile = useAuthStore.getState().profile;
+    const isFree = profile?.b2c_plan === 'free';
+
+    return grouped.map((promo, index) => ({
+      ...promo,
+      isLocked: isFree && index >= 3,
+    }));
+  }, [sorted, productQuery]);
+
   return {
-    promotions: sorted,
+    promotions: final,
     isLoading,
-    isEmpty: !isLoading && sorted.length === 0,
+    isEmpty: !isLoading && final.length === 0,
   };
 }
