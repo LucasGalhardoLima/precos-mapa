@@ -49,6 +49,8 @@ export async function GET(request: NextRequest) {
 
   const activeSources = (sources ?? []) as PdfSource[];
 
+  console.log(`[CRON] Found ${activeSources.length} active sources`);
+
   if (activeSources.length === 0) {
     return NextResponse.json({ status: "no_active_sources", processed: 0 });
   }
@@ -58,13 +60,16 @@ export async function GET(request: NextRequest) {
   for (const source of activeSources) {
     try {
       const result = await processSource(source);
+      console.log(`[CRON] Source ${source.id}: ${result.status}${result.published != null ? ` (${result.published} published)` : ""}`);
       results.push({ sourceId: source.id, ...result });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro desconhecido";
+      console.error(`[CRON] Source ${source.id}: error — ${message}`);
       results.push({ sourceId: source.id, status: "error", error: message });
     }
   }
 
+  console.log(`[CRON] Done. Processed ${results.length} sources.`);
   return NextResponse.json({ processed: results.length, results });
 }
 
@@ -118,6 +123,7 @@ async function processSource(
 
   // 2. SHA-256 hash
   const hash = createHash("sha256").update(pdfBuffer).digest("hex");
+  console.log(`[CRON] Downloaded PDF from ${source.url} (hash: ${hash.slice(0, 8)}, size: ${pdfBuffer.byteLength} bytes)`);
 
   // 3. Dedup: same hash as last time → skip
   if (source.last_hash === hash) {
@@ -126,6 +132,7 @@ async function processSource(
       .update({ last_checked_at: new Date().toISOString() })
       .eq("id", source.id);
 
+    console.log(`[CRON] Skipped source ${source.id}: same hash as last run`);
     return { status: "skipped_same_hash" };
   }
 
@@ -199,7 +206,9 @@ async function processSource(
   }
 
   // 7. Run 3-pass extraction
+  console.log(`[CRON] Running 3-pass extraction for source ${source.id}...`);
   const consensus = await runMultiPassExtraction(pdfBuffer, filename, 3);
+  console.log(`[CRON] Extraction result: consensus=${consensus.type}, confidence=${consensus.confidenceScore}, products=${consensus.consensusProducts?.length ?? 0}`);
 
   // 8. Save extraction passes
   const passData: Record<string, unknown> = {
@@ -254,6 +263,7 @@ async function processSource(
       .update({ last_hash: hash, last_checked_at: new Date().toISOString() })
       .eq("id", source.id);
 
+    console.log(`[CRON] Published ${published} promotions for store ${source.store_id}`);
     return { status: "done", consensus: consensus.type, published };
   } else {
     // 11. No consensus → needs_review
