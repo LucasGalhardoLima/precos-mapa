@@ -78,6 +78,25 @@ export async function signIn(formData: FormData): Promise<void> {
   );
 }
 
+export async function signInAsSuperAdmin(): Promise<void> {
+  const email = process.env.SUPER_ADMIN_EMAIL;
+  const password = process.env.SUPER_ADMIN_PASSWORD;
+
+  if (!email || !password) {
+    redirect("/painel/acesso?error=" + encodeURIComponent("Credenciais de super admin nao configuradas"));
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    redirect("/painel/acesso?error=" + encodeURIComponent("Falha no login automatico: " + error.message));
+  }
+
+  revalidatePath("/painel");
+  redirect("/painel/super/dashboard");
+}
+
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();

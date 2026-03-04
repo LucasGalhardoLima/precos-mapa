@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { Building2, Crown, ShieldCheck } from "lucide-react";
-import { signIn } from "@/features/auth/actions";
+import { signIn, signInAsSuperAdmin } from "@/features/auth/actions";
 import { getSessionContext } from "@/features/auth/session";
 
 export default async function PainelAcessoPage({
@@ -66,6 +66,18 @@ export default async function PainelAcessoPage({
               Entrar no painel
             </button>
           </form>
+
+          {process.env['SUPER_ADMIN_EMAIL'] && (
+            <form action={signInAsSuperAdmin} className="mt-3">
+              <button
+                type="submit"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
+              >
+                <Crown className="h-4 w-4" />
+                Entrar como Super Admin
+              </button>
+            </form>
+          )}
         </section>
 
         <section className="rounded-3xl border border-[var(--color-line)] bg-[var(--color-surface-strong)] p-6">
