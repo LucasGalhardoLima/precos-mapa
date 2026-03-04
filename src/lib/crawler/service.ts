@@ -1,8 +1,13 @@
-import { createCanvas } from "@napi-rs/canvas";
+import { createCanvas, DOMMatrix, Path2D } from "@napi-rs/canvas";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import OpenAI from "openai";
 import sharp from "sharp";
 import { EncarteProduct, normalizeEncartePayload } from "@/lib/schemas";
+
+// pdfjs-dist tries require('canvas') to polyfill DOMMatrix and Path2D.
+// We provide them from @napi-rs/canvas instead.
+globalThis.DOMMatrix = DOMMatrix as unknown as typeof globalThis.DOMMatrix;
+globalThis.Path2D = Path2D as unknown as typeof globalThis.Path2D;
 
 // Use require() so Turbopack doesn't try to bundle the native module
 // (it's listed in serverExternalPackages in next.config.ts)
