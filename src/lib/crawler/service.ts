@@ -1,7 +1,15 @@
-import { chromium } from "playwright";
+import { createCanvas } from "@napi-rs/canvas";
+import type { PDFDocumentProxy } from "pdfjs-dist";
 import OpenAI from "openai";
 import sharp from "sharp";
 import { EncarteProduct, normalizeEncartePayload } from "@/lib/schemas";
+
+// Use require() so Turbopack doesn't try to bundle the native module
+// (it's listed in serverExternalPackages in next.config.ts)
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdfjs = require("pdfjs-dist/legacy/build/pdf.js") as {
+  getDocument: (params: { data: Uint8Array }) => { promise: Promise<PDFDocumentProxy> };
+};
 
 interface CrawlerMeta {
   source: string;
@@ -16,30 +24,6 @@ interface CrawlerMeta {
 interface CrawlerResult {
   products: EncarteProduct[];
   meta: CrawlerMeta;
-}
-
-interface PdfViewport {
-  width: number;
-  height: number;
-}
-
-interface PdfPage {
-  getViewport: (options: { scale: number }) => PdfViewport;
-  render: (options: { canvasContext: CanvasRenderingContext2D; viewport: PdfViewport }) => { promise: Promise<void> };
-}
-
-interface PdfDocument {
-  numPages: number;
-  getPage: (pageNumber: number) => Promise<PdfPage>;
-}
-
-interface PdfLoadingTask {
-  promise: Promise<PdfDocument>;
-}
-
-interface PdfJsRuntime {
-  GlobalWorkerOptions: { workerSrc: string };
-  getDocument: (options: { data: string | Uint8Array }) => PdfLoadingTask;
 }
 
 interface PdfRenderResult {
@@ -118,59 +102,37 @@ Retorne JSON estrito no formato: { "products": [{ "name": "...", "price": 3.99, 
   return JSON.parse(content) as unknown;
 }
 
-async function renderPdfToImages(page: import("playwright").Page, pdfBase64: string): Promise<PdfRenderResult> {
-  await page.goto("about:blank");
-  await page.addScriptTag({ url: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" });
+async function renderPdfToImages(pdfBuffer: Uint8Array | Buffer): Promise<PdfRenderResult> {
+  const data = new Uint8Array(pdfBuffer);
+  const loadingTask = pdfjs.getDocument({ data });
+  const pdf = await loadingTask.promise;
 
-  const result = await page.evaluate(async ({ base64, maxPages }: { base64: string; maxPages: number }) => {
-    const runtimeCandidate = (window as unknown as Record<string, unknown>)["pdfjs-dist/build/pdf"];
-    if (!runtimeCandidate) {
-      throw new Error("PDF.js runtime indisponível");
-    }
+  const pageCount = Math.min(pdf.numPages, MAX_PDF_PAGES);
+  const pages: string[] = [];
 
-    const pdfjs = runtimeCandidate as PdfJsRuntime;
-    pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  for (let index = 1; index <= pageCount; index += 1) {
+    const page = await pdf.getPage(index);
+    const viewport = page.getViewport({ scale: 3.0 });
 
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let index = 0; index < binary.length; index += 1) {
-      bytes[index] = binary.charCodeAt(index);
-    }
+    const canvas = createCanvas(Math.floor(viewport.width), Math.floor(viewport.height));
+    const context = canvas.getContext("2d");
 
-    const loadingTask = pdfjs.getDocument({ data: bytes });
-    const pdf = await loadingTask.promise;
-    const pages: string[] = [];
-    const pageCount = Math.min(pdf.numPages, maxPages);
+    await page.render({
+      // @napi-rs/canvas context is API-compatible with DOM CanvasRenderingContext2D
+      canvasContext: context as unknown as CanvasRenderingContext2D,
+      viewport,
+    }).promise;
 
-    for (let index = 1; index <= pageCount; index += 1) {
-      const pageItem = await pdf.getPage(index);
-      const viewport = pageItem.getViewport({ scale: 3.0 });
+    const pngBuffer = canvas.toBuffer("image/png");
+    const base64 = pngBuffer.toString("base64");
+    pages.push(`data:image/png;base64,${base64}`);
+  }
 
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      if (!context) {
-        continue;
-      }
-
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-
-      await pageItem.render({
-        canvasContext: context,
-        viewport,
-      }).promise;
-
-      pages.push(canvas.toDataURL("image/png"));
-    }
-
-    return {
-      images: pages,
-      totalPages: pdf.numPages,
-      processedPages: pageCount,
-    };
-  }, { base64: pdfBase64, maxPages: MAX_PDF_PAGES });
-
-  return result;
+  return {
+    images: pages,
+    totalPages: pdf.numPages,
+    processedPages: pageCount,
+  };
 }
 
 export async function processPdfBuffer(
@@ -182,69 +144,82 @@ export async function processPdfBuffer(
 
   onProgress?.(`Iniciando análise do PDF: ${sourceName}`);
 
-  const browser = await chromium.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-
   const allProducts: EncarteProduct[] = [];
   const allImages: string[] = [];
   const pageErrors: string[] = [];
 
-  try {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    const pdfBase64 = Buffer.from(buffer).toString("base64");
+  const rendered = await renderPdfToImages(buffer);
+  if (rendered.totalPages > rendered.processedPages) {
+    onProgress?.(
+      `PDF com ${rendered.totalPages} páginas. Processando ${rendered.processedPages} primeiras (limite atual: ${MAX_PDF_PAGES}).`,
+    );
+  } else {
+    onProgress?.(`${rendered.processedPages} páginas renderizadas em alta definição.`);
+  }
 
-    const rendered = await renderPdfToImages(page, pdfBase64);
-    if (rendered.totalPages > rendered.processedPages) {
-      onProgress?.(
-        `PDF com ${rendered.totalPages} páginas. Processando ${rendered.processedPages} primeiras (limite atual: ${MAX_PDF_PAGES}).`,
-      );
-    } else {
-      onProgress?.(`${rendered.processedPages} páginas renderizadas em alta definição.`);
-    }
+  for (let index = 0; index < rendered.images.length; index += 1) {
+    onProgress?.(`Analisando página ${index + 1} de ${rendered.processedPages}...`);
 
-    for (let index = 0; index < rendered.images.length; index += 1) {
-      onProgress?.(`Analisando página ${index + 1} de ${rendered.processedPages}...`);
+    const rawBase64 = rendered.images[index].split(",")[1];
+    const optimized = await optimizeImage(Buffer.from(rawBase64, "base64"));
+    allImages.push(optimized);
 
-      const rawBase64 = rendered.images[index].split(",")[1];
-      const optimized = await optimizeImage(Buffer.from(rawBase64, "base64"));
-      allImages.push(optimized);
+    try {
+      const extracted = await extractFromImage(optimized);
+      const normalized = normalizeEncartePayload(extracted);
 
-      try {
-        const extracted = await extractFromImage(optimized);
-        const normalized = normalizeEncartePayload(extracted);
-
-        if (normalized.products.length > 0) {
-          allProducts.push(...normalized.products);
-          onProgress?.(`Sucesso: ${normalized.products.length} ofertas extraídas da página ${index + 1}.`);
-        } else {
-          onProgress?.(`Aviso: página ${index + 1} sem itens válidos após validação.`);
-        }
-      } catch (error) {
-        const message = extractErrorMessage(error);
-        pageErrors.push(`Página ${index + 1}: ${message}`);
-        onProgress?.(`Erro na página ${index + 1}: ${message}`);
+      if (normalized.products.length > 0) {
+        allProducts.push(...normalized.products);
+        onProgress?.(`Sucesso: ${normalized.products.length} ofertas extraídas da página ${index + 1}.`);
+      } else {
+        onProgress?.(`Aviso: página ${index + 1} sem itens válidos após validação.`);
       }
+    } catch (error) {
+      const message = extractErrorMessage(error);
+      pageErrors.push(`Página ${index + 1}: ${message}`);
+      onProgress?.(`Erro na página ${index + 1}: ${message}`);
     }
+  }
 
-    if (allProducts.length === 0) {
-      const reason = pageErrors.length > 0 ? pageErrors.slice(0, 3).join(" | ") : "Nenhum item reconhecido nas páginas.";
-      throw new Error(`Extração sem produtos. ${reason}`);
-    }
-  } finally {
-    await browser.close().catch(() => undefined);
+  if (allProducts.length === 0) {
+    const reason = pageErrors.length > 0 ? pageErrors.slice(0, 3).join(" | ") : "Nenhum item reconhecido nas páginas.";
+    throw new Error(`Extração sem produtos. ${reason}`);
   }
 
   return {
     products: allProducts,
     meta: {
-      source: "gpt4o_pdfjs_browser_sharp",
+      source: "gpt4o_pdfjs_node_sharp",
       imageUrl: allImages[0] ?? "https://via.placeholder.com/800",
       images: allImages,
     },
   };
+}
+
+async function discoverPdfLinksFromHtml(url: string): Promise<string[]> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Falha ao acessar página (HTTP ${response.status}): ${url}`);
+  }
+  const html = await response.text();
+
+  const pdfUrls: string[] = [];
+  const seen = new Set<string>();
+  const regex = /href=["']([^"']*\.pdf[^"']*)/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(html)) !== null) {
+    let href = match[1];
+    if (!href.startsWith("http")) {
+      href = new URL(href, url).toString();
+    }
+    if (!seen.has(href)) {
+      seen.add(href);
+      pdfUrls.push(href);
+    }
+  }
+
+  return pdfUrls;
 }
 
 export async function discoverAndDownloadPdf(url: string): Promise<{
@@ -263,41 +238,23 @@ export async function discoverAndDownloadPdf(url: string): Promise<{
     return { pdfBuffer: Buffer.from(arrayBuffer), filename, resolvedPdfUrl: url };
   }
 
-  // HTML page — navigate with Playwright and find PDF links
-  const browser = await chromium.launch({ headless: true });
-  try {
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+  // HTML page — fetch and find PDF links via regex
+  const pdfUrls = await discoverPdfLinksFromHtml(url);
 
-    const pdfUrls: string[] = [];
-    const anchors = await page.$$('a[href$=".pdf"]');
-    const seen = new Set<string>();
-    for (const anchor of anchors) {
-      let href = await anchor.getAttribute("href");
-      if (!href) continue;
-      if (!href.startsWith("http")) {
-        href = new URL(href, url).toString();
-      }
-      if (!seen.has(href)) {
-        seen.add(href);
-        pdfUrls.push(href);
-      }
-    }
-
-    if (pdfUrls.length === 0) {
-      throw new Error(`Nenhum PDF encontrado na página: ${url}`);
-    }
-
-    const firstPdfUrl = pdfUrls[0];
-    const filename = decodeURIComponent(firstPdfUrl.split("/").pop() ?? "encarte.pdf");
-
-    const pdfResponse = await page.request.get(firstPdfUrl);
-    const pdfBuffer = Buffer.from(await pdfResponse.body());
-
-    return { pdfBuffer, filename, resolvedPdfUrl: firstPdfUrl };
-  } finally {
-    await browser.close().catch(() => undefined);
+  if (pdfUrls.length === 0) {
+    throw new Error(`Nenhum PDF encontrado na página: ${url}`);
   }
+
+  const firstPdfUrl = pdfUrls[0];
+  const filename = decodeURIComponent(firstPdfUrl.split("/").pop() ?? "encarte.pdf");
+
+  const pdfResponse = await fetch(firstPdfUrl);
+  if (!pdfResponse.ok) {
+    throw new Error(`Falha ao baixar PDF (HTTP ${pdfResponse.status}): ${firstPdfUrl}`);
+  }
+  const arrayBuffer = await pdfResponse.arrayBuffer();
+
+  return { pdfBuffer: Buffer.from(arrayBuffer), filename, resolvedPdfUrl: firstPdfUrl };
 }
 
 export async function crawlUrl(url: string, onProgress?: (message: string) => void): Promise<CrawlerResult> {
@@ -322,7 +279,7 @@ export async function crawlUrl(url: string, onProgress?: (message: string) => vo
     return {
       products: result.products,
       meta: {
-        source: "gpt4o_pdfjs_browser_sharp",
+        source: "gpt4o_pdfjs_node_sharp",
         imageUrl: result.meta.images[0] ?? "https://via.placeholder.com/800",
         images: result.meta.images,
         pendingPdfUrls: [],
@@ -335,89 +292,45 @@ export async function crawlUrl(url: string, onProgress?: (message: string) => vo
 
   onProgress?.(`Visitando URL: ${url}`);
 
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
+  const pdfUrls = await discoverPdfLinksFromHtml(url);
+  onProgress?.("Página carregada. Buscando encartes...");
 
-  try {
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
-    onProgress?.("Página carregada. Buscando encartes...");
-
-    const pdfUrls: string[] = [];
-    const anchors = await page.$$('a[href$=".pdf"]');
-    const seen = new Set<string>();
-    for (const anchor of anchors) {
-      let href = await anchor.getAttribute("href");
-      if (!href) continue;
-      if (!href.startsWith("http")) {
-        href = new URL(href, url).toString();
-      }
-      if (!seen.has(href)) {
-        seen.add(href);
-        pdfUrls.push(href);
-      }
-    }
-
-    if (pdfUrls.length > 0) {
-      const totalPdfs = pdfUrls.length;
-      const firstPdfUrl = pdfUrls[0];
-      const pdfName = decodeURIComponent(firstPdfUrl.split("/").pop() ?? "PDF 1");
-
-      if (totalPdfs > 1) {
-        onProgress?.(`${totalPdfs} PDFs encontrados. Processando: ${pdfName}`);
-      } else {
-        onProgress?.(`1 PDF encontrado. Processando: ${pdfName}`);
-      }
-
-      const pdfResponse = await page.request.get(firstPdfUrl);
-      const downloadedBuffer = await pdfResponse.body();
-      const result = await processPdfBuffer(downloadedBuffer, pdfName, (msg) => {
-        onProgress?.(`PDF 1/${totalPdfs}: ${msg}`);
-      });
-
-      onProgress?.(`PDF 1/${totalPdfs}: ${result.products.length} ofertas extraídas.`);
-
-      return {
-        products: result.products,
-        meta: {
-
-          source: "gpt4o_pdfjs_browser_sharp",
-          imageUrl: result.meta.images[0] ?? "https://via.placeholder.com/800",
-          images: result.meta.images,
-          pendingPdfUrls: pdfUrls.slice(1),
-          currentPdfName: pdfName,
-          currentPdfIndex: 1,
-          totalPdfs,
-        },
-      };
-    }
-
-    onProgress?.("Nenhum PDF encontrado. Capturando página inteira...");
-    const screenshot = await page.screenshot({
-      fullPage: true,
-      type: "jpeg",
-      quality: 50,
-    });
-
-    onProgress?.("Screenshot capturado. Iniciando pipeline de visão...");
-
-    const optimizedImage = await optimizeImage(screenshot);
-    const extracted = await extractFromImage(optimizedImage);
-    const normalized = normalizeEncartePayload(extracted);
-    const products = normalized.products;
-    onProgress?.(`Extração concluída: ${products.length} ofertas encontradas.`);
-
-    return {
-      products,
-      meta: {
-        source: "gpt4o_screenshot",
-        imageUrl: optimizedImage,
-        images: [optimizedImage],
-      },
-    };
-  } catch (error) {
-    onProgress?.(`Erro: ${extractErrorMessage(error)}`);
-    throw error;
-  } finally {
-    await browser.close().catch(() => undefined);
+  if (pdfUrls.length === 0) {
+    throw new Error(`Nenhum PDF encontrado na página: ${url}`);
   }
+
+  const totalPdfs = pdfUrls.length;
+  const firstPdfUrl = pdfUrls[0];
+  const pdfName = decodeURIComponent(firstPdfUrl.split("/").pop() ?? "PDF 1");
+
+  if (totalPdfs > 1) {
+    onProgress?.(`${totalPdfs} PDFs encontrados. Processando: ${pdfName}`);
+  } else {
+    onProgress?.(`1 PDF encontrado. Processando: ${pdfName}`);
+  }
+
+  const pdfResponse = await fetch(firstPdfUrl);
+  if (!pdfResponse.ok) {
+    throw new Error(`Falha ao baixar PDF (HTTP ${pdfResponse.status}): ${firstPdfUrl}`);
+  }
+  const downloadedBuffer = Buffer.from(await pdfResponse.arrayBuffer());
+
+  const result = await processPdfBuffer(downloadedBuffer, pdfName, (msg) => {
+    onProgress?.(`PDF 1/${totalPdfs}: ${msg}`);
+  });
+
+  onProgress?.(`PDF 1/${totalPdfs}: ${result.products.length} ofertas extraídas.`);
+
+  return {
+    products: result.products,
+    meta: {
+      source: "gpt4o_pdfjs_node_sharp",
+      imageUrl: result.meta.images[0] ?? "https://via.placeholder.com/800",
+      images: result.meta.images,
+      pendingPdfUrls: pdfUrls.slice(1),
+      currentPdfName: pdfName,
+      currentPdfIndex: 1,
+      totalPdfs,
+    },
+  };
 }
