@@ -48,8 +48,17 @@ export default async function SuperModerationPage() {
     .eq("status", "needs_review")
     .order("created_at", { ascending: false });
 
+  interface ExtractedProduct {
+    name: string;
+    price: number;
+    original_price?: number | null;
+    unit?: string;
+    category?: string;
+    validity?: string | null;
+  }
+
   interface PassData {
-    products?: { name: string }[];
+    products?: ExtractedProduct[];
     error?: string;
   }
 
@@ -59,7 +68,7 @@ export default async function SuperModerationPage() {
       if (!passData || passData.error) {
         return {
           productCount: 0,
-          sampleProducts: [] as string[],
+          products: [] as ExtractedProduct[],
           hasError: !!passData?.error,
           errorMessage: passData?.error,
         };
@@ -67,7 +76,7 @@ export default async function SuperModerationPage() {
       const products = passData.products ?? [];
       return {
         productCount: products.length,
-        sampleProducts: products.slice(0, 5).map((p: { name: string }) => p.name),
+        products,
         hasError: false,
       };
     };
