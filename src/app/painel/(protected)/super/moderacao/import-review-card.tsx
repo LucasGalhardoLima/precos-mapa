@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { approveImportPass, rejectImport } from "./import-review-server-actions";
+import { approveImportPass, rejectImport, reExtractImport } from "./import-review-server-actions";
 
 interface ExtractedProduct {
   name: string;
@@ -47,6 +47,13 @@ export function ImportReviewCard({ item }: { item: ImportReviewItem }) {
   const handleReject = () => {
     startTransition(async () => {
       await rejectImport(item.id);
+      router.refresh();
+    });
+  };
+
+  const handleReExtract = () => {
+    startTransition(async () => {
+      await reExtractImport(item.id);
       router.refresh();
     });
   };
@@ -210,6 +217,14 @@ export function ImportReviewCard({ item }: { item: ImportReviewItem }) {
           className="min-h-[44px] rounded-xl border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:opacity-50"
         >
           Rejeitar
+        </button>
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={handleReExtract}
+          className="min-h-[44px] rounded-xl border border-blue-300 px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 disabled:opacity-50"
+        >
+          Re-executar
         </button>
       </div>
     </article>

@@ -139,6 +139,68 @@ export async function approveImportPass(
   return { count: published };
 }
 
+export async function reExtractImport(importId: string): Promise<{ error?: string }> {
+  await requirePermission("moderation:manage");
+
+  // Verify status is needs_review
+  const { data: pdfImport, error: fetchError } = await supabaseAdmin
+    .from("pdf_imports")
+    .select("id, status")
+    .eq("id", importId)
+    .single();
+
+  if (fetchError || !pdfImport) {
+    return { error: "Importacao nao encontrada." };
+  }
+
+  if (pdfImport.status !== "needs_review") {
+    return { error: `Status invalido: ${pdfImport.status}` };
+  }
+
+  // Reset extraction data and set status back to pending
+  await supabaseAdmin
+    .from("pdf_imports")
+    .update({
+      status: "pending",
+      extraction_pass_1: null,
+      extraction_pass_2: null,
+      extraction_pass_3: null,
+      consensus_result: null,
+      consensus_type: null,
+      confidence_score: null,
+      error_message: null,
+      processed_at: null,
+      selected_pass: null,
+    })
+    .eq("id", importId);
+
+  // Fire off worker to re-process (fire-and-forget)
+  const appUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+  ).replace(/\/+$/, "");
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${process.env.CRON_SECRET}`,
+  };
+  if (process.env.VERCEL_AUTOMATION_BYPASS_SECRET) {
+    headers["x-vercel-protection-bypass"] = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  }
+
+  fetch(`${appUrl}/api/cron/process-single-pdf`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ importId }),
+  }).catch((err) => {
+    console.error(`[RE-EXTRACT] Failed to dispatch worker for ${importId}:`, err);
+  });
+
+  revalidatePath("/painel/super/moderacao");
+
+  return {};
+}
+
 export async function rejectImport(importId: string): Promise<void> {
   await requirePermission("moderation:manage");
 
