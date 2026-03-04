@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       .download(record.storage_path);
 
     if (downloadError || !fileData) {
-      throw new Error(`Failed to download from storage: ${downloadError?.message ?? "unknown"}`);
+      throw new Error(`Failed to download ${record.storage_path} from storage: ${JSON.stringify(downloadError)}`);
     }
 
     const pdfBuffer = Buffer.from(await fileData.arrayBuffer());
