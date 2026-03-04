@@ -210,12 +210,17 @@ async function discoverAndPrepare(source: PdfSource): Promise<{
 
     // Upload to storage
     const storagePath = `${source.store_id}/${hash}.pdf`;
-    await getSupabaseAdmin().storage
+    const { error: uploadError } = await getSupabaseAdmin().storage
       .from("pdf-imports")
       .upload(storagePath, pdfBuffer, {
         contentType: "application/pdf",
         upsert: true,
       });
+
+    if (uploadError) {
+      console.error(`[CRON] PDF ${i + 1}/${pdfs.length}: upload failed — ${JSON.stringify(uploadError)}`);
+      continue;
+    }
 
     // Create or reuse import record
     let importId: string;
