@@ -38,14 +38,24 @@ async function dispatchWorkers(importIds: string[]): Promise<void> {
   const results = await Promise.allSettled(
     importIds.map(async (importId) => {
       try {
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${cronSecret}`,
+        };
+        // Bypass Vercel Deployment Protection on preview deployments
+        if (process.env.VERCEL_AUTOMATION_BYPASS_SECRET) {
+          headers["x-vercel-protection-bypass"] = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+        }
         const res = await fetch(workerUrl, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${cronSecret}`,
-          },
+          headers,
           body: JSON.stringify({ importId }),
         });
+        const contentType = res.headers.get("content-type") ?? "";
+        if (!contentType.includes("application/json")) {
+          const text = (await res.text()).slice(0, 200);
+          throw new Error(`Worker returned ${res.status} (${contentType}): ${text}`);
+        }
         const body = await res.json();
         console.log(`[CRON] Worker ${importId}: ${res.status} — ${JSON.stringify(body)}`);
         return body;
