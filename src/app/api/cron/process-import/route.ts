@@ -23,6 +23,39 @@ function getAppUrl(): string {
   );
 }
 
+/**
+ * Dispatch worker invocations and wait for the HTTP requests to be sent.
+ * Uses AbortController to avoid waiting for the full worker response
+ * (which can take minutes). Once Vercel receives the request, the worker
+ * runs independently in its own serverless invocation.
+ */
+async function dispatchWorkers(importIds: string[]): Promise<void> {
+  const appUrl = getAppUrl();
+  const cronSecret = process.env.CRON_SECRET;
+
+  await Promise.allSettled(
+    importIds.map(async (importId) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      try {
+        await fetch(`${appUrl}/api/cron/process-single-pdf`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${cronSecret}`,
+          },
+          body: JSON.stringify({ importId }),
+          signal: controller.signal,
+        });
+      } catch {
+        // AbortError is expected — we just need the request to reach Vercel
+      } finally {
+        clearTimeout(timeout);
+      }
+    }),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // GET — Called by Vercel Cron. Discovers PDFs and dispatches workers.
 // ---------------------------------------------------------------------------
@@ -60,22 +93,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Fire-and-forget: dispatch all pending imports to worker endpoint
-  const appUrl = getAppUrl();
-  const cronSecret = process.env.CRON_SECRET;
-
-  for (const item of dispatched) {
-    fetch(`${appUrl}/api/cron/process-single-pdf`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${cronSecret}`,
-      },
-      body: JSON.stringify({ importId: item.importId }),
-    }).catch((err) => {
-      console.error(`[CRON] Failed to dispatch import ${item.importId}: ${err}`);
-    });
-  }
+  // Dispatch all pending imports to worker endpoint in parallel
+  await dispatchWorkers(dispatched.map((d) => d.importId));
 
   console.log(`[CRON] Done. Dispatched ${dispatched.length}, skipped ${skipped.length}, errors ${errors.length}`);
 
@@ -119,20 +138,8 @@ export async function POST(request: NextRequest) {
   try {
     const result = await discoverAndPrepare(source as PdfSource);
 
-    // Fire-and-forget workers
-    const appUrl = getAppUrl();
-    const cronSecret = process.env.CRON_SECRET;
-
-    for (const item of result.dispatched) {
-      fetch(`${appUrl}/api/cron/process-single-pdf`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${cronSecret}`,
-        },
-        body: JSON.stringify({ importId: item.importId }),
-      }).catch(() => {});
-    }
+    // Dispatch workers in parallel
+    await dispatchWorkers(result.dispatched.map((d) => d.importId));
 
     return NextResponse.json({
       dispatched: result.dispatched.length,
