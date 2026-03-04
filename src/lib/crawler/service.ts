@@ -13,8 +13,29 @@ globalThis.Path2D = Path2D as unknown as typeof globalThis.Path2D;
 // (it's listed in serverExternalPackages in next.config.ts)
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfjs = require("pdfjs-dist/legacy/build/pdf.js") as {
-  getDocument: (params: { data: Uint8Array }) => { promise: Promise<PDFDocumentProxy> };
+  getDocument: (params: { data: Uint8Array; canvasFactory?: unknown }) => { promise: Promise<PDFDocumentProxy> };
 };
+
+// Custom canvas factory using @napi-rs/canvas so pdfjs-dist never
+// falls back to require('canvas') (which isn't installed on Vercel).
+class NapiCanvasFactory {
+  create(width: number, height: number) {
+    const canvas = createCanvas(width, height);
+    return { canvas, context: canvas.getContext("2d") };
+  }
+  reset(canvasAndContext: { canvas: ReturnType<typeof createCanvas> }, width: number, height: number) {
+    canvasAndContext.canvas.width = width;
+    canvasAndContext.canvas.height = height;
+  }
+  destroy(canvasAndContext: { canvas: ReturnType<typeof createCanvas> | null; context: unknown }) {
+    if (canvasAndContext.canvas) {
+      canvasAndContext.canvas.width = 0;
+      canvasAndContext.canvas.height = 0;
+    }
+    canvasAndContext.canvas = null;
+    canvasAndContext.context = null;
+  }
+}
 
 interface CrawlerMeta {
   source: string;
@@ -109,7 +130,7 @@ Retorne JSON estrito no formato: { "products": [{ "name": "...", "price": 3.99, 
 
 async function renderPdfToImages(pdfBuffer: Uint8Array | Buffer): Promise<PdfRenderResult> {
   const data = new Uint8Array(pdfBuffer);
-  const loadingTask = pdfjs.getDocument({ data });
+  const loadingTask = pdfjs.getDocument({ data, canvasFactory: new NapiCanvasFactory() });
   const pdf = await loadingTask.promise;
 
   const pageCount = Math.min(pdf.numPages, MAX_PDF_PAGES);
