@@ -1,150 +1,328 @@
-import { View, Text, FlatList, Pressable } from 'react-native';
-import { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  FlatList,
+  Pressable,
+  StyleSheet,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SearchBar } from '@/components/search-bar';
-import { FilterChips } from '@/components/filter-chips';
-import { CategoryTabs } from '@/components/category-tabs';
-import { DealCard } from '@/components/deal-card';
-import { Paywall } from '@/components/paywall';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+
+import { useTheme } from '@/theme/use-theme';
+import { useEconomySummary } from '@/hooks/use-economy-summary';
+import { useStoreRanking } from '@/hooks/use-store-ranking';
 import { usePromotions } from '@/hooks/use-promotions';
+import { useCategories } from '@/hooks/use-categories';
 import { useLocation } from '@/hooks/use-location';
-import { useAuthStore } from '@precomapa/shared';
-import { useFilterStore } from '@/store/app-store';
-import { Colors } from '@/constants/colors';
+import { EconomyCard } from '@/components/economy-card';
+import { StoreRanking as StoreRankingComponent } from '@/components/store-ranking';
+import { SearchBar } from '@/components/search-bar';
+import { DealCard } from '@/components/themed/deal-card';
+import { SectionDivider } from '@/components/themed/section-divider';
+import { HomeSkeleton } from '@/components/skeleton/home-skeleton';
+import { InlineError } from '@/components/inline-error';
+import { TAB_BAR_HEIGHT } from '@/components/floating-tab-bar';
+
 import type { EnrichedPromotion } from '@/types';
-import { ShoppingBag, Crown } from 'lucide-react-native';
 
-function SkeletonCard() {
-  return (
-    <View className="bg-surface-tertiary rounded-2xl p-4 gap-2">
-      <View className="bg-border rounded-lg h-4 w-3/4" />
-      <View className="bg-border rounded-lg h-3 w-1/2" />
-      <View className="bg-border rounded-lg h-6 w-1/3 mt-2" />
-      <View className="flex-row gap-2 mt-1">
-        <View className="bg-border rounded-md h-5 w-12" />
-        <View className="bg-border rounded-md h-5 w-16" />
-      </View>
-    </View>
-  );
-}
-
-function EmptyState() {
-  return (
-    <View className="items-center justify-center py-16 px-8">
-      <ShoppingBag size={48} color={Colors.text.tertiary} />
-      <Text className="text-lg font-semibold text-text-primary mt-4">
-        Nenhuma oferta encontrada
-      </Text>
-      <Text className="text-sm text-text-secondary text-center mt-2">
-        Tente buscar por outro produto ou mude a categoria
-      </Text>
-    </View>
-  );
-}
+// ---------------------------------------------------------------------------
+// Home Screen
+// ---------------------------------------------------------------------------
 
 export default function HomeScreen() {
+  const { tokens } = useTheme();
+  const insets = useSafeAreaInsets();
   const { latitude, longitude } = useLocation();
-  const searchQuery = useFilterStore((s) => s.searchQuery);
-  const sortMode = useFilterStore((s) => s.sortMode);
-  const selectedCategoryId = useFilterStore((s) => s.selectedCategoryId);
-  const profile = useAuthStore((s) => s.profile);
-  const isFree = profile?.b2c_plan === 'free';
-  const [showPaywall, setShowPaywall] = useState(false);
 
-  const { promotions, isLoading, isEmpty } = usePromotions({
-    query: searchQuery || undefined,
-    categoryId: selectedCategoryId ?? undefined,
-    sortMode,
+  // ---------------------------------------------------------------------------
+  // Category filter state
+  // ---------------------------------------------------------------------------
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // ---------------------------------------------------------------------------
+  // Data hooks
+  // ---------------------------------------------------------------------------
+  const {
+    summary,
+    isLoading: economyLoading,
+  } = useEconomySummary({
     userLatitude: latitude,
     userLongitude: longitude,
   });
 
-  // Nearest deals for "Perto de voce" section
-  const { promotions: nearbyDeals } = usePromotions({
+  const {
+    ranking,
+  } = useStoreRanking({
+    userLatitude: latitude,
+    userLongitude: longitude,
+  });
+
+  const {
+    promotions,
+    isLoading: promotionsLoading,
+  } = usePromotions({
     sortMode: 'nearest',
     userLatitude: latitude,
     userLongitude: longitude,
+    categoryId: selectedCategory ?? undefined,
   });
-  const nearbyTop5 = nearbyDeals.slice(0, 5);
-  const showNearby = !searchQuery && !selectedCategoryId;
 
-  const renderDeal = ({
-    item,
-    index,
-  }: {
-    item: EnrichedPromotion;
-    index: number;
-  }) => <DealCard deal={item} index={index} />;
+  const {
+    categories,
+    isLoading: categoriesLoading,
+  } = useCategories();
 
+  // ---------------------------------------------------------------------------
+  // Error state (simplified: track if any hook threw)
+  // ---------------------------------------------------------------------------
+  const [hasError, setHasError] = useState(false);
+
+  const handleRetry = useCallback(() => {
+    setHasError(false);
+    // Hooks re-run on mount / dependency changes; toggling state triggers re-render
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Loading / Error
+  // ---------------------------------------------------------------------------
+  const isLoading = economyLoading || promotionsLoading || categoriesLoading;
+
+  if (hasError) {
+    return (
+      <SafeAreaView
+        edges={['top']}
+        style={[styles.safeArea, { backgroundColor: tokens.bg }]}
+      >
+        <View style={styles.errorContainer}>
+          <InlineError onRetry={handleRetry} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <SafeAreaView
+        edges={['top']}
+        style={[styles.safeArea, { backgroundColor: tokens.bg }]}
+      >
+        <HomeSkeleton />
+      </SafeAreaView>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
   return (
-    <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
-      <View className="flex-1 px-4 pt-4">
-        {/* Search */}
-        <SearchBar />
-
-        {/* Filters + Categories */}
-        <View className="mt-3">
-          <FilterChips />
+    <SafeAreaView
+      edges={['top']}
+      style={[styles.safeArea, { backgroundColor: tokens.bg }]}
+    >
+      <ScrollView
+        contentContainerStyle={{
+          paddingBottom: TAB_BAR_HEIGHT + insets.bottom,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Economy Card */}
+        <View style={styles.economyCardWrapper}>
+          <EconomyCard
+            totalSavings={summary.totalSavings}
+            cheapestStore={summary.cheapestStore}
+            mode={summary.mode}
+            itemCount={summary.itemCount}
+            onComparePress={() => router.push('/list')}
+          />
         </View>
-        <View className="mt-2">
-          <CategoryTabs />
+
+        {/* Search Bar */}
+        <View style={styles.searchBarWrapper}>
+          <SearchBar />
         </View>
 
-        {/* Upgrade banner for free users */}
-        {isFree && (
+        {/* Category Chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.chipsScrollView}
+          contentContainerStyle={styles.chipsContentContainer}
+        >
+          {/* "Todos" chip */}
           <Pressable
-            onPress={() => setShowPaywall(true)}
-            className="bg-brand-green/5 border border-brand-green/20 rounded-xl px-4 py-3 mt-3 flex-row items-center gap-2"
+            onPress={() => setSelectedCategory(null)}
+            style={[
+              styles.chip,
+              !selectedCategory
+                ? { backgroundColor: tokens.primary }
+                : {
+                    backgroundColor: tokens.surface,
+                    borderWidth: 1,
+                    borderColor: tokens.border,
+                  },
+            ]}
           >
-            <Crown size={16} color={Colors.brand.green} />
-            <Text className="text-xs text-text-secondary flex-1">
-              Desbloqueie favoritos ilimitados, alertas e mais.{' '}
-              <Text className="text-brand-green font-semibold">
-                Conheca o Plus
-              </Text>
+            <Text
+              style={[
+                styles.chipText,
+                !selectedCategory
+                  ? { color: '#FFFFFF', fontWeight: '600' }
+                  : { color: tokens.textSecondary, fontWeight: '500' },
+              ]}
+            >
+              Todos
             </Text>
           </Pressable>
-        )}
 
-        {/* Content */}
-        {isLoading ? (
-          <View className="gap-3 mt-4">
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
+          {categories.map((cat) => {
+            const isActive = selectedCategory === cat.id;
+            return (
+              <Pressable
+                key={cat.id}
+                onPress={() => setSelectedCategory(cat.id)}
+                style={[
+                  styles.chip,
+                  isActive
+                    ? { backgroundColor: tokens.primary }
+                    : {
+                        backgroundColor: tokens.surface,
+                        borderWidth: 1,
+                        borderColor: tokens.border,
+                      },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    isActive
+                      ? { color: '#FFFFFF', fontWeight: '600' }
+                      : { color: tokens.textSecondary, fontWeight: '500' },
+                  ]}
+                >
+                  {cat.name}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        {/* Deals Carousel — "Ofertas perto de voce" */}
+        <View style={styles.dealsSection}>
+          {/* Header row */}
+          <View style={styles.dealsSectionHeader}>
+            <Text
+              style={[styles.dealsSectionTitle, { color: tokens.textPrimary }]}
+            >
+              Ofertas perto de você
+            </Text>
+            <Pressable onPress={() => router.push('/search')}>
+              <Text
+                style={[styles.dealsSectionLink, { color: tokens.primary }]}
+              >
+                Ver todas
+              </Text>
+            </Pressable>
           </View>
-        ) : isEmpty ? (
-          <EmptyState />
-        ) : (
+
+          {/* Horizontal deal cards */}
           <FlatList
-            data={promotions}
+            horizontal
+            data={promotions.slice(0, 10)}
             keyExtractor={(item) => item.id}
-            renderItem={renderDeal}
-            contentContainerClassName="gap-3 pb-4"
-            className="mt-4"
-            showsVerticalScrollIndicator={false}
-            ListHeaderComponent={
-              showNearby && nearbyTop5.length > 0 ? (
-                <View className="mb-4">
-                  <Text className="text-lg font-semibold text-text-primary mb-3">
-                    Perto de voce
-                  </Text>
-                  <View className="gap-3">
-                    {nearbyTop5.map((deal, i) => (
-                      <DealCard key={deal.id} deal={deal} index={i} />
-                    ))}
-                  </View>
-                  <View className="h-px bg-border mt-4 mb-2" />
-                  <Text className="text-lg font-semibold text-text-primary mt-2">
-                    Todas as ofertas
-                  </Text>
-                </View>
-              ) : null
-            }
+            renderItem={({ item }: { item: EnrichedPromotion }) => (
+              <DealCard
+                deal={item}
+                compact
+                onPress={() => router.push(`/product/${item.product_id}`)}
+              />
+            )}
+            showsHorizontalScrollIndicator={false}
+            style={styles.dealsList}
+            contentContainerStyle={styles.dealsListContent}
           />
+        </View>
+
+        {/* Section Divider */}
+        <SectionDivider
+          style={{ marginVertical: 20, marginHorizontal: 16 }}
+        />
+
+        {/* Store Ranking */}
+        {ranking && (
+          <View style={styles.rankingWrapper}>
+            <StoreRankingComponent ranking={ranking} />
+          </View>
         )}
-      </View>
-      <Paywall visible={showPaywall} onClose={() => setShowPaywall(false)} />
+      </ScrollView>
     </SafeAreaView>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 16,
+  },
+  economyCardWrapper: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  searchBarWrapper: {
+    paddingHorizontal: 16,
+    marginTop: 16,
+  },
+  chipsScrollView: {
+    marginTop: 12,
+  },
+  chipsContentContainer: {
+    paddingLeft: 16,
+    paddingRight: 8,
+    gap: 8,
+  },
+  chip: {
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  chipText: {
+    fontSize: 13,
+  },
+  dealsSection: {
+    marginTop: 20,
+  },
+  dealsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  dealsSectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  dealsSectionLink: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  dealsList: {
+    marginTop: 12,
+  },
+  dealsListContent: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  rankingWrapper: {
+    paddingHorizontal: 16,
+  },
+});

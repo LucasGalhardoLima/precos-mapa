@@ -25,25 +25,18 @@ export default async function PdfSourcesPage() {
   }));
 
   const mappedSources = (sources ?? []).map(
-    (s: {
-      id: string;
-      store_id: string;
-      url: string;
-      label: string | null;
-      is_active: boolean;
-      last_checked_at: string | null;
-      last_hash: string | null;
-      stores: { name: string } | null;
-    }) => ({
+    (s) => {
+      const stores = Array.isArray(s.stores) ? s.stores[0] : s.stores;
+      return {
       id: s.id,
       storeId: s.store_id,
-      storeName: s.stores?.name ?? "Loja",
+      storeName: stores?.name ?? "Loja",
       url: s.url,
       label: s.label,
       isActive: s.is_active,
       lastCheckedAt: s.last_checked_at,
       lastHash: s.last_hash,
-    }),
+    };},
   );
 
   return (

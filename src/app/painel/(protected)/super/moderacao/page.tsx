@@ -17,7 +17,9 @@ export default async function SuperModerationPage() {
     .eq("status", "pending_review")
     .order("created_at", { ascending: false });
 
-  const items = (flagged ?? []).map((p: { id: string; promo_price: number; original_price: number; status: string; created_at: string; store: { name: string } | null; product: { name: string } | null }) => {
+  const items = (flagged ?? []).map((p) => {
+    const product = Array.isArray(p.product) ? p.product[0] : p.product;
+    const store = Array.isArray(p.store) ? p.store[0] : p.store;
     const discount =
       p.original_price > 0
         ? Math.round(((p.original_price - p.promo_price) / p.original_price) * 100)
@@ -29,8 +31,8 @@ export default async function SuperModerationPage() {
 
     return {
       id: p.id,
-      productName: p.product?.name ?? "Produto",
-      storeName: p.store?.name ?? "Loja",
+      productName: product?.name ?? "Produto",
+      storeName: store?.name ?? "Loja",
       originalPrice: p.original_price,
       promoPrice: p.promo_price,
       discount,
@@ -51,15 +53,8 @@ export default async function SuperModerationPage() {
     error?: string;
   }
 
-  const importItems = (pendingImports ?? []).map((imp: {
-    id: string;
-    filename: string;
-    created_at: string;
-    extraction_pass_1: PassData | null;
-    extraction_pass_2: PassData | null;
-    extraction_pass_3: PassData | null;
-    stores: { name: string } | null;
-  }) => {
+  const importItems = (pendingImports ?? []).map((imp) => {
+    const stores = Array.isArray(imp.stores) ? imp.stores[0] : imp.stores;
     const buildPassSummary = (passData: PassData | null) => {
       if (!passData || passData.error) {
         return {
@@ -79,7 +74,7 @@ export default async function SuperModerationPage() {
 
     return {
       id: imp.id,
-      storeName: imp.stores?.name ?? "Loja",
+      storeName: stores?.name ?? "Loja",
       filename: imp.filename,
       createdAt: imp.created_at,
       passes: [

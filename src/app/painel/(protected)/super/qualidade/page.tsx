@@ -31,31 +31,22 @@ export default async function SuperQualityPage() {
     .order("created_at", { ascending: false })
     .limit(100);
 
-  const flags = (flagRows ?? []).map((f: {
-    id: string;
-    product_id: string;
-    store_id: string | null;
-    flag_type: string;
-    severity: string;
-    detail: string;
-    reference_value: number | null;
-    actual_value: number | null;
-    created_at: string;
-    product: { name: string } | null;
-    store: { name: string } | null;
-  }) => ({
+  const flags = (flagRows ?? []).map((f) => {
+    const product = Array.isArray(f.product) ? f.product[0] : f.product;
+    const store = Array.isArray(f.store) ? f.store[0] : f.store;
+    return {
     id: f.id,
     productId: f.product_id,
-    productName: f.product?.name ?? "Produto",
+    productName: product?.name ?? "Produto",
     storeId: f.store_id,
-    storeName: f.store?.name,
+    storeName: store?.name,
     flagType: f.flag_type,
     severity: f.severity,
     detail: f.detail,
     referenceValue: f.reference_value,
     actualValue: f.actual_value,
     createdAt: f.created_at,
-  }));
+  };});
 
   // Data coverage stats
   const { count: totalProducts } = await supabase

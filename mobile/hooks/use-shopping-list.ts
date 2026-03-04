@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Alert } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@precomapa/shared';
 
@@ -73,31 +74,92 @@ export function useShoppingList() {
 
   const addItem = useCallback(
     async (listId: string, productId: string, quantity: number = 1) => {
-      await supabase
+      const snapshot = [...lists];
+
+      const tempItem: ShoppingListItem = {
+        id: 'temp-' + Date.now(),
+        product_id: productId,
+        quantity,
+        is_checked: false,
+      };
+
+      setLists((prev) =>
+        prev.map((list) =>
+          list.id === listId
+            ? { ...list, items: [...list.items, tempItem] }
+            : list,
+        ),
+      );
+
+      const { error } = await supabase
         .from('shopping_list_items')
         .insert({ list_id: listId, product_id: productId, quantity });
-      await fetchLists();
+
+      if (error) {
+        setLists(snapshot);
+        Alert.alert('Erro', 'Não foi possível atualizar a lista.');
+        return;
+      }
+
+      fetchLists();
     },
-    [fetchLists],
+    [lists, fetchLists],
   );
 
   const toggleItem = useCallback(
     async (itemId: string, isChecked: boolean) => {
-      await supabase
+      const snapshot = [...lists];
+
+      setLists((prev) =>
+        prev.map((list) => ({
+          ...list,
+          items: list.items.map((item) =>
+            item.id === itemId ? { ...item, is_checked: isChecked } : item,
+          ),
+        })),
+      );
+
+      const { error } = await supabase
         .from('shopping_list_items')
         .update({ is_checked: isChecked })
         .eq('id', itemId);
-      await fetchLists();
+
+      if (error) {
+        setLists(snapshot);
+        Alert.alert('Erro', 'Não foi possível atualizar a lista.');
+        return;
+      }
+
+      fetchLists();
     },
-    [fetchLists],
+    [lists, fetchLists],
   );
 
   const removeItem = useCallback(
     async (itemId: string) => {
-      await supabase.from('shopping_list_items').delete().eq('id', itemId);
-      await fetchLists();
+      const snapshot = [...lists];
+
+      setLists((prev) =>
+        prev.map((list) => ({
+          ...list,
+          items: list.items.filter((item) => item.id !== itemId),
+        })),
+      );
+
+      const { error } = await supabase
+        .from('shopping_list_items')
+        .delete()
+        .eq('id', itemId);
+
+      if (error) {
+        setLists(snapshot);
+        Alert.alert('Erro', 'Não foi possível atualizar a lista.');
+        return;
+      }
+
+      fetchLists();
     },
-    [fetchLists],
+    [lists, fetchLists],
   );
 
   const deleteList = useCallback(
