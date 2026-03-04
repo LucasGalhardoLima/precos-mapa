@@ -24,36 +24,34 @@ function getAppUrl(): string {
 }
 
 /**
- * Dispatch worker invocations and wait for the HTTP requests to be sent.
- * Uses AbortController to avoid waiting for the full worker response
- * (which can take minutes). Once Vercel receives the request, the worker
- * runs independently in its own serverless invocation.
+ * Dispatch worker invocations in parallel and await all responses.
+ * Each worker runs in its own Vercel serverless invocation (~1 min each).
+ * Running in parallel, total time ≈ slowest worker (well within 5 min).
  */
 async function dispatchWorkers(importIds: string[]): Promise<void> {
   const appUrl = getAppUrl();
   const cronSecret = process.env.CRON_SECRET;
 
-  await Promise.allSettled(
+  const results = await Promise.allSettled(
     importIds.map(async (importId) => {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
-      try {
-        await fetch(`${appUrl}/api/cron/process-single-pdf`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${cronSecret}`,
-          },
-          body: JSON.stringify({ importId }),
-          signal: controller.signal,
-        });
-      } catch {
-        // AbortError is expected — we just need the request to reach Vercel
-      } finally {
-        clearTimeout(timeout);
-      }
+      const res = await fetch(`${appUrl}/api/cron/process-single-pdf`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${cronSecret}`,
+        },
+        body: JSON.stringify({ importId }),
+      });
+      const body = await res.json();
+      console.log(`[CRON] Worker ${importId}: ${res.status} — ${JSON.stringify(body)}`);
+      return body;
     }),
   );
+
+  const failed = results.filter((r) => r.status === "rejected");
+  if (failed.length > 0) {
+    console.error(`[CRON] ${failed.length} worker(s) failed to dispatch`);
+  }
 }
 
 // ---------------------------------------------------------------------------
