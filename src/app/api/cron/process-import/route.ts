@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
-import { discoverAndDownloadPdf } from "@/lib/crawler/service";
-import { runMultiPassExtraction } from "@/lib/import-pipeline";
+import { discoverAndDownloadAllPdfs } from "@/lib/crawler/service";
 import { getSupabaseAdmin } from "@/lib/supabase-server";
-import { findOrCreateProduct } from "@/lib/product-match";
-import { normalizeCategory, EncarteProduct } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
-
-const CATEGORY_DEFAULTS: Record<string, { name: string; icon: string; sort_order: number }> = {
-  cat_alimentos: { name: "Alimentos", icon: "wheat", sort_order: 0 },
-  cat_bebidas: { name: "Bebidas", icon: "cup-soda", sort_order: 1 },
-  cat_limpeza: { name: "Limpeza", icon: "spray-can", sort_order: 2 },
-  cat_hortifruti: { name: "Hortifruti", icon: "apple", sort_order: 3 },
-  cat_padaria: { name: "Padaria", icon: "croissant", sort_order: 4 },
-  cat_higiene: { name: "Higiene", icon: "sparkles", sort_order: 5 },
-};
 
 interface PdfSource {
   id: string;
@@ -24,17 +11,20 @@ interface PdfSource {
   last_hash: string | null;
 }
 
-// ---------------------------------------------------------------------------
-// Auth helper
-// ---------------------------------------------------------------------------
-
 function validateCronSecret(request: NextRequest): boolean {
   const authHeader = request.headers.get("authorization");
   return authHeader === `Bearer ${process.env.CRON_SECRET}`;
 }
 
+function getAppUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+  );
+}
+
 // ---------------------------------------------------------------------------
-// GET — Called by Vercel Cron. Processes all active sources.
+// GET — Called by Vercel Cron. Discovers PDFs and dispatches workers.
 // ---------------------------------------------------------------------------
 
 export async function GET(request: NextRequest) {
@@ -48,29 +38,53 @@ export async function GET(request: NextRequest) {
     .eq("is_active", true);
 
   const activeSources = (sources ?? []) as PdfSource[];
-
   console.log(`[CRON] Found ${activeSources.length} active sources`);
 
   if (activeSources.length === 0) {
     return NextResponse.json({ status: "no_active_sources", processed: 0 });
   }
 
-  const results: { sourceId: string; status: string; error?: string }[] = [];
+  const dispatched: { sourceId: string; importId: string; filename: string }[] = [];
+  const skipped: { sourceId: string; filename: string; reason: string }[] = [];
+  const errors: { sourceId: string; error: string }[] = [];
 
   for (const source of activeSources) {
     try {
-      const result = await processSource(source);
-      console.log(`[CRON] Source ${source.id}: ${result.status}${result.published != null ? ` (${result.published} published)` : ""}`);
-      results.push({ sourceId: source.id, ...result });
+      const result = await discoverAndPrepare(source);
+      dispatched.push(...result.dispatched);
+      skipped.push(...result.skipped);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro desconhecido";
       console.error(`[CRON] Source ${source.id}: error — ${message}`);
-      results.push({ sourceId: source.id, status: "error", error: message });
+      errors.push({ sourceId: source.id, error: message });
     }
   }
 
-  console.log(`[CRON] Done. Processed ${results.length} sources.`);
-  return NextResponse.json({ processed: results.length, results });
+  // Fire-and-forget: dispatch all pending imports to worker endpoint
+  const appUrl = getAppUrl();
+  const cronSecret = process.env.CRON_SECRET;
+
+  for (const item of dispatched) {
+    fetch(`${appUrl}/api/cron/process-single-pdf`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${cronSecret}`,
+      },
+      body: JSON.stringify({ importId: item.importId }),
+    }).catch((err) => {
+      console.error(`[CRON] Failed to dispatch import ${item.importId}: ${err}`);
+    });
+  }
+
+  console.log(`[CRON] Done. Dispatched ${dispatched.length}, skipped ${skipped.length}, errors ${errors.length}`);
+
+  return NextResponse.json({
+    dispatched: dispatched.length,
+    skipped: skipped.length,
+    errors: errors.length,
+    details: { dispatched, skipped, errors },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -103,8 +117,27 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await processSource(source as PdfSource);
-    return NextResponse.json(result);
+    const result = await discoverAndPrepare(source as PdfSource);
+
+    // Fire-and-forget workers
+    const appUrl = getAppUrl();
+    const cronSecret = process.env.CRON_SECRET;
+
+    for (const item of result.dispatched) {
+      fetch(`${appUrl}/api/cron/process-single-pdf`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${cronSecret}`,
+        },
+        body: JSON.stringify({ importId: item.importId }),
+      }).catch(() => {});
+    }
+
+    return NextResponse.json({
+      dispatched: result.dispatched.length,
+      skipped: result.skipped.length,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erro desconhecido";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -112,250 +145,98 @@ export async function POST(request: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// Core processing logic for a single PDF source
+// Discover PDFs, dedup, create import records, upload to storage.
+// Returns list of importIds ready for worker dispatch.
 // ---------------------------------------------------------------------------
 
-async function processSource(
-  source: PdfSource,
-): Promise<{ status: string; consensus?: string; published?: number }> {
-  // 1. Discover and download PDF
-  const { pdfBuffer, filename: discoveredFilename } = await discoverAndDownloadPdf(source.url);
+async function discoverAndPrepare(source: PdfSource): Promise<{
+  dispatched: { sourceId: string; importId: string; filename: string }[];
+  skipped: { sourceId: string; filename: string; reason: string }[];
+}> {
+  const pdfs = await discoverAndDownloadAllPdfs(source.url);
+  console.log(`[CRON] Source ${source.id}: discovered ${pdfs.length} PDF(s)`);
 
-  // 2. SHA-256 hash
-  const hash = createHash("sha256").update(pdfBuffer).digest("hex");
-  console.log(`[CRON] Downloaded PDF from ${source.url} (hash: ${hash.slice(0, 8)}, size: ${pdfBuffer.byteLength} bytes)`);
+  const dispatched: { sourceId: string; importId: string; filename: string }[] = [];
+  const skipped: { sourceId: string; filename: string; reason: string }[] = [];
 
-  // 3. Dedup: same hash as last time → skip
-  if (source.last_hash === hash) {
-    await getSupabaseAdmin()
-      .from("store_pdf_sources")
-      .update({ last_checked_at: new Date().toISOString() })
-      .eq("id", source.id);
+  for (let i = 0; i < pdfs.length; i++) {
+    const { pdfBuffer, filename: discoveredFilename } = pdfs[i];
+    const hash = createHash("sha256").update(pdfBuffer).digest("hex");
+    const filename = source.label
+      ? `${source.label.replace(/[^a-zA-Z0-9_-]/g, "_")}_${i + 1}.pdf`
+      : discoveredFilename;
 
-    console.log(`[CRON] Skipped source ${source.id}: same hash as last run`);
-    return { status: "skipped_same_hash" };
-  }
+    console.log(`[CRON] PDF ${i + 1}/${pdfs.length}: ${filename} (hash: ${hash.slice(0, 8)}, ${pdfBuffer.byteLength} bytes)`);
 
-  // 4. DB dedup: already processed this exact PDF for this store?
-  const { data: existing } = await getSupabaseAdmin()
-    .from("pdf_imports")
-    .select("id, status")
-    .eq("store_id", source.store_id)
-    .eq("file_hash", hash)
-    .maybeSingle();
-
-  const existingRecord = existing as { id: string; status: string } | null;
-
-  if (existingRecord?.status === "done") {
-    await getSupabaseAdmin()
-      .from("store_pdf_sources")
-      .update({ last_hash: hash, last_checked_at: new Date().toISOString() })
-      .eq("id", source.id);
-
-    return { status: "skipped_already_done" };
-  }
-
-  // 5. Upload PDF to Storage
-  const storagePath = `${source.store_id}/${hash}.pdf`;
-  const filename = source.label
-    ? `${source.label.replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf`
-    : discoveredFilename;
-
-  await getSupabaseAdmin().storage
-    .from("pdf-imports")
-    .upload(storagePath, pdfBuffer, {
-      contentType: "application/pdf",
-      upsert: true,
-    });
-
-  // 6. Create or reuse pdf_imports record
-  let importId: string;
-
-  if (existingRecord) {
-    await getSupabaseAdmin()
+    // DB dedup
+    const { data: existing } = await getSupabaseAdmin()
       .from("pdf_imports")
-      .update({
-        status: "processing",
-        error_message: null,
-        storage_path: storagePath,
-        source_url: source.url,
-      })
-      .eq("id", existingRecord.id);
-    importId = existingRecord.id;
-  } else {
-    const { data: inserted, error: insertError } = await getSupabaseAdmin()
-      .from("pdf_imports")
-      .insert({
-        store_id: source.store_id,
-        source_id: source.id,
-        filename,
-        file_hash: hash,
-        source_url: source.url,
-        storage_path: storagePath,
-        status: "processing",
-      })
-      .select("id")
-      .single();
-
-    const insertedRecord = inserted as { id: string } | null;
-
-    if (insertError || !insertedRecord) {
-      throw new Error(`Failed to create import record: ${insertError?.message ?? "unknown"}`);
-    }
-    importId = insertedRecord.id;
-  }
-
-  // 7. Run 3-pass extraction
-  console.log(`[CRON] Running 3-pass extraction for source ${source.id}...`);
-  const consensus = await runMultiPassExtraction(pdfBuffer, filename, 3);
-  console.log(`[CRON] Extraction result: consensus=${consensus.type}, confidence=${consensus.confidenceScore}, products=${consensus.consensusProducts?.length ?? 0}`);
-
-  // 8. Save extraction passes
-  const passData: Record<string, unknown> = {
-    extraction_pass_1: consensus.passes[0]
-      ? { products: consensus.passes[0].products, error: consensus.passes[0].error }
-      : null,
-    extraction_pass_2: consensus.passes[1]
-      ? { products: consensus.passes[1].products, error: consensus.passes[1].error }
-      : null,
-    extraction_pass_3: consensus.passes[2]
-      ? { products: consensus.passes[2].products, error: consensus.passes[2].error }
-      : null,
-    consensus_result: consensus.consensusProducts
-      ? { products: consensus.consensusProducts }
-      : null,
-    consensus_type: consensus.type === "none" ? null : consensus.type,
-    confidence_score: consensus.confidenceScore,
-  };
-
-  if (consensus.type !== "none" && consensus.consensusProducts) {
-    // 9. Auto-publish: create products and promotions
-    const published = await publishProducts(
-      source.store_id,
-      importId,
-      consensus.consensusProducts,
-    );
-
-    await getSupabaseAdmin()
-      .from("pdf_imports")
-      .update({
-        ...passData,
-        status: "done",
-        ofertas_count: published,
-        processed_at: new Date().toISOString(),
-      })
-      .eq("id", importId);
-
-    // Log accuracy
-    await getSupabaseAdmin().from("ai_import_logs").insert({
-      store_id: source.store_id,
-      accuracy_percent: consensus.confidenceScore,
-      total_ai_products: consensus.consensusProducts.length,
-      total_manual_products: consensus.consensusProducts.length,
-      total_deleted_products: 0,
-    });
-
-    revalidatePath("/painel/ofertas");
-
-    // 10. Update source tracking
-    await getSupabaseAdmin()
-      .from("store_pdf_sources")
-      .update({ last_hash: hash, last_checked_at: new Date().toISOString() })
-      .eq("id", source.id);
-
-    console.log(`[CRON] Published ${published} promotions for store ${source.store_id}`);
-    return { status: "done", consensus: consensus.type, published };
-  } else {
-    // 11. No consensus → needs_review
-    await getSupabaseAdmin()
-      .from("pdf_imports")
-      .update({
-        ...passData,
-        status: "needs_review",
-        processed_at: new Date().toISOString(),
-      })
-      .eq("id", importId);
-
-    await getSupabaseAdmin()
-      .from("store_pdf_sources")
-      .update({ last_hash: hash, last_checked_at: new Date().toISOString() })
-      .eq("id", source.id);
-
-    return { status: "needs_review", consensus: "none" };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Publish products + promotions
-// ---------------------------------------------------------------------------
-
-async function publishProducts(
-  storeId: string,
-  importId: string,
-  products: EncarteProduct[],
-): Promise<number> {
-  const usedCategoryIds = new Set(
-    products.map((p) => normalizeCategory(p.category)),
-  );
-
-  for (const catId of usedCategoryIds) {
-    const defaults = CATEGORY_DEFAULTS[catId];
-    if (!defaults) continue;
-
-    const { data: catCheck } = await getSupabaseAdmin()
-      .from("categories")
-      .select("id")
-      .eq("id", catId)
+      .select("id, status")
+      .eq("store_id", source.store_id)
+      .eq("file_hash", hash)
       .maybeSingle();
 
-    if (!catCheck) {
-      await getSupabaseAdmin().from("categories").insert({ id: catId, ...defaults });
-    }
-  }
+    const existingRecord = existing as { id: string; status: string } | null;
 
-  const now = new Date().toISOString();
-  let published = 0;
-
-  for (const product of products) {
-    try {
-      const { id: productId } = await findOrCreateProduct(getSupabaseAdmin(), {
-        name: product.name,
-        categoryId: normalizeCategory(product.category),
-        referencePrice: product.original_price ?? product.price,
-      });
-
-      let endDate: string;
-      if (product.validity) {
-        endDate = new Date(product.validity + "T23:59:59Z").toISOString();
-      } else {
-        const future = new Date();
-        future.setDate(future.getDate() + 7);
-        endDate = future.toISOString();
-      }
-
-      const originalPrice = product.original_price ?? product.price;
-
-      const { error: promoError } = await getSupabaseAdmin().from("promotions").insert({
-        store_id: storeId,
-        product_id: productId,
-        original_price: originalPrice,
-        promo_price: product.price,
-        start_date: now,
-        end_date: endDate,
-        source: "cron",
-        status: "active",
-        created_by: null,
-        pdf_import_id: importId,
-      });
-
-      if (!promoError) {
-        published++;
-      }
-    } catch {
-      // Skip individual product errors to maximize throughput
+    if (existingRecord?.status === "done") {
+      console.log(`[CRON] PDF ${i + 1}/${pdfs.length}: skipped (already done)`);
+      skipped.push({ sourceId: source.id, filename, reason: "already_done" });
       continue;
     }
+
+    // Upload to storage
+    const storagePath = `${source.store_id}/${hash}.pdf`;
+    await getSupabaseAdmin().storage
+      .from("pdf-imports")
+      .upload(storagePath, pdfBuffer, {
+        contentType: "application/pdf",
+        upsert: true,
+      });
+
+    // Create or reuse import record
+    let importId: string;
+
+    if (existingRecord) {
+      await getSupabaseAdmin()
+        .from("pdf_imports")
+        .update({
+          status: "pending",
+          error_message: null,
+          storage_path: storagePath,
+          source_url: source.url,
+        })
+        .eq("id", existingRecord.id);
+      importId = existingRecord.id;
+    } else {
+      const { data: inserted, error: insertError } = await getSupabaseAdmin()
+        .from("pdf_imports")
+        .insert({
+          store_id: source.store_id,
+          source_id: source.id,
+          filename,
+          file_hash: hash,
+          source_url: source.url,
+          storage_path: storagePath,
+          status: "pending",
+        })
+        .select("id")
+        .single();
+
+      if (insertError || !inserted) {
+        console.error(`[CRON] PDF ${i + 1}/${pdfs.length}: failed to create record: ${insertError?.message}`);
+        continue;
+      }
+      importId = (inserted as { id: string }).id;
+    }
+
+    dispatched.push({ sourceId: source.id, importId, filename });
   }
 
-  return published;
+  // Update source tracking
+  await getSupabaseAdmin()
+    .from("store_pdf_sources")
+    .update({ last_checked_at: new Date().toISOString() })
+    .eq("id", source.id);
+
+  return { dispatched, skipped };
 }

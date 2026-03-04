@@ -253,7 +253,14 @@ export async function discoverAndDownloadPdf(url: string): Promise<{
   filename: string;
   resolvedPdfUrl: string;
 }> {
-  // Direct PDF URL — download without page navigation
+  const results = await discoverAndDownloadAllPdfs(url);
+  return results[0];
+}
+
+export async function discoverAndDownloadAllPdfs(url: string): Promise<
+  { pdfBuffer: Buffer; filename: string; resolvedPdfUrl: string }[]
+> {
+  // Direct PDF URL — single result
   if (url.toLowerCase().endsWith(".pdf")) {
     const filename = decodeURIComponent(url.split("/").pop() ?? "encarte.pdf");
     const response = await fetch(url);
@@ -261,26 +268,38 @@ export async function discoverAndDownloadPdf(url: string): Promise<{
       throw new Error(`Falha ao baixar PDF (HTTP ${response.status}): ${url}`);
     }
     const arrayBuffer = await response.arrayBuffer();
-    return { pdfBuffer: Buffer.from(arrayBuffer), filename, resolvedPdfUrl: url };
+    return [{ pdfBuffer: Buffer.from(arrayBuffer), filename, resolvedPdfUrl: url }];
   }
 
-  // HTML page — fetch and find PDF links via regex
+  // HTML page — discover and download all PDFs
   const pdfUrls = await discoverPdfLinksFromHtml(url);
 
   if (pdfUrls.length === 0) {
     throw new Error(`Nenhum PDF encontrado na página: ${url}`);
   }
 
-  const firstPdfUrl = pdfUrls[0];
-  const filename = decodeURIComponent(firstPdfUrl.split("/").pop() ?? "encarte.pdf");
+  const results: { pdfBuffer: Buffer; filename: string; resolvedPdfUrl: string }[] = [];
 
-  const pdfResponse = await fetch(firstPdfUrl);
-  if (!pdfResponse.ok) {
-    throw new Error(`Falha ao baixar PDF (HTTP ${pdfResponse.status}): ${firstPdfUrl}`);
+  for (const pdfUrl of pdfUrls) {
+    try {
+      const filename = decodeURIComponent(pdfUrl.split("/").pop() ?? "encarte.pdf");
+      const pdfResponse = await fetch(pdfUrl);
+      if (!pdfResponse.ok) {
+        console.error(`[CRON] Failed to download PDF (HTTP ${pdfResponse.status}): ${pdfUrl}`);
+        continue;
+      }
+      const arrayBuffer = await pdfResponse.arrayBuffer();
+      results.push({ pdfBuffer: Buffer.from(arrayBuffer), filename, resolvedPdfUrl: pdfUrl });
+    } catch (err) {
+      console.error(`[CRON] Error downloading PDF ${pdfUrl}: ${err instanceof Error ? err.message : err}`);
+    }
   }
-  const arrayBuffer = await pdfResponse.arrayBuffer();
 
-  return { pdfBuffer: Buffer.from(arrayBuffer), filename, resolvedPdfUrl: firstPdfUrl };
+  if (results.length === 0) {
+    throw new Error(`Falha ao baixar todos os PDFs da página: ${url}`);
+  }
+
+  return results;
 }
 
 export async function crawlUrl(url: string, onProgress?: (message: string) => void): Promise<CrawlerResult> {

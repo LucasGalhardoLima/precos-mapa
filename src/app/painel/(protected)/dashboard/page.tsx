@@ -105,7 +105,7 @@ export default async function MarketDashboardPage() {
                 <div>
                   <p className="font-medium text-[var(--color-ink)]">{product?.name ?? "Produto"}</p>
                   <p className="text-xs text-[var(--color-muted)]">
-                    Ate {formatDateLabel(offer.end_date)} · {offer.source === "importador_ia" ? "Importador IA" : "Manual"}
+                    Ate {formatDateLabel(offer.end_date)} · {offer.source === "importador_ia" ? "Importador IA" : offer.source === "cron" ? "Cron" : "Manual"}
                   </p>
                 </div>
                 <div className="text-right">

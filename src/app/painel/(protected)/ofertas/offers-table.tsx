@@ -181,12 +181,12 @@ export function OffersTable({
                 <td className="px-4 py-3 whitespace-nowrap">
                   <span
                     className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                      p.source === "importador_ia"
+                      p.source === "importador_ia" || p.source === "cron"
                         ? "bg-sky-100 text-sky-700"
                         : "bg-zinc-100 text-zinc-700"
                     }`}
                   >
-                    {p.source === "importador_ia" ? "Importador IA" : "Manual"}
+                    {p.source === "importador_ia" ? "Importador IA" : p.source === "cron" ? "Cron" : "Manual"}
                   </span>
                 </td>
                 <td className="px-4 py-3">
