@@ -31,26 +31,35 @@ function getAppUrl(): string {
 async function dispatchWorkers(importIds: string[]): Promise<void> {
   const appUrl = getAppUrl();
   const cronSecret = process.env.CRON_SECRET;
+  const workerUrl = `${appUrl}/api/cron/process-single-pdf`;
+
+  console.log(`[CRON] Dispatching ${importIds.length} workers to ${workerUrl}`);
 
   const results = await Promise.allSettled(
     importIds.map(async (importId) => {
-      const res = await fetch(`${appUrl}/api/cron/process-single-pdf`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${cronSecret}`,
-        },
-        body: JSON.stringify({ importId }),
-      });
-      const body = await res.json();
-      console.log(`[CRON] Worker ${importId}: ${res.status} — ${JSON.stringify(body)}`);
-      return body;
+      try {
+        const res = await fetch(workerUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${cronSecret}`,
+          },
+          body: JSON.stringify({ importId }),
+        });
+        const body = await res.json();
+        console.log(`[CRON] Worker ${importId}: ${res.status} — ${JSON.stringify(body)}`);
+        return body;
+      } catch (err) {
+        const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+        console.error(`[CRON] Worker ${importId} dispatch error: ${msg}`);
+        throw err;
+      }
     }),
   );
 
   const failed = results.filter((r) => r.status === "rejected");
   if (failed.length > 0) {
-    console.error(`[CRON] ${failed.length} worker(s) failed to dispatch`);
+    console.error(`[CRON] ${failed.length}/${importIds.length} worker(s) failed`);
   }
 }
 
