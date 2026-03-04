@@ -24,10 +24,12 @@ export async function runMultiPassExtraction(
       const products = normalizeProducts(result.products);
       passes.push({ passIndex: i, products });
     } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Erro desconhecido";
+      console.error(`[CRON] Pass ${i + 1} failed: ${errorMsg}`);
       passes.push({
         passIndex: i,
         products: [],
-        error: err instanceof Error ? err.message : "Erro desconhecido",
+        error: errorMsg,
       });
     }
   }

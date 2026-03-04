@@ -171,7 +171,7 @@ async function processSource(
   // 6. Create or reuse pdf_imports record
   let importId: string;
 
-  if (existingRecord && (existingRecord.status === "pending" || existingRecord.status === "error")) {
+  if (existingRecord) {
     await getSupabaseAdmin()
       .from("pdf_imports")
       .update({
