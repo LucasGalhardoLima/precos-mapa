@@ -9,6 +9,8 @@ interface PriceTagCardProps {
   width?: number;
   /** Fixed height in px; when omitted the card auto-sizes from children */
   height?: number;
+  /** Tighter padding for compact carousel usage. */
+  compact?: boolean;
   style?: ViewStyle;
 }
 
@@ -38,6 +40,7 @@ export function PriceTagCard({
   children,
   width,
   height,
+  compact = false,
   style,
 }: PriceTagCardProps) {
   const { tokens } = useTheme();
@@ -114,7 +117,9 @@ export function PriceTagCard({
       </Svg>
 
       {/* ---- Content overlay ---- */}
-      <View style={styles.content}>{children}</View>
+      <View style={[styles.content, compact && styles.contentCompact]}>
+        {children}
+      </View>
     </View>
   );
 }
@@ -136,5 +141,10 @@ const styles = StyleSheet.create({
     paddingTop: 28,
     paddingBottom: 16,
     paddingHorizontal: 16,
+  },
+  contentCompact: {
+    paddingTop: 22,
+    paddingBottom: 10,
+    paddingHorizontal: 12,
   },
 });

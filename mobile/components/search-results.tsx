@@ -54,7 +54,7 @@ function ResultRow({
       {/* Best price badge above the row */}
       {promotion.isBestPrice && (
         <View style={styles.bestPriceBadge}>
-          <DiscountBadge label="Melhor preco" variant="highlight" />
+          <DiscountBadge label="Melhor preço" variant="highlight" />
         </View>
       )}
 

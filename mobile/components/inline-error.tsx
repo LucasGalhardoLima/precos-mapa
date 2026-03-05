@@ -16,7 +16,7 @@ interface InlineErrorProps {
 // Component
 // ---------------------------------------------------------------------------
 
-const DEFAULT_MESSAGE = 'Nao foi possivel carregar. Tentar novamente?';
+const DEFAULT_MESSAGE = 'Não foi possível carregar. Tentar novamente?';
 
 /**
  * Inline retry banner for section-level errors.

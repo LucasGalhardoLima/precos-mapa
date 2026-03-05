@@ -5,6 +5,8 @@ import { useTheme } from '../../theme/use-theme';
 
 type CleanCardProps = {
   children: React.ReactNode;
+  /** Tighter padding for compact carousel usage. */
+  compact?: boolean;
   style?: ViewStyle;
 };
 
@@ -12,13 +14,14 @@ type CleanCardProps = {
  * Standard rounded card with subtle border and optional shadow.
  * The fintech equivalent of the PriceTagCard.
  */
-export function CleanCard({ children, style }: CleanCardProps) {
+export function CleanCard({ children, compact = false, style }: CleanCardProps) {
   const { tokens } = useTheme();
 
   return (
     <View
       style={[
         styles.card,
+        compact && styles.cardCompact,
         {
           backgroundColor: tokens.surface,
           borderColor: tokens.border,
@@ -47,5 +50,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     padding: 16,
+  },
+  cardCompact: {
+    padding: 12,
   },
 });

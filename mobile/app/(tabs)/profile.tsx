@@ -49,7 +49,7 @@ export default function ProfileScreen() {
   const handleDelete = () => {
     Alert.alert(
       'Excluir conta',
-      'Tem certeza? Todos os seus dados serao removidos permanentemente. Esta acao nao pode ser desfeita.',
+      'Tem certeza? Todos os seus dados serão removidos permanentemente. Esta ação não pode ser desfeita.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -58,7 +58,7 @@ export default function ProfileScreen() {
           onPress: async () => {
             const success = await deleteAccount();
             if (!success) {
-              Alert.alert('Erro', 'Nao foi possivel excluir a conta. Tente novamente.');
+              Alert.alert('Erro', 'Não foi possível excluir a conta. Tente novamente.');
             }
           },
         },
@@ -92,7 +92,7 @@ export default function ProfileScreen() {
           </View>
           <View className="flex-1">
             <Text className="text-base font-semibold text-text-primary">
-              {profile?.display_name ?? 'Usuario'}
+              {profile?.display_name ?? 'Usuário'}
             </Text>
             <Text className="text-sm text-text-secondary">
               {session?.user?.email ?? ''}
@@ -112,7 +112,7 @@ export default function ProfileScreen() {
             </Text>
             {plan === 'free' && (
               <Text className="text-xs text-text-secondary">
-                Faca upgrade para desbloquear tudo
+                Faça upgrade para desbloquear tudo
               </Text>
             )}
           </View>
@@ -152,7 +152,7 @@ export default function ProfileScreen() {
         <View className="mx-5 mt-3 bg-white rounded-2xl p-4 flex-row items-center gap-3">
           <Bell size={18} color={Colors.brand.green} />
           <Text className="text-sm font-semibold text-text-primary flex-1">
-            Notificacoes
+            Notificações
           </Text>
           <Text className="text-xs text-text-tertiary">Ativadas</Text>
         </View>
@@ -168,7 +168,7 @@ export default function ProfileScreen() {
         >
           <Shield size={18} color={Colors.text.secondary} />
           <Text className="text-sm text-text-primary flex-1">
-            Politica de Privacidade
+            Política de Privacidade
           </Text>
           <ChevronRight size={16} color={Colors.text.tertiary} />
         </Pressable>

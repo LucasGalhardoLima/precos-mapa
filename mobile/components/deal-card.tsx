@@ -60,7 +60,7 @@ export function DealCard({ deal, index = 0, compact = false }: DealCardProps) {
         </View>
         {deal.store.b2b_plan === 'free' && (
           <Text className="text-xs text-text-tertiary ml-auto">
-            Dados basicos
+            Dados básicos
           </Text>
         )}
       </View>
@@ -83,7 +83,7 @@ export function DealCard({ deal, index = 0, compact = false }: DealCardProps) {
           <Badge variant="discount" label={`-${deal.discountPercent}%`} />
         )}
         {deal.isBestPrice && (
-          <Badge variant="discount" label="Melhor Preco" />
+          <Badge variant="discount" label="Melhor preço" />
         )}
         {deal.verified && <Badge variant="verified" label="Verificado" />}
         {deal.belowNormalPercent > 0 && (
@@ -109,7 +109,7 @@ export function DealCard({ deal, index = 0, compact = false }: DealCardProps) {
         <View className="flex-row items-center gap-1 mt-2">
           <Clock size={12} color={Colors.text.tertiary} />
           <Text className="text-xs text-text-tertiary">
-            Valido ate{' '}
+            Válido até{' '}
             {new Date(deal.end_date).toLocaleDateString('pt-BR', {
               day: '2-digit',
               month: '2-digit',

@@ -73,7 +73,7 @@ export const StoreBottomSheet = forwardRef<BottomSheet, StoreBottomSheetProps>(
             <View className="flex-row items-center gap-1">
               <MapPin size={14} color={Colors.brand.green} />
               <Text className="text-sm font-medium text-brand-green">
-                {distanceKm} km de voce
+                {distanceKm} km de você
               </Text>
             </View>
             <View className="flex-row items-center gap-1">
@@ -86,7 +86,7 @@ export const StoreBottomSheet = forwardRef<BottomSheet, StoreBottomSheetProps>(
 
           {/* Navigate Button */}
           <StyledButton
-            title="Navegar ate a loja"
+            title="Navegar até a loja"
             variant="secondary"
             onPress={handleNavigate}
             className="mb-5"

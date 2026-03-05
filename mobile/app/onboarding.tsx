@@ -426,7 +426,7 @@ export default function OnboardingScreen() {
           </Pressable>
 
           <Pressable onPress={handleJaTenhoConta} hitSlop={12}>
-            <Text style={styles.signInLink}>já tenho conta</Text>
+            <Text style={styles.signInLink}>Já tenho conta</Text>
           </Pressable>
         </MotiView>
       </ScrollView>

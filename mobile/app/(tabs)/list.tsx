@@ -171,7 +171,7 @@ export default function ListScreen() {
                 { color: tokens.textPrimary, marginTop: 16 },
               ]}
             >
-              Sua lista esta vazia
+              Sua lista está vazia
             </Text>
             <Text
               style={[
@@ -179,7 +179,7 @@ export default function ListScreen() {
                 { color: tokens.textHint, marginTop: 6 },
               ]}
             >
-              Adicione produtos para comparar precos
+              Adicione produtos para comparar preços
             </Text>
             <Pressable
               onPress={handleAddItem}
@@ -216,7 +216,7 @@ export default function ListScreen() {
               onPress={handleAddItem}
               style={[styles.addButton, { backgroundColor: tokens.primary }]}
             >
-              <Text style={styles.addButtonText}>+ Item</Text>
+              <Text style={styles.addButtonText}>+ Produto</Text>
             </Pressable>
           </View>
 

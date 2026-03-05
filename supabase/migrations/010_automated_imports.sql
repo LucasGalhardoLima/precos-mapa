@@ -117,6 +117,14 @@ create policy "pdf_imports_update"
 -- =============================================================================
 -- 5. Updated_at triggers
 -- =============================================================================
+create or replace function public.set_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
 create trigger set_updated_at_store_pdf_sources
   before update on public.store_pdf_sources
   for each row execute function public.set_updated_at();

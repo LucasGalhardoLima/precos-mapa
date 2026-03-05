@@ -83,7 +83,7 @@ export default function FavoritesScreen() {
                   R$ {bestPromo.promo_price.toFixed(2)}
                 </Text>
                 <Text className="text-[10px] text-text-tertiary">
-                  melhor preco
+                  melhor preço
                 </Text>
               </>
             ) : (
@@ -102,7 +102,7 @@ export default function FavoritesScreen() {
           Seus Favoritos
         </Text>
         <Text className="text-sm text-text-secondary mt-1">
-          Produtos que voce esta acompanhando
+          Produtos que você está acompanhando
         </Text>
         {isFree && (
           <Pressable
@@ -126,7 +126,7 @@ export default function FavoritesScreen() {
             <Text className="text-xs text-text-secondary flex-1">
               Limite de favoritos atingido.{' '}
               <Text className="text-brand-green font-semibold">
-                Faca upgrade
+                Faça upgrade
               </Text>{' '}
               para favoritos ilimitados.
             </Text>
@@ -160,7 +160,7 @@ export default function FavoritesScreen() {
             Nenhum favorito ainda
           </Text>
           <Text className="text-sm text-text-secondary text-center mt-2">
-            Adicione produtos aos favoritos para acompanhar os melhores precos
+            Adicione produtos aos favoritos para acompanhar os melhores preços
           </Text>
         </View>
       ) : (

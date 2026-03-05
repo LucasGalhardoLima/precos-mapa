@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useShoppingList } from '@/hooks/use-shopping-list';
 import { useRealtime } from '@/hooks/use-realtime';
@@ -38,15 +38,22 @@ export function useEconomySummary(params: UseEconomySummaryParams) {
   const [isLoading, setIsLoading] = useState(true);
 
   // Flatten all list items to get every product_id the user cares about
-  const allItems = lists.flatMap((l) => l.items);
-  const hasItems = allItems.length > 0;
+  // Memoize to avoid unstable references triggering infinite re-renders
+  const productIds = useMemo(
+    () => [...new Set(lists.flatMap((l) => l.items).map((i) => i.product_id))],
+    [lists],
+  );
+  const hasItems = productIds.length > 0;
 
   // -------------------------------------------------------------------
   // List mode: savings = sum(reference_price - cheapest promo) per item
   // -------------------------------------------------------------------
-  const calculateListMode = useCallback(async () => {
-    const productIds = [...new Set(allItems.map((i) => i.product_id))];
+  const itemCount = useMemo(
+    () => lists.flatMap((l) => l.items).length,
+    [lists],
+  );
 
+  const calculateListMode = useCallback(async () => {
     if (productIds.length === 0) return EMPTY_SUMMARY;
 
     // Fetch cheapest active promo per product
@@ -58,7 +65,7 @@ export function useEconomySummary(params: UseEconomySummaryParams) {
       .gt('end_date', new Date().toISOString());
 
     if (!promoRows || promoRows.length === 0) {
-      return { ...EMPTY_SUMMARY, mode: 'list' as const, itemCount: allItems.length };
+      return { ...EMPTY_SUMMARY, mode: 'list' as const, itemCount };
     }
 
     // Build cheapest promo per product
@@ -125,9 +132,9 @@ export function useEconomySummary(params: UseEconomySummaryParams) {
       totalSavings,
       cheapestStore,
       mode: 'list' as const,
-      itemCount: allItems.length,
+      itemCount,
     };
-  }, [allItems]);
+  }, [productIds, itemCount]);
 
   // -------------------------------------------------------------------
   // Deals mode: total nearby discount; cheapest store = highest discount

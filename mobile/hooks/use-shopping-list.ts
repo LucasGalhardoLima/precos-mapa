@@ -39,7 +39,10 @@ export function useShoppingList() {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchLists = useCallback(async () => {
-    if (!session?.user) return;
+    if (!session?.user) {
+      setIsLoading(false);
+      return;
+    }
 
     const { data } = await supabase
       .from('shopping_lists')

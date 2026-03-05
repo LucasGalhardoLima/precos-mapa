@@ -12,12 +12,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 import { useTheme } from '@/theme/use-theme';
-import { useEconomySummary } from '@/hooks/use-economy-summary';
 import { useStoreRanking } from '@/hooks/use-store-ranking';
 import { usePromotions } from '@/hooks/use-promotions';
 import { useCategories } from '@/hooks/use-categories';
 import { useLocation } from '@/hooks/use-location';
-import { EconomyCard } from '@/components/economy-card';
 import { StoreRanking as StoreRankingComponent } from '@/components/store-ranking';
 import { SearchBar } from '@/components/search-bar';
 import { DealCard } from '@/components/themed/deal-card';
@@ -27,6 +25,8 @@ import { InlineError } from '@/components/inline-error';
 import { TAB_BAR_HEIGHT } from '@/components/floating-tab-bar';
 
 import type { EnrichedPromotion } from '@/types';
+
+const keyExtractor = (item: EnrichedPromotion) => item.id;
 
 // ---------------------------------------------------------------------------
 // Home Screen
@@ -45,14 +45,6 @@ export default function HomeScreen() {
   // ---------------------------------------------------------------------------
   // Data hooks
   // ---------------------------------------------------------------------------
-  const {
-    summary,
-    isLoading: economyLoading,
-  } = useEconomySummary({
-    userLatitude: latitude,
-    userLongitude: longitude,
-  });
-
   const {
     ranking,
   } = useStoreRanking({
@@ -82,13 +74,23 @@ export default function HomeScreen() {
 
   const handleRetry = useCallback(() => {
     setHasError(false);
-    // Hooks re-run on mount / dependency changes; toggling state triggers re-render
   }, []);
 
   // ---------------------------------------------------------------------------
   // Loading / Error
   // ---------------------------------------------------------------------------
-  const isLoading = economyLoading || promotionsLoading || categoriesLoading;
+  const renderDealCard = useCallback(
+    ({ item }: { item: EnrichedPromotion }) => (
+      <DealCard
+        deal={item}
+        compact
+        onPress={() => router.push(`/product/${item.product_id}`)}
+      />
+    ),
+    [],
+  );
+
+  const isLoading = promotionsLoading || categoriesLoading;
 
   if (hasError) {
     return (
@@ -128,17 +130,6 @@ export default function HomeScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Economy Card */}
-        <View style={styles.economyCardWrapper}>
-          <EconomyCard
-            totalSavings={summary.totalSavings}
-            cheapestStore={summary.cheapestStore}
-            mode={summary.mode}
-            itemCount={summary.itemCount}
-            onComparePress={() => router.push('/list')}
-          />
-        </View>
-
         {/* Search Bar */}
         <View style={styles.searchBarWrapper}>
           <SearchBar />
@@ -209,9 +200,8 @@ export default function HomeScreen() {
           })}
         </ScrollView>
 
-        {/* Deals Carousel — "Ofertas perto de voce" */}
+        {/* Deals Carousel */}
         <View style={styles.dealsSection}>
-          {/* Header row */}
           <View style={styles.dealsSectionHeader}>
             <Text
               style={[styles.dealsSectionTitle, { color: tokens.textPrimary }]}
@@ -227,18 +217,11 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          {/* Horizontal deal cards */}
           <FlatList
             horizontal
             data={promotions.slice(0, 10)}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }: { item: EnrichedPromotion }) => (
-              <DealCard
-                deal={item}
-                compact
-                onPress={() => router.push(`/product/${item.product_id}`)}
-              />
-            )}
+            keyExtractor={keyExtractor}
+            renderItem={renderDealCard}
             showsHorizontalScrollIndicator={false}
             style={styles.dealsList}
             contentContainerStyle={styles.dealsListContent}
@@ -274,13 +257,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
   },
-  economyCardWrapper: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
   searchBarWrapper: {
     paddingHorizontal: 16,
-    marginTop: 16,
+    paddingTop: 16,
   },
   chipsScrollView: {
     marginTop: 12,

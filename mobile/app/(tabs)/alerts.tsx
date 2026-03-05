@@ -62,8 +62,8 @@ export default function AlertsScreen() {
           Alertas de Ofertas
         </Text>
         <Text className="text-sm text-text-secondary mt-1">
-          Receba notificacoes quando seus produtos favoritos entrarem em
-          promocao
+          Receba notificações quando seus produtos favoritos entrarem em
+          promoção
         </Text>
         {isFree && (
           <Pressable
@@ -87,7 +87,7 @@ export default function AlertsScreen() {
             <Text className="text-xs text-text-secondary flex-1">
               Limite de alertas atingido.{' '}
               <Text className="text-brand-green font-semibold">
-                Faca upgrade
+                Faça upgrade
               </Text>{' '}
               para alertas ilimitados.
             </Text>
@@ -121,8 +121,8 @@ export default function AlertsScreen() {
             Nenhum alerta ativo
           </Text>
           <Text className="text-sm text-text-secondary text-center mt-2">
-            Receba notificacoes quando seus produtos favoritos entrarem em
-            promocao perto de voce
+            Receba notificações quando seus produtos favoritos entrarem em
+            promoção perto de você
           </Text>
         </View>
       ) : (

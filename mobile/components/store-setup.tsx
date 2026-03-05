@@ -38,12 +38,12 @@ export function StoreSetup({ onComplete }: StoreSetupProps) {
     const result = storeSetupSchema.safeParse(payload);
     if (!result.success) {
       const firstError = result.error.issues[0];
-      Alert.alert('Dados invalidos', firstError.message);
+      Alert.alert('Dados inválidos', firstError.message);
       return;
     }
 
     if (!user) {
-      Alert.alert('Erro', 'Voce precisa estar autenticado');
+      Alert.alert('Erro', 'Você precisa estar autenticado');
       return;
     }
 
@@ -97,7 +97,7 @@ export function StoreSetup({ onComplete }: StoreSetupProps) {
           Configure sua loja
         </Text>
         <Text className="text-base text-text-secondary mb-8">
-          Preencha os dados abaixo para comecar a publicar ofertas.
+          Preencha os dados abaixo para começar a publicar ofertas.
         </Text>
 
         <View className="gap-5">
@@ -116,7 +116,7 @@ export function StoreSetup({ onComplete }: StoreSetupProps) {
 
           <View>
             <Text className="text-sm font-medium text-text-primary mb-1.5">
-              Endereco *
+              Endereço *
             </Text>
             <TextInput
               className="border border-border rounded-xl px-4 py-3 text-base text-text-primary"
@@ -134,7 +134,7 @@ export function StoreSetup({ onComplete }: StoreSetupProps) {
               </Text>
               <TextInput
                 className="border border-border rounded-xl px-4 py-3 text-base text-text-primary"
-                placeholder="Matao"
+                placeholder="Matão"
                 placeholderTextColor={Colors.text.tertiary}
                 value={form.city}
                 onChangeText={(v) => updateField('city', v)}
@@ -158,14 +158,14 @@ export function StoreSetup({ onComplete }: StoreSetupProps) {
 
           <View className="bg-surface-tertiary rounded-xl p-4">
             <Text className="text-sm text-text-secondary">
-              Localizacao GPS detectada automaticamente. Voce pode ajustar depois no perfil da loja.
+              Localização GPS detectada automaticamente. Você pode ajustar depois no perfil da loja.
             </Text>
           </View>
         </View>
 
         <View className="mt-10">
           <StyledButton
-            title={isSubmitting ? 'Criando...' : 'Criar loja e comecar'}
+            title={isSubmitting ? 'Criando...' : 'Criar loja e começar'}
             variant="primary"
             onPress={handleSubmit}
             disabled={isSubmitting}

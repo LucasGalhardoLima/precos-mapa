@@ -26,8 +26,8 @@ import type { SortMode, EnrichedPromotion } from '@/types';
 // ---------------------------------------------------------------------------
 
 const SORT_TABS: { label: string; mode: SortMode }[] = [
-  { label: 'Menor preco', mode: 'cheapest' },
-  { label: 'Distancia', mode: 'nearest' },
+  { label: 'Menor preço', mode: 'cheapest' },
+  { label: 'Distância', mode: 'nearest' },
   { label: 'Desconto', mode: 'discount' },
 ];
 
@@ -189,7 +189,7 @@ export default function SearchScreen() {
                 { color: tokens.textSecondary, marginTop: 16 },
               ]}
             >
-              Pesquise um produto para comparar precos
+              Pesquise um produto para comparar preços
             </Text>
           </View>
         )}

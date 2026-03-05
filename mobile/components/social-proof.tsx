@@ -22,7 +22,7 @@ export function SocialProof() {
             {stats.userCount}
           </Text>
           <Text className="text-xs text-text-secondary mt-0.5">
-            usuarios em {stats.cityName}
+            usuários em {stats.cityName}
           </Text>
         </View>
         <View className="bg-brand-orange/10 rounded-2xl px-5 py-4 items-center flex-1">
@@ -31,7 +31,7 @@ export function SocialProof() {
             {stats.avgMonthlySavings}
           </Text>
           <Text className="text-xs text-text-secondary mt-0.5">
-            economia media/mes
+            economia média/mês
           </Text>
         </View>
       </MotiView>

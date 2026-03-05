@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 
 import { useTheme } from '../theme/use-theme';
-import { SectionDivider } from './themed/section-divider';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -116,8 +115,15 @@ export function EconomyCard({
         </View>
       )}
 
-      {/* Divider */}
-      <SectionDivider style={{ marginVertical: 16 }} />
+      {/* Dotted divider */}
+      <View
+        style={{
+          marginVertical: 16,
+          borderBottomWidth: 1,
+          borderStyle: 'dashed',
+          borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+        }}
+      />
 
       {/* Compare button */}
       {onComparePress && (
