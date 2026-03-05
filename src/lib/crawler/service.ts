@@ -254,13 +254,14 @@ async function discoverPdfLinksFromHtml(url: string): Promise<string[]> {
 
   console.log(`[CRON] Regex found ${pdfUrls.length} PDF link(s) for ${url}`);
 
-  // 2. AI extraction — always run to catch JS-triggered PDFs
-  console.log(`[CRON] Running AI extraction for ${url}...`);
+  // 2. AI extraction — try to catch JS-triggered PDFs (non-fatal)
+  try {
+    console.log(`[CRON] Running AI extraction for ${url}...`);
 
-  const { object } = await generateObject({
-    model: anthropic("claude-sonnet-4-6"),
-    schema: PdfUrlsSchema,
-    system: `You are a web scraping expert. Analyze the provided HTML source code and extract ALL URLs that point to PDF files. Look in:
+    const { object } = await generateObject({
+      model: anthropic("claude-sonnet-4-6"),
+      schema: PdfUrlsSchema,
+      system: `You are a web scraping expert. Analyze the provided HTML source code and extract ALL URLs that point to PDF files. Look in:
 - href attributes (a tags, link tags)
 - onclick handlers (window.open, window.location)
 - data-* attributes (data-src, data-url, data-href, data-pdf)
@@ -268,23 +269,27 @@ async function discoverPdfLinksFromHtml(url: string): Promise<string[]> {
 - Form actions
 - Embedded iframes with PDF sources
 Return only fully-qualified absolute URLs. If a URL is relative, resolve it against the base URL: ${url}`,
-    messages: [
-      {
-        role: "user",
-        content: `Extract all PDF URLs from this HTML:\n\n${html.slice(0, 100_000)}`,
-      },
-    ],
-  });
+      messages: [
+        {
+          role: "user",
+          content: `Extract all PDF URLs from this HTML:\n\n${html.slice(0, 100_000)}`,
+        },
+      ],
+    });
 
-  // Merge and dedupe
-  for (const aiUrl of object.urls) {
-    if (!seen.has(aiUrl)) {
-      seen.add(aiUrl);
-      pdfUrls.push(aiUrl);
+    // Merge and dedupe
+    for (const aiUrl of object.urls) {
+      if (!seen.has(aiUrl)) {
+        seen.add(aiUrl);
+        pdfUrls.push(aiUrl);
+      }
     }
+
+    console.log(`[CRON] AI found ${object.urls.length} URL(s), total unique: ${pdfUrls.length}`);
+  } catch (err) {
+    console.warn(`[CRON] AI extraction failed for ${url}: ${err instanceof Error ? err.message : err}`);
   }
 
-  console.log(`[CRON] AI found ${object.urls.length} URL(s), total unique: ${pdfUrls.length}`);
   return pdfUrls;
 }
 
