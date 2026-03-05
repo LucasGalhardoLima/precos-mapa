@@ -107,7 +107,7 @@ export default function BusinessDashboard() {
         <ScrollView className="flex-1" contentContainerClassName="px-5 pt-6 pb-8">
           <Text className="text-2xl font-bold text-text-primary">Dashboard</Text>
           <Text className="text-sm text-text-secondary mt-1">
-            Visao geral da plataforma
+            Visão geral da plataforma
           </Text>
 
           <View className="bg-purple-100 rounded-lg px-3 py-1.5 mt-4 self-start">
@@ -125,7 +125,7 @@ export default function BusinessDashboard() {
             <KPICard
               icon={<BarChart3 size={20} color={Colors.brand.orange} />}
               value={String(monthlyCount)}
-              label="Ofertas este mes"
+              label="Ofertas este mês"
             />
           </View>
 
@@ -138,7 +138,7 @@ export default function BusinessDashboard() {
             <KPICard
               icon={<TrendingUp size={20} color={Colors.semantic.success} />}
               value="--"
-              label="Usuarios"
+              label="Usuários"
             />
           </View>
         </ScrollView>
@@ -151,8 +151,8 @@ export default function BusinessDashboard() {
   const monthlyLimit = planInfo.promotions;
   const usageText =
     monthlyLimit === -1
-      ? `${monthlyCount} ofertas este mes`
-      : `${monthlyCount}/${monthlyLimit} ofertas este mes`;
+      ? `${monthlyCount} ofertas este mês`
+      : `${monthlyCount}/${monthlyLimit} ofertas este mês`;
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -187,7 +187,7 @@ export default function BusinessDashboard() {
           <KPICard
             icon={<Eye size={20} color={Colors.semantic.info} />}
             value="--"
-            label="Visualizacoes"
+            label="Visualizações"
           />
           <KPICard
             icon={<TrendingUp size={20} color={Colors.semantic.success} />}
@@ -203,7 +203,7 @@ export default function BusinessDashboard() {
               Desbloqueie mais recursos
             </Text>
             <Text className="text-sm text-text-secondary mt-1">
-              Importador IA, inteligencia competitiva e ofertas ilimitadas.
+              Importador IA, inteligência competitiva e ofertas ilimitadas.
             </Text>
             <StyledButton
               title="Conhecer planos Premium"
@@ -217,16 +217,16 @@ export default function BusinessDashboard() {
         {/* Competitive Intelligence */}
         <View className="mt-6">
           <Text className="text-lg font-bold text-text-primary mb-3">
-            Inteligencia Competitiva
+            Inteligência Competitiva
           </Text>
           {!competitive.isPremium ? (
             <View className="bg-surface-tertiary rounded-2xl p-5 items-center">
               <Lock size={32} color={Colors.text.tertiary} />
               <Text className="text-sm font-semibold text-text-primary mt-3 text-center">
-                Disponivel nos planos Premium e superiores
+                Disponível nos planos Premium e superiores
               </Text>
               <Text className="text-xs text-text-secondary mt-1 text-center">
-                Veja como seus precos se comparam com a concorrencia.
+                Veja como seus preços se comparam com a concorrência.
               </Text>
             </View>
           ) : competitive.isLoading ? (
@@ -246,7 +246,7 @@ export default function BusinessDashboard() {
                 {competitive.myRank && (
                   <View className="bg-brand-green/10 rounded-lg px-3 py-1.5">
                     <Text className="text-xs font-semibold text-brand-green">
-                      #{competitive.myRank} na regiao
+                      #{competitive.myRank} na região
                     </Text>
                   </View>
                 )}
@@ -259,7 +259,7 @@ export default function BusinessDashboard() {
                   </Text>
                   <View className="flex-row items-center gap-3 mt-1">
                     <Text className="text-sm text-text-secondary">
-                      Voce: R$ {cp.my_price.toFixed(2)}
+                      Você: R$ {cp.my_price.toFixed(2)}
                     </Text>
                     <Text
                       className={`text-sm font-semibold ${

@@ -5,7 +5,6 @@ import Animated from 'react-native-reanimated';
 import type { EnrichedPromotion } from '@/types';
 import { useTheme } from '../../theme/use-theme';
 import { PriceTagCard } from '../encarte/price-tag-card';
-import { StampBadge } from '../encarte/stamp-badge';
 import { CleanCard } from '../fintech/clean-card';
 import { PillBadge } from '../fintech/pill-badge';
 
@@ -37,14 +36,13 @@ interface DealCardProps {
  * Themed deal card that renders a `PriceTagCard` (encarte) or `CleanCard`
  * (fintech) depending on the active palette.
  */
-export function DealCard({ deal, onPress, compact = false }: DealCardProps) {
+export const DealCard = React.memo(function DealCard({ deal, onPress, compact = false }: DealCardProps) {
   const { palette, tokens } = useTheme();
 
   const discountLabel = `-${Math.round(deal.discountPercent)}%`;
   const distanceText = `${deal.distanceKm.toFixed(1)} km`;
 
-  const CardWrapper = palette === 'encarte' ? PriceTagCard : CleanCard;
-  const Badge = palette === 'encarte' ? StampBadge : PillBadge;
+  const CardComponent = palette === 'encarte' ? PriceTagCard : CleanCard;
 
   const content = (
     <>
@@ -78,11 +76,13 @@ export function DealCard({ deal, onPress, compact = false }: DealCardProps) {
         </Text>
       </View>
 
-      {/* Badges row */}
+      {/* Badges row — always show both slots for consistent card height */}
       <View style={styles.badgeRow}>
-        <Badge label={discountLabel} variant="discount" />
-        {deal.isBestPrice && (
-          <Badge label="Melhor preco" variant="highlight" />
+        <PillBadge label={discountLabel} variant="discount" />
+        {deal.isBestPrice ? (
+          <PillBadge label="Melhor preço" variant="highlight" />
+        ) : (
+          <View style={styles.badgePlaceholder} />
         )}
       </View>
     </>
@@ -91,13 +91,13 @@ export function DealCard({ deal, onPress, compact = false }: DealCardProps) {
   return (
     <Pressable onPress={onPress} style={compact ? styles.compactWrapper : undefined}>
       <Animated.View sharedTransitionTag={`product-card-${deal.product_id}`}>
-        <CardWrapper style={compact ? styles.compactCard : undefined}>
+        <CardComponent compact={compact}>
           {content}
-        </CardWrapper>
+        </CardComponent>
       </Animated.View>
     </Pressable>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -133,12 +133,13 @@ const styles = StyleSheet.create({
   badgeRow: {
     flexDirection: 'row',
     gap: 6,
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
+  },
+  badgePlaceholder: {
+    height: 28,
   },
   compactWrapper: {
-    width: 180,
-  },
-  compactCard: {
-    padding: 12,
+    width: 236,
+    overflow: 'hidden',
   },
 });

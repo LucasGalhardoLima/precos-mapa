@@ -274,7 +274,7 @@ export default function AccountScreen() {
                   ]}
                 >
                   <Text style={[styles.badgeText, { color: tokens.primary }]}>
-                    FREE
+                    GRÁTIS
                   </Text>
                 </View>
               )}

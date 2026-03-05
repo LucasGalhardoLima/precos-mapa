@@ -75,7 +75,7 @@ export default function BusinessProfile() {
 
     const result = storeSetupSchema.safeParse(payload);
     if (!result.success) {
-      Alert.alert('Dados invalidos', result.error.issues[0].message);
+      Alert.alert('Dados inválidos', result.error.issues[0].message);
       return;
     }
 
@@ -120,7 +120,7 @@ export default function BusinessProfile() {
           Perfil da Loja
         </Text>
         <Text className="text-sm text-text-secondary mt-1 mb-6">
-          Gerencie as informacoes da sua loja
+          Gerencie as informações da sua loja
         </Text>
 
         <View className="gap-5">
@@ -131,10 +131,10 @@ export default function BusinessProfile() {
             placeholder="Nome da loja"
           />
           <FormField
-            label="Endereco"
+            label="Endereço"
             value={form.address}
             onChangeText={(v) => updateField('address', v)}
-            placeholder="Rua, numero - Bairro"
+            placeholder="Rua, número - Bairro"
           />
           <View className="flex-row gap-4">
             <View className="flex-1">
@@ -165,7 +165,7 @@ export default function BusinessProfile() {
         </View>
 
         <StyledButton
-          title={isSaving ? 'Salvando...' : 'Salvar alteracoes'}
+          title={isSaving ? 'Salvando...' : 'Salvar alterações'}
           variant="primary"
           className="mt-8"
           onPress={handleSave}

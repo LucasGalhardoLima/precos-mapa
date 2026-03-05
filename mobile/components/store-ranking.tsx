@@ -82,7 +82,7 @@ function RankRow({
               marginTop: 2,
             }}
           >
-            total lista base
+            total da lista base
           </Text>
         </View>
 

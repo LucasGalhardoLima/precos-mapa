@@ -18,7 +18,7 @@ const TIERS = [
     monthly: 0,
     annual: 0,
     features: {
-      ofertas: '5/mes',
+      ofertas: '5/mês',
       importadorIA: false,
       inteligenciaCompetitiva: false,
       analytics: false,
@@ -33,9 +33,9 @@ const TIERS = [
     monthly: 299,
     annual: 3014,
     features: {
-      ofertas: '50/mes',
-      importadorIA: '4/mes',
-      inteligenciaCompetitiva: 'Basica',
+      ofertas: '50/mês',
+      importadorIA: '4/mês',
+      inteligenciaCompetitiva: 'Básica',
       analytics: false,
       emailDigest: true,
       prioridade: true,
@@ -54,7 +54,7 @@ const TIERS = [
       analytics: true,
       emailDigest: true,
       prioridade: true,
-      suporte: 'Prioritario',
+      suporte: 'Prioritário',
     },
   },
   {
@@ -78,8 +78,8 @@ const FEATURE_LABELS: Record<string, string> = {
   ofertas: 'Ofertas',
   importadorIA: 'Importador IA',
   inteligenciaCompetitiva: 'Intel. Competitiva',
-  analytics: 'Dashboard Analytics',
-  emailDigest: 'Email Digest',
+  analytics: 'Painel Analítico',
+  emailDigest: 'Resumo por e-mail',
   prioridade: 'Prioridade na busca',
   suporte: 'Suporte',
 };
@@ -160,11 +160,11 @@ export function PlanComparisonModal({
             const price = isAnnual ? tier.annual : tier.monthly;
             const priceLabel =
               price === 0
-                ? 'Gratis'
+                ? 'Grátis'
                 : price === -1
                   ? 'Sob consulta'
                   : `R$ ${price.toLocaleString('pt-BR')}`;
-            const period = isAnnual ? '/ano' : '/mes';
+            const period = isAnnual ? '/ano' : '/mês';
 
             return (
               <View
@@ -211,7 +211,7 @@ export function PlanComparisonModal({
                   <StyledButton
                     title={
                       tier.id === 'premium'
-                        ? 'Iniciar teste gratis de 7 dias'
+                        ? 'Iniciar teste grátis de 7 dias'
                         : `Upgrade para ${tier.name}`
                     }
                     variant="primary"

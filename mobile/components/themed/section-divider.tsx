@@ -1,9 +1,7 @@
 import React from 'react';
-import type { ViewStyle } from 'react-native';
+import { View, type ViewStyle } from 'react-native';
 
 import { useTheme } from '../../theme/use-theme';
-import { BarcodeDivider } from '../encarte/barcode-divider';
-import { RuleDivider } from '../fintech/rule-divider';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -18,15 +16,21 @@ interface SectionDividerProps {
 // ---------------------------------------------------------------------------
 
 /**
- * Themed section divider that renders a `BarcodeDivider` (encarte) or
- * `RuleDivider` (fintech) depending on the active palette.
+ * Subtle dashed-line section divider used across both palettes.
  */
 export function SectionDivider({ style }: SectionDividerProps) {
-  const { palette } = useTheme();
+  const { tokens } = useTheme();
 
-  if (palette === 'encarte') {
-    return <BarcodeDivider style={style} />;
-  }
-
-  return <RuleDivider spacing={style?.marginVertical as number | undefined} />;
+  return (
+    <View
+      style={[
+        {
+          borderBottomWidth: 1,
+          borderStyle: 'dashed',
+          borderBottomColor: tokens.border,
+        },
+        style,
+      ]}
+    />
+  );
 }

@@ -2,7 +2,9 @@ import { createCanvas, DOMMatrix, Path2D } from "@napi-rs/canvas";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import OpenAI from "openai";
 import sharp from "sharp";
-import { EncarteProduct, normalizeEncartePayload } from "@/lib/schemas";
+import { generateObject } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
+import { EncarteProduct, EncarteSchema, normalizeEncartePayload } from "@/lib/schemas";
 
 // pdfjs-dist tries require('canvas') to polyfill DOMMatrix and Path2D.
 // We provide them from @napi-rs/canvas instead.
@@ -161,63 +163,62 @@ async function renderPdfToImages(pdfBuffer: Uint8Array | Buffer): Promise<PdfRen
   };
 }
 
+const EXTRACTION_SYSTEM_PROMPT = `Você é um especialista em encartes de supermercado brasileiro.
+
+REGRAS:
+1. Preços devem ser números (29.90).
+2. Se houver dúvida, não invente produto.
+3. Unidade deve ser uma destas: kg, un, l, g, ml, pack.
+4. Ignore logos e elementos decorativos.
+5. Validade no formato YYYY-MM-DD ou null.
+6. Se o produto mostrar preço anterior/original (ex: "de 5,99 por 3,99"), extraia como original_price. Se não houver, retorne null.
+7. Classifique cada produto em uma destas categorias: Bebidas, Limpeza, Alimentos, Hortifruti, Padaria, Higiene. Use "Alimentos" como padrão se não tiver certeza.`;
+
 export async function processPdfBuffer(
   buffer: Uint8Array | Buffer,
   sourceName: string,
   onProgress?: (message: string) => void,
 ): Promise<CrawlerResult> {
-  getOpenAi();
-
   onProgress?.(`Iniciando análise do PDF: ${sourceName}`);
 
-  const allProducts: EncarteProduct[] = [];
-  const allImages: string[] = [];
-  const pageErrors: string[] = [];
+  const pdfData = Buffer.from(buffer);
+  onProgress?.(`Enviando PDF (${Math.round(pdfData.byteLength / 1024)} KB) para Claude Sonnet...`);
 
-  const rendered = await renderPdfToImages(buffer);
-  if (rendered.totalPages > rendered.processedPages) {
-    onProgress?.(
-      `PDF com ${rendered.totalPages} páginas. Processando ${rendered.processedPages} primeiras (limite atual: ${MAX_PDF_PAGES}).`,
-    );
-  } else {
-    onProgress?.(`${rendered.processedPages} páginas renderizadas em alta definição.`);
-  }
+  const { object } = await generateObject({
+    model: anthropic("claude-sonnet-4-6"),
+    schema: EncarteSchema,
+    system: EXTRACTION_SYSTEM_PROMPT,
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "file",
+            data: pdfData,
+            mediaType: "application/pdf",
+          },
+          {
+            type: "text",
+            text: "Extraia todas as ofertas deste encarte de supermercado. Analise todas as páginas.",
+          },
+        ],
+      },
+    ],
+  });
 
-  for (let index = 0; index < rendered.images.length; index += 1) {
-    onProgress?.(`Analisando página ${index + 1} de ${rendered.processedPages}...`);
+  const products = object.products;
+  onProgress?.(`${products.length} ofertas extraídas via Claude Sonnet.`);
 
-    const rawBase64 = rendered.images[index].split(",")[1];
-    const optimized = await optimizeImage(Buffer.from(rawBase64, "base64"));
-    allImages.push(optimized);
-
-    try {
-      const extracted = await extractFromImage(optimized);
-      const normalized = normalizeEncartePayload(extracted);
-
-      if (normalized.products.length > 0) {
-        allProducts.push(...normalized.products);
-        onProgress?.(`Sucesso: ${normalized.products.length} ofertas extraídas da página ${index + 1}.`);
-      } else {
-        onProgress?.(`Aviso: página ${index + 1} sem itens válidos após validação.`);
-      }
-    } catch (error) {
-      const message = extractErrorMessage(error);
-      pageErrors.push(`Página ${index + 1}: ${message}`);
-      onProgress?.(`Erro na página ${index + 1}: ${message}`);
-    }
-  }
-
-  if (allProducts.length === 0) {
-    const reason = pageErrors.length > 0 ? pageErrors.slice(0, 3).join(" | ") : "Nenhum item reconhecido nas páginas.";
-    throw new Error(`Extração sem produtos. ${reason}`);
+  if (products.length === 0) {
+    throw new Error("Extração sem produtos. Nenhum item reconhecido no PDF.");
   }
 
   return {
-    products: allProducts,
+    products,
     meta: {
-      source: "gpt4o_pdfjs_node_sharp",
-      imageUrl: allImages[0] ?? "https://via.placeholder.com/800",
-      images: allImages,
+      source: "claude_sonnet_native_pdf",
+      imageUrl: "https://via.placeholder.com/800",
+      images: [],
     },
   };
 }
@@ -303,8 +304,6 @@ export async function discoverAndDownloadAllPdfs(url: string): Promise<
 }
 
 export async function crawlUrl(url: string, onProgress?: (message: string) => void): Promise<CrawlerResult> {
-  getOpenAi();
-
   // Direct PDF URL — download and process without page navigation
   if (url.toLowerCase().endsWith(".pdf")) {
     const pdfName = decodeURIComponent(url.split("/").pop() ?? "PDF");
@@ -324,7 +323,7 @@ export async function crawlUrl(url: string, onProgress?: (message: string) => vo
     return {
       products: result.products,
       meta: {
-        source: "gpt4o_pdfjs_node_sharp",
+        source: "claude_sonnet_native_pdf",
         imageUrl: result.meta.images[0] ?? "https://via.placeholder.com/800",
         images: result.meta.images,
         pendingPdfUrls: [],
@@ -369,7 +368,7 @@ export async function crawlUrl(url: string, onProgress?: (message: string) => vo
   return {
     products: result.products,
     meta: {
-      source: "gpt4o_pdfjs_node_sharp",
+      source: "claude_sonnet_native_pdf",
       imageUrl: result.meta.images[0] ?? "https://via.placeholder.com/800",
       images: result.meta.images,
       pendingPdfUrls: pdfUrls.slice(1),

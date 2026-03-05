@@ -7,35 +7,35 @@ import { Colors } from '@/constants/colors';
 const PRIVACY_SECTIONS = [
   {
     title: '1. Dados coletados',
-    body: 'Coletamos seu nome, e-mail, localizacao aproximada (quando autorizada), produtos favoritos, alertas de preco e historico de buscas. Dados de pagamento sao processados diretamente pela Apple/Google (consumidores) ou Stripe (lojistas), sem armazenamento em nossos servidores.',
+    body: 'Coletamos seu nome, e-mail, localização aproximada (quando autorizada), produtos favoritos, alertas de preço e histórico de buscas. Dados de pagamento são processados diretamente pela Apple/Google (consumidores) ou Stripe (lojistas), sem armazenamento em nossos servidores.',
   },
   {
     title: '2. Finalidade do tratamento',
-    body: 'Seus dados sao utilizados para: exibir ofertas proximas a voce, enviar alertas de preco, otimizar listas de compras, personalizar sua experiencia e gerar estatisticas anonimas para lojistas.',
+    body: 'Seus dados são utilizados para: exibir ofertas próximas a você, enviar alertas de preço, otimizar listas de compras, personalizar sua experiência e gerar estatísticas anônimas para lojistas.',
   },
   {
     title: '3. Base legal (LGPD Art. 7)',
-    body: 'O tratamento dos seus dados e baseado no consentimento (Art. 7, I) para funcionalidades opcionais e na execucao do contrato (Art. 7, V) para funcionalidades essenciais do servico.',
+    body: 'O tratamento dos seus dados é baseado no consentimento (Art. 7, I) para funcionalidades opcionais e na execução do contrato (Art. 7, V) para funcionalidades essenciais do serviço.',
   },
   {
     title: '4. Compartilhamento',
-    body: 'Seus dados pessoais NAO sao vendidos a terceiros. Compartilhamos dados anonimos e agregados com lojistas parceiros para fins estatisticos. Utilizamos servicos de infraestrutura (Supabase, RevenueCat) que processam dados conforme suas proprias politicas de privacidade.',
+    body: 'Seus dados pessoais NÃO são vendidos a terceiros. Compartilhamos dados anônimos e agregados com lojistas parceiros para fins estatísticos. Utilizamos serviços de infraestrutura (Supabase, RevenueCat) que processam dados conforme suas próprias políticas de privacidade.',
   },
   {
-    title: '5. Retencao',
-    body: 'Dados de conta sao mantidos enquanto sua conta estiver ativa. Historicos de preco sao retidos por ate 90 dias. Apos exclusao da conta, seus dados pessoais sao removidos em ate 30 dias.',
+    title: '5. Retenção',
+    body: 'Dados de conta são mantidos enquanto sua conta estiver ativa. Históricos de preço são retidos por até 90 dias. Após exclusão da conta, seus dados pessoais são removidos em até 30 dias.',
   },
   {
     title: '6. Seus direitos (LGPD Art. 18)',
-    body: 'Voce pode: acessar seus dados, solicitar correcao, solicitar exclusao da conta, exportar seus dados em formato JSON, revogar consentimento a qualquer momento. Todas essas acoes estao disponiveis na tela de Configuracoes do aplicativo.',
+    body: 'Você pode: acessar seus dados, solicitar correção, solicitar exclusão da conta, exportar seus dados em formato JSON, revogar consentimento a qualquer momento. Todas essas ações estão disponíveis na tela de Configurações do aplicativo.',
   },
   {
-    title: '7. Seguranca',
-    body: 'Utilizamos criptografia em transito (TLS/SSL), autenticacao segura via Google/Apple Sign-In, e controle de acesso por Row Level Security (RLS) no banco de dados. Seus dados sao armazenados em servidores com certificacao SOC 2.',
+    title: '7. Segurança',
+    body: 'Utilizamos criptografia em trânsito (TLS/SSL), autenticação segura via Google/Apple Sign-In, e controle de acesso por Row Level Security (RLS) no banco de dados. Seus dados são armazenados em servidores com certificação SOC 2.',
   },
   {
     title: '8. Contato do DPO',
-    body: 'Para duvidas sobre privacidade, entre em contato com nosso Encarregado de Dados (DPO) pelo e-mail: privacidade@precomapa.com.br',
+    body: 'Para dúvidas sobre privacidade, entre em contato com nosso Encarregado de Dados (DPO) pelo e-mail: privacidade@precomapa.com.br',
   },
 ];
 
@@ -51,13 +51,13 @@ export default function PrivacyPolicyScreen() {
         </Pressable>
         <Shield size={20} color={Colors.brand.green} />
         <Text className="text-xl font-bold text-text-primary">
-          Politica de Privacidade
+          Política de Privacidade
         </Text>
       </View>
 
       <ScrollView className="flex-1 px-5" contentContainerClassName="pb-8">
         <Text className="text-xs text-text-tertiary mt-2 mb-4">
-          Ultima atualizacao: 12 de fevereiro de 2026
+          Última atualização: 12 de fevereiro de 2026
         </Text>
 
         {PRIVACY_SECTIONS.map((section) => (

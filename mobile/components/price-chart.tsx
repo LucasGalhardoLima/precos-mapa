@@ -43,7 +43,7 @@ export function PriceChart({ productId, productName }: PriceChartProps) {
         className="rounded-2xl p-4 h-48 items-center justify-center"
       >
         <Text style={{ color: tokens.textHint }} className="text-sm">
-          Carregando historico...
+          Carregando histórico...
         </Text>
       </View>
     );
@@ -58,7 +58,7 @@ export function PriceChart({ productId, productName }: PriceChartProps) {
       >
         <Clock size={24} color={tokens.textHint} />
         <Text style={{ color: tokens.textHint }} className="text-sm mt-2">
-          Sem dados de historico para este periodo
+          Sem dados de histórico para este período
         </Text>
       </View>
     );
@@ -73,7 +73,7 @@ export function PriceChart({ productId, productName }: PriceChartProps) {
       >
         <Clock size={24} color={tokens.textHint} />
         <Text style={{ color: tokens.textHint }} className="text-sm mt-2">
-          Dados insuficientes para exibir o grafico
+          Dados insuficientes para exibir o gráfico
         </Text>
       </View>
     );
@@ -318,7 +318,7 @@ function PriceChartContent({
       <View className="flex-row items-center justify-between mt-3">
         <View>
           <Text style={{ color: tokens.textHint }} className="text-xs">
-            Preco atual
+            Preço atual
           </Text>
           <Text style={{ color: tokens.textPrimary }} className="text-lg font-bold">
             R$ {currentPrice.toFixed(2)}
@@ -335,7 +335,7 @@ function PriceChartContent({
 
         <View>
           <Text style={{ color: tokens.textHint }} className="text-xs">
-            Menor preco
+            Menor preço
           </Text>
           <Text style={{ color: tokens.discountRed }} className="text-sm font-bold">
             R$ {minPrice.toFixed(2)}

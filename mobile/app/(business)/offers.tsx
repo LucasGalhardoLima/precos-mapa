@@ -116,7 +116,7 @@ export default function BusinessOffers() {
           </View>
           <Pressable
             className="w-12 h-12 bg-brand-green rounded-full items-center justify-center"
-            onPress={() => Alert.alert('Nova Oferta', 'Formulario de criacao sera implementado')}
+            onPress={() => Alert.alert('Nova Oferta', 'Formulário de criação será implementado')}
           >
             <Plus size={24} color="white" />
           </Pressable>
@@ -143,7 +143,7 @@ export default function BusinessOffers() {
                 <View className="flex-row gap-1.5 mt-2">
                   <Badge
                     variant={item.status === 'active' ? 'verified' : 'expiring'}
-                    label={item.status === 'active' ? 'Ativa' : item.status === 'expired' ? 'Expirada' : 'Revisao'}
+                    label={item.status === 'active' ? 'Ativa' : item.status === 'expired' ? 'Expirada' : 'Revisão'}
                   />
                   {item.source === 'importador_ia' && (
                     <Badge variant="below-normal" label="IA" />

@@ -21,7 +21,7 @@ export function SmartList({ listId }: SmartListProps) {
 
   const handleOptimize = async () => {
     if (!location.latitude || !location.longitude) {
-      Alert.alert('Localizacao', 'Precisamos da sua localizacao para otimizar a rota.');
+      Alert.alert('Localização', 'Precisamos da sua localização para otimizar a rota.');
       return;
     }
 
@@ -99,7 +99,7 @@ export function SmartList({ listId }: SmartListProps) {
             <View className="flex-row items-center gap-2">
               <ShoppingCart size={20} color={Colors.brand.green} />
               <Text className="text-base font-bold text-text-primary">
-                Resultado da otimizacao
+                Resultado da otimização
               </Text>
             </View>
 
