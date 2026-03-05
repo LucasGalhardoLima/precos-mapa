@@ -235,9 +235,9 @@ async function discoverPdfLinksFromHtml(url: string): Promise<string[]> {
   }
   const html = await response.text();
 
-  // 1. Try regex extraction first (fast, free)
-  const pdfUrls: string[] = [];
+  // 1. Regex extraction (fast, free)
   const seen = new Set<string>();
+  const pdfUrls: string[] = [];
   const regex = /href=["']([^"']*\.pdf[^"']*)/gi;
   let match: RegExpExecArray | null;
 
@@ -252,12 +252,10 @@ async function discoverPdfLinksFromHtml(url: string): Promise<string[]> {
     }
   }
 
-  if (pdfUrls.length > 0) {
-    return pdfUrls;
-  }
+  console.log(`[CRON] Regex found ${pdfUrls.length} PDF link(s) for ${url}`);
 
-  // 2. Fallback: AI-powered extraction from HTML/JS
-  console.log(`[CRON] No PDF links found via regex for ${url}, trying AI extraction...`);
+  // 2. AI extraction — always run to catch JS-triggered PDFs
+  console.log(`[CRON] Running AI extraction for ${url}...`);
 
   const { object } = await generateObject({
     model: anthropic("claude-sonnet-4-6"),
@@ -278,8 +276,16 @@ Return only fully-qualified absolute URLs. If a URL is relative, resolve it agai
     ],
   });
 
-  console.log(`[CRON] AI extraction found ${object.urls.length} PDF URL(s) for ${url}`);
-  return object.urls;
+  // Merge and dedupe
+  for (const aiUrl of object.urls) {
+    if (!seen.has(aiUrl)) {
+      seen.add(aiUrl);
+      pdfUrls.push(aiUrl);
+    }
+  }
+
+  console.log(`[CRON] AI found ${object.urls.length} URL(s), total unique: ${pdfUrls.length}`);
+  return pdfUrls;
 }
 
 export async function discoverAndDownloadPdf(url: string): Promise<{
