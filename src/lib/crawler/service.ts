@@ -4,6 +4,7 @@ import OpenAI from "openai";
 import sharp from "sharp";
 import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { z } from "zod";
 import { EncarteProduct, EncarteSchema, normalizeEncartePayload } from "@/lib/schemas";
 
 // pdfjs-dist tries require('canvas') to polyfill DOMMatrix and Path2D.
@@ -223,6 +224,10 @@ export async function processPdfBuffer(
   };
 }
 
+const PdfUrlsSchema = z.object({
+  urls: z.array(z.string().url()).describe("All PDF download URLs found in the page HTML and JavaScript."),
+});
+
 async function discoverPdfLinksFromHtml(url: string): Promise<string[]> {
   const response = await fetch(url);
   if (!response.ok) {
@@ -230,6 +235,7 @@ async function discoverPdfLinksFromHtml(url: string): Promise<string[]> {
   }
   const html = await response.text();
 
+  // 1. Try regex extraction first (fast, free)
   const pdfUrls: string[] = [];
   const seen = new Set<string>();
   const regex = /href=["']([^"']*\.pdf[^"']*)/gi;
@@ -246,7 +252,34 @@ async function discoverPdfLinksFromHtml(url: string): Promise<string[]> {
     }
   }
 
-  return pdfUrls;
+  if (pdfUrls.length > 0) {
+    return pdfUrls;
+  }
+
+  // 2. Fallback: AI-powered extraction from HTML/JS
+  console.log(`[CRON] No PDF links found via regex for ${url}, trying AI extraction...`);
+
+  const { object } = await generateObject({
+    model: anthropic("claude-sonnet-4-6"),
+    schema: PdfUrlsSchema,
+    system: `You are a web scraping expert. Analyze the provided HTML source code and extract ALL URLs that point to PDF files. Look in:
+- href attributes (a tags, link tags)
+- onclick handlers (window.open, window.location)
+- data-* attributes (data-src, data-url, data-href, data-pdf)
+- JavaScript variables and object literals
+- Form actions
+- Embedded iframes with PDF sources
+Return only fully-qualified absolute URLs. If a URL is relative, resolve it against the base URL: ${url}`,
+    messages: [
+      {
+        role: "user",
+        content: `Extract all PDF URLs from this HTML:\n\n${html.slice(0, 100_000)}`,
+      },
+    ],
+  });
+
+  console.log(`[CRON] AI extraction found ${object.urls.length} PDF URL(s) for ${url}`);
+  return object.urls;
 }
 
 export async function discoverAndDownloadPdf(url: string): Promise<{
