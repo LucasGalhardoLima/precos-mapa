@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { requireSessionContext } from "@/features/auth/session";
 import { createClient } from "@/lib/supabase-server";
 import { OffersTable, type PromotionRow } from "./offers-table";
@@ -127,17 +128,19 @@ export default async function MarketOffersPage({ searchParams }: PageProps) {
   }
 
   return (
-    <OffersTable
-      promotions={(promotions ?? []) as unknown as PromotionRow[]}
-      storeId={crossMarket ? undefined : storeId}
-      showStoreColumn={crossMarket}
-      totalCount={count ?? 0}
-      page={page}
-      pageSize={PAGE_SIZE}
-      sort={sort}
-      dir={dir}
-      stores={(storesList ?? []).map((s) => ({ value: s.id, label: s.name }))}
-      categories={(categoriesList ?? []).map((c) => ({ value: c.id, label: c.name }))}
-    />
+    <Suspense>
+      <OffersTable
+        promotions={(promotions ?? []) as unknown as PromotionRow[]}
+        storeId={crossMarket ? undefined : storeId}
+        showStoreColumn={crossMarket}
+        totalCount={count ?? 0}
+        page={page}
+        pageSize={PAGE_SIZE}
+        sort={sort}
+        dir={dir}
+        stores={(storesList ?? []).map((s) => ({ value: s.id, label: s.name }))}
+        categories={(categoriesList ?? []).map((c) => ({ value: c.id, label: c.name }))}
+      />
+    </Suspense>
   );
 }
