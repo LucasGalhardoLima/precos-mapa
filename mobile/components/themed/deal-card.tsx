@@ -4,7 +4,6 @@ import Animated from 'react-native-reanimated';
 
 import type { EnrichedPromotion } from '@/types';
 import { useTheme } from '../../theme/use-theme';
-import { PriceTagCard } from '../encarte/price-tag-card';
 import { CleanCard } from '../fintech/clean-card';
 import { PillBadge } from '../fintech/pill-badge';
 
@@ -37,13 +36,12 @@ interface DealCardProps {
  * (fintech) depending on the active palette.
  */
 export const DealCard = React.memo(function DealCard({ deal, onPress, compact = false }: DealCardProps) {
-  const { palette, tokens } = useTheme();
+  const { tokens } = useTheme();
 
   const discountLabel = `-${Math.round(deal.discountPercent)}%`;
   const distanceText = `${deal.distanceKm.toFixed(1)} km`;
 
-  const isEncarteStyle = palette === 'encarte' || palette === 'encarte_digital';
-  const CardComponent = isEncarteStyle ? PriceTagCard : CleanCard;
+  const CardComponent = CleanCard;
 
   const content = (
     <>
