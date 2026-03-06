@@ -60,7 +60,7 @@ interface ListItemProps {
 export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) {
   const { palette, tokens } = useTheme();
 
-  const isEncarte = palette === 'encarte';
+  const isEncarte = palette === 'encarte' || palette === 'encarte_digital';
 
   const quantityLabel =
     item.quantity != null

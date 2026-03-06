@@ -42,7 +42,8 @@ export const DealCard = React.memo(function DealCard({ deal, onPress, compact = 
   const discountLabel = `-${Math.round(deal.discountPercent)}%`;
   const distanceText = `${deal.distanceKm.toFixed(1)} km`;
 
-  const CardComponent = palette === 'encarte' ? PriceTagCard : CleanCard;
+  const isEncarteStyle = palette === 'encarte' || palette === 'encarte_digital';
+  const CardComponent = isEncarteStyle ? PriceTagCard : CleanCard;
 
   const content = (
     <>
