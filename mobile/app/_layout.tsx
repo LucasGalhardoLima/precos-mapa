@@ -4,6 +4,16 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
+import {
+  Poppins_700Bold,
+  Poppins_800ExtraBold,
+} from '@expo-google-fonts/poppins';
+import { Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+} from '@expo-google-fonts/inter';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthStore } from '@precomapa/shared';
 import { ActivityIndicator, View } from 'react-native';
@@ -12,7 +22,15 @@ export default function RootLayout() {
   const { isLoading } = useAuth();
   const hasSeenOnboarding = useAuthStore((s) => s.hasSeenOnboarding);
 
-  if (isLoading) {
+  const [fontsLoaded] = useFonts({
+    Poppins_700Bold,
+    Poppins_800ExtraBold,
+    Nunito_800ExtraBold,
+    Inter_400Regular,
+    Inter_500Medium,
+  });
+
+  if (isLoading || !fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
         <ActivityIndicator size="large" color="#22C55E" />
