@@ -17,8 +17,8 @@ export function PillBadge({ label, variant }: PillBadgeProps) {
 
   const isDiscount = variant === 'discount';
 
-  const pillBg = isDiscount ? tokens.discountRedSoft : tokens.primaryLight;
-  const pillText = isDiscount ? tokens.discountRedActive : tokens.primary;
+  const pillBg = isDiscount ? tokens.accentSoft : tokens.primaryMuted;
+  const pillText = isDiscount ? tokens.accent : tokens.primary;
 
   return (
     <View style={[styles.pill, { backgroundColor: pillBg }]}>

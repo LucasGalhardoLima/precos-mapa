@@ -71,7 +71,7 @@ export const DealCard = React.memo(function DealCard({ deal, onPress, compact = 
         <Text style={[styles.promoPrice, { color: tokens.primary }]}>
           {formatBRL(deal.promo_price)}
         </Text>
-        <Text style={[styles.originalPrice, { color: tokens.discountRed }]}>
+        <Text style={[styles.originalPrice, { color: tokens.accent }]}>
           {formatBRL(deal.original_price)}
         </Text>
       </View>

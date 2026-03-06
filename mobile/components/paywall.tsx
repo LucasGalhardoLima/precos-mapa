@@ -189,7 +189,7 @@ export function Paywall({ visible, onClose }: PaywallProps) {
           >
             {/* Hero — savings number */}
             <View style={styles.heroSection}>
-              <Sparkles size={24} color={tokens.goldBright} />
+              <Sparkles size={24} color={tokens.warning} />
               <Text style={styles.savingsAmount}>R$ 120</Text>
               <Text style={styles.savingsSubtitle}>economizados por mês</Text>
             </View>

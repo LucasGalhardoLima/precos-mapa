@@ -97,7 +97,7 @@ function ResultRow({
             {formatPrice(promotion.promo_price)}
           </Text>
           {promotion.original_price > promotion.promo_price && (
-            <Text style={[styles.originalPrice, { color: tokens.discountRed }]}>
+            <Text style={[styles.originalPrice, { color: tokens.accent }]}>
               {formatPrice(promotion.original_price)}
             </Text>
           )}
