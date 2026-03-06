@@ -55,7 +55,6 @@ interface TabItemProps {
   label: string;
   isFocused: boolean;
   color: string;
-  primaryColor: string;
   onPress: () => void;
   onLongPress: () => void;
   accessibilityLabel: string;
@@ -66,25 +65,18 @@ function TabItem({
   label,
   isFocused,
   color,
-  primaryColor,
   onPress,
   onLongPress,
   accessibilityLabel,
 }: TabItemProps) {
   const scale = useSharedValue(isFocused ? 1.2 : 1);
-  const dotOpacity = useSharedValue(isFocused ? 1 : 0);
 
   useEffect(() => {
     scale.value = withSpring(isFocused ? 1.2 : 1, SPRING_CONFIG);
-    dotOpacity.value = withSpring(isFocused ? 1 : 0, SPRING_CONFIG);
-  }, [isFocused, scale, dotOpacity]);
+  }, [isFocused, scale]);
 
   const iconAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-  }));
-
-  const dotAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: dotOpacity.value,
   }));
 
   return (
@@ -100,13 +92,6 @@ function TabItem({
         <Icon size={22} color={color} />
       </Animated.View>
       <Text style={[styles.label, { color }]}>{label}</Text>
-      <Animated.View
-        style={[
-          styles.dot,
-          { backgroundColor: primaryColor },
-          dotAnimatedStyle,
-        ]}
-      />
     </Pressable>
   );
 }
@@ -171,7 +156,6 @@ export function FloatingTabBar({
                 label={label}
                 isFocused={isFocused}
                 color={color}
-                primaryColor={tokens.primary}
                 onPress={onPress}
                 onLongPress={onLongPress}
                 accessibilityLabel={label}
@@ -230,12 +214,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 10,
     fontWeight: '600',
-    marginTop: 2,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
     marginTop: 2,
   },
 });
