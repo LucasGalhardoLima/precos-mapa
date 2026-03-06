@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { View, Pressable, Text, Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -31,8 +31,12 @@ const PILL_MARGIN_HORIZONTAL = 16;
  *  Screens use `TAB_BAR_HEIGHT + insets.bottom` for scroll padding. */
 export const TAB_BAR_HEIGHT = PILL_HEIGHT + PILL_MARGIN_BOTTOM + PILL_MARGIN_TOP;
 
-/** Spring configuration for tab animations. */
-const SPRING_CONFIG = { damping: 15, stiffness: 150 };
+const VISIBLE_TAB_COUNT = 5;
+const HIGHLIGHT_WIDTH = 56;
+const HIGHLIGHT_HEIGHT = 44;
+
+/** Smooth spring for the sliding highlight — no bounce. */
+const SLIDE_SPRING = { damping: 20, stiffness: 120 };
 
 // ---------------------------------------------------------------------------
 // Tab metadata
@@ -47,7 +51,7 @@ const TAB_CONFIG: Record<string, { Icon: typeof Home; label: string }> = {
 };
 
 // ---------------------------------------------------------------------------
-// TabItem – animated individual tab
+// TabItem
 // ---------------------------------------------------------------------------
 
 interface TabItemProps {
@@ -69,16 +73,6 @@ function TabItem({
   onLongPress,
   accessibilityLabel,
 }: TabItemProps) {
-  const scale = useSharedValue(isFocused ? 1.2 : 1);
-
-  useEffect(() => {
-    scale.value = withSpring(isFocused ? 1.2 : 1, SPRING_CONFIG);
-  }, [isFocused, scale]);
-
-  const iconAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
   return (
     <Pressable
       accessibilityRole="button"
@@ -88,9 +82,7 @@ function TabItem({
       onLongPress={onLongPress}
       style={styles.tab}
     >
-      <Animated.View style={iconAnimatedStyle}>
-        <Icon size={22} color={color} />
-      </Animated.View>
+      <Icon size={22} color={color} />
       <Text style={[styles.label, { color }]}>{label}</Text>
     </Pressable>
   );
@@ -108,6 +100,40 @@ export function FloatingTabBar({
   const insets = useSafeAreaInsets();
   const { tokens } = useTheme();
 
+  const rowWidth = useSharedValue(0);
+  const highlightX = useSharedValue(0);
+
+  // Compute visible-tab index (skip hidden routes like favorites/alerts/profile)
+  const visibleIndex = state.routes
+    .slice(0, state.index + 1)
+    .filter((r) => TAB_CONFIG[r.name])
+    .length - 1;
+
+  useEffect(() => {
+    if (rowWidth.value > 0 && visibleIndex >= 0) {
+      const tabWidth = rowWidth.value / VISIBLE_TAB_COUNT;
+      const target = visibleIndex * tabWidth + (tabWidth - HIGHLIGHT_WIDTH) / 2;
+      highlightX.value = withSpring(target, SLIDE_SPRING);
+    }
+  }, [visibleIndex, rowWidth, highlightX]);
+
+  const highlightStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: highlightX.value }],
+  }));
+
+  const onRowLayout = useCallback(
+    (e: { nativeEvent: { layout: { width: number } } }) => {
+      const w = e.nativeEvent.layout.width;
+      rowWidth.value = w;
+      // Set initial position without animation
+      if (visibleIndex >= 0) {
+        const tabWidth = w / VISIBLE_TAB_COUNT;
+        highlightX.value = visibleIndex * tabWidth + (tabWidth - HIGHLIGHT_WIDTH) / 2;
+      }
+    },
+    [visibleIndex, rowWidth, highlightX],
+  );
+
   return (
     <View
       style={[
@@ -117,7 +143,16 @@ export function FloatingTabBar({
     >
       <BlurView intensity={80} tint="light" style={styles.blurContainer}>
         <View style={styles.tintOverlay} />
-        <View style={styles.tabRow}>
+        <View style={styles.tabRow} onLayout={onRowLayout}>
+          {/* Sliding highlight behind active tab */}
+          <Animated.View
+            style={[
+              styles.highlight,
+              { backgroundColor: tokens.primary + '26' },
+              highlightStyle,
+            ]}
+          />
+
           {state.routes.map((route, index) => {
             const config = TAB_CONFIG[route.name];
 
@@ -204,6 +239,12 @@ const styles = StyleSheet.create({
     height: PILL_HEIGHT,
     alignItems: 'center',
     justifyContent: 'space-around',
+  },
+  highlight: {
+    position: 'absolute',
+    width: HIGHLIGHT_WIDTH,
+    height: HIGHLIGHT_HEIGHT,
+    borderRadius: 16,
   },
   tab: {
     flex: 1,
