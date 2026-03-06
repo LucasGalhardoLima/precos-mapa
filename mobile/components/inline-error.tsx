@@ -34,7 +34,7 @@ export function InlineError({
     <View
       style={[
         styles.container,
-        { backgroundColor: tokens.discountRedSoft },
+        { backgroundColor: tokens.accentSoft },
       ]}
     >
       <Text style={[styles.message, { color: tokens.textPrimary }]}>

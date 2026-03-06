@@ -20,12 +20,12 @@ import {
   Crown,
   CreditCard,
   FileText,
-  Palette,
   Check,
   Sparkles,
 } from 'lucide-react-native';
 
 import { useTheme } from '@/theme/use-theme';
+import type { PaletteName } from '@/theme/palettes';
 import { triggerHaptic } from '@/hooks/use-haptics';
 import { ImpactFeedbackStyle } from 'expo-haptics';
 import { useAuthStore } from '@precomapa/shared';
@@ -50,6 +50,44 @@ const PLUS_HIGHLIGHTS = [
   'Favoritos e alertas ilimitados',
   'Listas de compras inteligentes',
   'Sem anúncios',
+];
+
+const PALETTE_OPTIONS: {
+  value: PaletteName;
+  label: string;
+  description: string;
+  colors: [string, string, string];
+}[] = [
+  {
+    value: 'economia_verde',
+    label: 'Economia Verde',
+    description: 'Teal e dourado. Confiança e economia.',
+    colors: ['#0D9488', '#F59E0B', '#F0FDFA'],
+  },
+  {
+    value: 'encarte',
+    label: 'Encarte',
+    description: 'Verde floresta e papel. Clássico de mercado.',
+    colors: ['#2A6041', '#C8392B', '#FAF7F0'],
+  },
+  {
+    value: 'encarte_digital',
+    label: 'Encarte Digital',
+    description: 'Verde vibrante e vermelho. Familiar brasileiro.',
+    colors: ['#059669', '#EF4444', '#ECFDF5'],
+  },
+  {
+    value: 'fintech',
+    label: 'Fintech',
+    description: 'Grafite e verde profundo. App financeiro.',
+    colors: ['#0B5E3A', '#C8192B', '#FAFBFC'],
+  },
+  {
+    value: 'fintech_moderna',
+    label: 'Fintech Moderna',
+    description: 'Cyan e roxo. Premium digital.',
+    colors: ['#0891B2', '#8B5CF6', '#F0F9FF'],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -149,7 +187,7 @@ function SectionHeader({ title, tokens }: SectionHeaderProps) {
 // ---------------------------------------------------------------------------
 
 export default function AccountScreen() {
-  const { tokens, palette, togglePalette } = useTheme();
+  const { tokens, palette, setPalette } = useTheme();
   const insets = useSafeAreaInsets();
   const session = useAuthStore((s) => s.session);
   const profile = useAuthStore((s) => s.profile);
@@ -206,11 +244,6 @@ export default function AccountScreen() {
     );
   }, []);
 
-  const handleTogglePalette = useCallback(() => {
-    triggerHaptic(ImpactFeedbackStyle.Medium);
-    togglePalette();
-  }, [togglePalette]);
-
   const handleOpenTerms = useCallback(() => {
     Linking.openURL(TERMS_URL);
   }, []);
@@ -235,13 +268,13 @@ export default function AccountScreen() {
           <View
             style={[
               styles.avatar,
-              { backgroundColor: isPaidPlan ? tokens.goldLight : tokens.primaryLight },
+              { backgroundColor: isPaidPlan ? tokens.accentSoft : tokens.primaryMuted },
             ]}
           >
             <Text
               style={[
                 styles.avatarLetter,
-                { color: isPaidPlan ? tokens.gold : tokens.primary },
+                { color: isPaidPlan ? tokens.warning : tokens.primary },
               ]}
             >
               {initial}
@@ -259,9 +292,9 @@ export default function AccountScreen() {
 
               {/* Plan badge */}
               {isPaidPlan ? (
-                <View style={[styles.badge, { backgroundColor: tokens.goldLight }]}>
-                  <Crown size={12} color={tokens.gold} />
-                  <Text style={[styles.badgeText, { color: tokens.gold }]}>
+                <View style={[styles.badge, { backgroundColor: tokens.accentSoft }]}>
+                  <Crown size={12} color={tokens.warning} />
+                  <Text style={[styles.badgeText, { color: tokens.warning }]}>
                     {planLabel}
                   </Text>
                 </View>
@@ -299,12 +332,12 @@ export default function AccountScreen() {
           <View
             style={[
               styles.planCard,
-              { backgroundColor: tokens.goldLight, borderColor: tokens.gold },
+              { backgroundColor: tokens.accentSoft, borderColor: tokens.warning },
             ]}
           >
             <View style={styles.planCardHeader}>
-              <Crown size={20} color={tokens.gold} />
-              <Text style={[styles.planCardTitle, { color: tokens.gold }]}>
+              <Crown size={20} color={tokens.warning} />
+              <Text style={[styles.planCardTitle, { color: tokens.warning }]}>
                 Plano {planLabel}
               </Text>
             </View>
@@ -316,12 +349,12 @@ export default function AccountScreen() {
         ) : (
           /* Upgrade CTA card for free users */
           <Pressable
-            style={[styles.upgradeCard, { backgroundColor: tokens.goldLight }]}
+            style={[styles.upgradeCard, { backgroundColor: tokens.accentSoft }]}
             onPress={handleOpenPaywall}
           >
             <View style={styles.upgradeCardHeader}>
-              <Sparkles size={22} color={tokens.gold} />
-              <Text style={[styles.upgradeTitle, { color: tokens.gold }]}>
+              <Sparkles size={22} color={tokens.warning} />
+              <Text style={[styles.upgradeTitle, { color: tokens.warning }]}>
                 Upgrade para Plus
               </Text>
             </View>
@@ -329,7 +362,7 @@ export default function AccountScreen() {
             <View style={styles.upgradeHighlights}>
               {PLUS_HIGHLIGHTS.map((text) => (
                 <View key={text} style={styles.highlightRow}>
-                  <Check size={14} color={tokens.gold} />
+                  <Check size={14} color={tokens.warning} />
                   <Text style={[styles.highlightText, { color: tokens.textPrimary }]}>
                     {text}
                   </Text>
@@ -337,7 +370,7 @@ export default function AccountScreen() {
               ))}
             </View>
 
-            <Text style={[styles.upgradeTeaser, { color: tokens.goldBright }]}>
+            <Text style={[styles.upgradeTeaser, { color: tokens.warning }]}>
               {'7 dias grátis \u2192'}
             </Text>
           </Pressable>
@@ -377,14 +410,50 @@ export default function AccountScreen() {
           tokens={tokens}
         />
 
-        <SettingsRow
-          icon={Palette}
-          iconColor={tokens.primary}
-          label="Paleta visual"
-          value={palette === 'encarte' ? 'Encarte' : 'Fintech'}
-          onPress={handleTogglePalette}
-          tokens={tokens}
-        />
+        <SectionDivider style={{ marginVertical: 8 }} />
+
+        {/* ----------------------------------------------------------------- */}
+        {/* APARÊNCIA                                                         */}
+        {/* ----------------------------------------------------------------- */}
+        <SectionHeader title="APARÊNCIA" tokens={tokens} />
+
+        {PALETTE_OPTIONS.map((opt) => {
+          const isSelected = palette === opt.value;
+          return (
+            <Pressable
+              key={opt.value}
+              style={[styles.row, { borderBottomColor: tokens.border }]}
+              onPress={() => {
+                triggerHaptic(ImpactFeedbackStyle.Medium);
+                setPalette(opt.value);
+              }}
+              android_ripple={{ color: tokens.mist }}
+            >
+              <View style={styles.rowLeft}>
+                <View style={styles.swatchRow}>
+                  {opt.colors.map((c, i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.swatchCircle,
+                        { backgroundColor: c, borderColor: tokens.border },
+                      ]}
+                    />
+                  ))}
+                </View>
+                <View style={styles.paletteInfo}>
+                  <Text style={[styles.rowLabel, { color: tokens.textPrimary }]}>
+                    {opt.label}
+                  </Text>
+                  <Text style={[styles.paletteDesc, { color: tokens.textHint }]}>
+                    {opt.description}
+                  </Text>
+                </View>
+              </View>
+              {isSelected && <Check size={20} color={tokens.primary} />}
+            </Pressable>
+          );
+        })}
 
         <SectionDivider style={{ marginVertical: 8 }} />
 
@@ -411,9 +480,9 @@ export default function AccountScreen() {
 
         <SettingsRow
           icon={Trash2}
-          iconColor={tokens.discountRed}
+          iconColor={tokens.danger}
           label="Excluir conta"
-          labelColor={tokens.discountRed}
+          labelColor={tokens.danger}
           onPress={handleDeleteAccount}
           tokens={tokens}
         />
@@ -616,5 +685,24 @@ const styles = StyleSheet.create({
   },
   rowValue: {
     fontSize: 13,
+  },
+
+  // -- Palette selector -----------------------------------------------------
+  swatchRow: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  swatchCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  paletteInfo: {
+    flex: 1,
+  },
+  paletteDesc: {
+    fontSize: 12,
+    marginTop: 1,
   },
 });

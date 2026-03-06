@@ -24,7 +24,7 @@ interface DiscountBadgeProps {
 export function DiscountBadge({ label, variant }: DiscountBadgeProps) {
   const { palette } = useTheme();
 
-  if (palette === 'encarte') {
+  if (palette === 'encarte' || palette === 'encarte_digital') {
     return <StampBadge label={label} variant={variant} />;
   }
 

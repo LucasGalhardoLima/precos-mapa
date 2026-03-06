@@ -185,7 +185,7 @@ export default function MapScreen() {
             styles.listRow,
             {
               backgroundColor: isCheapest
-                ? tokens.primaryLight
+                ? tokens.primaryMuted
                 : tokens.surface,
               borderColor: isCheapest ? tokens.primary : tokens.border,
             },
@@ -341,7 +341,7 @@ export default function MapScreen() {
                           ? tokens.primary
                           : store.logo_color,
                         borderColor: match.isCheapest
-                          ? tokens.primaryLight
+                          ? tokens.primaryMuted
                           : '#FFFFFF',
                       },
                     ]}

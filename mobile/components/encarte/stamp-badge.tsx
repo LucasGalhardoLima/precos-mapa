@@ -22,9 +22,9 @@ export function StampBadge({ label, variant, style }: StampBadgeProps) {
 
   const isDiscount = variant === 'discount';
 
-  const borderColor = isDiscount ? tokens.discountRed : tokens.primary;
-  const backgroundColor = isDiscount ? tokens.discountRedSoft : tokens.primaryLight;
-  const textColor = isDiscount ? tokens.discountRed : tokens.primary;
+  const borderColor = isDiscount ? tokens.accent : tokens.primary;
+  const backgroundColor = isDiscount ? tokens.accentSoft : tokens.primaryMuted;
+  const textColor = isDiscount ? tokens.accent : tokens.primary;
 
   return (
     <View

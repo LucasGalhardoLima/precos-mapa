@@ -173,7 +173,7 @@ function PriceChartContent({
     trend.direction === 'down'
       ? tokens.primary
       : trend.direction === 'up'
-        ? tokens.discountRed
+        ? tokens.accent
         : tokens.textHint;
 
   return (
@@ -248,13 +248,13 @@ function PriceChartContent({
               cx={points[minIndex].x}
               cy={points[minIndex].y}
               r={5}
-              fill={tokens.discountRed}
+              fill={tokens.accent}
             />
             <SvgText
               x={points[minIndex].x}
               y={points[minIndex].y - 10}
               fontSize={10}
-              fill={tokens.discountRed}
+              fill={tokens.accent}
               textAnchor="middle"
               fontWeight="bold"
             >
@@ -289,7 +289,7 @@ function PriceChartContent({
                 x={points[lastIndex].x}
                 y={points[lastIndex].y - 10}
                 fontSize={10}
-                fill={tokens.discountRed}
+                fill={tokens.accent}
                 textAnchor="middle"
                 fontWeight="bold"
               >
@@ -337,7 +337,7 @@ function PriceChartContent({
           <Text style={{ color: tokens.textHint }} className="text-xs">
             Menor preço
           </Text>
-          <Text style={{ color: tokens.discountRed }} className="text-sm font-bold">
+          <Text style={{ color: tokens.accent }} className="text-sm font-bold">
             R$ {minPrice.toFixed(2)}
           </Text>
         </View>
@@ -346,7 +346,7 @@ function PriceChartContent({
       {/* Best time to buy banner */}
       {trend.bestTimeToBuy && (
         <View
-          style={{ backgroundColor: tokens.primaryLight }}
+          style={{ backgroundColor: tokens.primaryMuted }}
           className="rounded-lg px-3 py-2 mt-3"
         >
           <Text

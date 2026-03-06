@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import type { PaletteName } from '../theme/palettes';
 import { useTheme } from '../theme/use-theme';
 
 // ---------------------------------------------------------------------------
@@ -105,17 +106,101 @@ const FINTECH_CLASSES: ThemeClasses = {
 
   discountText: 'text-fintech-offerRed',
   savingsText: 'text-fintech-vividGreen',
-  goldText: 'text-fintech-gold',
-  goldBg: 'bg-fintech-lightGold',
+  goldText: 'text-[#F59E0B]',
+  goldBg: 'bg-[#FEF3C7]',
 
   tabBarBg: 'bg-white',
   tabBarActive: 'text-fintech-deepGreen',
   tabBarInactive: 'text-fintech-silver',
 };
 
-const CLASS_MAP: Record<'encarte' | 'fintech', ThemeClasses> = {
+const ECONOMIA_VERDE_CLASSES: ThemeClasses = {
+  bg: 'bg-[#F0FDFA]',
+  surface: 'bg-white',
+  headerBg: 'bg-[#0D9488]',
+  headerText: 'text-white',
+  discountBg: 'bg-[#FEF3C7]',
+
+  textPrimary: 'text-[#1A1A2E]',
+  textSecondary: 'text-[#475569]',
+  textHint: 'text-[#94A3B8]',
+
+  border: 'border-[#D1D5DB]',
+  separator: 'border-solid border-[#D1D5DB]',
+
+  primaryButton: 'bg-[#0D9488]',
+  primaryButtonText: 'text-white',
+
+  discountText: 'text-[#F59E0B]',
+  savingsText: 'text-[#0D9488]',
+  goldText: 'text-[#F59E0B]',
+  goldBg: 'bg-[#FEF3C7]',
+
+  tabBarBg: 'bg-white',
+  tabBarActive: 'text-[#0D9488]',
+  tabBarInactive: 'text-[#94A3B8]',
+};
+
+const ENCARTE_DIGITAL_CLASSES: ThemeClasses = {
+  bg: 'bg-[#ECFDF5]',
+  surface: 'bg-white',
+  headerBg: 'bg-[#059669]',
+  headerText: 'text-white',
+  discountBg: 'bg-[#FEE2E2]',
+
+  textPrimary: 'text-[#1E293B]',
+  textSecondary: 'text-[#475569]',
+  textHint: 'text-[#94A3B8]',
+
+  border: 'border-[#D1D5DB]',
+  separator: 'border-dashed border-[#D1D5DB]',
+
+  primaryButton: 'bg-[#059669]',
+  primaryButtonText: 'text-white',
+
+  discountText: 'text-[#EF4444]',
+  savingsText: 'text-[#059669]',
+  goldText: 'text-[#9A6108]',
+  goldBg: 'bg-[#F9EFD8]',
+
+  tabBarBg: 'bg-white',
+  tabBarActive: 'text-[#059669]',
+  tabBarInactive: 'text-[#94A3B8]',
+};
+
+const FINTECH_MODERNA_CLASSES: ThemeClasses = {
+  bg: 'bg-[#F0F9FF]',
+  surface: 'bg-white',
+  headerBg: 'bg-[#0891B2]',
+  headerText: 'text-white',
+  discountBg: 'bg-[#EDE9FE]',
+
+  textPrimary: 'text-[#0F172A]',
+  textSecondary: 'text-[#475569]',
+  textHint: 'text-[#94A3B8]',
+
+  border: 'border-[#D1D5DB]',
+  separator: 'border-solid border-[#D1D5DB]',
+
+  primaryButton: 'bg-[#0891B2]',
+  primaryButtonText: 'text-white',
+
+  discountText: 'text-[#8B5CF6]',
+  savingsText: 'text-[#0891B2]',
+  goldText: 'text-[#8B5CF6]',
+  goldBg: 'bg-[#EDE9FE]',
+
+  tabBarBg: 'bg-white',
+  tabBarActive: 'text-[#0891B2]',
+  tabBarInactive: 'text-[#94A3B8]',
+};
+
+const CLASS_MAP: Record<PaletteName, ThemeClasses> = {
   encarte: ENCARTE_CLASSES,
   fintech: FINTECH_CLASSES,
+  economia_verde: ECONOMIA_VERDE_CLASSES,
+  encarte_digital: ENCARTE_DIGITAL_CLASSES,
+  fintech_moderna: FINTECH_MODERNA_CLASSES,
 };
 
 // ---------------------------------------------------------------------------

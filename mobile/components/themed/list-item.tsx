@@ -60,7 +60,7 @@ interface ListItemProps {
 export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) {
   const { palette, tokens } = useTheme();
 
-  const isEncarte = palette === 'encarte';
+  const isEncarte = palette === 'encarte' || palette === 'encarte_digital';
 
   const quantityLabel =
     item.quantity != null
@@ -77,7 +77,7 @@ export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) 
         transition={{ type: 'timing', duration: 200 }}
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: tokens.primaryLight, borderRadius: 6 },
+          { backgroundColor: tokens.primaryMuted, borderRadius: 6 },
         ]}
         pointerEvents="none"
       />

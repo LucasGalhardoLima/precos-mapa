@@ -17,7 +17,7 @@ import { useTheme } from '../../theme/use-theme';
 export function ListSkeleton() {
   const { palette, tokens } = useTheme();
 
-  const isDashed = palette === 'encarte';
+  const isDashed = palette === 'encarte' || palette === 'encarte_digital';
 
   const shape = (
     height: number,
