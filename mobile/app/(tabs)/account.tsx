@@ -26,6 +26,7 @@ import {
 
 import { useTheme } from '@/theme/use-theme';
 import type { PaletteName } from '@/theme/palettes';
+import type { TabStyle } from '@/theme/store';
 import { triggerHaptic } from '@/hooks/use-haptics';
 import { ImpactFeedbackStyle } from 'expo-haptics';
 import { useAuthStore } from '@precomapa/shared';
@@ -87,6 +88,23 @@ const PALETTE_OPTIONS: {
     label: 'Fintech Moderna',
     description: 'Cyan e roxo. Premium digital.',
     colors: ['#0891B2', '#8B5CF6', '#F0F9FF'],
+  },
+];
+
+const TAB_STYLE_OPTIONS: {
+  value: TabStyle;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: 'glass-pill',
+    label: 'Glass Pill',
+    description: 'Pílula flutuante com Liquid Glass.',
+  },
+  {
+    value: 'native',
+    label: 'Nativa iOS',
+    description: 'Barra nativa com Liquid Glass automático.',
   },
 ];
 
@@ -187,7 +205,7 @@ function SectionHeader({ title, tokens }: SectionHeaderProps) {
 // ---------------------------------------------------------------------------
 
 export default function AccountScreen() {
-  const { tokens, palette, setPalette } = useTheme();
+  const { tokens, palette, setPalette, tabStyle, setTabStyle } = useTheme();
   const insets = useSafeAreaInsets();
   const session = useAuthStore((s) => s.session);
   const profile = useAuthStore((s) => s.profile);
@@ -441,6 +459,36 @@ export default function AccountScreen() {
                     />
                   ))}
                 </View>
+                <View style={styles.paletteInfo}>
+                  <Text style={[styles.rowLabel, { color: tokens.textPrimary }]}>
+                    {opt.label}
+                  </Text>
+                  <Text style={[styles.paletteDesc, { color: tokens.textHint }]}>
+                    {opt.description}
+                  </Text>
+                </View>
+              </View>
+              {isSelected && <Check size={20} color={tokens.primary} />}
+            </Pressable>
+          );
+        })}
+
+        {/* Tab style picker */}
+        <SectionHeader title="ESTILO DA BARRA" tokens={tokens} />
+
+        {TAB_STYLE_OPTIONS.map((opt) => {
+          const isSelected = tabStyle === opt.value;
+          return (
+            <Pressable
+              key={opt.value}
+              style={[styles.row, { borderBottomColor: tokens.border }]}
+              onPress={() => {
+                triggerHaptic(ImpactFeedbackStyle.Medium);
+                setTabStyle(opt.value);
+              }}
+              android_ripple={{ color: tokens.mist }}
+            >
+              <View style={styles.rowLeft}>
                 <View style={styles.paletteInfo}>
                   <Text style={[styles.rowLabel, { color: tokens.textPrimary }]}>
                     {opt.label}

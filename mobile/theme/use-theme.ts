@@ -1,4 +1,5 @@
 import { useThemeStore } from './store';
+import type { TabStyle } from './store';
 import {
   ENCARTE_TOKENS,
   FINTECH_TOKENS,
@@ -21,13 +22,19 @@ export function useTheme(): {
   palette: PaletteName;
   tokens: PaletteTokens;
   setPalette: (palette: PaletteName) => void;
+  tabStyle: TabStyle;
+  setTabStyle: (tabStyle: TabStyle) => void;
 } {
   const palette = useThemeStore((s) => s.palette);
   const setPalette = useThemeStore((s) => s.setPalette);
+  const tabStyle = useThemeStore((s) => s.tabStyle);
+  const setTabStyle = useThemeStore((s) => s.setTabStyle);
 
   return {
     palette,
     tokens: TOKEN_MAP[palette],
     setPalette,
+    tabStyle,
+    setTabStyle,
   };
 }

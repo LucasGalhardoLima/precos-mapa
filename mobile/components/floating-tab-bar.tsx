@@ -14,7 +14,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
-import { BlurView } from 'expo-blur';
+import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { useTheme } from '../theme/use-theme';
 import { triggerHaptic } from '@/hooks/use-haptics';
 
@@ -33,6 +33,8 @@ export const TAB_BAR_HEIGHT = PILL_HEIGHT + PILL_MARGIN_BOTTOM + PILL_MARGIN_TOP
 
 /** Gentle spring for icon scale — smooth, minimal bounce. */
 const SPRING_CONFIG = { damping: 20, stiffness: 120 };
+
+const HAS_LIQUID_GLASS = isLiquidGlassAvailable();
 
 // ---------------------------------------------------------------------------
 // Tab metadata
@@ -108,6 +110,55 @@ export function FloatingTabBar({
   const insets = useSafeAreaInsets();
   const { tokens } = useTheme();
 
+  const tabRow = (
+    <View style={styles.tabRow}>
+      {state.routes.map((route, index) => {
+        const config = TAB_CONFIG[route.name];
+
+        // Hidden routes (favorites, alerts, profile) have no config — skip.
+        if (!config) return null;
+
+        const isFocused = state.index === index;
+        const color = isFocused ? tokens.primary : tokens.textHint;
+
+        const { Icon, label } = config;
+
+        const onPress = () => {
+          triggerHaptic();
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
+
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name);
+          }
+        };
+
+        const onLongPress = () => {
+          navigation.emit({
+            type: 'tabLongPress',
+            target: route.key,
+          });
+        };
+
+        return (
+          <TabItem
+            key={route.key}
+            Icon={Icon}
+            label={label}
+            isFocused={isFocused}
+            color={color}
+            onPress={onPress}
+            onLongPress={onLongPress}
+            accessibilityLabel={label}
+          />
+        );
+      })}
+    </View>
+  );
+
   return (
     <View
       style={[
@@ -115,55 +166,16 @@ export function FloatingTabBar({
         { bottom: insets.bottom + PILL_MARGIN_BOTTOM },
       ]}
     >
-      <BlurView intensity={80} tint="light" style={styles.blurContainer}>
-        <View style={styles.tintOverlay} />
-        <View style={styles.tabRow}>
-          {state.routes.map((route, index) => {
-            const config = TAB_CONFIG[route.name];
-
-            // Hidden routes (favorites, alerts, profile) have no config — skip.
-            if (!config) return null;
-
-            const isFocused = state.index === index;
-            const color = isFocused ? tokens.primary : tokens.textHint;
-
-            const { Icon, label } = config;
-
-            const onPress = () => {
-              triggerHaptic();
-              const event = navigation.emit({
-                type: 'tabPress',
-                target: route.key,
-                canPreventDefault: true,
-              });
-
-              if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name);
-              }
-            };
-
-            const onLongPress = () => {
-              navigation.emit({
-                type: 'tabLongPress',
-                target: route.key,
-              });
-            };
-
-            return (
-              <TabItem
-                key={route.key}
-                Icon={Icon}
-                label={label}
-                isFocused={isFocused}
-                color={color}
-                onPress={onPress}
-                onLongPress={onLongPress}
-                accessibilityLabel={label}
-              />
-            );
-          })}
+      {HAS_LIQUID_GLASS ? (
+        <GlassView glassEffectStyle="regular" style={styles.glassContainer}>
+          {tabRow}
+        </GlassView>
+      ) : (
+        <View style={styles.fallbackContainer}>
+          <View style={styles.tintOverlay} />
+          {tabRow}
         </View>
-      </BlurView>
+      )}
     </View>
   );
 }
@@ -191,9 +203,14 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  blurContainer: {
+  glassContainer: {
     borderRadius: 28,
     overflow: 'hidden',
+  },
+  fallbackContainer: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
   },
   tintOverlay: {
     ...StyleSheet.absoluteFillObject,
