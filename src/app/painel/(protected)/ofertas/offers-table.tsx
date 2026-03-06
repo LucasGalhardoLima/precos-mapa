@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import { PlusCircle, ChevronUp, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/features/panel/components/section-header";
 import { formatCurrency, formatDateLabel } from "@/features/shared/format";
 import { toggleOfferStatus, deleteOffer } from "@/features/offers/actions";
+import { FilterBar, type FilterOption } from "./filter-bar";
 
 export interface PromotionRow {
   id: string;
@@ -30,31 +31,31 @@ interface OffersTableProps {
   pageSize: number;
   sort: string;
   dir: string;
+  stores: FilterOption[];
+  categories: FilterOption[];
 }
 
 function buildHref(
-  storeId: string | undefined,
+  baseParams: string,
   overrides: { page?: number; sort?: string; dir?: string },
-  current: { page: number; sort: string; dir: string },
 ) {
-  const p = new URLSearchParams();
-  if (storeId) p.set("store", storeId);
-  p.set("page", String(overrides.page ?? current.page));
-  p.set("sort", overrides.sort ?? current.sort);
-  p.set("dir", overrides.dir ?? current.dir);
+  const p = new URLSearchParams(baseParams);
+  if (overrides.page != null) p.set("page", String(overrides.page));
+  if (overrides.sort != null) p.set("sort", overrides.sort);
+  if (overrides.dir != null) p.set("dir", overrides.dir);
   return `/painel/ofertas?${p.toString()}`;
 }
 
 function SortableHeader({
   label,
   column,
-  storeId,
+  baseParams,
   currentSort,
   currentDir,
 }: {
   label: string;
   column: string;
-  storeId?: string;
+  baseParams: string;
   currentSort: string;
   currentDir: string;
 }) {
@@ -65,7 +66,7 @@ function SortableHeader({
   return (
     <th className="px-4 py-3">
       <Link
-        href={buildHref(storeId, { sort: column, dir: nextDir, page: 1 }, { page: 1, sort: currentSort, dir: currentDir })}
+        href={buildHref(baseParams, { sort: column, dir: nextDir, page: 1 })}
         className="inline-flex items-center gap-1 hover:text-[var(--color-ink)]"
       >
         {label}
@@ -84,9 +85,12 @@ export function OffersTable({
   pageSize,
   sort,
   dir,
+  stores,
+  categories,
 }: OffersTableProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const currentParams = useSearchParams().toString();
 
   const totalPages = Math.ceil(totalCount / pageSize);
   const from = (page - 1) * pageSize + 1;
@@ -129,17 +133,23 @@ export function OffersTable({
         }
       />
 
+      <FilterBar
+        stores={stores}
+        categories={categories}
+        showStoreFilter={showStoreColumn ?? false}
+      />
+
       <div className="overflow-x-auto rounded-2xl border border-[var(--color-line)] bg-white shadow-[var(--shadow-soft)]">
         <table className={`w-full text-left text-sm ${showStoreColumn ? "min-w-[940px]" : "min-w-[780px]"}`}>
           <thead className="bg-[var(--color-surface-strong)] text-xs uppercase tracking-[0.08em] text-[var(--color-muted)]">
             <tr>
-              <SortableHeader label="Produto" column="created_at" storeId={storeId} currentSort={sort} currentDir={dir} />
+              <SortableHeader label="Produto" column="created_at" baseParams={currentParams} currentSort={sort} currentDir={dir} />
               {showStoreColumn && <th className="px-4 py-3 whitespace-nowrap">Mercado</th>}
               <th className="px-4 py-3 whitespace-nowrap">Categoria</th>
-              <SortableHeader label="Preco" column="promo_price" storeId={storeId} currentSort={sort} currentDir={dir} />
-              <SortableHeader label="Validade" column="end_date" storeId={storeId} currentSort={sort} currentDir={dir} />
+              <SortableHeader label="Preco" column="promo_price" baseParams={currentParams} currentSort={sort} currentDir={dir} />
+              <SortableHeader label="Validade" column="end_date" baseParams={currentParams} currentSort={sort} currentDir={dir} />
               <th className="px-4 py-3 whitespace-nowrap">Origem</th>
-              <SortableHeader label="Status" column="status" storeId={storeId} currentSort={sort} currentDir={dir} />
+              <SortableHeader label="Status" column="status" baseParams={currentParams} currentSort={sort} currentDir={dir} />
               <th className="px-4 py-3 text-right whitespace-nowrap">Acoes</th>
             </tr>
           </thead>
@@ -245,7 +255,7 @@ export function OffersTable({
           <div className="flex items-center gap-2">
             {page > 1 ? (
               <Link
-                href={buildHref(storeId, { page: page - 1 }, { page, sort, dir })}
+                href={buildHref(currentParams, { page: page - 1 })}
                 className="rounded-lg border border-[var(--color-line)] px-3 py-1.5 text-xs font-medium transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-deep)]"
               >
                 Anterior
@@ -260,7 +270,7 @@ export function OffersTable({
             </span>
             {page < totalPages ? (
               <Link
-                href={buildHref(storeId, { page: page + 1 }, { page, sort, dir })}
+                href={buildHref(currentParams, { page: page + 1 })}
                 className="rounded-lg border border-[var(--color-line)] px-3 py-1.5 text-xs font-medium transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-deep)]"
               >
                 Proxima
