@@ -53,7 +53,6 @@ const styles = StyleSheet.create({
   dashedLine: {
     flex: 1,
     borderBottomWidth: 1,
-    borderStyle: 'dashed',
   },
   fintechSpacer: {
     marginVertical: 24,

@@ -16,7 +16,7 @@ interface SectionDividerProps {
 // ---------------------------------------------------------------------------
 
 /**
- * Subtle dashed-line section divider used across both palettes.
+ * Subtle section divider used across all palettes.
  */
 export function SectionDivider({ style }: SectionDividerProps) {
   const { tokens } = useTheme();
@@ -26,7 +26,6 @@ export function SectionDivider({ style }: SectionDividerProps) {
       style={[
         {
           borderBottomWidth: 1,
-          borderStyle: 'dashed',
           borderBottomColor: tokens.border,
         },
         style,

@@ -14,6 +14,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/use-theme';
 import { triggerHaptic } from '@/hooks/use-haptics';
 
@@ -21,8 +22,14 @@ import { triggerHaptic } from '@/hooks/use-haptics';
 // Constants
 // ---------------------------------------------------------------------------
 
-/** Height of the tab bar itself, excluding safe-area insets. */
-export const TAB_BAR_HEIGHT = 72;
+const PILL_HEIGHT = 60;
+const PILL_MARGIN_BOTTOM = 8;
+const PILL_MARGIN_TOP = 8;
+const PILL_MARGIN_HORIZONTAL = 16;
+
+/** Total vertical space occupied by the pill above the safe-area insets.
+ *  Screens use `TAB_BAR_HEIGHT + insets.bottom` for scroll padding. */
+export const TAB_BAR_HEIGHT = PILL_HEIGHT + PILL_MARGIN_BOTTOM + PILL_MARGIN_TOP;
 
 /** Spring configuration for tab animations. */
 const SPRING_CONFIG = { damping: 15, stiffness: 150 };
@@ -119,60 +126,60 @@ export function FloatingTabBar({
   return (
     <View
       style={[
-        styles.container,
-        {
-          paddingBottom: insets.bottom,
-          backgroundColor: '#FFFFFF',
-        },
+        styles.outerContainer,
+        { bottom: insets.bottom + PILL_MARGIN_BOTTOM },
       ]}
     >
-      <View style={styles.tabRow}>
-        {state.routes.map((route, index) => {
-          const config = TAB_CONFIG[route.name];
+      <BlurView intensity={80} tint="light" style={styles.blurContainer}>
+        <View style={styles.tintOverlay} />
+        <View style={styles.tabRow}>
+          {state.routes.map((route, index) => {
+            const config = TAB_CONFIG[route.name];
 
-          // Hidden routes (favorites, alerts, profile) have no config — skip.
-          if (!config) return null;
+            // Hidden routes (favorites, alerts, profile) have no config — skip.
+            if (!config) return null;
 
-          const isFocused = state.index === index;
-          const color = isFocused ? tokens.primary : tokens.textHint;
+            const isFocused = state.index === index;
+            const color = isFocused ? tokens.primary : tokens.textHint;
 
-          const { Icon, label } = config;
+            const { Icon, label } = config;
 
-          const onPress = () => {
-            triggerHaptic();
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
+            const onPress = () => {
+              triggerHaptic();
+              const event = navigation.emit({
+                type: 'tabPress',
+                target: route.key,
+                canPreventDefault: true,
+              });
 
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
-            }
-          };
+              if (!isFocused && !event.defaultPrevented) {
+                navigation.navigate(route.name);
+              }
+            };
 
-          const onLongPress = () => {
-            navigation.emit({
-              type: 'tabLongPress',
-              target: route.key,
-            });
-          };
+            const onLongPress = () => {
+              navigation.emit({
+                type: 'tabLongPress',
+                target: route.key,
+              });
+            };
 
-          return (
-            <TabItem
-              key={route.key}
-              Icon={Icon}
-              label={label}
-              isFocused={isFocused}
-              color={color}
-              primaryColor={tokens.primary}
-              onPress={onPress}
-              onLongPress={onLongPress}
-              accessibilityLabel={label}
-            />
-          );
-        })}
-      </View>
+            return (
+              <TabItem
+                key={route.key}
+                Icon={Icon}
+                label={label}
+                isFocused={isFocused}
+                color={color}
+                primaryColor={tokens.primary}
+                onPress={onPress}
+                onLongPress={onLongPress}
+                accessibilityLabel={label}
+              />
+            );
+          })}
+        </View>
+      </BlurView>
     </View>
   );
 }
@@ -182,17 +189,16 @@ export function FloatingTabBar({
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
-  container: {
+  outerContainer: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    left: PILL_MARGIN_HORIZONTAL,
+    right: PILL_MARGIN_HORIZONTAL,
+    borderRadius: 28,
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.15,
         shadowRadius: 12,
       },
@@ -201,9 +207,17 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  blurContainer: {
+    borderRadius: 28,
+    overflow: 'hidden',
+  },
+  tintOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+  },
   tabRow: {
     flexDirection: 'row',
-    height: TAB_BAR_HEIGHT,
+    height: PILL_HEIGHT,
     alignItems: 'center',
     justifyContent: 'space-around',
   },
