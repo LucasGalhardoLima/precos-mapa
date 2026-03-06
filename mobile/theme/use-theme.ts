@@ -2,31 +2,32 @@ import { useThemeStore } from './store';
 import {
   ENCARTE_TOKENS,
   FINTECH_TOKENS,
+  ECONOMIA_VERDE_TOKENS,
+  ENCARTE_DIGITAL_TOKENS,
+  FINTECH_MODERNA_TOKENS,
+  type PaletteName,
   type PaletteTokens,
 } from './palettes';
 
-const TOKEN_MAP: Record<'encarte' | 'fintech', PaletteTokens> = {
+const TOKEN_MAP: Record<PaletteName, PaletteTokens> = {
   encarte: ENCARTE_TOKENS,
   fintech: FINTECH_TOKENS,
+  economia_verde: ECONOMIA_VERDE_TOKENS,
+  encarte_digital: ENCARTE_DIGITAL_TOKENS,
+  fintech_moderna: FINTECH_MODERNA_TOKENS,
 };
 
-/**
- * Provides the active palette name, full token set, and a toggle function.
- *
- * All consumers re-render immediately on toggle thanks to the underlying
- * Zustand subscription.
- */
 export function useTheme(): {
-  palette: 'encarte' | 'fintech';
+  palette: PaletteName;
   tokens: PaletteTokens;
-  togglePalette: () => void;
+  setPalette: (palette: PaletteName) => void;
 } {
   const palette = useThemeStore((s) => s.palette);
-  const togglePalette = useThemeStore((s) => s.togglePalette);
+  const setPalette = useThemeStore((s) => s.setPalette);
 
   return {
     palette,
     tokens: TOKEN_MAP[palette],
-    togglePalette,
+    setPalette,
   };
 }
