@@ -8,8 +8,9 @@ import {
   Linking,
   Platform,
 } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, type Region } from 'react-native-maps';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { useFocusEffect } from 'expo-router';
 import {
   MapPin,
   ListChecks,
@@ -61,8 +62,23 @@ export default function MapScreen() {
   const { lists } = useShoppingList();
   const { tokens } = useTheme();
 
+  const mapRef = useRef<MapView>(null);
   const storeBottomSheetRef = useRef<BottomSheet>(null);
   const listBottomSheetRef = useRef<BottomSheet>(null);
+
+  const defaultRegion: Region = useMemo(() => ({
+    latitude,
+    longitude,
+    latitudeDelta: 1.2,
+    longitudeDelta: 1.2,
+  }), [latitude, longitude]);
+
+  // Reset map to default zoom when tab gains focus
+  useFocusEffect(
+    useCallback(() => {
+      mapRef.current?.animateToRegion(defaultRegion, 300);
+    }, [defaultRegion]),
+  );
 
   const [selectedStore, setSelectedStore] =
     useState<StoreWithPromotions | null>(null);
@@ -81,43 +97,108 @@ export default function MapScreen() {
 
   // -------------------------------------------------------------------------
   // Compute store-to-list mapping
-  // For each store, find which list product_ids have active promotions
-  // at that store, then sum up the subtotal.
+  // Group list items by their origin store_id. Items without a store_id
+  // fall back to matching against topDeals (legacy behavior).
   // -------------------------------------------------------------------------
 
   const storeListMatches = useMemo((): StoreListMatch[] => {
     if (!hasListItems) return [];
 
-    const listProductIds = new Set(listItems.map((item) => item.product_id));
-    const quantityMap = new Map<string, number>();
-    const nameMap = new Map<string, string>();
-
-    for (const item of listItems) {
-      quantityMap.set(item.product_id, item.quantity);
-      nameMap.set(item.product_id, item.product?.name ?? 'Produto');
+    // Build a lookup from store id to StoreWithPromotions
+    const storeById = new Map<string, StoreWithPromotions>();
+    for (const s of stores) {
+      storeById.set(s.store.id, s);
     }
 
-    const matches: StoreListMatch[] = [];
+    // Group items by origin store_id
+    const storeItemsMap = new Map<string, StoreListMatch['matchedItems']>();
+    const storeSubtotals = new Map<string, number>();
+    const legacyItems: typeof listItems = [];
 
-    for (const storeData of stores) {
-      const matchedItems: StoreListMatch['matchedItems'] = [];
+    for (const item of listItems) {
+      if (item.store_id && storeById.has(item.store_id)) {
+        const existing = storeItemsMap.get(item.store_id) ?? [];
+        const price = 0; // We'll look up the price from promotions
+        existing.push({
+          productName: item.product?.name ?? 'Produto',
+          price,
+          quantity: item.quantity,
+        });
+        storeItemsMap.set(item.store_id, existing);
+      } else {
+        legacyItems.push(item);
+      }
+    }
+
+    // For items with store_id, try to find their promo price from the store's promotions
+    for (const [storeId, items] of storeItemsMap) {
+      const storeData = storeById.get(storeId)!;
       let subtotal = 0;
 
-      for (const deal of storeData.topDeals) {
-        if (listProductIds.has(deal.product_id)) {
-          const qty = quantityMap.get(deal.product_id) ?? 1;
-          const price = deal.promo_price;
-          matchedItems.push({
-            productName: nameMap.get(deal.product_id) ?? deal.product.name,
-            price,
-            quantity: qty,
-          });
-          subtotal += price * qty;
+      for (const matchedItem of items) {
+        // Find the matching list item to get product_id
+        const listItem = listItems.find(
+          (li) => li.store_id === storeId && li.product?.name === matchedItem.productName,
+        );
+        if (listItem) {
+          // Look for promo price in topDeals
+          const deal = storeData.topDeals.find((d) => d.product_id === listItem.product_id);
+          if (deal) {
+            matchedItem.price = deal.promo_price;
+          }
         }
+        subtotal += matchedItem.price * matchedItem.quantity;
       }
 
-      if (matchedItems.length > 0) {
-        matches.push({ storeData, matchedItems, subtotal, isCheapest: false });
+      storeSubtotals.set(storeId, subtotal);
+    }
+
+    // Build matches from origin-store grouped items
+    const matches: StoreListMatch[] = [];
+    for (const [storeId, matchedItems] of storeItemsMap) {
+      const storeData = storeById.get(storeId)!;
+      matches.push({
+        storeData,
+        matchedItems,
+        subtotal: storeSubtotals.get(storeId) ?? 0,
+        isCheapest: false,
+      });
+    }
+
+    // Legacy fallback: match items without store_id against topDeals
+    if (legacyItems.length > 0) {
+      const legacyProductIds = new Set(legacyItems.map((item) => item.product_id));
+      const quantityMap = new Map<string, number>();
+      const nameMap = new Map<string, string>();
+
+      for (const item of legacyItems) {
+        quantityMap.set(item.product_id, item.quantity);
+        nameMap.set(item.product_id, item.product?.name ?? 'Produto');
+      }
+
+      for (const storeData of stores) {
+        // Skip stores already matched via origin
+        if (storeItemsMap.has(storeData.store.id)) continue;
+
+        const legacyMatched: StoreListMatch['matchedItems'] = [];
+        let subtotal = 0;
+
+        for (const deal of storeData.topDeals) {
+          if (legacyProductIds.has(deal.product_id)) {
+            const qty = quantityMap.get(deal.product_id) ?? 1;
+            const price = deal.promo_price;
+            legacyMatched.push({
+              productName: nameMap.get(deal.product_id) ?? deal.product.name,
+              price,
+              quantity: qty,
+            });
+            subtotal += price * qty;
+          }
+        }
+
+        if (legacyMatched.length > 0) {
+          matches.push({ storeData, matchedItems: legacyMatched, subtotal, isCheapest: false });
+        }
       }
     }
 
@@ -291,13 +372,9 @@ export default function MapScreen() {
 
       {/* Map */}
       <MapView
+        ref={mapRef}
         style={styles.map}
-        initialRegion={{
-          latitude,
-          longitude,
-          latitudeDelta: 1.2,
-          longitudeDelta: 1.2,
-        }}
+        initialRegion={defaultRegion}
         showsUserLocation={permissionGranted === true}
         showsMyLocationButton={permissionGranted === true}
       >

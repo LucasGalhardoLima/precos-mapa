@@ -49,57 +49,41 @@ function ResultRow({
 }) {
   const storeOpen = isStoreOpen();
 
+  const hasDiscount = promotion.original_price > promotion.promo_price;
+
   return (
-    <View>
-      {/* Best price badge above the row */}
-      {promotion.isBestPrice && (
-        <View style={styles.bestPriceBadge}>
-          <DiscountBadge label="Melhor preço" variant="highlight" />
-        </View>
-      )}
-
-      <View style={[styles.row, { backgroundColor: tokens.surface }]}>
-        {/* Left side: store info */}
-        <View style={styles.leftSide}>
-          <Text
-            style={[styles.storeName, { color: tokens.textPrimary }]}
-            numberOfLines={1}
-          >
-            {promotion.store.name}
-          </Text>
-          <Text style={[styles.distance, { color: tokens.textHint }]}>
-            {promotion.distanceKm} km
-          </Text>
-          <View
-            style={[
-              styles.statusBadge,
-              {
-                backgroundColor: storeOpen
-                  ? 'rgba(34,197,94,0.15)'
-                  : 'rgba(156,163,175,0.2)',
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.statusText,
-                { color: storeOpen ? '#16a34a' : '#6b7280' },
-              ]}
-            >
-              {storeOpen ? 'Aberto agora' : 'Fechado'}
+    <View style={[styles.row, { backgroundColor: tokens.surface }]}>
+      {/* Row 1: Product name + price */}
+      <View style={styles.rowLine}>
+        <Text
+          style={[styles.productName, { color: tokens.textPrimary }]}
+          numberOfLines={1}
+        >
+          {promotion.product.name}
+        </Text>
+        <View style={styles.priceGroup}>
+          {hasDiscount && (
+            <Text style={[styles.originalPrice, { color: tokens.textHint }]}>
+              {formatPrice(promotion.original_price)}
             </Text>
-          </View>
-        </View>
-
-        {/* Right side: pricing */}
-        <View style={styles.rightSide}>
+          )}
           <Text style={[styles.promoPrice, { color: tokens.primary }]}>
             {formatPrice(promotion.promo_price)}
           </Text>
-          {promotion.original_price > promotion.promo_price && (
-            <Text style={[styles.originalPrice, { color: tokens.accent }]}>
-              {formatPrice(promotion.original_price)}
-            </Text>
+        </View>
+      </View>
+
+      {/* Row 2: Store info + badges */}
+      <View style={styles.rowLine}>
+        <Text
+          style={[styles.storeSubtitle, { color: tokens.textHint }]}
+          numberOfLines={1}
+        >
+          {promotion.store.name} · {promotion.distanceKm} km · {storeOpen ? 'Aberto agora' : 'Fechado'}
+        </Text>
+        <View style={styles.badgeGroup}>
+          {promotion.isBestPrice && (
+            <DiscountBadge label="Melhor preço" variant="highlight" />
           )}
           {promotion.discountPercent > 0 && (
             <DiscountBadge
@@ -166,44 +150,38 @@ export function SearchResults({
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
-  bestPriceBadge: {
-    marginBottom: 4,
-    alignSelf: 'flex-start',
-  },
   row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    gap: 6,
   },
-  leftSide: {
-    flex: 1,
-    marginRight: 12,
+  rowLine: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  storeName: {
+  productName: {
     fontWeight: '700',
     fontSize: 15,
+    flex: 1,
+    marginRight: 8,
   },
-  distance: {
+  priceGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  storeSubtitle: {
     fontSize: 12,
-    marginTop: 2,
+    flex: 1,
+    marginRight: 8,
   },
-  statusBadge: {
-    alignSelf: 'flex-start',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginTop: 6,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  rightSide: {
-    alignItems: 'flex-end',
-    gap: 2,
+  badgeGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 22,
   },
   promoPrice: {
     fontWeight: '700',

@@ -205,7 +205,9 @@ export default function ProductDetailScreen() {
       }
 
       if (listId) {
-        await addItem(listId, id);
+        // Use the cheapest promotion's store as origin
+        const cheapestStoreId = promotions.length > 0 ? promotions[0].store_id : undefined;
+        await addItem(listId, id, 1, cheapestStoreId);
         triggerNotification(NotificationFeedbackType.Success);
         Alert.alert('Adicionado', 'Produto adicionado à lista de compras.');
       }
