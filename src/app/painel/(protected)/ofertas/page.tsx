@@ -12,6 +12,13 @@ interface PageProps {
     page?: string;
     sort?: string;
     dir?: string;
+    q?: string;
+    category?: string;
+    source?: string;
+    status?: string;
+    date?: string;
+    date_from?: string;
+    date_to?: string;
   }>;
 }
 
@@ -36,17 +43,79 @@ export default async function MarketOffersPage({ searchParams }: PageProps) {
 
   const supabase = await createClient();
 
+  const [{ data: storesList }, { data: categoriesList }] = await Promise.all([
+    supabase.from("stores").select("id, name").order("name"),
+    supabase.from("categories").select("id, name").order("sort_order"),
+  ]);
+
+  const needsInnerJoin = params.q || params.category;
+  const productJoin = needsInnerJoin
+    ? "product:products!inner(name, brand, category:categories(name))"
+    : "product:products(name, brand, category:categories(name))";
+
+  const selectCols = crossMarket
+    ? `id, store_id, promo_price, original_price, status, source, end_date, created_at, ${productJoin}, store:stores(name)`
+    : `id, store_id, promo_price, original_price, status, source, end_date, created_at, ${productJoin}`;
+
   let query = supabase
     .from("promotions")
-    .select(
-      crossMarket
-        ? "id, store_id, promo_price, original_price, status, source, end_date, created_at, product:products(name, brand, category:categories(name)), store:stores(name)"
-        : "id, store_id, promo_price, original_price, status, source, end_date, created_at, product:products(name, brand, category:categories(name))",
-      { count: "exact" },
-    );
+    .select(selectCols, { count: "exact" });
 
   if (!crossMarket) {
     query = query.eq("store_id", storeId);
+  }
+
+  // Product name search (ILIKE)
+  if (params.q) {
+    query = query.ilike("products.name", `%${params.q}%`);
+  }
+
+  // Category filter
+  if (params.category) {
+    query = query.eq("products.category_id", params.category);
+  }
+
+  // Source filter
+  if (params.source) {
+    query = query.eq("source", params.source);
+  }
+
+  // Status filter
+  if (params.status) {
+    query = query.eq("status", params.status);
+  }
+
+  // Date filters
+  if (params.date && params.date !== "custom") {
+    const now = new Date();
+    switch (params.date) {
+      case "expired":
+        query = query.lt("end_date", now.toISOString());
+        break;
+      case "today": {
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+        query = query.gte("end_date", startOfDay).lt("end_date", endOfDay);
+        break;
+      }
+      case "week": {
+        const inWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        query = query.gte("end_date", now.toISOString()).lte("end_date", inWeek);
+        break;
+      }
+      case "month": {
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+        query = query.gte("end_date", now.toISOString()).lte("end_date", endOfMonth);
+        break;
+      }
+    }
+  } else if (params.date === "custom") {
+    if (params.date_from) {
+      query = query.gte("end_date", params.date_from);
+    }
+    if (params.date_to) {
+      query = query.lte("end_date", `${params.date_to}T23:59:59`);
+    }
   }
 
   const { data: promotions, count, error } = await query
@@ -67,6 +136,8 @@ export default async function MarketOffersPage({ searchParams }: PageProps) {
       pageSize={PAGE_SIZE}
       sort={sort}
       dir={dir}
+      stores={(storesList ?? []).map((s) => ({ value: s.id, label: s.name }))}
+      categories={(categoriesList ?? []).map((c) => ({ value: c.id, label: c.name }))}
     />
   );
 }
