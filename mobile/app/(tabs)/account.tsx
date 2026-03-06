@@ -8,6 +8,7 @@ import {
   Linking,
   StyleSheet,
 } from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Bell,
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react-native';
 
 import { useTheme } from '@/theme/use-theme';
+import type { TabName } from '@/theme/store';
 import { useAuthStore } from '@precomapa/shared';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useAlerts } from '@/hooks/use-alerts';
@@ -33,6 +35,8 @@ import { supabase } from '@/lib/supabase';
 import { Paywall } from '@/components/paywall';
 import { CouponLine } from '@/components/themed/coupon-line';
 import { SectionDivider } from '@/components/themed/section-divider';
+import { triggerHaptic } from '@/hooks/use-haptics';
+import { ImpactFeedbackStyle } from 'expo-haptics';
 import type { LucideIcon } from 'lucide-react-native';
 
 // ---------------------------------------------------------------------------
@@ -45,6 +49,14 @@ const PLUS_HIGHLIGHTS = [
   'Favoritos e alertas ilimitados',
   'Listas de compras inteligentes',
   'Sem anúncios',
+];
+
+const TAB_ICON_ROWS: { tab: TabName; label: string }[] = [
+  { tab: 'index', label: 'Início' },
+  { tab: 'search', label: 'Busca' },
+  { tab: 'map', label: 'Mapa' },
+  { tab: 'list', label: 'Lista' },
+  { tab: 'account', label: 'Conta' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -144,7 +156,7 @@ function SectionHeader({ title, tokens }: SectionHeaderProps) {
 // ---------------------------------------------------------------------------
 
 export default function AccountScreen() {
-  const { tokens } = useTheme();
+  const { tokens, tabIcons } = useTheme();
   const insets = useSafeAreaInsets();
   const session = useAuthStore((s) => s.session);
   const profile = useAuthStore((s) => s.profile);
@@ -366,6 +378,37 @@ export default function AccountScreen() {
           onPress={() => {}}
           tokens={tokens}
         />
+
+        <SectionDivider style={{ marginVertical: 8 }} />
+
+        {/* ----------------------------------------------------------------- */}
+        {/* ÍCONES                                                            */}
+        {/* ----------------------------------------------------------------- */}
+        <SectionHeader title="ÍCONES" tokens={tokens} />
+
+        {TAB_ICON_ROWS.map((row) => (
+          <Pressable
+            key={row.tab}
+            style={[styles.row, { borderBottomColor: tokens.border }]}
+            onPress={() => {
+              triggerHaptic(ImpactFeedbackStyle.Medium);
+              router.push({ pathname: '/icon-picker', params: { tab: row.tab } });
+            }}
+            android_ripple={{ color: tokens.mist }}
+          >
+            <View style={styles.rowLeft}>
+              <Text style={[styles.rowLabel, { color: tokens.textPrimary }]}>
+                {row.label}
+              </Text>
+            </View>
+            <View style={styles.rowRight}>
+              <Text style={[styles.rowValue, { color: tokens.textHint }]}>
+                {tabIcons[row.tab]}
+              </Text>
+              <ChevronRight size={18} color={tokens.textHint} />
+            </View>
+          </Pressable>
+        ))}
 
         <SectionDivider style={{ marginVertical: 8 }} />
 
