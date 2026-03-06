@@ -370,7 +370,7 @@ export default function AccountScreen() {
               ))}
             </View>
 
-            <Text style={[styles.upgradeTeaser, { color: tokens.warningBright }]}>
+            <Text style={[styles.upgradeTeaser, { color: tokens.warning }]}>
               {'7 dias grátis \u2192'}
             </Text>
           </Pressable>

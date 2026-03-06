@@ -69,7 +69,11 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["System"],
+        sans: ["Inter_400Regular", "System"],
+        "sans-medium": ["Inter_500Medium", "System"],
+        display: ["Poppins_700Bold", "System"],
+        "display-bold": ["Poppins_800ExtraBold", "System"],
+        "display-alt": ["Nunito_800ExtraBold", "System"],
       },
     },
   },
