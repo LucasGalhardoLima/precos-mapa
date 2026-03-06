@@ -1,30 +1,33 @@
 import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
+import { useTheme } from '../theme/use-theme';
 
 export function NativeTabLayout() {
+  const { tokens, tabIcons } = useTheme();
+
   return (
-    <NativeTabs>
+    <NativeTabs tintColor={tokens.primary}>
       <NativeTabs.Trigger name="index">
-        <Icon sf="house.fill" />
+        <Icon sf={tabIcons.index} />
         <Label>Início</Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="search">
-        <Icon sf="magnifyingglass" />
+        <Icon sf={tabIcons.search} />
         <Label>Busca</Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="map">
-        <Icon sf="mappin" />
+        <Icon sf={tabIcons.map} />
         <Label>Mapa</Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="list">
-        <Icon sf="checklist" />
+        <Icon sf={tabIcons.list} />
         <Label>Lista</Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="account">
-        <Icon sf="person.fill" />
+        <Icon sf={tabIcons.account} />
         <Label>Conta</Label>
       </NativeTabs.Trigger>
 

@@ -22,7 +22,6 @@ import { DealCard } from '@/components/themed/deal-card';
 import { SectionDivider } from '@/components/themed/section-divider';
 import { HomeSkeleton } from '@/components/skeleton/home-skeleton';
 import { InlineError } from '@/components/inline-error';
-import { TAB_BAR_HEIGHT } from '@/components/floating-tab-bar';
 
 import type { EnrichedPromotion } from '@/types';
 
@@ -126,7 +125,7 @@ export default function HomeScreen() {
     >
       <ScrollView
         contentContainerStyle={{
-          paddingBottom: TAB_BAR_HEIGHT + insets.bottom,
+          paddingBottom: insets.bottom,
         }}
         showsVerticalScrollIndicator={false}
       >

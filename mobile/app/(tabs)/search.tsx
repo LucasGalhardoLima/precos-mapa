@@ -18,7 +18,7 @@ import { useLocation } from '@/hooks/use-location';
 import { SearchResults } from '@/components/search-results';
 import { SearchSkeleton } from '@/components/skeleton/search-skeleton';
 import { Paywall } from '@/components/paywall';
-import { TAB_BAR_HEIGHT } from '@/components/floating-tab-bar';
+
 import type { SortMode, EnrichedPromotion } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -164,7 +164,7 @@ export default function SearchScreen() {
             onPressLocked={handlePressLocked}
             contentContainerStyle={{
               paddingHorizontal: 16,
-              paddingBottom: TAB_BAR_HEIGHT + insets.bottom,
+              paddingBottom: insets.bottom,
             }}
           />
         )}

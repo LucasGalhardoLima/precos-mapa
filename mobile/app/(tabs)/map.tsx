@@ -18,7 +18,7 @@ import {
 } from 'lucide-react-native';
 import { StoreMarker } from '@/components/store-marker';
 import { StoreBottomSheet } from '@/components/store-bottom-sheet';
-import { TAB_BAR_HEIGHT } from '@/components/floating-tab-bar';
+
 import { useStores } from '@/hooks/use-stores';
 import { useLocation } from '@/hooks/use-location';
 import { useShoppingList } from '@/hooks/use-shopping-list';
@@ -454,7 +454,7 @@ export default function MapScreen() {
                 keyExtractor={(item) => item.storeData.store.id}
                 renderItem={renderListStoreRow}
                 contentContainerStyle={{
-                  paddingBottom: TAB_BAR_HEIGHT + 16,
+                  paddingBottom: 16,
                   gap: 12,
                 }}
                 showsVerticalScrollIndicator={false}

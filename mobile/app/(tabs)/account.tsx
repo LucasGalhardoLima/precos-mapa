@@ -25,10 +25,6 @@ import {
 } from 'lucide-react-native';
 
 import { useTheme } from '@/theme/use-theme';
-import type { PaletteName } from '@/theme/palettes';
-import type { TabStyle } from '@/theme/store';
-import { triggerHaptic } from '@/hooks/use-haptics';
-import { ImpactFeedbackStyle } from 'expo-haptics';
 import { useAuthStore } from '@precomapa/shared';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useAlerts } from '@/hooks/use-alerts';
@@ -37,8 +33,6 @@ import { supabase } from '@/lib/supabase';
 import { Paywall } from '@/components/paywall';
 import { CouponLine } from '@/components/themed/coupon-line';
 import { SectionDivider } from '@/components/themed/section-divider';
-import { TAB_BAR_HEIGHT } from '@/components/floating-tab-bar';
-
 import type { LucideIcon } from 'lucide-react-native';
 
 // ---------------------------------------------------------------------------
@@ -51,61 +45,6 @@ const PLUS_HIGHLIGHTS = [
   'Favoritos e alertas ilimitados',
   'Listas de compras inteligentes',
   'Sem anúncios',
-];
-
-const PALETTE_OPTIONS: {
-  value: PaletteName;
-  label: string;
-  description: string;
-  colors: [string, string, string];
-}[] = [
-  {
-    value: 'economia_verde',
-    label: 'Economia Verde',
-    description: 'Teal e dourado. Confiança e economia.',
-    colors: ['#0D9488', '#F59E0B', '#F0FDFA'],
-  },
-  {
-    value: 'encarte',
-    label: 'Encarte',
-    description: 'Verde floresta e papel. Clássico de mercado.',
-    colors: ['#2A6041', '#C8392B', '#FAF7F0'],
-  },
-  {
-    value: 'encarte_digital',
-    label: 'Encarte Digital',
-    description: 'Verde vibrante e vermelho. Familiar brasileiro.',
-    colors: ['#059669', '#EF4444', '#ECFDF5'],
-  },
-  {
-    value: 'fintech',
-    label: 'Fintech',
-    description: 'Grafite e verde profundo. App financeiro.',
-    colors: ['#0B5E3A', '#C8192B', '#FAFBFC'],
-  },
-  {
-    value: 'fintech_moderna',
-    label: 'Fintech Moderna',
-    description: 'Cyan e roxo. Premium digital.',
-    colors: ['#0891B2', '#8B5CF6', '#F0F9FF'],
-  },
-];
-
-const TAB_STYLE_OPTIONS: {
-  value: TabStyle;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: 'glass-pill',
-    label: 'Glass Pill',
-    description: 'Pílula flutuante com Liquid Glass.',
-  },
-  {
-    value: 'native',
-    label: 'Nativa iOS',
-    description: 'Barra nativa com Liquid Glass automático.',
-  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -205,7 +144,7 @@ function SectionHeader({ title, tokens }: SectionHeaderProps) {
 // ---------------------------------------------------------------------------
 
 export default function AccountScreen() {
-  const { tokens, palette, setPalette, tabStyle, setTabStyle } = useTheme();
+  const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
   const session = useAuthStore((s) => s.session);
   const profile = useAuthStore((s) => s.profile);
@@ -275,7 +214,7 @@ export default function AccountScreen() {
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={{
-          paddingBottom: TAB_BAR_HEIGHT + insets.bottom,
+          paddingBottom: insets.bottom,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -427,81 +366,6 @@ export default function AccountScreen() {
           onPress={() => {}}
           tokens={tokens}
         />
-
-        <SectionDivider style={{ marginVertical: 8 }} />
-
-        {/* ----------------------------------------------------------------- */}
-        {/* APARÊNCIA                                                         */}
-        {/* ----------------------------------------------------------------- */}
-        <SectionHeader title="APARÊNCIA" tokens={tokens} />
-
-        {PALETTE_OPTIONS.map((opt) => {
-          const isSelected = palette === opt.value;
-          return (
-            <Pressable
-              key={opt.value}
-              style={[styles.row, { borderBottomColor: tokens.border }]}
-              onPress={() => {
-                triggerHaptic(ImpactFeedbackStyle.Medium);
-                setPalette(opt.value);
-              }}
-              android_ripple={{ color: tokens.mist }}
-            >
-              <View style={styles.rowLeft}>
-                <View style={styles.swatchRow}>
-                  {opt.colors.map((c, i) => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.swatchCircle,
-                        { backgroundColor: c, borderColor: tokens.border },
-                      ]}
-                    />
-                  ))}
-                </View>
-                <View style={styles.paletteInfo}>
-                  <Text style={[styles.rowLabel, { color: tokens.textPrimary }]}>
-                    {opt.label}
-                  </Text>
-                  <Text style={[styles.paletteDesc, { color: tokens.textHint }]}>
-                    {opt.description}
-                  </Text>
-                </View>
-              </View>
-              {isSelected && <Check size={20} color={tokens.primary} />}
-            </Pressable>
-          );
-        })}
-
-        {/* Tab style picker */}
-        <SectionHeader title="ESTILO DA BARRA" tokens={tokens} />
-
-        {TAB_STYLE_OPTIONS.map((opt) => {
-          const isSelected = tabStyle === opt.value;
-          return (
-            <Pressable
-              key={opt.value}
-              style={[styles.row, { borderBottomColor: tokens.border }]}
-              onPress={() => {
-                triggerHaptic(ImpactFeedbackStyle.Medium);
-                setTabStyle(opt.value);
-              }}
-              android_ripple={{ color: tokens.mist }}
-            >
-              <View style={styles.rowLeft}>
-                <View style={styles.paletteInfo}>
-                  <Text style={[styles.rowLabel, { color: tokens.textPrimary }]}>
-                    {opt.label}
-                  </Text>
-                  <Text style={[styles.paletteDesc, { color: tokens.textHint }]}>
-                    {opt.description}
-                  </Text>
-                </View>
-              </View>
-              {isSelected && <Check size={20} color={tokens.primary} />}
-            </Pressable>
-          );
-        })}
 
         <SectionDivider style={{ marginVertical: 8 }} />
 
@@ -733,24 +597,5 @@ const styles = StyleSheet.create({
   },
   rowValue: {
     fontSize: 13,
-  },
-
-  // -- Palette selector -----------------------------------------------------
-  swatchRow: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  swatchCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  paletteInfo: {
-    flex: 1,
-  },
-  paletteDesc: {
-    fontSize: 12,
-    marginTop: 1,
   },
 });
