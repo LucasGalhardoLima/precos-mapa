@@ -5,7 +5,7 @@ export function NativeTabLayout() {
   const { tokens } = useTheme();
 
   return (
-    <NativeTabs tintColor={tokens.primary}>
+    <NativeTabs tintColor={tokens.primary} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="index">
         <Icon sf="house.fill" />
         <Label>Início</Label>
