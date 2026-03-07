@@ -15,7 +15,7 @@ function CompactDealCard({
     <MotiView
       from={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'timing', duration: 350, delay: index * 80 }}
+      transition={{ type: 'spring', damping: 15, stiffness: 150, delay: index * 60 }}
       className="bg-white rounded-2xl p-4 w-56 border border-border mr-3"
     >
       <Text className="text-sm font-semibold text-text-primary" numberOfLines={1}>

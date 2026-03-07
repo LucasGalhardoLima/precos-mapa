@@ -16,7 +16,7 @@ export function DealCard({ deal, index = 0, compact = false }: DealCardProps) {
     <MotiView
       from={{ opacity: 0, translateY: 12 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'timing', duration: 350, delay: index * 60 }}
+      transition={{ type: 'spring', damping: 15, stiffness: 150, delay: index * 50 }}
       className={`bg-white rounded-2xl border border-border ${
         compact ? 'p-3' : 'p-4'
       }`}
