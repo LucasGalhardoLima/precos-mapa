@@ -17,6 +17,7 @@ import {
   Navigation2,
   ShoppingCart,
 } from 'lucide-react-native';
+import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { StoreMarker } from '@/components/store-marker';
 import { StoreBottomSheet } from '@/components/store-bottom-sheet';
 
@@ -26,6 +27,8 @@ import { useShoppingList } from '@/hooks/use-shopping-list';
 import { useTheme } from '@/theme/use-theme';
 import { Colors } from '@/constants/colors';
 import type { StoreWithPromotions } from '@/types';
+
+const HAS_GLASS = isLiquidGlassAvailable();
 
 // ---------------------------------------------------------------------------
 // Types
@@ -342,31 +345,53 @@ export default function MapScreen() {
     <View style={styles.container}>
       {/* Location denied banner */}
       {permissionGranted === false && (
-        <View
-          style={[
-            styles.locationBanner,
-            { backgroundColor: tokens.surface, borderColor: tokens.border },
-          ]}
-        >
-          <View style={styles.locationBannerRow}>
-            <MapPin size={18} color={Colors.semantic.warning} />
-            <Text
-              style={[styles.locationBannerText, { color: tokens.textSecondary }]}
-            >
-              Permita acesso à localização para ver lojas perto de você
-            </Text>
+        HAS_GLASS ? (
+          <GlassView glassEffectStyle="regular" style={[styles.locationBanner, styles.locationBannerGlass]}>
+            <View style={styles.locationBannerRow}>
+              <MapPin size={18} color={Colors.semantic.warning} />
+              <Text
+                style={[styles.locationBannerText, { color: tokens.textSecondary }]}
+              >
+                Permita acesso à localização para ver lojas perto de você
+              </Text>
+            </View>
+          </GlassView>
+        ) : (
+          <View
+            style={[
+              styles.locationBanner,
+              { backgroundColor: tokens.surface, borderColor: tokens.border },
+            ]}
+          >
+            <View style={styles.locationBannerRow}>
+              <MapPin size={18} color={Colors.semantic.warning} />
+              <Text
+                style={[styles.locationBannerText, { color: tokens.textSecondary }]}
+              >
+                Permita acesso à localização para ver lojas perto de você
+              </Text>
+            </View>
           </View>
-        </View>
+        )
       )}
 
       {/* "Ver minha lista" floating pill button — only when user has list items */}
       {hasListItems && (
         <Pressable
-          style={[styles.listPill, { backgroundColor: tokens.primary }]}
+          style={[styles.listPill, !HAS_GLASS && { backgroundColor: tokens.primary }]}
           onPress={handleShowListPanel}
         >
-          <ListChecks size={16} color="#FFFFFF" />
-          <Text style={styles.listPillText}>Ver minha lista</Text>
+          {HAS_GLASS ? (
+            <GlassView glassEffectStyle="regular" tintColor={tokens.primary} style={styles.listPillGlass}>
+              <ListChecks size={16} color="#FFFFFF" />
+              <Text style={styles.listPillText}>Ver minha lista</Text>
+            </GlassView>
+          ) : (
+            <>
+              <ListChecks size={16} color="#FFFFFF" />
+              <Text style={styles.listPillText}>Ver minha lista</Text>
+            </>
+          )}
         </Pressable>
       )}
 
@@ -492,64 +517,76 @@ export default function MapScreen() {
           enablePanDownToClose
           backgroundStyle={[
             styles.listSheetBg,
-            { backgroundColor: tokens.bg },
+            { backgroundColor: HAS_GLASS ? 'transparent' : tokens.bg },
           ]}
           handleIndicatorStyle={{ backgroundColor: tokens.textHint }}
         >
-          <BottomSheetView style={styles.listSheetContent}>
-            {/* Header */}
-            <View style={styles.listSheetHeader}>
-              <ListChecks size={20} color={tokens.primary} />
-              <Text
-                style={[
-                  styles.listSheetTitle,
-                  { color: tokens.textPrimary },
-                ]}
-              >
-                Itens da lista por mercado
-              </Text>
-            </View>
+          {(() => {
+            const listSheetContent = (
+              <BottomSheetView style={styles.listSheetContent}>
+                {/* Header */}
+                <View style={styles.listSheetHeader}>
+                  <ListChecks size={20} color={tokens.primary} />
+                  <Text
+                    style={[
+                      styles.listSheetTitle,
+                      { color: tokens.textPrimary },
+                    ]}
+                  >
+                    Itens da lista por mercado
+                  </Text>
+                </View>
 
-            <Text
-              style={[
-                styles.listSheetSubtitle,
-                { color: tokens.textSecondary },
-              ]}
-            >
-              {listItems.length}{' '}
-              {listItems.length === 1 ? 'item' : 'itens'} na sua lista
-              {' \u2022 '}
-              {storeListMatches.length}{' '}
-              {storeListMatches.length === 1 ? 'mercado' : 'mercados'} com
-              ofertas
-            </Text>
-
-            {/* Store list */}
-            {storeListMatches.length > 0 ? (
-              <FlatList
-                data={storeListMatches}
-                keyExtractor={(item) => item.storeData.store.id}
-                renderItem={renderListStoreRow}
-                contentContainerStyle={{
-                  paddingBottom: 16,
-                  gap: 12,
-                }}
-                showsVerticalScrollIndicator={false}
-              />
-            ) : (
-              <View style={styles.emptyListPanel}>
-                <ShoppingCart size={32} color={tokens.textHint} />
                 <Text
                   style={[
-                    styles.emptyListText,
+                    styles.listSheetSubtitle,
                     { color: tokens.textSecondary },
                   ]}
                 >
-                  Nenhum mercado com ofertas para itens da sua lista
+                  {listItems.length}{' '}
+                  {listItems.length === 1 ? 'item' : 'itens'} na sua lista
+                  {' \u2022 '}
+                  {storeListMatches.length}{' '}
+                  {storeListMatches.length === 1 ? 'mercado' : 'mercados'} com
+                  ofertas
                 </Text>
-              </View>
-            )}
-          </BottomSheetView>
+
+                {/* Store list */}
+                {storeListMatches.length > 0 ? (
+                  <FlatList
+                    data={storeListMatches}
+                    keyExtractor={(item) => item.storeData.store.id}
+                    renderItem={renderListStoreRow}
+                    contentContainerStyle={{
+                      paddingBottom: 16,
+                      gap: 12,
+                    }}
+                    showsVerticalScrollIndicator={false}
+                  />
+                ) : (
+                  <View style={styles.emptyListPanel}>
+                    <ShoppingCart size={32} color={tokens.textHint} />
+                    <Text
+                      style={[
+                        styles.emptyListText,
+                        { color: tokens.textSecondary },
+                      ]}
+                    >
+                      Nenhum mercado com ofertas para itens da sua lista
+                    </Text>
+                  </View>
+                )}
+              </BottomSheetView>
+            );
+
+            return HAS_GLASS ? (
+              <GlassView glassEffectStyle="regular" style={{ flex: 1, borderRadius: 24 }}>
+                {listSheetContent}
+              </GlassView>
+            ) : (
+              listSheetContent
+            );
+          })()}
         </BottomSheet>
       )}
     </View>
@@ -588,6 +625,9 @@ const styles = StyleSheet.create({
       android: { elevation: 3 },
     }),
   },
+  locationBannerGlass: {
+    overflow: 'hidden',
+  },
   locationBannerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -610,6 +650,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 24,
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -619,6 +660,14 @@ const styles = StyleSheet.create({
       },
       android: { elevation: 4 },
     }),
+  },
+  listPillGlass: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 24,
   },
   listPillText: {
     color: '#FFFFFF',
