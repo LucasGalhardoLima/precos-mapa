@@ -44,7 +44,7 @@ export default function RootLayout() {
             <Stack.Screen name="onboarding" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="(business)" />
-
+            <Stack.Screen name="product/[id]" options={{ animation: 'default' }} />
           </Stack>
         </BottomSheetModalProvider>
       </SafeAreaProvider>
