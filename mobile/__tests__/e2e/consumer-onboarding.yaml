@@ -1,12 +1,26 @@
 # E2E: Fresh app launch, onboarding flow, navigate to auth and back
-# Precondition: App is freshly installed (cleared state)
-appId: com.precomapa.mobile
+# Note: clearState not used — it resets Expo Dev Client to launcher.
+# Instead we launch normally; the app routes to onboarding when not signed in.
+appId: com.precomapa.consumer
 ---
-- launchApp:
-    clearState: true
+- launchApp
+
+# Dismiss Expo Dev Client modals if they appear
+- tapOn:
+    text: "Continue"
+    optional: true
+
+# If we land on the dev client launcher, tap the recently opened entry
+- tapOn:
+    text: "PrecoMapa"
+    optional: true
+
+# Wait for JS bundle + onboarding screen to load
+- extendedWaitUntil:
+    visible: "POUP"
+    timeout: 15000
 
 # Should see onboarding hero
-- assertVisible: "POUP"
 - assertVisible: "Descubra o mercado mais barato perto de você"
 
 # Value propositions should be visible

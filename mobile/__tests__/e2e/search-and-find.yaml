@@ -1,6 +1,6 @@
 # E2E: Search for a product, verify results, change sort, tap result
 # Precondition: User is logged in as consumer
-appId: com.precomapa.mobile
+appId: com.precomapa.consumer
 ---
 - launchApp
 
@@ -24,8 +24,7 @@ appId: com.precomapa.mobile
 
 # Verify at least one result with a price appeared
 - assertVisible:
-    text: "R\\$"
-    regex: true
+    text: "R$"
 
 # Switch sort mode
 - tapOn: "Distância"
@@ -33,8 +32,7 @@ appId: com.precomapa.mobile
 
 # Results should still be visible
 - assertVisible:
-    text: "R\\$"
-    regex: true
+    text: "R$"
 
 # Switch to discount sort
 - tapOn: "Desconto"

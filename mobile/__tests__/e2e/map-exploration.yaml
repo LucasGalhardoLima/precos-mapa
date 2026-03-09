@@ -1,6 +1,6 @@
 # E2E: Open map tab, verify map loads, interact with markers
 # Precondition: User is logged in as consumer, location permission granted
-appId: com.precomapa.mobile
+appId: com.precomapa.consumer
 ---
 - launchApp
 
@@ -9,8 +9,8 @@ appId: com.precomapa.mobile
 - waitForAnimationToEnd
 
 # Wait for map to load markers
-- wait:
-    seconds: 3
+- waitForAnimationToEnd
+- waitForAnimationToEnd
 
 # If location is denied, the permission banner may appear
 - assertVisible:

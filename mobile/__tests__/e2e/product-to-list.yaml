@@ -1,6 +1,6 @@
 # E2E: Search product, add to shopping list, verify in list tab
 # Precondition: User is logged in as consumer
-appId: com.precomapa.mobile
+appId: com.precomapa.consumer
 ---
 - launchApp
 
@@ -12,10 +12,9 @@ appId: com.precomapa.mobile
 - pressKey: Enter
 - waitForAnimationToEnd
 
-# Tap first result card
+# Tap first result card (price element)
 - tapOn:
-    text: "R\\$"
-    regex: true
+    text: "R$"
     index: 0
 
 # Should navigate to product detail with add-to-list button

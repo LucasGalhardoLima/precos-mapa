@@ -1,6 +1,6 @@
 # E2E: Map tab with shopping list items, open list panel, verify stores
 # Precondition: User is logged in, list has items
-appId: com.precomapa.mobile
+appId: com.precomapa.consumer
 ---
 - launchApp
 
@@ -22,8 +22,7 @@ appId: com.precomapa.mobile
       - pressKey: Enter
       - waitForAnimationToEnd
       - tapOn:
-          text: "R\\$"
-          regex: true
+          text: "R$"
           index: 0
           optional: true
       - tapOn:
@@ -36,8 +35,8 @@ appId: com.precomapa.mobile
 - waitForAnimationToEnd
 
 # Wait for map to load
-- wait:
-    seconds: 3
+- waitForAnimationToEnd
+- waitForAnimationToEnd
 
 # Floating pill should be visible when list has items
 - assertVisible:
