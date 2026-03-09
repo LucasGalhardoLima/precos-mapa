@@ -5,6 +5,7 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|moti|@gorhom/.*|nativewind|react-native-reanimated|lucide-react-native|@supabase/.*|react-native-purchases|@react-native-google-signin/.*|expo-apple-authentication|expo-location|expo-notifications|expo-secure-store|expo-device|expo-constants|@precomapa/.*)',
   ],
+  modulePaths: ['<rootDir>/node_modules'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '^@precomapa/shared$': '<rootDir>/../packages/shared/src/index.ts',
