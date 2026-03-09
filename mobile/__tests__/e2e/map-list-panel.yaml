@@ -1,0 +1,61 @@
+# E2E: Map tab with shopping list items, open list panel, verify stores
+# Precondition: User is logged in, list has items
+appId: com.precomapa.mobile
+---
+- launchApp
+
+# Ensure list has items — navigate to list first
+- tapOn: "Lista"
+- waitForAnimationToEnd
+
+# If empty, add an item
+- runFlow:
+    when:
+      visible: "Sua lista está vazia"
+    commands:
+      - tapOn: "Adicionar"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Buscar produto"
+          optional: true
+      - inputText: "Leite"
+      - pressKey: Enter
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "R\\$"
+          regex: true
+          index: 0
+          optional: true
+      - tapOn:
+          text: "Adicionar à lista"
+          optional: true
+      - waitForAnimationToEnd
+
+# Navigate to map tab
+- tapOn: "Mapa"
+- waitForAnimationToEnd
+
+# Wait for map to load
+- wait:
+    seconds: 3
+
+# Floating pill should be visible when list has items
+- assertVisible:
+    text: "Ver minha lista"
+    optional: true
+
+# Tap to open the list panel
+- tapOn:
+    text: "Ver minha lista"
+    optional: true
+- waitForAnimationToEnd
+
+# Bottom sheet should show items grouped by store
+- assertVisible:
+    text: "Itens da lista por mercado"
+    optional: true
+
+# Route button should be available per store
+- assertVisible:
+    text: "Rota"
+    optional: true

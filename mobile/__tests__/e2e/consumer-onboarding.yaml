@@ -1,0 +1,47 @@
+# E2E: Fresh app launch, onboarding flow, navigate to auth and back
+# Precondition: App is freshly installed (cleared state)
+appId: com.precomapa.mobile
+---
+- launchApp:
+    clearState: true
+
+# Should see onboarding hero
+- assertVisible: "POUP"
+- assertVisible: "Descubra o mercado mais barato perto de você"
+
+# Value propositions should be visible
+- assertVisible: "Escolha seus mercados"
+- assertVisible: "Comece a economizar"
+
+# CTAs should be visible
+- assertVisible: "Começar"
+- assertVisible: "Já tenho conta"
+
+# Tap to start sign up
+- tapOn: "Começar"
+- waitForAnimationToEnd
+
+# Should see auth screen
+- assertVisible: "Crie sua conta para começar a economizar"
+
+# Go back to hero
+- tapOn: "Voltar"
+- waitForAnimationToEnd
+
+# Should be back on hero
+- assertVisible: "Começar"
+
+# Try sign-in flow
+- tapOn: "Já tenho conta"
+- waitForAnimationToEnd
+
+# Should see sign-in variant
+- assertVisible: "Entre na sua conta"
+
+# Toggle to business role
+- tapOn: "Tenho um mercado"
+- waitForAnimationToEnd
+
+# Toggle back to consumer
+- tapOn: "Sou consumidor"
+- waitForAnimationToEnd

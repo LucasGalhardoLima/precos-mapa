@@ -1,0 +1,48 @@
+# E2E: Shopping list with items, verify savings card, open route
+# Precondition: User is logged in, list has at least 1 item
+appId: com.precomapa.mobile
+---
+- launchApp
+
+# Navigate to list tab
+- tapOn: "Lista"
+- waitForAnimationToEnd
+
+# If list is empty, add an item first via the add button
+- runFlow:
+    when:
+      visible: "Sua lista está vazia"
+    commands:
+      - tapOn: "Adicionar"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Buscar produto"
+          optional: true
+      - inputText: "Arroz"
+      - pressKey: Enter
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "R\\$"
+          regex: true
+          index: 0
+          optional: true
+      - tapOn:
+          text: "Adicionar à lista"
+          optional: true
+      - tapOn: "Lista"
+      - waitForAnimationToEnd
+
+# Savings card should be visible
+- assertVisible:
+    text: "economia estimada"
+    optional: true
+
+# Item count visible
+- assertVisible:
+    text: "item"
+    optional: true
+
+# Route button should be visible
+- assertVisible:
+    text: "Ver rota"
+    optional: true

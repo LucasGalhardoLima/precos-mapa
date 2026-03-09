@@ -1,0 +1,41 @@
+# E2E: Search for a product, verify results, change sort, tap result
+# Precondition: User is logged in as consumer
+appId: com.precomapa.mobile
+---
+- launchApp
+
+# Navigate to search tab
+- tapOn: "Busca"
+
+# Should see the search hint
+- assertVisible: "Pesquise um produto para comparar preços"
+
+# Type a product name
+- tapOn:
+    text: "Buscar produto"
+- inputText: "Leite"
+- pressKey: Enter
+- waitForAnimationToEnd
+
+# Sort tabs should be visible
+- assertVisible: "Menor preço"
+- assertVisible: "Distância"
+- assertVisible: "Desconto"
+
+# Verify at least one result with a price appeared
+- assertVisible:
+    text: "R\\$"
+    regex: true
+
+# Switch sort mode
+- tapOn: "Distância"
+- waitForAnimationToEnd
+
+# Results should still be visible
+- assertVisible:
+    text: "R\\$"
+    regex: true
+
+# Switch to discount sort
+- tapOn: "Desconto"
+- waitForAnimationToEnd

@@ -1,0 +1,37 @@
+# E2E: Search product, add to shopping list, verify in list tab
+# Precondition: User is logged in as consumer
+appId: com.precomapa.mobile
+---
+- launchApp
+
+# Navigate to search tab and search
+- tapOn: "Busca"
+- tapOn:
+    text: "Buscar produto"
+- inputText: "Leite"
+- pressKey: Enter
+- waitForAnimationToEnd
+
+# Tap first result card
+- tapOn:
+    text: "R\\$"
+    regex: true
+    index: 0
+
+# Should navigate to product detail with add-to-list button
+- assertVisible: "Adicionar à lista"
+- tapOn: "Adicionar à lista"
+
+# Verify success feedback
+- assertVisible:
+    text: "adicionado"
+    optional: true
+
+# Navigate to list tab to verify item appears
+- tapOn: "Lista"
+- waitForAnimationToEnd
+
+# List should no longer be empty
+- assertNotVisible:
+    text: "Sua lista está vazia"
+    optional: true

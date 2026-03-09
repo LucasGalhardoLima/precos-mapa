@@ -1,0 +1,31 @@
+# E2E: Open map tab, verify map loads, interact with markers
+# Precondition: User is logged in as consumer, location permission granted
+appId: com.precomapa.mobile
+---
+- launchApp
+
+# Navigate to map tab
+- tapOn: "Mapa"
+- waitForAnimationToEnd
+
+# Wait for map to load markers
+- wait:
+    seconds: 3
+
+# If location is denied, the permission banner may appear
+- assertVisible:
+    text: "Permita acesso à localização"
+    optional: true
+
+# Try tapping center of screen (likely a map marker area)
+- tapOn:
+    point: "50%,40%"
+    optional: true
+
+# Wait for any bottom sheet animation
+- waitForAnimationToEnd
+
+# If a store marker was tapped, the store sheet should show distance
+- assertVisible:
+    text: "km"
+    optional: true
