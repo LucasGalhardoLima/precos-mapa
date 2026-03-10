@@ -76,6 +76,9 @@ export default function ProductDetailScreen() {
 
   // Shopping list state
   const [isAddingToList, setIsAddingToList] = useState(false);
+  const isInList = lists.some((list) =>
+    list.items.some((item) => item.product_id === id),
+  );
 
   // Find existing alert for this product
   const existingAlert = alerts.find(
@@ -607,10 +610,10 @@ export default function ProductDetailScreen() {
         >
           <Pressable
             onPress={handleAddToList}
-            disabled={isAddingToList}
+            disabled={isAddingToList || isInList}
             style={[
               styles.addToListButton,
-              { backgroundColor: tokens.primary },
+              { backgroundColor: isInList ? tokens.textHint : tokens.primary },
               isAddingToList && { opacity: 0.6 },
             ]}
           >
@@ -618,9 +621,9 @@ export default function ProductDetailScreen() {
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <>
-                <Plus size={20} color="#FFFFFF" />
+                <ShoppingCart size={20} color="#FFFFFF" />
                 <Text style={styles.addToListText}>
-                  Adicionar à lista
+                  {isInList ? 'Já na lista' : 'Adicionar à lista'}
                 </Text>
               </>
             )}

@@ -97,12 +97,16 @@ export function SearchResults({
   const { tokens } = useTheme();
 
   const renderItem = ({ item, index }: { item: EnrichedPromotion; index: number }) => {
+    const a11yLabel = `${item.product.name}, ${formatPrice(item.promo_price)}, ${item.store.name}, ${item.distanceKm} km`;
+
     if (item.isLocked) {
       return (
         <View style={styles.lockedWrapper}>
           <ResultRow promotion={item} tokens={tokens} />
           <Pressable
             testID={`result-card-${index}`}
+            accessibilityLabel={`${a11yLabel}, bloqueado`}
+            accessibilityRole="button"
             onPress={onPressLocked}
             style={styles.lockedOverlay}
           >
@@ -116,7 +120,12 @@ export function SearchResults({
     }
 
     return (
-      <Pressable testID={`result-card-${index}`} onPress={() => onPressItem(item)}>
+      <Pressable
+        testID={`result-card-${index}`}
+        accessibilityLabel={a11yLabel}
+        accessibilityRole="button"
+        onPress={() => onPressItem(item)}
+      >
         <ResultRow promotion={item} tokens={tokens} />
       </Pressable>
     );
