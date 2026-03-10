@@ -115,12 +115,11 @@ export function EconomyCard({
         </View>
       )}
 
-      {/* Dotted divider */}
+      {/* Divider */}
       <View
         style={{
           marginVertical: 16,
           borderBottomWidth: 1,
-          borderStyle: 'dashed',
           borderBottomColor: 'rgba(255, 255, 255, 0.2)',
         }}
       />

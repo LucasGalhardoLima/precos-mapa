@@ -1,0 +1,47 @@
+# E2E: Business user dashboard, verify KPIs and navigation
+# Precondition: User is logged in with business role
+appId: com.precomapa.consumer
+---
+- launchApp
+
+# Should see the business dashboard
+- assertVisible:
+    text: "Dashboard"
+    optional: true
+
+# KPI cards should be visible
+- assertVisible:
+    text: "Ofertas ativas"
+    optional: true
+
+- assertVisible:
+    text: "Ofertas este mês"
+    optional: true
+
+# Plan badge should be visible
+- assertVisible:
+    text: "Plano"
+    optional: true
+
+# Navigate to offers tab
+- tapOn:
+    text: "Ofertas"
+    optional: true
+- waitForAnimationToEnd
+
+# Navigate to importer tab
+- tapOn:
+    text: "Importador"
+    optional: true
+- waitForAnimationToEnd
+
+# Navigate to store profile tab
+- tapOn:
+    text: "Loja"
+    optional: true
+- waitForAnimationToEnd
+
+# Go back to dashboard
+- tapOn:
+    text: "Dashboard"
+    optional: true

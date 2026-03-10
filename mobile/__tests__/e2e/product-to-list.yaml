@@ -1,0 +1,73 @@
+# E2E: Search product, add to shopping list, verify in list tab
+# Precondition: Metro running on 8081
+# Data dependency: Supabase must have promotions matching "Leite"
+# Auth: testconsumer@gmail.com / TestConsumer2026 (consumer role)
+appId: com.precomapa.consumer
+---
+- launchApp
+
+# Sign in if on onboarding
+- runFlow:
+    when:
+      visible: "Começar"
+    commands:
+      - tapOn: "Já tenho conta"
+      - waitForAnimationToEnd
+      - tapOn: "Entrar com email"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Email"
+      - inputText: "testconsumer@gmail.com"
+      - hideKeyboard
+      - tapOn:
+          text: "Senha"
+      - inputText: "TestConsumer2026"
+      - hideKeyboard
+      - tapOn: "Entrar"
+      - extendedWaitUntil:
+          visible: "Início"
+          timeout: 10000
+
+# Dismiss iOS "Save Password?" dialog if present
+- runFlow:
+    when:
+      visible: "Agora Não"
+    commands:
+      - tapOn: "Agora Não"
+      - waitForAnimationToEnd
+
+# Navigate to search tab and search
+- tapOn: "Busca"
+- tapOn:
+    text: "Buscar produto..."
+- inputText: "Leite"
+- pressKey: Enter
+- waitForAnimationToEnd
+
+# Tap first result card
+- hideKeyboard
+- waitForAnimationToEnd
+- tapOn:
+    id: "result-card-0"
+
+# Should navigate to product detail with add-to-list button
+- assertVisible: "Adicionar à lista"
+- tapOn: "Adicionar à lista"
+
+# Verify success feedback and dismiss dialog
+- assertVisible: "Adicionado"
+- tapOn: "OK"
+- waitForAnimationToEnd
+
+# Go back to search results
+- tapOn: "Voltar"
+- waitForAnimationToEnd
+
+# Navigate to list tab to verify item appears
+- tapOn: "Lista"
+- waitForAnimationToEnd
+
+# List should no longer be empty
+- assertNotVisible:
+    text: "Sua lista está vazia"
+    optional: true

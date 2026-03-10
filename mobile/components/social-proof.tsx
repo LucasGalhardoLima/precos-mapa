@@ -13,7 +13,7 @@ export function SocialProof() {
       <MotiView
         from={{ opacity: 0, translateY: 10 }}
         animate={{ opacity: 1, translateY: 0 }}
-        transition={{ type: 'timing', duration: 500 }}
+        transition={{ type: 'spring', damping: 15, stiffness: 120 }}
         className="flex-row gap-4 justify-center"
       >
         <View className="bg-brand-green/10 rounded-2xl px-5 py-4 items-center flex-1">
@@ -47,7 +47,7 @@ export function SocialProof() {
             key={t.id}
             from={{ opacity: 0, translateY: 15 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: 'timing', duration: 400, delay: index * 100 }}
+            transition={{ type: 'spring', damping: 15, stiffness: 130, delay: index * 80 }}
             className="bg-white rounded-2xl p-4 w-72 border border-border"
           >
             <Text className="text-sm text-text-secondary leading-5">

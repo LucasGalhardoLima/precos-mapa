@@ -7,9 +7,7 @@ interface ReceiptSeparatorProps {
 }
 
 /**
- * Dashed horizontal line that mimics the cut-line on receipt paper.
- *
- * A single `<View>` with a dashed bottom border — nothing more.
+ * Horizontal line divider styled as a receipt paper separator.
  */
 export function ReceiptSeparator({ style }: ReceiptSeparatorProps) {
   const { tokens } = useTheme();
@@ -29,6 +27,5 @@ const styles = StyleSheet.create({
   line: {
     alignSelf: 'stretch',
     borderBottomWidth: 1,
-    borderStyle: 'dashed',
   },
 });

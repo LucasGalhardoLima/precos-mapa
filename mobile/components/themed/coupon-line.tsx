@@ -22,11 +22,7 @@ interface CouponLineProps {
  * - Fintech: simple vertical margin spacing.
  */
 export function CouponLine({ style }: CouponLineProps) {
-  const { palette, tokens } = useTheme();
-
-  if (palette === 'fintech') {
-    return <View style={[styles.fintechSpacer, style]} />;
-  }
+  const { tokens } = useTheme();
 
   return (
     <View style={[styles.encarteRow, style]}>
@@ -53,9 +49,5 @@ const styles = StyleSheet.create({
   dashedLine: {
     flex: 1,
     borderBottomWidth: 1,
-    borderStyle: 'dashed',
-  },
-  fintechSpacer: {
-    marginVertical: 24,
   },
 });

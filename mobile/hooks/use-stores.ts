@@ -76,7 +76,7 @@ export function useStores(params: UseStoresParams) {
 
       const topDeals = [...storePromos]
         .sort((a, b) => b.discountPercent - a.discountPercent)
-        .slice(0, 3);
+        .slice(0, 5);
 
       return {
         store: store as Store,

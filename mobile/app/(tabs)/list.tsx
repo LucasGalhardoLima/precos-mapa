@@ -21,7 +21,7 @@ import { ListItem } from '@/components/themed/list-item';
 import { CouponLine } from '@/components/themed/coupon-line';
 import { ListSkeleton } from '@/components/skeleton/list-skeleton';
 import { Paywall } from '@/components/paywall';
-import { TAB_BAR_HEIGHT } from '@/components/floating-tab-bar';
+
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -203,7 +203,7 @@ export default function ListScreen() {
       <SafeAreaView edges={['top']} style={styles.flex}>
         <ScrollView
           contentContainerStyle={{
-            paddingBottom: TAB_BAR_HEIGHT + insets.bottom,
+            paddingBottom: insets.bottom,
           }}
           showsVerticalScrollIndicator={false}
         >

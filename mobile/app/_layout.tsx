@@ -7,9 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import {
   Poppins_700Bold,
-  Poppins_800ExtraBold,
 } from '@expo-google-fonts/poppins';
-import { Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -24,8 +22,6 @@ export default function RootLayout() {
 
   const [fontsLoaded] = useFonts({
     Poppins_700Bold,
-    Poppins_800ExtraBold,
-    Nunito_800ExtraBold,
     Inter_400Regular,
     Inter_500Medium,
   });
@@ -48,6 +44,7 @@ export default function RootLayout() {
             <Stack.Screen name="onboarding" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="(business)" />
+            <Stack.Screen name="product/[id]" options={{ animation: 'default' }} />
           </Stack>
         </BottomSheetModalProvider>
       </SafeAreaProvider>

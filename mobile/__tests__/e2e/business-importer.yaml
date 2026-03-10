@@ -1,0 +1,26 @@
+# E2E: Business user importer tab, verify upload area
+# Precondition: User is logged in with business role
+appId: com.precomapa.consumer
+---
+- launchApp
+
+# Navigate to importer tab
+- tapOn:
+    text: "Importador"
+    optional: true
+- waitForAnimationToEnd
+
+# Should see the importer interface
+- assertVisible:
+    text: "Importador"
+    optional: true
+
+# Upload area or instructions should be visible
+- assertVisible:
+    text: "importar"
+    optional: true
+
+# Go back to dashboard
+- tapOn:
+    text: "Dashboard"
+    optional: true

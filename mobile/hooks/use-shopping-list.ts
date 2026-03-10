@@ -14,9 +14,11 @@ interface ShoppingList {
 interface ShoppingListItem {
   id: string;
   product_id: string;
+  store_id?: string;
   quantity: number;
   is_checked: boolean;
   product?: { name: string; brand: string | null };
+  store?: { id: string; name: string; latitude: number; longitude: number; logo_initial: string; logo_color: string } | null;
 }
 
 interface OptimizedStore {
@@ -46,7 +48,7 @@ export function useShoppingList() {
 
     const { data } = await supabase
       .from('shopping_lists')
-      .select('id, name, is_template, created_at, items:shopping_list_items(id, product_id, quantity, is_checked, product:products(name, brand))')
+      .select('id, name, is_template, created_at, items:shopping_list_items(id, product_id, store_id, quantity, is_checked, product:products(name, brand), store:stores(id, name, latitude, longitude, logo_initial, logo_color))')
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false });
 
@@ -76,12 +78,13 @@ export function useShoppingList() {
   );
 
   const addItem = useCallback(
-    async (listId: string, productId: string, quantity: number = 1) => {
+    async (listId: string, productId: string, quantity: number = 1, storeId?: string) => {
       const snapshot = [...lists];
 
       const tempItem: ShoppingListItem = {
         id: 'temp-' + Date.now(),
         product_id: productId,
+        store_id: storeId,
         quantity,
         is_checked: false,
       };
@@ -94,9 +97,12 @@ export function useShoppingList() {
         ),
       );
 
+      const insertData: Record<string, unknown> = { list_id: listId, product_id: productId, quantity };
+      if (storeId) insertData.store_id = storeId;
+
       const { error } = await supabase
         .from('shopping_list_items')
-        .insert({ list_id: listId, product_id: productId, quantity });
+        .insert(insertData);
 
       if (error) {
         setLists(snapshot);
@@ -214,7 +220,7 @@ export function useShoppingList() {
         const storeId = store?.id ?? cheapest.store_id;
         const storeName = store?.name ?? 'Loja';
 
-        const entry = storeMap.get(storeId) ?? {
+        const entry: OptimizedStore = storeMap.get(storeId) ?? {
           storeId,
           storeName,
           items: [],

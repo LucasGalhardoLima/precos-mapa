@@ -15,9 +15,7 @@ import { useTheme } from '../../theme/use-theme';
  * (dashed for encarte, solid for fintech).
  */
 export function ListSkeleton() {
-  const { palette, tokens } = useTheme();
-
-  const isDashed = palette === 'encarte' || palette === 'encarte_digital';
+  const { tokens } = useTheme();
 
   const shape = (
     height: number,
@@ -55,10 +53,7 @@ export function ListSkeleton() {
               <View
                 style={[
                   styles.separator,
-                  {
-                    borderColor: tokens.border,
-                    borderStyle: isDashed ? 'dashed' : 'solid',
-                  },
+                  { borderColor: tokens.border },
                 ]}
               />
             )}

@@ -158,7 +158,7 @@ function ValuePropRow({
     <MotiView
       from={{ opacity: 0, translateX: -20 }}
       animate={{ opacity: 1, translateX: 0 }}
-      transition={{ type: 'timing', duration: 450, delay }}
+      transition={{ type: 'spring', damping: 15, stiffness: 130, delay }}
       style={styles.valuePropRow}
     >
       <View style={[styles.valuePropIcon, { backgroundColor: primaryColor + '30' }]}>
@@ -287,7 +287,7 @@ export default function OnboardingScreen() {
           <MotiView
             from={{ opacity: 0, translateY: -10 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: 'timing', duration: 400 }}
+            transition={{ type: 'spring', damping: 15, stiffness: 130 }}
             style={styles.authHeader}
           >
             <Text style={styles.authAppName}>POUP</Text>
@@ -301,7 +301,7 @@ export default function OnboardingScreen() {
           <MotiView
             from={{ opacity: 0, translateY: 15 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: 'timing', duration: 400, delay: 150 }}
+            transition={{ type: 'spring', damping: 15, stiffness: 130, delay: 150 }}
             style={styles.authButtonsWrapper}
           >
             <AuthButtons onSuccess={handleAuthSuccess} />
@@ -311,7 +311,7 @@ export default function OnboardingScreen() {
           <MotiView
             from={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ type: 'timing', duration: 400, delay: 350 }}
+            transition={{ type: 'spring', damping: 15, stiffness: 130, delay: 350 }}
             style={styles.authFooter}
           >
             {selectedRole === 'consumer' ? (
@@ -356,7 +356,7 @@ export default function OnboardingScreen() {
         <MotiView
           from={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ type: 'timing', duration: 500 }}
+          transition={{ type: 'spring', damping: 15, stiffness: 130 }}
         >
           <PaginationDots
             total={CAROUSEL_PAGES}
@@ -369,7 +369,7 @@ export default function OnboardingScreen() {
         <MotiView
           from={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'timing', duration: 600, delay: 100 }}
+          transition={{ type: 'spring', damping: 15, stiffness: 130, delay: 100 }}
           style={styles.heroContainer}
         >
           <HeroIllustration primaryColor={primaryColor} />
@@ -379,7 +379,7 @@ export default function OnboardingScreen() {
         <MotiView
           from={{ opacity: 0, translateY: 10 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'timing', duration: 500, delay: 200 }}
+          transition={{ type: 'spring', damping: 15, stiffness: 130, delay: 200 }}
           style={styles.titleContainer}
         >
           <Text style={styles.appName}>POUP</Text>
@@ -414,7 +414,7 @@ export default function OnboardingScreen() {
         <MotiView
           from={{ opacity: 0, translateY: 15 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'timing', duration: 450, delay: 750 }}
+          transition={{ type: 'spring', damping: 15, stiffness: 130, delay: 750 }}
           style={styles.ctaContainer}
         >
           <Pressable

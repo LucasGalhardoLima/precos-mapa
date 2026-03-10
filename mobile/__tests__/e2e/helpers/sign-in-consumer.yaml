@@ -1,0 +1,32 @@
+# Helper: Sign in as test consumer user via email/password
+# Called before authenticated flows
+appId: com.precomapa.consumer
+---
+- launchApp
+
+# If already on a tab screen (already signed in), skip
+- runFlow:
+    when:
+      visible: "Começar"
+    commands:
+      # Tap sign in (not sign up)
+      - tapOn: "Já tenho conta"
+      - waitForAnimationToEnd
+
+      # Toggle email form
+      - tapOn: "Entrar com email"
+      - waitForAnimationToEnd
+
+      # Enter credentials
+      - tapOn:
+          text: "Email"
+      - inputText: "testconsumer@gmail.com"
+
+      - tapOn:
+          text: "Senha"
+      - inputText: "TestConsumer2026"
+
+      # Submit
+      - tapOn: "Entrar"
+      - waitForAnimationToEnd
+      - waitForAnimationToEnd

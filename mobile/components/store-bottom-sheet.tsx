@@ -2,10 +2,13 @@ import { View, Text, Linking, Platform } from 'react-native';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { forwardRef, useMemo, useCallback } from 'react';
 import { MapPin, ShoppingBag, Navigation } from 'lucide-react-native';
+import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { DealCard } from '@/components/deal-card';
 import { StyledButton } from '@/components/ui/button';
 import { Colors } from '@/constants/colors';
 import type { StoreWithPromotions } from '@/types';
+
+const HAS_GLASS = isLiquidGlassAvailable();
 
 interface StoreBottomSheetProps {
   storeData: StoreWithPromotions | null;
@@ -37,6 +40,64 @@ export const StoreBottomSheet = forwardRef<BottomSheet, StoreBottomSheetProps>(
 
     const { store, activePromotionCount, topDeals, distanceKm } = storeData;
 
+    const sheetContent = (
+      <BottomSheetView className="flex-1 px-5 pb-6">
+        {/* Store Header */}
+        <View className="flex-row items-center gap-3 mb-4">
+          <View
+            className="w-12 h-12 rounded-full items-center justify-center"
+            style={{ backgroundColor: store.logo_color }}
+          >
+            <Text className="text-white font-bold text-lg">
+              {store.logo_initial}
+            </Text>
+          </View>
+          <View className="flex-1">
+            <Text className="text-lg font-bold text-text-primary">
+              {store.name}
+            </Text>
+            <Text className="text-sm text-text-secondary">
+              {store.address}
+            </Text>
+          </View>
+        </View>
+
+        {/* Info Row */}
+        <View className="flex-row gap-4 mb-5">
+          <View className="flex-row items-center gap-1">
+            <MapPin size={14} color={Colors.brand.green} />
+            <Text className="text-sm font-medium text-brand-green">
+              {distanceKm} km de você
+            </Text>
+          </View>
+          <View className="flex-row items-center gap-1">
+            <ShoppingBag size={14} color={Colors.text.secondary} />
+            <Text className="text-sm text-text-secondary">
+              {activePromotionCount} ofertas ativas
+            </Text>
+          </View>
+        </View>
+
+        {/* Navigate Button */}
+        <StyledButton
+          title="Navegar até a loja"
+          variant="secondary"
+          onPress={handleNavigate}
+          className="mb-5"
+        />
+
+        {/* Top Deals */}
+        <Text className="text-base font-semibold text-text-primary mb-3">
+          Melhores ofertas
+        </Text>
+        <View className="gap-3">
+          {topDeals.map((deal, i) => (
+            <DealCard key={deal.id} deal={deal} index={i} compact />
+          ))}
+        </View>
+      </BottomSheetView>
+    );
+
     return (
       <BottomSheet
         ref={ref}
@@ -44,64 +105,19 @@ export const StoreBottomSheet = forwardRef<BottomSheet, StoreBottomSheetProps>(
         snapPoints={snapPoints}
         onChange={handleSheetChanges}
         enablePanDownToClose
-        backgroundStyle={{ borderRadius: 24 }}
+        backgroundStyle={{
+          borderRadius: 24,
+          ...(HAS_GLASS && { backgroundColor: 'transparent' }),
+        }}
         handleIndicatorStyle={{ backgroundColor: Colors.text.tertiary }}
       >
-        <BottomSheetView className="flex-1 px-5 pb-6">
-          {/* Store Header */}
-          <View className="flex-row items-center gap-3 mb-4">
-            <View
-              className="w-12 h-12 rounded-full items-center justify-center"
-              style={{ backgroundColor: store.logo_color }}
-            >
-              <Text className="text-white font-bold text-lg">
-                {store.logo_initial}
-              </Text>
-            </View>
-            <View className="flex-1">
-              <Text className="text-lg font-bold text-text-primary">
-                {store.name}
-              </Text>
-              <Text className="text-sm text-text-secondary">
-                {store.address}
-              </Text>
-            </View>
-          </View>
-
-          {/* Info Row */}
-          <View className="flex-row gap-4 mb-5">
-            <View className="flex-row items-center gap-1">
-              <MapPin size={14} color={Colors.brand.green} />
-              <Text className="text-sm font-medium text-brand-green">
-                {distanceKm} km de você
-              </Text>
-            </View>
-            <View className="flex-row items-center gap-1">
-              <ShoppingBag size={14} color={Colors.text.secondary} />
-              <Text className="text-sm text-text-secondary">
-                {activePromotionCount} ofertas ativas
-              </Text>
-            </View>
-          </View>
-
-          {/* Navigate Button */}
-          <StyledButton
-            title="Navegar até a loja"
-            variant="secondary"
-            onPress={handleNavigate}
-            className="mb-5"
-          />
-
-          {/* Top Deals */}
-          <Text className="text-base font-semibold text-text-primary mb-3">
-            Melhores ofertas
-          </Text>
-          <View className="gap-3">
-            {topDeals.map((deal, i) => (
-              <DealCard key={deal.id} deal={deal} index={i} compact />
-            ))}
-          </View>
-        </BottomSheetView>
+        {HAS_GLASS ? (
+          <GlassView glassEffectStyle="regular" style={{ flex: 1, borderRadius: 24 }}>
+            {sheetContent}
+          </GlassView>
+        ) : (
+          sheetContent
+        )}
       </BottomSheet>
     );
   }

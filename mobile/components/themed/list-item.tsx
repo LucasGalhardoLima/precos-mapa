@@ -5,7 +5,6 @@ import { Check, Circle, X } from 'lucide-react-native';
 
 import { useTheme } from '../../theme/use-theme';
 import { triggerHaptic } from '@/hooks/use-haptics';
-import { ReceiptSeparator } from '../encarte/receipt-separator';
 import { RuleDivider } from '../fintech/rule-divider';
 
 // ---------------------------------------------------------------------------
@@ -58,9 +57,7 @@ interface ListItemProps {
  * - Subtle green background tint fades in when checked.
  */
 export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) {
-  const { palette, tokens } = useTheme();
-
-  const isEncarte = palette === 'encarte' || palette === 'encarte_digital';
+  const { tokens } = useTheme();
 
   const quantityLabel =
     item.quantity != null
@@ -174,12 +171,7 @@ export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) 
         </Pressable>
       </MotiView>
 
-      {/* Separator — dotted (encarte) or solid (fintech) */}
-      {isEncarte ? (
-        <ReceiptSeparator style={styles.separator} />
-      ) : (
-        <RuleDivider spacing={0} />
-      )}
+      <RuleDivider spacing={0} />
     </View>
   );
 }
