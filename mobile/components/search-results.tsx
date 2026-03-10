@@ -138,6 +138,7 @@ export function SearchResults({
       renderItem={renderItem}
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={false}
+      keyboardDismissMode="on-drag"
     />
   );
 }

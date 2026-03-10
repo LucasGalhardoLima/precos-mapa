@@ -203,6 +203,7 @@ export function useShoppingList() {
       // Greedy: for each product, pick the cheapest store
       const storeMap = new Map<string, OptimizedStore>();
       let totalCost = 0;
+      let averageCost = 0;
 
       for (const item of list.items) {
         const productPromos = promotions.filter(
@@ -215,6 +216,12 @@ export function useShoppingList() {
         const cheapest = productPromos.reduce((a: any, b: any) =>
           a.promo_price < b.promo_price ? a : b,
         );
+
+        // Average price across all stores for this product
+        const avgPrice =
+          productPromos.reduce((sum: number, p: any) => sum + p.promo_price, 0) /
+          productPromos.length;
+        averageCost += avgPrice * item.quantity;
 
         const store = cheapest.store as any;
         const storeId = store?.id ?? cheapest.store_id;
@@ -239,8 +246,8 @@ export function useShoppingList() {
         storeMap.set(storeId, entry);
       }
 
-      // Estimate savings (vs buying everything at nearest store)
-      const estimatedSavings = Math.max(0, totalCost * 0.15); // Rough estimate
+      // Real savings: optimized cost vs average price across stores
+      const estimatedSavings = Math.max(0, averageCost - totalCost);
 
       // Build Google Maps URL with waypoints
       const stores = [...storeMap.values()];
