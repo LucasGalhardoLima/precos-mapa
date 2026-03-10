@@ -1,5 +1,7 @@
 # E2E: Search product, add to shopping list, verify in list tab
 # Precondition: Metro running on 8081
+# Data dependency: Supabase must have promotions matching "Leite"
+# Auth: testconsumer@gmail.com / TestConsumer2026 (consumer role)
 appId: com.precomapa.consumer
 ---
 - launchApp
@@ -42,11 +44,11 @@ appId: com.precomapa.consumer
 - pressKey: Enter
 - waitForAnimationToEnd
 
-# Tap first result card (use coordinate — result text not tappable via text match)
+# Tap first result card
 - hideKeyboard
 - waitForAnimationToEnd
 - tapOn:
-    point: "50%,25%"
+    id: "result-card-0"
 
 # Should navigate to product detail with add-to-list button
 - assertVisible: "Adicionar à lista"

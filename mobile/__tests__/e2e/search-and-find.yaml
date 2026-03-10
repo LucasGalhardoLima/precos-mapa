@@ -1,5 +1,7 @@
 # E2E: Search for a product, verify results, change sort, tap result
 # Precondition: Metro running on 8081
+# Data dependency: Supabase must have promotions matching "Leite"
+# Auth: testconsumer@gmail.com / TestConsumer2026 (consumer role)
 appId: com.precomapa.consumer
 ---
 - launchApp

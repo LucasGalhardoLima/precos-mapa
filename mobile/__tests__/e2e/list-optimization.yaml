@@ -1,5 +1,7 @@
 # E2E: Shopping list with items, verify savings card, open route
 # Precondition: Metro running on 8081
+# Data dependency: Supabase must have promotions matching "Arroz" (if list is empty)
+# Auth: testconsumer@gmail.com / TestConsumer2026 (consumer role)
 appId: com.precomapa.consumer
 ---
 - launchApp

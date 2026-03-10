@@ -1,5 +1,7 @@
 # E2E: Map tab with shopping list items, open list panel, verify stores
 # Precondition: Metro running on 8081
+# Data dependency: Supabase must have promotions matching "Leite" (if list is empty)
+# Auth: testconsumer@gmail.com / TestConsumer2026 (consumer role)
 appId: com.precomapa.consumer
 ---
 - launchApp

@@ -109,12 +109,13 @@ export function SearchResults({
 }: SearchResultsProps) {
   const { tokens } = useTheme();
 
-  const renderItem = ({ item }: { item: EnrichedPromotion }) => {
+  const renderItem = ({ item, index }: { item: EnrichedPromotion; index: number }) => {
     if (item.isLocked) {
       return (
         <View style={styles.lockedWrapper}>
           <ResultRow promotion={item} tokens={tokens} />
           <Pressable
+            testID={`result-card-${index}`}
             onPress={onPressLocked}
             style={styles.lockedOverlay}
           >
@@ -128,7 +129,7 @@ export function SearchResults({
     }
 
     return (
-      <Pressable onPress={() => onPressItem(item)}>
+      <Pressable testID={`result-card-${index}`} onPress={() => onPressItem(item)}>
         <ResultRow promotion={item} tokens={tokens} />
       </Pressable>
     );
