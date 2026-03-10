@@ -54,9 +54,7 @@ appId: com.precomapa.consumer
 - assertVisible: "Adicionar à lista"
 - tapOn: "Adicionar à lista"
 
-# Verify success feedback and dismiss dialog
-- assertVisible: "Adicionado"
-- tapOn: "OK"
+# Toast confirms addition (auto-dismisses)
 - waitForAnimationToEnd
 
 # Go back to search results

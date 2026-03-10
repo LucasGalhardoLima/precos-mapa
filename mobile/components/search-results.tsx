@@ -25,17 +25,6 @@ function formatPrice(price: number): string {
   return 'R$ ' + price.toFixed(2).replace('.', ',');
 }
 
-/**
- * Determine if a store is currently open.
- *
- * Since we don't have opening-hours data, we use a simple heuristic:
- * stores are assumed open between 07:00 and 22:00 local time.
- */
-function isStoreOpen(): boolean {
-  const hour = new Date().getHours();
-  return hour >= 7 && hour < 22;
-}
-
 // ---------------------------------------------------------------------------
 // Row component
 // ---------------------------------------------------------------------------
@@ -47,8 +36,6 @@ function ResultRow({
   promotion: EnrichedPromotion;
   tokens: ReturnType<typeof useTheme>['tokens'];
 }) {
-  const storeOpen = isStoreOpen();
-
   const hasDiscount = promotion.original_price > promotion.promo_price;
 
   return (
@@ -79,7 +66,7 @@ function ResultRow({
           style={[styles.storeSubtitle, { color: tokens.textHint }]}
           numberOfLines={1}
         >
-          {promotion.store.name} · {promotion.distanceKm} km · {storeOpen ? 'Aberto agora' : 'Fechado'}
+          {promotion.store.name} · {promotion.distanceKm} km
         </Text>
         <View style={styles.badgeGroup}>
           {promotion.isBestPrice && (

@@ -24,6 +24,7 @@ import {
 import { useTheme } from '@/theme/use-theme';
 import { triggerNotification } from '@/hooks/use-haptics';
 import { NotificationFeedbackType } from 'expo-haptics';
+import * as Burnt from 'burnt';
 import { useAlerts } from '@/hooks/use-alerts';
 import { useShoppingList } from '@/hooks/use-shopping-list';
 import { useLocation, calculateDistanceKm } from '@/hooks/use-location';
@@ -169,7 +170,12 @@ export default function ProductDetailScreen() {
       await createAlert(id, targetPrice);
       triggerNotification(NotificationFeedbackType.Success);
       setTargetPriceInput('');
-      Alert.alert('Alerta criado', 'Você será notificado quando o preço cair.');
+      Burnt.toast({
+        title: 'Alerta criado',
+        message: 'Você será notificado quando o preço cair.',
+        preset: 'done',
+        haptic: 'success',
+      });
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Erro ao criar alerta.';
@@ -209,7 +215,11 @@ export default function ProductDetailScreen() {
         const cheapestStoreId = promotions.length > 0 ? promotions[0].store_id : undefined;
         await addItem(listId, id, 1, cheapestStoreId);
         triggerNotification(NotificationFeedbackType.Success);
-        Alert.alert('Adicionado', 'Produto adicionado à lista de compras.');
+        Burnt.toast({
+          title: 'Adicionado à lista',
+          preset: 'done',
+          haptic: 'success',
+        });
       }
     } catch {
       Alert.alert('Erro', 'Não foi possível adicionar à lista.');
