@@ -6,20 +6,24 @@ import {
   Pressable,
   Alert,
   Linking,
+  Share,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import * as Burnt from 'burnt';
 import {
   Bell,
   MapPin,
   Store,
   ChevronRight,
   Lock,
-  History,
   Trash2,
   Crown,
   CreditCard,
   FileText,
+  FileDown,
+  LogOut,
   Check,
   Sparkles,
 } from 'lucide-react-native';
@@ -29,6 +33,7 @@ import { useAuthStore } from '@precomapa/shared';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useAlerts } from '@/hooks/use-alerts';
 import { useSubscription } from '@/hooks/use-subscription';
+import { useAccount } from '@/hooks/use-account';
 import { supabase } from '@/lib/supabase';
 import { Paywall } from '@/components/paywall';
 import { CouponLine } from '@/components/themed/coupon-line';
@@ -146,11 +151,14 @@ function SectionHeader({ title, tokens }: SectionHeaderProps) {
 export default function AccountScreen() {
   const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const session = useAuthStore((s) => s.session);
   const profile = useAuthStore((s) => s.profile);
+  const setSession = useAuthStore((s) => s.setSession);
   const { count: favoriteCount } = useFavorites();
   const { count: alertCount } = useAlerts();
   const { plan, isPlus } = useSubscription();
+  const { exportData, deleteAccount, isExporting } = useAccount();
 
   const [paywallVisible, setPaywallVisible] = useState(false);
 
@@ -175,6 +183,49 @@ export default function AccountScreen() {
     setPaywallVisible(false);
   }, []);
 
+  const handleOpenAlerts = useCallback(() => {
+    router.push('/(tabs)/alerts');
+  }, [router]);
+
+  const handleOpenLocation = useCallback(() => {
+    Linking.openSettings();
+  }, []);
+
+  const handleOpenFavorites = useCallback(() => {
+    router.push('/(tabs)/favorites');
+  }, [router]);
+
+  const handleResetPassword = useCallback(async () => {
+    if (!email) return;
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      Burnt.toast({
+        title: 'E-mail enviado',
+        message: 'Verifique sua caixa de entrada para redefinir a senha.',
+        preset: 'done',
+        haptic: 'success',
+      });
+    } catch {
+      Burnt.toast({
+        title: 'Erro',
+        message: 'Não foi possível enviar o e-mail. Tente novamente.',
+        preset: 'error',
+        haptic: 'error',
+      });
+    }
+  }, [email]);
+
+  const handleExportData = useCallback(async () => {
+    const data = await exportData();
+    if (!data) return;
+    const json = JSON.stringify(data, null, 2);
+    await Share.share({
+      message: json,
+      title: 'Meus dados — Poup',
+    });
+  }, [exportData]);
+
   const handleDeleteAccount = useCallback(() => {
     Alert.alert(
       'Excluir conta',
@@ -185,11 +236,15 @@ export default function AccountScreen() {
           text: 'Excluir',
           style: 'destructive',
           onPress: async () => {
-            try {
-              const { error } = await supabase.rpc('delete_user_account');
-              if (error) throw error;
-              Alert.alert('Conta excluída', 'Sua conta foi excluída com sucesso.');
-            } catch {
+            const success = await deleteAccount();
+            if (success) {
+              Burnt.toast({
+                title: 'Conta excluída',
+                message: 'Sua conta foi excluída com sucesso.',
+                preset: 'done',
+                haptic: 'success',
+              });
+            } else {
               Alert.alert(
                 'Erro',
                 'Não foi possível excluir sua conta. Tente novamente mais tarde.',
@@ -199,7 +254,12 @@ export default function AccountScreen() {
         },
       ],
     );
-  }, []);
+  }, [deleteAccount]);
+
+  const handleSignOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+  }, [setSession]);
 
   const handleOpenTerms = useCallback(() => {
     Linking.openURL(TERMS_URL);
@@ -345,7 +405,7 @@ export default function AccountScreen() {
           iconColor={tokens.primary}
           label="Alertas de oferta"
           value={`${alertCount} ativo${alertCount !== 1 ? 's' : ''}`}
-          onPress={() => {}}
+          onPress={handleOpenAlerts}
           tokens={tokens}
         />
 
@@ -354,16 +414,16 @@ export default function AccountScreen() {
           iconColor={tokens.primary}
           label="Localização"
           value={locationDisplay}
-          onPress={() => {}}
+          onPress={handleOpenLocation}
           tokens={tokens}
         />
 
         <SettingsRow
           icon={Store}
           iconColor={tokens.primary}
-          label="Meus mercados"
-          value={`${favoriteCount} selecionado${favoriteCount !== 1 ? 's' : ''}`}
-          onPress={() => {}}
+          label="Meus favoritos"
+          value={`${favoriteCount} produto${favoriteCount !== 1 ? 's' : ''}`}
+          onPress={handleOpenFavorites}
           tokens={tokens}
         />
 
@@ -378,15 +438,15 @@ export default function AccountScreen() {
           icon={Lock}
           iconColor={tokens.primary}
           label="Alterar senha"
-          onPress={() => {}}
+          onPress={handleResetPassword}
           tokens={tokens}
         />
 
         <SettingsRow
-          icon={History}
+          icon={FileDown}
           iconColor={tokens.primary}
-          label="Histórico de buscas"
-          onPress={() => {}}
+          label={isExporting ? 'Exportando...' : 'Exportar meus dados'}
+          onPress={handleExportData}
           tokens={tokens}
         />
 
@@ -420,6 +480,16 @@ export default function AccountScreen() {
           iconColor={tokens.primary}
           label="Termos de uso"
           onPress={handleOpenTerms}
+          tokens={tokens}
+        />
+
+        <SectionDivider style={{ marginVertical: 8 }} />
+
+        <SettingsRow
+          icon={LogOut}
+          iconColor={tokens.textSecondary}
+          label="Sair"
+          onPress={handleSignOut}
           tokens={tokens}
         />
       </ScrollView>
