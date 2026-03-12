@@ -1,5 +1,5 @@
-import { View, Text, FlatList, Pressable, Alert } from 'react-native';
-import { useState } from 'react';
+import { View, Text, FlatList, Pressable, Alert, RefreshControl } from 'react-native';
+import { useState, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
 import { Heart, MapPin, Star, Crown } from 'lucide-react-native';
@@ -12,11 +12,18 @@ import type { FavoriteWithProduct } from '@/types';
 const FREE_FAVORITE_LIMIT = 10;
 
 export default function FavoritesScreen() {
-  const { favorites, isLoading, remove, count } = useFavorites();
+  const { favorites, isLoading, remove, count, refresh } = useFavorites();
   const profile = useAuthStore((s) => s.profile);
   const isFree = profile?.b2c_plan === 'free';
   const [showPaywall, setShowPaywall] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const limitReached = isFree && count >= FREE_FAVORITE_LIMIT;
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  }, [refresh]);
 
   const handleRemove = (productId: string, productName: string) => {
     Alert.alert(
@@ -50,6 +57,8 @@ export default function FavoritesScreen() {
         <Pressable
           className="bg-white rounded-2xl border border-border p-4 flex-row items-center active:opacity-80"
           onLongPress={() => handleRemove(item.product_id, item.product.name)}
+          accessibilityLabel={`${item.product.name}${bestPromo ? `, R$ ${bestPromo.promo_price.toFixed(2)}` : ''}, segure para remover`}
+          accessibilityRole="button"
         >
           <Heart
             size={20}
@@ -107,6 +116,8 @@ export default function FavoritesScreen() {
         {isFree && (
           <Pressable
             onPress={() => limitReached && setShowPaywall(true)}
+            accessibilityLabel={`${count} de ${FREE_FAVORITE_LIMIT} favoritos usados`}
+            accessibilityRole={limitReached ? 'button' : undefined}
             className="bg-brand-green/10 rounded-lg px-3 py-1.5 mt-2 flex-row items-center gap-1.5 self-start"
           >
             <Text className="text-xs font-semibold text-brand-green">
@@ -120,6 +131,8 @@ export default function FavoritesScreen() {
         {limitReached && (
           <Pressable
             onPress={() => setShowPaywall(true)}
+            accessibilityLabel="Fazer upgrade para favoritos ilimitados"
+            accessibilityRole="button"
             className="bg-semantic-warning/10 rounded-xl px-4 py-3 mt-2 flex-row items-center gap-2"
           >
             <Crown size={16} color={Colors.brand.orange} />
@@ -169,6 +182,10 @@ export default function FavoritesScreen() {
           keyExtractor={(item) => item.id}
           contentContainerClassName="gap-3 px-4 pb-4"
           renderItem={renderItem}
+          keyboardDismissMode="on-drag"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.brand.green} />
+          }
         />
       )}
       <Paywall visible={showPaywall} onClose={() => setShowPaywall(false)} />

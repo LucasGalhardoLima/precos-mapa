@@ -116,5 +116,6 @@ export function useAlerts() {
     create: createAlert,
     disable: disableAlert,
     count: alerts.length,
+    refresh: fetchAlerts,
   };
 }
