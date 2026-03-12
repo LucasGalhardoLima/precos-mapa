@@ -45,6 +45,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="(business)" />
             <Stack.Screen name="product/[id]" options={{ animation: 'default' }} />
+            <Stack.Screen name="icon-picker" options={{ presentation: 'modal', headerShown: false }} />
           </Stack>
         </BottomSheetModalProvider>
       </SafeAreaProvider>

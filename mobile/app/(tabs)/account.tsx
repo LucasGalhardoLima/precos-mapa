@@ -24,7 +24,9 @@ import {
   Sparkles,
 } from 'lucide-react-native';
 
+import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/use-theme';
+import type { TabName } from '@/theme/store';
 import { useAuthStore } from '@precomapa/shared';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useAlerts } from '@/hooks/use-alerts';
@@ -34,10 +36,19 @@ import { Paywall } from '@/components/paywall';
 import { CouponLine } from '@/components/themed/coupon-line';
 import { SectionDivider } from '@/components/themed/section-divider';
 import type { LucideIcon } from 'lucide-react-native';
+import { triggerHaptic } from '@/hooks/use-haptics';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
+
+const TAB_ICON_ROWS: { tab: TabName; label: string }[] = [
+  { tab: 'index', label: 'Início' },
+  { tab: 'search', label: 'Busca' },
+  { tab: 'map', label: 'Mapa' },
+  { tab: 'list', label: 'Lista' },
+  { tab: 'account', label: 'Conta' },
+];
 
 const TERMS_URL = 'https://poup.com.br/termos';
 
@@ -144,7 +155,8 @@ function SectionHeader({ title, tokens }: SectionHeaderProps) {
 // ---------------------------------------------------------------------------
 
 export default function AccountScreen() {
-  const { tokens } = useTheme();
+  const { tokens, tabIcons } = useTheme();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const session = useAuthStore((s) => s.session);
   const profile = useAuthStore((s) => s.profile);
@@ -366,6 +378,37 @@ export default function AccountScreen() {
           onPress={() => {}}
           tokens={tokens}
         />
+
+        <SectionDivider style={{ marginVertical: 8 }} />
+
+        {/* ----------------------------------------------------------------- */}
+        {/* ÍCONES                                                            */}
+        {/* ----------------------------------------------------------------- */}
+        <SectionHeader title="ÍCONES" tokens={tokens} />
+
+        {TAB_ICON_ROWS.map((row) => (
+          <Pressable
+            key={row.tab}
+            style={[styles.row, { borderBottomColor: tokens.border }]}
+            onPress={() => {
+              triggerHaptic();
+              router.push({ pathname: '/icon-picker', params: { tab: row.tab } });
+            }}
+            android_ripple={{ color: tokens.mist }}
+          >
+            <View style={styles.rowLeft}>
+              <Text style={[styles.rowLabel, { color: tokens.textPrimary }]}>
+                {row.label}
+              </Text>
+            </View>
+            <View style={styles.rowRight}>
+              <Text style={[styles.rowValue, { color: tokens.textHint }]}>
+                {tabIcons[row.tab]}
+              </Text>
+              <ChevronRight size={18} color={tokens.textHint} />
+            </View>
+          </Pressable>
+        ))}
 
         <SectionDivider style={{ marginVertical: 8 }} />
 
