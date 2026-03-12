@@ -80,7 +80,8 @@ export function useSubscription(): SubscriptionState {
         setPlan(newPlan);
         await syncToSupabase(newPlan);
         return true;
-      } catch {
+      } catch (err) {
+        console.warn('[useSubscription] Purchase failed:', err);
         return false;
       }
     },
@@ -93,8 +94,8 @@ export function useSubscription(): SubscriptionState {
       const restoredPlan = mapEntitlementsToPlan(info);
       setPlan(restoredPlan);
       await syncToSupabase(restoredPlan);
-    } catch {
-      // Restore failed
+    } catch (err) {
+      console.warn('[useSubscription] Restore failed:', err);
     }
   }, [syncToSupabase]);
 
