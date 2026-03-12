@@ -83,7 +83,7 @@ describe('US2 — Map & Stores', () => {
     });
 
     it('identifies denied permission', () => {
-      const status = 'denied';
+      const status: string = 'denied';
       expect(status === 'granted').toBe(false);
     });
 

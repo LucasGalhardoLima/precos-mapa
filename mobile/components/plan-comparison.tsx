@@ -223,7 +223,7 @@ export function PlanComparisonModal({
                 {tier.id === 'enterprise' && (
                   <StyledButton
                     title="Falar com vendas"
-                    variant="outline"
+                    variant="secondary"
                     className="mt-4"
                     onPress={() => {}}
                   />

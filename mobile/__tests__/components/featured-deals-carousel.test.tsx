@@ -32,19 +32,23 @@ function makeDeal(overrides: Partial<EnrichedPromotion> & { id: string }): Enric
     store_id: 's1',
     promo_price: 5.0,
     original_price: 10.0,
+    start_date: '2026-01-01',
     end_date: '2026-12-31',
     status: 'active',
+    verified: true,
+    source: 'manual',
+    created_by: null,
     created_at: '2026-01-01',
-    verification_count: 0,
+    updated_at: '2026-01-01',
     product: {
       id: 'p1',
       name: 'Arroz 5kg',
       category_id: 'cat1',
       brand: 'Tio João',
-      unit: 'kg',
       reference_price: 9.0,
-      barcode: null,
       image_url: null,
+      created_at: '2026-01-01',
+      updated_at: '2026-01-01',
     },
     store: {
       id: 's1',
@@ -53,19 +57,20 @@ function makeDeal(overrides: Partial<EnrichedPromotion> & { id: string }): Enric
       address: 'Rua X, 123',
       city: 'SP',
       state: 'SP',
-      zip_code: '01000-000',
       latitude: -23.5,
       longitude: -46.6,
       phone: null,
-      opening_hours: null,
       logo_url: null,
+      logo_initial: 'M',
+      logo_color: '#000000',
       b2b_plan: 'free',
-      owner_id: null,
+      stripe_customer_id: null,
+      stripe_subscription_id: null,
+      trial_ends_at: null,
       search_priority: 0,
-      is_verified: false,
-      neighborhood: null,
-      cnpj: null,
+      is_active: true,
       created_at: '2026-01-01',
+      updated_at: '2026-01-01',
     },
     discountPercent: 50,
     belowNormalPercent: 44,
@@ -73,6 +78,7 @@ function makeDeal(overrides: Partial<EnrichedPromotion> & { id: string }): Enric
     distanceKm: 2.5,
     isExpiringSoon: false,
     isBestPrice: false,
+    isLocked: false,
     ...overrides,
   } as EnrichedPromotion;
 }
@@ -97,8 +103,8 @@ describe('FeaturedDealsCarousel', () => {
     mockDeals.push(
       makeDeal({
         id: 'd1',
-        product: { id: 'p1', name: 'Café Pilão', category_id: 'c1', brand: 'Pilão', unit: 'g', reference_price: 12, barcode: null, image_url: null },
-        store: { id: 's1', name: 'Extra', chain: '', address: '', city: '', state: '', zip_code: '', latitude: 0, longitude: 0, phone: null, opening_hours: null, logo_url: null, b2b_plan: 'free', owner_id: null, search_priority: 0, is_verified: false, neighborhood: null, cnpj: null, created_at: '' },
+        product: { id: 'p1', name: 'Café Pilão', category_id: 'c1', brand: 'Pilão', reference_price: 12, image_url: null, created_at: '', updated_at: '' },
+        store: { id: 's1', name: 'Extra', chain: '', address: '', city: '', state: '', latitude: 0, longitude: 0, phone: null, logo_url: null, logo_initial: 'E', logo_color: '#000000', b2b_plan: 'free', stripe_customer_id: null, stripe_subscription_id: null, trial_ends_at: null, search_priority: 0, is_active: true, created_at: '', updated_at: '' },
       }),
     );
     const { getByText } = render(<FeaturedDealsCarousel />);
@@ -126,8 +132,8 @@ describe('FeaturedDealsCarousel', () => {
 
   it('renders multiple deals', () => {
     mockDeals.push(
-      makeDeal({ id: 'd1', product: { id: 'p1', name: 'Arroz', category_id: 'c1', brand: '', unit: 'kg', reference_price: 9, barcode: null, image_url: null } }),
-      makeDeal({ id: 'd2', product: { id: 'p2', name: 'Feijão', category_id: 'c1', brand: '', unit: 'kg', reference_price: 7, barcode: null, image_url: null } }),
+      makeDeal({ id: 'd1', product: { id: 'p1', name: 'Arroz', category_id: 'c1', brand: '', reference_price: 9, image_url: null, created_at: '', updated_at: '' } }),
+      makeDeal({ id: 'd2', product: { id: 'p2', name: 'Feijão', category_id: 'c1', brand: '', reference_price: 7, image_url: null, created_at: '', updated_at: '' } }),
     );
     const { getByText } = render(<FeaturedDealsCarousel />);
     expect(getByText('Arroz')).toBeTruthy();

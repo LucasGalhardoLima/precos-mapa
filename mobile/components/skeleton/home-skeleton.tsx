@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type DimensionValue } from 'react-native';
 
 import { useTheme } from '../../theme/use-theme';
 
@@ -18,7 +18,7 @@ export function HomeSkeleton() {
 
   const shape = (
     height: number,
-    width: number | string = '100%',
+    width: DimensionValue = '100%',
     extra?: object,
   ) => ({
     backgroundColor: tokens.surface,

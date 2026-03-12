@@ -3,21 +3,24 @@ import type { Testimonial, SocialProofStats } from "@/types";
 export const testimonials: Testimonial[] = [
   {
     id: "test_001",
-    userName: "Maria Silva",
+    user_name: "Maria Silva",
     text: "Economizei muito no mes passado so seguindo as ofertas do PrecoMapa! Recomendo para todas as maes.",
-    savingsAmount: 120,
+    savings_amount: 120,
+    sort_order: 0,
   },
   {
     id: "test_002",
-    userName: "Carlos Santos",
+    user_name: "Carlos Santos",
     text: "Antes eu ia em 3 mercados diferentes. Agora vejo tudo pelo app e ja sei onde comprar mais barato.",
-    savingsAmount: 85,
+    savings_amount: 85,
+    sort_order: 1,
   },
   {
     id: "test_003",
-    userName: "Ana Costa",
+    user_name: "Ana Costa",
     text: "O melhor app para quem quer economizar no supermercado. As ofertas sao sempre atualizadas!",
-    savingsAmount: 200,
+    savings_amount: 200,
+    sort_order: 2,
   },
 ];
 

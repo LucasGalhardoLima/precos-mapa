@@ -135,7 +135,7 @@ export function SmartList({ listId }: SmartListProps) {
             {result.mapsUrl && (
               <StyledButton
                 title="Navegar rota otimizada"
-                variant="outline"
+                variant="secondary"
                 onPress={handleNavigate}
               />
             )}

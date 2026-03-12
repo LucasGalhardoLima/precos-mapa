@@ -61,11 +61,11 @@ export function useSubscription(): SubscriptionState {
 
     init();
 
-    const listener = Purchases.addCustomerInfoUpdateListener((info) => {
+    const listener = Purchases.addCustomerInfoUpdateListener((info: CustomerInfo) => {
       const updatedPlan = mapEntitlementsToPlan(info);
       setPlan(updatedPlan);
       syncToSupabase(updatedPlan);
-    });
+    }) as { remove: () => void } | undefined;
 
     return () => {
       listener?.remove();

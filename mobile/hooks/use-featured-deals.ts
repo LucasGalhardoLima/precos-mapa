@@ -48,6 +48,7 @@ export function useFeaturedDeals() {
           distanceKm: 0,
           isExpiringSoon,
           isBestPrice: false,
+          isLocked: false,
         };
       })
       .sort((a, b) => b.discountPercent - a.discountPercent)

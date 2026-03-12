@@ -22,7 +22,7 @@ interface EnrichedDeal {
   store: { id: string; name: string };
   discountPercent: number;
   belowNormalPercent: number;
-  gamificationMessage: string;
+  gamificationMessage: string | null;
   distanceKm: number;
   isExpiringSoon: boolean;
   isBestPrice: boolean;

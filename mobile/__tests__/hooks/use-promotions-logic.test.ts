@@ -136,7 +136,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
 }
 
 function makePromotion(
-  overrides: Partial<PromotionWithRelations> & {
+  overrides: Omit<Partial<PromotionWithRelations>, 'product' | 'store'> & {
     product?: Partial<Product>;
     store?: Partial<Store>;
   } = {},
@@ -163,7 +163,7 @@ function makePromotion(
 }
 
 function enrichWithDefaults(
-  overrides: Partial<PromotionWithRelations> & {
+  overrides: Omit<Partial<PromotionWithRelations>, 'product' | 'store'> & {
     product?: Partial<Product>;
     store?: Partial<Store>;
   } = {},
@@ -394,7 +394,7 @@ describe('Promotion Logic — enrichPromotion', () => {
 describe('Promotion Logic — sortPromotions', () => {
   // Helper to build enriched promos with specific fields for sort tests
   function makeEnriched(
-    overrides: Partial<EnrichedPromotion> & {
+    overrides: Omit<Partial<EnrichedPromotion>, 'store'> & {
       store?: Partial<Store>;
     } = {},
   ): EnrichedPromotion {
