@@ -1,4 +1,5 @@
-import { Pressable, Text, type PressableProps } from "react-native";
+import React from "react";
+import { Pressable, Text } from "react-native";
 
 type Variant = "primary" | "secondary" | "ghost";
 
@@ -14,21 +15,26 @@ const textClasses: Record<Variant, string> = {
   ghost: "text-brand-green font-semibold text-sm",
 };
 
-interface StyledButtonProps extends PressableProps {
+export interface StyledButtonProps {
   variant?: Variant;
   title: string;
+  onPress?: () => void;
+  disabled?: boolean;
+  className?: string;
 }
 
 export function StyledButton({
   variant = "primary",
   title,
   className = "",
-  ...props
+  onPress,
+  disabled,
 }: StyledButtonProps) {
   return (
     <Pressable
       className={`${containerClasses[variant]} active:opacity-80 ${className}`}
-      {...props}
+      onPress={onPress}
+      disabled={disabled}
     >
       <Text className={textClasses[variant]}>{title}</Text>
     </Pressable>

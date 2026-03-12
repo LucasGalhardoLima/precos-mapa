@@ -11,7 +11,6 @@ import {
   Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft,
@@ -284,17 +283,15 @@ export default function ProductDetailScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Product image placeholder */}
-          <Animated.View sharedTransitionTag={`product-card-${id}`}>
-            <View
-              style={[styles.imagePlaceholder, { backgroundColor: tokens.mist }]}
+          <View
+            style={[styles.imagePlaceholder, { backgroundColor: tokens.mist }]}
+          >
+            <Text
+              style={[styles.imagePlaceholderText, { color: tokens.textHint }]}
             >
-              <Text
-                style={[styles.imagePlaceholderText, { color: tokens.textHint }]}
-              >
-                Imagem ilustrativa
-              </Text>
-            </View>
-          </Animated.View>
+              Imagem ilustrativa
+            </Text>
+          </View>
 
           {/* Product metadata */}
           <View style={styles.metadataSection}>

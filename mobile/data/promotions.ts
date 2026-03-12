@@ -7,47 +7,49 @@ const daysFromNow = (days: number) =>
 const daysAgo = (days: number) =>
   new Date(now.getTime() - days * 86400000).toISOString();
 
+const ts = now.toISOString();
+
 export const promotions: Promotion[] = [
   // --- Bebidas ---
-  { id: "promo_001", productId: "prod_001", storeId: "store_001", originalPrice: 10.99, promoPrice: 7.49, startDate: daysAgo(2), endDate: daysFromNow(5), status: "active", verified: true, source: "manual" },
-  { id: "promo_002", productId: "prod_001", storeId: "store_002", originalPrice: 10.99, promoPrice: 8.29, startDate: daysAgo(1), endDate: daysFromNow(3), status: "active", verified: true, source: "crawler" },
-  { id: "promo_003", productId: "prod_002", storeId: "store_003", originalPrice: 7.49, promoPrice: 4.99, startDate: daysAgo(3), endDate: daysFromNow(4), status: "active", verified: true, source: "manual" },
-  { id: "promo_004", productId: "prod_003", storeId: "store_001", originalPrice: 3.99, promoPrice: 2.49, startDate: daysAgo(1), endDate: daysFromNow(0.5), status: "active", verified: true, source: "manual" },  // Expiring soon
-  { id: "promo_005", productId: "prod_004", storeId: "store_004", originalPrice: 5.99, promoPrice: 3.99, startDate: daysAgo(2), endDate: daysFromNow(6), status: "active", verified: false, source: "crawler" },
-  { id: "promo_006", productId: "prod_004", storeId: "store_001", originalPrice: 5.99, promoPrice: 4.49, startDate: daysAgo(1), endDate: daysFromNow(2), status: "active", verified: true, source: "manual" },
+  { id: "promo_001", product_id: "prod_001", store_id: "store_001", original_price: 10.99, promo_price: 7.49, start_date: daysAgo(2), end_date: daysFromNow(5), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_002", product_id: "prod_001", store_id: "store_002", original_price: 10.99, promo_price: 8.29, start_date: daysAgo(1), end_date: daysFromNow(3), status: "active", verified: true, source: "crawler", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_003", product_id: "prod_002", store_id: "store_003", original_price: 7.49, promo_price: 4.99, start_date: daysAgo(3), end_date: daysFromNow(4), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_004", product_id: "prod_003", store_id: "store_001", original_price: 3.99, promo_price: 2.49, start_date: daysAgo(1), end_date: daysFromNow(0.5), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },  // Expiring soon
+  { id: "promo_005", product_id: "prod_004", store_id: "store_004", original_price: 5.99, promo_price: 3.99, start_date: daysAgo(2), end_date: daysFromNow(6), status: "active", verified: false, source: "crawler", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_006", product_id: "prod_004", store_id: "store_001", original_price: 5.99, promo_price: 4.49, start_date: daysAgo(1), end_date: daysFromNow(2), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
 
   // --- Limpeza ---
-  { id: "promo_007", productId: "prod_005", storeId: "store_001", originalPrice: 2.99, promoPrice: 1.49, startDate: daysAgo(3), endDate: daysFromNow(4), status: "active", verified: true, source: "manual" },
-  { id: "promo_008", productId: "prod_005", storeId: "store_002", originalPrice: 2.99, promoPrice: 1.79, startDate: daysAgo(2), endDate: daysFromNow(0.8), status: "active", verified: true, source: "crawler" }, // Expiring soon
-  { id: "promo_009", productId: "prod_006", storeId: "store_003", originalPrice: 15.99, promoPrice: 9.99, startDate: daysAgo(1), endDate: daysFromNow(7), status: "active", verified: true, source: "manual" },
-  { id: "promo_010", productId: "prod_006", storeId: "store_004", originalPrice: 15.99, promoPrice: 11.49, startDate: daysAgo(2), endDate: daysFromNow(5), status: "active", verified: false, source: "importador_ia" },
-  { id: "promo_011", productId: "prod_007", storeId: "store_001", originalPrice: 6.49, promoPrice: 3.99, startDate: daysAgo(1), endDate: daysFromNow(3), status: "active", verified: true, source: "manual" },
+  { id: "promo_007", product_id: "prod_005", store_id: "store_001", original_price: 2.99, promo_price: 1.49, start_date: daysAgo(3), end_date: daysFromNow(4), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_008", product_id: "prod_005", store_id: "store_002", original_price: 2.99, promo_price: 1.79, start_date: daysAgo(2), end_date: daysFromNow(0.8), status: "active", verified: true, source: "crawler", created_by: null, created_at: ts, updated_at: ts }, // Expiring soon
+  { id: "promo_009", product_id: "prod_006", store_id: "store_003", original_price: 15.99, promo_price: 9.99, start_date: daysAgo(1), end_date: daysFromNow(7), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_010", product_id: "prod_006", store_id: "store_004", original_price: 15.99, promo_price: 11.49, start_date: daysAgo(2), end_date: daysFromNow(5), status: "active", verified: false, source: "importador_ia", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_011", product_id: "prod_007", store_id: "store_001", original_price: 6.49, promo_price: 3.99, start_date: daysAgo(1), end_date: daysFromNow(3), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
 
   // --- Alimentos ---
-  { id: "promo_012", productId: "prod_008", storeId: "store_002", originalPrice: 27.99, promoPrice: 19.99, startDate: daysAgo(4), endDate: daysFromNow(3), status: "active", verified: true, source: "manual" },
-  { id: "promo_013", productId: "prod_008", storeId: "store_003", originalPrice: 27.99, promoPrice: 21.49, startDate: daysAgo(2), endDate: daysFromNow(5), status: "active", verified: true, source: "crawler" },
-  { id: "promo_014", productId: "prod_009", storeId: "store_001", originalPrice: 8.99, promoPrice: 5.99, startDate: daysAgo(1), endDate: daysFromNow(4), status: "active", verified: true, source: "manual" },
-  { id: "promo_015", productId: "prod_010", storeId: "store_004", originalPrice: 4.49, promoPrice: 2.99, startDate: daysAgo(3), endDate: daysFromNow(0.3), status: "active", verified: true, source: "manual" }, // Expiring soon
-  { id: "promo_016", productId: "prod_011", storeId: "store_002", originalPrice: 7.99, promoPrice: 5.49, startDate: daysAgo(2), endDate: daysFromNow(6), status: "active", verified: false, source: "importador_ia" },
+  { id: "promo_012", product_id: "prod_008", store_id: "store_002", original_price: 27.99, promo_price: 19.99, start_date: daysAgo(4), end_date: daysFromNow(3), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_013", product_id: "prod_008", store_id: "store_003", original_price: 27.99, promo_price: 21.49, start_date: daysAgo(2), end_date: daysFromNow(5), status: "active", verified: true, source: "crawler", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_014", product_id: "prod_009", store_id: "store_001", original_price: 8.99, promo_price: 5.99, start_date: daysAgo(1), end_date: daysFromNow(4), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_015", product_id: "prod_010", store_id: "store_004", original_price: 4.49, promo_price: 2.99, start_date: daysAgo(3), end_date: daysFromNow(0.3), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts }, // Expiring soon
+  { id: "promo_016", product_id: "prod_011", store_id: "store_002", original_price: 7.99, promo_price: 5.49, start_date: daysAgo(2), end_date: daysFromNow(6), status: "active", verified: false, source: "importador_ia", created_by: null, created_at: ts, updated_at: ts },
 
   // --- Hortifruti ---
-  { id: "promo_017", productId: "prod_012", storeId: "store_001", originalPrice: 5.99, promoPrice: 3.49, startDate: daysAgo(1), endDate: daysFromNow(2), status: "active", verified: true, source: "manual" },
-  { id: "promo_018", productId: "prod_013", storeId: "store_003", originalPrice: 8.49, promoPrice: 4.99, startDate: daysAgo(2), endDate: daysFromNow(3), status: "active", verified: true, source: "manual" },
-  { id: "promo_019", productId: "prod_014", storeId: "store_002", originalPrice: 6.99, promoPrice: 3.99, startDate: daysAgo(1), endDate: daysFromNow(4), status: "active", verified: true, source: "crawler" },
-  { id: "promo_020", productId: "prod_015", storeId: "store_004", originalPrice: 4.99, promoPrice: 2.99, startDate: daysAgo(3), endDate: daysFromNow(5), status: "active", verified: true, source: "manual" },
+  { id: "promo_017", product_id: "prod_012", store_id: "store_001", original_price: 5.99, promo_price: 3.49, start_date: daysAgo(1), end_date: daysFromNow(2), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_018", product_id: "prod_013", store_id: "store_003", original_price: 8.49, promo_price: 4.99, start_date: daysAgo(2), end_date: daysFromNow(3), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_019", product_id: "prod_014", store_id: "store_002", original_price: 6.99, promo_price: 3.99, start_date: daysAgo(1), end_date: daysFromNow(4), status: "active", verified: true, source: "crawler", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_020", product_id: "prod_015", store_id: "store_004", original_price: 4.99, promo_price: 2.99, start_date: daysAgo(3), end_date: daysFromNow(5), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
 
   // --- Padaria ---
-  { id: "promo_021", productId: "prod_016", storeId: "store_001", originalPrice: 14.99, promoPrice: 9.99, startDate: daysAgo(1), endDate: daysFromNow(1), status: "active", verified: true, source: "manual" },
-  { id: "promo_022", productId: "prod_017", storeId: "store_003", originalPrice: 18.99, promoPrice: 12.99, startDate: daysAgo(2), endDate: daysFromNow(3), status: "active", verified: false, source: "importador_ia" },
-  { id: "promo_023", productId: "prod_018", storeId: "store_002", originalPrice: 3.99, promoPrice: 1.99, startDate: daysAgo(1), endDate: daysFromNow(0.7), status: "active", verified: true, source: "manual" }, // Expiring soon
+  { id: "promo_021", product_id: "prod_016", store_id: "store_001", original_price: 14.99, promo_price: 9.99, start_date: daysAgo(1), end_date: daysFromNow(1), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_022", product_id: "prod_017", store_id: "store_003", original_price: 18.99, promo_price: 12.99, start_date: daysAgo(2), end_date: daysFromNow(3), status: "active", verified: false, source: "importador_ia", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_023", product_id: "prod_018", store_id: "store_002", original_price: 3.99, promo_price: 1.99, start_date: daysAgo(1), end_date: daysFromNow(0.7), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts }, // Expiring soon
 
   // --- Higiene ---
-  { id: "promo_024", productId: "prod_019", storeId: "store_004", originalPrice: 4.49, promoPrice: 2.49, startDate: daysAgo(2), endDate: daysFromNow(5), status: "active", verified: true, source: "manual" },
-  { id: "promo_025", productId: "prod_020", storeId: "store_001", originalPrice: 19.99, promoPrice: 12.99, startDate: daysAgo(1), endDate: daysFromNow(4), status: "active", verified: true, source: "crawler" },
-  { id: "promo_026", productId: "prod_020", storeId: "store_003", originalPrice: 19.99, promoPrice: 14.49, startDate: daysAgo(3), endDate: daysFromNow(6), status: "active", verified: true, source: "manual" },
-  { id: "promo_027", productId: "prod_021", storeId: "store_002", originalPrice: 5.99, promoPrice: 3.49, startDate: daysAgo(2), endDate: daysFromNow(3), status: "active", verified: true, source: "manual" },
+  { id: "promo_024", product_id: "prod_019", store_id: "store_004", original_price: 4.49, promo_price: 2.49, start_date: daysAgo(2), end_date: daysFromNow(5), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_025", product_id: "prod_020", store_id: "store_001", original_price: 19.99, promo_price: 12.99, start_date: daysAgo(1), end_date: daysFromNow(4), status: "active", verified: true, source: "crawler", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_026", product_id: "prod_020", store_id: "store_003", original_price: 19.99, promo_price: 14.49, start_date: daysAgo(3), end_date: daysFromNow(6), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_027", product_id: "prod_021", store_id: "store_002", original_price: 5.99, promo_price: 3.49, start_date: daysAgo(2), end_date: daysFromNow(3), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
 
   // Extra cross-store deals
-  { id: "promo_028", productId: "prod_008", storeId: "store_001", originalPrice: 27.99, promoPrice: 22.99, startDate: daysAgo(1), endDate: daysFromNow(2), status: "active", verified: true, source: "manual" },
-  { id: "promo_029", productId: "prod_012", storeId: "store_004", originalPrice: 5.99, promoPrice: 3.99, startDate: daysAgo(2), endDate: daysFromNow(3), status: "active", verified: false, source: "crawler" },
+  { id: "promo_028", product_id: "prod_008", store_id: "store_001", original_price: 27.99, promo_price: 22.99, start_date: daysAgo(1), end_date: daysFromNow(2), status: "active", verified: true, source: "manual", created_by: null, created_at: ts, updated_at: ts },
+  { id: "promo_029", product_id: "prod_012", store_id: "store_004", original_price: 5.99, promo_price: 3.99, start_date: daysAgo(2), end_date: daysFromNow(3), status: "active", verified: false, source: "crawler", created_by: null, created_at: ts, updated_at: ts },
 ];

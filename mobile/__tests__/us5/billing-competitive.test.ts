@@ -5,10 +5,8 @@
  * competitive intelligence data processing, plan tier logic, and trial management.
  */
 
-import { checkoutSchema, stripeWebhookSchema, promotionFormSchema } from '../../lib/schemas';
-
-// Note: checkoutSchema and stripeWebhookSchema are in src/lib/schemas.ts
-// We import them via a re-export path or test them inline
+// Note: checkoutSchema and stripeWebhookSchema live in src/lib/schemas.ts (admin panel),
+// not in the mobile package. We test the validation logic inline below.
 
 // ─── Checkout Validation ─────────────────────────────────────────
 
