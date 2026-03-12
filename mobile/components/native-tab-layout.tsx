@@ -1,33 +1,34 @@
 import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
+import type { SFSymbols7_0 } from 'sf-symbols-typescript';
 import { useTheme } from '../theme/use-theme';
 
 export function NativeTabLayout() {
-  const { tokens } = useTheme();
+  const { tokens, tabIcons } = useTheme();
 
   return (
     <NativeTabs tintColor={tokens.primary} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="index">
-        <Icon sf="house.fill" />
+        <Icon sf={tabIcons.index as SFSymbols7_0} />
         <Label>Início</Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="search">
-        <Icon sf="magnifyingglass" />
+        <Icon sf={tabIcons.search as SFSymbols7_0} />
         <Label>Busca</Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="map">
-        <Icon sf="map.fill" />
+        <Icon sf={tabIcons.map as SFSymbols7_0} />
         <Label>Mapa</Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="list">
-        <Icon sf="cart.fill" />
+        <Icon sf={tabIcons.list as SFSymbols7_0} />
         <Label>Lista</Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="account">
-        <Icon sf="person.fill" />
+        <Icon sf={tabIcons.account as SFSymbols7_0} />
         <Label>Conta</Label>
       </NativeTabs.Trigger>
 

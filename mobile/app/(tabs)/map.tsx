@@ -345,34 +345,21 @@ export default function MapScreen() {
     <View style={styles.container}>
       {/* Location denied banner */}
       {permissionGranted === false && (
-        HAS_GLASS ? (
-          <GlassView glassEffectStyle="regular" style={[styles.locationBanner, styles.locationBannerGlass]}>
-            <View style={styles.locationBannerRow}>
-              <MapPin size={18} color={Colors.semantic.warning} />
-              <Text
-                style={[styles.locationBannerText, { color: tokens.textSecondary }]}
-              >
-                Permita acesso à localização para ver lojas perto de você
-              </Text>
-            </View>
-          </GlassView>
-        ) : (
-          <View
-            style={[
-              styles.locationBanner,
-              { backgroundColor: tokens.surface, borderColor: tokens.border },
-            ]}
-          >
-            <View style={styles.locationBannerRow}>
-              <MapPin size={18} color={Colors.semantic.warning} />
-              <Text
-                style={[styles.locationBannerText, { color: tokens.textSecondary }]}
-              >
-                Permita acesso à localização para ver lojas perto de você
-              </Text>
-            </View>
+        <View
+          style={[
+            styles.locationBanner,
+            { backgroundColor: tokens.surface, borderColor: tokens.border },
+          ]}
+        >
+          <View style={styles.locationBannerRow}>
+            <MapPin size={18} color={Colors.semantic.warning} />
+            <Text
+              style={[styles.locationBannerText, { color: tokens.textSecondary }]}
+            >
+              Permita acesso à localização para ver lojas perto de você
+            </Text>
           </View>
-        )
+        </View>
       )}
 
       {/* "Ver minha lista" floating pill button — only when user has list items */}
@@ -624,9 +611,6 @@ const styles = StyleSheet.create({
       },
       android: { elevation: 3 },
     }),
-  },
-  locationBannerGlass: {
-    overflow: 'hidden',
   },
   locationBannerRow: {
     flexDirection: 'row',
