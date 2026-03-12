@@ -144,6 +144,9 @@ export default function HomeScreen() {
           {/* "Todos" chip */}
           <Pressable
             onPress={() => setSelectedCategory(null)}
+            accessibilityLabel="Todos"
+            accessibilityRole="button"
+            accessibilityState={{ selected: !selectedCategory }}
             style={[
               styles.chip,
               !selectedCategory
@@ -173,6 +176,9 @@ export default function HomeScreen() {
               <Pressable
                 key={cat.id}
                 onPress={() => setSelectedCategory(cat.id)}
+                accessibilityLabel={cat.name}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isActive }}
                 style={[
                   styles.chip,
                   isActive
@@ -207,7 +213,11 @@ export default function HomeScreen() {
             >
               Ofertas perto de você
             </Text>
-            <Pressable onPress={() => router.push('/search')}>
+            <Pressable
+              onPress={() => router.push('/search')}
+              accessibilityLabel="Ver todas as ofertas"
+              accessibilityRole="link"
+            >
               <Text
                 style={[styles.dealsSectionLink, { color: tokens.primary }]}
               >

@@ -105,5 +105,6 @@ export function useFavorites() {
     remove: removeFavorite,
     isFavorited,
     count: favorites.length,
+    refresh: fetchFavorites,
   };
 }

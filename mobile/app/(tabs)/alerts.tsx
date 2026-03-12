@@ -1,5 +1,5 @@
-import { View, Text, FlatList, Switch, Pressable } from 'react-native';
-import { useState } from 'react';
+import { View, Text, FlatList, Switch, Pressable, RefreshControl } from 'react-native';
+import { useState, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
 import { Bell, MapPin, Crown } from 'lucide-react-native';
@@ -12,11 +12,18 @@ import type { AlertWithProduct } from '@/types';
 const FREE_ALERT_LIMIT = 3;
 
 export default function AlertsScreen() {
-  const { alerts, isLoading, disable, count } = useAlerts();
+  const { alerts, isLoading, disable, count, refresh } = useAlerts();
   const profile = useAuthStore((s) => s.profile);
   const isFree = profile?.b2c_plan === 'free';
   const [showPaywall, setShowPaywall] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const limitReached = isFree && count >= FREE_ALERT_LIMIT;
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  }, [refresh]);
 
   const renderItem = ({ item, index }: { item: AlertWithProduct; index: number }) => (
     <MotiView
@@ -50,6 +57,8 @@ export default function AlertsScreen() {
             if (!value) disable(item.id);
           }}
           trackColor={{ false: Colors.border.default, true: Colors.brand.green }}
+          accessibilityLabel={`Desativar alerta para ${item.product.name}`}
+          accessibilityRole="switch"
         />
       </View>
     </MotiView>
@@ -68,6 +77,8 @@ export default function AlertsScreen() {
         {isFree && (
           <Pressable
             onPress={() => limitReached && setShowPaywall(true)}
+            accessibilityLabel={`${count} de ${FREE_ALERT_LIMIT} alertas usados`}
+            accessibilityRole={limitReached ? 'button' : undefined}
             className="bg-brand-green/10 rounded-lg px-3 py-1.5 mt-2 flex-row items-center gap-1.5 self-start"
           >
             <Text className="text-xs font-semibold text-brand-green">
@@ -81,6 +92,8 @@ export default function AlertsScreen() {
         {limitReached && (
           <Pressable
             onPress={() => setShowPaywall(true)}
+            accessibilityLabel="Fazer upgrade para alertas ilimitados"
+            accessibilityRole="button"
             className="bg-semantic-warning/10 rounded-xl px-4 py-3 mt-2 flex-row items-center gap-2"
           >
             <Crown size={16} color={Colors.brand.orange} />
@@ -131,6 +144,10 @@ export default function AlertsScreen() {
           keyExtractor={(item) => item.id}
           contentContainerClassName="gap-3 px-4 pb-4"
           renderItem={renderItem}
+          keyboardDismissMode="on-drag"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.brand.green} />
+          }
         />
       )}
       <Paywall visible={showPaywall} onClose={() => setShowPaywall(false)} />

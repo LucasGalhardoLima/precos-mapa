@@ -105,6 +105,8 @@ function SettingsRow({
       style={[styles.row, { borderBottomColor: tokens.border }]}
       onPress={onPress}
       android_ripple={{ color: tokens.mist }}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={value ? `${label}, ${value}` : label}
     >
       <View style={styles.rowLeft}>
         <Icon size={20} color={iconColor} />
