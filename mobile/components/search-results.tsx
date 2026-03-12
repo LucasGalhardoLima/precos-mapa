@@ -25,17 +25,6 @@ function formatPrice(price: number): string {
   return 'R$ ' + price.toFixed(2).replace('.', ',');
 }
 
-/**
- * Determine if a store is currently open.
- *
- * Since we don't have opening-hours data, we use a simple heuristic:
- * stores are assumed open between 07:00 and 22:00 local time.
- */
-function isStoreOpen(): boolean {
-  const hour = new Date().getHours();
-  return hour >= 7 && hour < 22;
-}
-
 // ---------------------------------------------------------------------------
 // Row component
 // ---------------------------------------------------------------------------
@@ -47,8 +36,6 @@ function ResultRow({
   promotion: EnrichedPromotion;
   tokens: ReturnType<typeof useTheme>['tokens'];
 }) {
-  const storeOpen = isStoreOpen();
-
   const hasDiscount = promotion.original_price > promotion.promo_price;
 
   return (
@@ -79,7 +66,7 @@ function ResultRow({
           style={[styles.storeSubtitle, { color: tokens.textHint }]}
           numberOfLines={1}
         >
-          {promotion.store.name} · {promotion.distanceKm} km · {storeOpen ? 'Aberto agora' : 'Fechado'}
+          {promotion.store.name} · {promotion.distanceKm} km
         </Text>
         <View style={styles.badgeGroup}>
           {promotion.isBestPrice && (
@@ -110,12 +97,16 @@ export function SearchResults({
   const { tokens } = useTheme();
 
   const renderItem = ({ item, index }: { item: EnrichedPromotion; index: number }) => {
+    const a11yLabel = `${item.product.name}, ${formatPrice(item.promo_price)}, ${item.store.name}, ${item.distanceKm} km`;
+
     if (item.isLocked) {
       return (
         <View style={styles.lockedWrapper}>
           <ResultRow promotion={item} tokens={tokens} />
           <Pressable
             testID={`result-card-${index}`}
+            accessibilityLabel={`${a11yLabel}, bloqueado`}
+            accessibilityRole="button"
             onPress={onPressLocked}
             style={styles.lockedOverlay}
           >
@@ -129,7 +120,12 @@ export function SearchResults({
     }
 
     return (
-      <Pressable testID={`result-card-${index}`} onPress={() => onPressItem(item)}>
+      <Pressable
+        testID={`result-card-${index}`}
+        accessibilityLabel={a11yLabel}
+        accessibilityRole="button"
+        onPress={() => onPressItem(item)}
+      >
         <ResultRow promotion={item} tokens={tokens} />
       </Pressable>
     );
@@ -142,6 +138,7 @@ export function SearchResults({
       renderItem={renderItem}
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={false}
+      keyboardDismissMode="on-drag"
     />
   );
 }

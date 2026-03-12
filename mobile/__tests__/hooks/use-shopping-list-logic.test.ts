@@ -25,6 +25,7 @@ function optimizeList(
 
   const storeMap = new Map<string, OptimizedStore>();
   let totalCost = 0;
+  let averageCost = 0;
 
   for (const item of listItems) {
     const productPromos = promotions.filter((p) => p.product_id === item.product_id);
@@ -33,6 +34,10 @@ function optimizeList(
     const cheapest = productPromos.reduce((a, b) =>
       a.promo_price < b.promo_price ? a : b,
     );
+
+    const avgPrice =
+      productPromos.reduce((sum, p) => sum + p.promo_price, 0) / productPromos.length;
+    averageCost += avgPrice * item.quantity;
 
     const storeId = cheapest.store.id;
     const storeName = cheapest.store.name;
@@ -56,7 +61,7 @@ function optimizeList(
     storeMap.set(storeId, entry);
   }
 
-  const estimatedSavings = Math.max(0, totalCost * 0.15);
+  const estimatedSavings = Math.max(0, averageCost - totalCost);
 
   const stores = [...storeMap.values()];
   const waypoints = stores
@@ -146,11 +151,24 @@ describe('Shopping List Optimization', () => {
     expect(result.stores[0].subtotal).toBe(12.0);
   });
 
-  it('calculates estimated savings (15% of total)', () => {
+  it('calculates real savings vs average price', () => {
+    // Product at two stores: R$5 (cheapest) and R$9 (expensive)
+    // Average = R$7, cheapest = R$5, savings = R$2
     const items = [{ product_id: 'p1', quantity: 1 }];
-    const promos = [makePromo('p1', 's1', 100.0)];
+    const promos = [
+      makePromo('p1', 's1', 5.0, 'Mercado A'),
+      makePromo('p1', 's2', 9.0, 'Mercado B'),
+    ];
     const result = optimizeList(items, promos, -21.3, -48.6)!;
-    expect(result.estimatedSavings).toBe(15.0);
+    expect(result.totalCost).toBe(5.0);
+    expect(result.estimatedSavings).toBe(2.0);
+  });
+
+  it('returns zero savings when only one store has the product', () => {
+    const items = [{ product_id: 'p1', quantity: 1 }];
+    const promos = [makePromo('p1', 's1', 10.0)];
+    const result = optimizeList(items, promos, -21.3, -48.6)!;
+    expect(result.estimatedSavings).toBe(0);
   });
 
   it('generates Google Maps URL with waypoints', () => {
