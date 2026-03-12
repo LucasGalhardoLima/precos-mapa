@@ -15,9 +15,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft,
   Bell,
-  Plus,
   MapPin,
   ShoppingCart,
+  Package,
 } from 'lucide-react-native';
 
 import { useTheme } from '@/theme/use-theme';
@@ -286,11 +286,7 @@ export default function ProductDetailScreen() {
           <View
             style={[styles.imagePlaceholder, { backgroundColor: tokens.mist }]}
           >
-            <Text
-              style={[styles.imagePlaceholderText, { color: tokens.textHint }]}
-            >
-              Imagem ilustrativa
-            </Text>
+            <Package size={48} color={tokens.textHint} strokeWidth={1.2} />
           </View>
 
           {/* Product metadata */}
@@ -743,11 +739,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  imagePlaceholderText: {
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
-
   // Metadata
   metadataSection: {
     paddingHorizontal: 16,

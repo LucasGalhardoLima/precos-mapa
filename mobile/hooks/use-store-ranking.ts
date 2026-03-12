@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@precomapa/shared';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,6 +50,7 @@ const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 export function useStoreRanking(params: UseStoreRankingParams) {
   const { userLatitude, userLongitude, radiusKm: _radiusKm = 15 } = params;
+  const profile = useAuthStore((s) => s.profile);
   const [ranking, setRanking] = useState<StoreRanking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -162,17 +164,19 @@ export function useStoreRanking(params: UseStoreRankingParams) {
         rank: (index + 1) as 1 | 2 | 3,
       }));
 
+      const cityName = profile?.city ?? 'sua região';
       const result: StoreRanking = {
         stores,
-        city: 'sua região',
-        basketLabel: 'lista base',
+        city: cityName,
+        basketLabel: 'cesta básica',
       };
 
       // Update cache
       cacheRef.current = { data: result, timestamp: Date.now() };
 
       setRanking(result);
-    } catch {
+    } catch (err) {
+      console.warn('[useStoreRanking] Failed to fetch ranking:', err);
       setRanking(null);
     } finally {
       setIsLoading(false);

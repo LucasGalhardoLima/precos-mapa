@@ -72,7 +72,8 @@ export function useAccount() {
       setSession(null);
 
       return true;
-    } catch {
+    } catch (err) {
+      console.warn('[useAccount] Account deletion failed:', err);
       return false;
     } finally {
       setIsDeleting(false);

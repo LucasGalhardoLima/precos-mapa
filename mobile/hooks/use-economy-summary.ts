@@ -208,7 +208,8 @@ export function useEconomySummary(params: UseEconomySummaryParams) {
         ? await calculateListMode()
         : await calculateDealsMode();
       setSummary(result);
-    } catch {
+    } catch (err) {
+      console.warn('[useEconomySummary] Failed to calculate savings:', err);
       setSummary(EMPTY_SUMMARY);
     } finally {
       setIsLoading(false);

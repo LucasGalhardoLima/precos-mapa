@@ -44,7 +44,8 @@ export function useSearch(query: string) {
             setSuggestions(data.map((p) => p.name));
           }
         }
-      } catch {
+      } catch (err) {
+        console.warn('[useSearch] Search failed:', err);
         setSuggestions([]);
       } finally {
         setIsSearching(false);
