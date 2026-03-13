@@ -1,17 +1,26 @@
-import { View, Text, FlatList, Switch, Pressable, RefreshControl } from 'react-native';
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  Switch,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
 import { Bell, MapPin, Crown } from 'lucide-react-native';
 import { useAlerts } from '@/hooks/use-alerts';
 import { useAuthStore } from '@precomapa/shared';
+import { useTheme } from '@/theme/use-theme';
 import { Paywall } from '@/components/paywall';
-import { Colors } from '@/constants/colors';
 import type { AlertWithProduct } from '@/types';
 
 const FREE_ALERT_LIMIT = 3;
 
 export default function AlertsScreen() {
+  const { tokens } = useTheme();
   const { alerts, isLoading, disable, count, refresh } = useAlerts();
   const profile = useAuthStore((s) => s.profile);
   const isFree = profile?.b2c_plan === 'free';
@@ -31,22 +40,22 @@ export default function AlertsScreen() {
       animate={{ opacity: 1, translateY: 0 }}
       transition={{ type: 'timing', duration: 300, delay: index * 50 }}
     >
-      <View className="bg-white rounded-2xl border border-border p-4 flex-row items-center gap-3">
-        <View className="w-10 h-10 bg-brand-green/10 rounded-full items-center justify-center">
-          <Bell size={20} color={Colors.brand.green} />
+      <View style={[styles.card, { backgroundColor: tokens.surface, borderColor: tokens.border }]}>
+        <View style={[styles.iconCircle, { backgroundColor: tokens.primaryMuted }]}>
+          <Bell size={20} color={tokens.primary} />
         </View>
-        <View className="flex-1">
-          <Text className="text-sm font-semibold text-text-primary">
+        <View style={styles.cardContent}>
+          <Text style={[styles.productName, { color: tokens.textPrimary }]}>
             {item.product.name}
           </Text>
           {item.target_price && (
-            <Text className="text-xs text-text-secondary">
+            <Text style={[styles.targetPrice, { color: tokens.textSecondary }]}>
               Alvo: R$ {item.target_price.toFixed(2)}
             </Text>
           )}
-          <View className="flex-row items-center gap-1 mt-0.5">
-            <MapPin size={10} color={Colors.text.tertiary} />
-            <Text className="text-xs text-text-tertiary">
+          <View style={styles.radiusRow}>
+            <MapPin size={10} color={tokens.textHint} />
+            <Text style={[styles.radiusText, { color: tokens.textHint }]}>
               Raio: {item.radius_km} km
             </Text>
           </View>
@@ -56,7 +65,7 @@ export default function AlertsScreen() {
           onValueChange={(value) => {
             if (!value) disable(item.id);
           }}
-          trackColor={{ false: Colors.border.default, true: Colors.brand.green }}
+          trackColor={{ false: tokens.border, true: tokens.primary }}
           accessibilityLabel={`Desativar alerta para ${item.product.name}`}
           accessibilityRole="switch"
         />
@@ -65,28 +74,25 @@ export default function AlertsScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-secondary" edges={['top']}>
-      <View className="px-4 pt-6 pb-3">
-        <Text className="text-2xl font-bold text-text-primary">
+    <SafeAreaView style={[styles.safe, { backgroundColor: tokens.bg }]} edges={['top']}>
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: tokens.textPrimary }]}>
           Alertas de Ofertas
         </Text>
-        <Text className="text-sm text-text-secondary mt-1">
-          Receba notificações quando seus produtos favoritos entrarem em
-          promoção
+        <Text style={[styles.subtitle, { color: tokens.textSecondary }]}>
+          Receba notificações quando seus produtos favoritos entrarem em promoção
         </Text>
         {isFree && (
           <Pressable
             onPress={() => limitReached && setShowPaywall(true)}
             accessibilityLabel={`${count} de ${FREE_ALERT_LIMIT} alertas usados`}
             accessibilityRole={limitReached ? 'button' : undefined}
-            className="bg-brand-green/10 rounded-lg px-3 py-1.5 mt-2 flex-row items-center gap-1.5 self-start"
+            style={[styles.limitBadge, { backgroundColor: tokens.primaryMuted }]}
           >
-            <Text className="text-xs font-semibold text-brand-green">
+            <Text style={[styles.limitText, { color: tokens.primary }]}>
               {count}/{FREE_ALERT_LIMIT} alertas
             </Text>
-            {limitReached && (
-              <Crown size={12} color={Colors.brand.green} />
-            )}
+            {limitReached && <Crown size={12} color={tokens.primary} />}
           </Pressable>
         )}
         {limitReached && (
@@ -94,12 +100,12 @@ export default function AlertsScreen() {
             onPress={() => setShowPaywall(true)}
             accessibilityLabel="Fazer upgrade para alertas ilimitados"
             accessibilityRole="button"
-            className="bg-semantic-warning/10 rounded-xl px-4 py-3 mt-2 flex-row items-center gap-2"
+            style={[styles.upgradeBanner, { backgroundColor: tokens.accentSoft }]}
           >
-            <Crown size={16} color={Colors.brand.orange} />
-            <Text className="text-xs text-text-secondary flex-1">
+            <Crown size={16} color={tokens.accent} />
+            <Text style={[styles.upgradeText, { color: tokens.textSecondary }]}>
               Limite de alertas atingido.{' '}
-              <Text className="text-brand-green font-semibold">
+              <Text style={{ color: tokens.primary, fontWeight: '600' }}>
                 Faça upgrade
               </Text>{' '}
               para alertas ilimitados.
@@ -109,44 +115,43 @@ export default function AlertsScreen() {
       </View>
 
       {isLoading ? (
-        <View className="gap-3 px-4 mt-2">
+        <View style={styles.skeletonList}>
           {[0, 1, 2].map((i) => (
             <MotiView
               key={i}
               from={{ opacity: 0.4 }}
               animate={{ opacity: 1 }}
               transition={{ type: 'timing', duration: 800, loop: true }}
-              className="bg-white rounded-2xl border border-border p-4 flex-row items-center gap-3"
+              style={[styles.card, { backgroundColor: tokens.surface, borderColor: tokens.border }]}
             >
-              <View className="w-10 h-10 bg-border rounded-full" />
-              <View className="flex-1 gap-1.5">
-                <View className="bg-border rounded-lg h-4 w-2/3" />
-                <View className="bg-border rounded-lg h-3 w-1/3" />
+              <View style={[styles.skeletonCircle, { backgroundColor: tokens.border }]} />
+              <View style={styles.skeletonLines}>
+                <View style={[styles.skeletonLine, styles.skeletonLineLong, { backgroundColor: tokens.border }]} />
+                <View style={[styles.skeletonLine, styles.skeletonLineShort, { backgroundColor: tokens.border }]} />
               </View>
-              <View className="bg-border rounded-full h-8 w-12" />
+              <View style={[styles.skeletonSwitch, { backgroundColor: tokens.border }]} />
             </MotiView>
           ))}
         </View>
-      ) : !isLoading && alerts.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <Bell size={48} color={Colors.text.tertiary} />
-          <Text className="text-lg font-semibold text-text-primary mt-4">
+      ) : alerts.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Bell size={48} color={tokens.textHint} />
+          <Text style={[styles.emptyTitle, { color: tokens.textPrimary }]}>
             Nenhum alerta ativo
           </Text>
-          <Text className="text-sm text-text-secondary text-center mt-2">
-            Receba notificações quando seus produtos favoritos entrarem em
-            promoção perto de você
+          <Text style={[styles.emptySubtitle, { color: tokens.textSecondary }]}>
+            Receba notificações quando seus produtos favoritos entrarem em promoção perto de você
           </Text>
         </View>
       ) : (
         <FlatList
           data={alerts}
           keyExtractor={(item) => item.id}
-          contentContainerClassName="gap-3 px-4 pb-4"
+          contentContainerStyle={styles.listContent}
           renderItem={renderItem}
           keyboardDismissMode="on-drag"
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.brand.green} />
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={tokens.primary} />
           }
         />
       )}
@@ -154,3 +159,67 @@ export default function AlertsScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
+  header: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 12 },
+  title: { fontSize: 24, fontWeight: '700' },
+  subtitle: { fontSize: 14, marginTop: 4 },
+  limitBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: 8,
+  },
+  limitText: { fontSize: 12, fontWeight: '600' },
+  upgradeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  upgradeText: { fontSize: 12, flex: 1 },
+  listContent: { gap: 12, paddingHorizontal: 16, paddingBottom: 16 },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardContent: { flex: 1 },
+  productName: { fontSize: 14, fontWeight: '600' },
+  targetPrice: { fontSize: 12, marginTop: 2 },
+  radiusRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  radiusText: { fontSize: 12 },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyTitle: { fontSize: 18, fontWeight: '600', marginTop: 16 },
+  emptySubtitle: { fontSize: 14, textAlign: 'center', marginTop: 8 },
+  skeletonList: { gap: 12, paddingHorizontal: 16, marginTop: 8 },
+  skeletonCircle: { width: 40, height: 40, borderRadius: 20 },
+  skeletonLines: { flex: 1, gap: 6 },
+  skeletonLine: { borderRadius: 8, height: 16 },
+  skeletonLineLong: { width: '66%' },
+  skeletonLineShort: { width: '33%', height: 12 },
+  skeletonSwitch: { width: 48, height: 32, borderRadius: 16 },
+});

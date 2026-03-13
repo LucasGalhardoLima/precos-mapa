@@ -31,10 +31,9 @@ export function NativeTabLayout() {
         <Label>Conta</Label>
       </NativeTabs.Trigger>
 
-      {/* Hidden legacy routes */}
+      {/* Accessible via account settings, hidden from tab bar */}
       <NativeTabs.Trigger name="favorites" hidden />
       <NativeTabs.Trigger name="alerts" hidden />
-      <NativeTabs.Trigger name="profile" hidden />
     </NativeTabs>
   );
 }
