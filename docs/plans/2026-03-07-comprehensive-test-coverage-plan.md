@@ -1491,7 +1491,7 @@ Run: `which maestro || curl -Ls "https://get.maestro.mobile.dev" | bash`
 
 ```yaml
 # mobile/__tests__/e2e/search-and-find.yaml
-appId: com.precomapa.mobile
+appId: com.poup.app
 ---
 - launchApp
 - tapOn:
@@ -1546,7 +1546,7 @@ git commit -m "test: E2E flow — search for product, verify results, navigate t
 
 ```yaml
 # mobile/__tests__/e2e/product-to-list.yaml
-appId: com.precomapa.mobile
+appId: com.poup.app
 ---
 - launchApp
 # Navigate to search
@@ -1593,7 +1593,7 @@ git commit -m "test: E2E flow — add product to shopping list from detail scree
 
 ```yaml
 # mobile/__tests__/e2e/map-exploration.yaml
-appId: com.precomapa.mobile
+appId: com.poup.app
 ---
 - launchApp
 # Navigate to map tab
@@ -1631,7 +1631,7 @@ git commit -m "test: E2E flow — map tab, marker interaction"
 
 ```yaml
 # mobile/__tests__/e2e/consumer-onboarding.yaml
-appId: com.precomapa.mobile
+appId: com.poup.app
 ---
 - launchApp:
     clearState: true

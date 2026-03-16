@@ -4,7 +4,7 @@ export const testimonials: Testimonial[] = [
   {
     id: "test_001",
     user_name: "Maria Silva",
-    text: "Economizei muito no mes passado so seguindo as ofertas do PrecoMapa! Recomendo para todas as maes.",
+    text: "Economizei muito no mes passado so seguindo as ofertas do Poup! Recomendo para todas as maes.",
     savings_amount: 120,
     sort_order: 0,
   },

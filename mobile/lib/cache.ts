@@ -5,4 +5,4 @@ export {
   isCacheStale,
   formatLastUpdated,
   withCache,
-} from '@precomapa/shared/lib/cache';
+} from '@poup/shared/lib/cache';

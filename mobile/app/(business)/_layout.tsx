@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Tabs, router } from 'expo-router';
 import { LayoutDashboard, Tag, Upload, Store } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 
 export default function BusinessTabLayout() {
   const session = useAuthStore((s) => s.session);

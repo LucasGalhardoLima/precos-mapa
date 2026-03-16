@@ -1,6 +1,6 @@
 # E2E: Business user importer tab, verify upload area
 # Precondition: User is logged in with business role
-appId: com.precomapa.consumer
+appId: com.poup.app
 ---
 - launchApp
 

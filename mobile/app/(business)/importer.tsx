@@ -25,7 +25,7 @@ import {
   Plus,
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 import { StyledButton } from '@/components/ui/button';
 import { Colors } from '@/constants/colors';
 import { useImagePicker } from '@/hooks/use-image-picker';

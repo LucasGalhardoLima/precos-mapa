@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 
 const FREE_LIMITS = {
   favorites: 10,

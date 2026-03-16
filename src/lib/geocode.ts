@@ -18,7 +18,7 @@ export async function geocodeAddress(
 
   const response = await fetch(url, {
     headers: {
-      "User-Agent": "PrecoMapa/1.0 (admin-panel)",
+      "User-Agent": "Poup/1.0 (admin-panel)",
     },
   });
 

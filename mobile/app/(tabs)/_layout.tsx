@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { router } from 'expo-router';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 import { ThemeProvider } from '../../theme/provider';
 import { NativeTabLayout } from '../../components/native-tab-layout';
 

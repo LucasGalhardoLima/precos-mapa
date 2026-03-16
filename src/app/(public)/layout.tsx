@@ -13,7 +13,7 @@ export default function PublicLayout({
               <BarChart3 className="h-4.5 w-4.5" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-[var(--color-ink)] leading-tight">PrecoMapa</p>
+              <p className="text-sm font-semibold text-[var(--color-ink)] leading-tight">Poup</p>
               <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--color-muted)]">
                 Inteligencia Regional de Precos
               </p>
@@ -43,7 +43,7 @@ export default function PublicLayout({
         <div className="mx-auto max-w-5xl px-5 py-8">
           <div className="flex flex-col items-center gap-3 text-center">
             <p className="text-sm font-medium text-[var(--color-ink)]">
-              PrecoMapa
+              Poup
             </p>
             <p className="max-w-md text-xs text-[var(--color-muted)]">
               Plataforma independente de inteligencia de precos do varejo.

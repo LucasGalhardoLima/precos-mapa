@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poup — Logos v8 — Novas Composições</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#f0fdf9;color:#1a1a2e}
+  .hero{text-align:center;padding:56px 24px 40px;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff}
+  .hero h1{font-family:'Poppins';font-size:36px;font-weight:800}
+  .hero p{font-size:15px;opacity:.85;margin-top:8px;max-width:580px;margin-inline:auto;line-height:1.5}
+  section{max-width:1100px;margin:0 auto;padding:56px 24px}
+  section h2{font-family:'Poppins';font-size:24px;font-weight:700;margin-bottom:6px}
+  .sub{color:#64748b;font-size:14px;margin-bottom:36px;line-height:1.5}
+
+  .grid{display:grid;grid-template-columns:1fr;gap:28px}
+  .card{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);border:2px solid transparent;transition:.25s}
+  .card:hover{border-color:#0d9488;box-shadow:0 8px 28px rgba(13,148,136,.12);transform:translateY(-2px)}
+  .card-inner{display:flex;align-items:stretch;min-height:260px}
+  .card-visual{flex:0 0 320px;display:flex;align-items:center;justify-content:center;gap:16px;padding:24px}
+  .card-content{flex:1;padding:28px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid #f1f5f9}
+  .card-content .status{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;width:fit-content}
+  .status.new{background:#fef3c7;color:#92400e}
+  .status.top{background:#d1fae5;color:#065f46}
+  .status.mix{background:#e0e7ff;color:#3730a3}
+  .card-content h3{font-size:19px;font-weight:700;margin-bottom:8px;line-height:1.3}
+  .card-content p{color:#64748b;font-size:13px;line-height:1.6}
+  .card-content .test{margin-top:12px;background:#f0fdf4;border-radius:8px;padding:10px 14px;font-size:12px;color:#475569;line-height:1.5}
+  .card-content .test strong{color:#0d9488}
+  .tags{display:flex;gap:5px;margin-top:12px;flex-wrap:wrap}
+  .tag{background:#f0fdfa;color:#0d9488;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px}
+
+  .mini-label{font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;text-align:center}
+
+  /* Compare */
+  .compare-wrap{background:#fff;border-radius:20px;padding:48px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+  .compare-row{display:flex;gap:28px;justify-content:center;flex-wrap:wrap}
+  .compare-item{text-align:center;flex:0 0 100px}
+  .compare-item .cl{font-size:10px;color:#1a1a2e;font-weight:700;margin-top:8px}
+  .compare-item .cl2{font-size:9px;color:#94a3b8;margin-top:2px;line-height:1.3}
+
+  /* Homescreen */
+  .ctx{background:#fff;border-radius:20px;padding:40px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-top:32px}
+  .ctx h3{font-size:18px;font-weight:700;margin-bottom:24px;text-align:center}
+  .hs-wrap{display:flex;gap:32px;justify-content:center;flex-wrap:wrap}
+  .hs-mock{border-radius:28px;padding:40px 20px 24px;width:300px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;justify-items:center}
+  .hs-light{background:linear-gradient(160deg,#e8f5f1,#d1e8e0)}
+  .hs-dark{background:linear-gradient(160deg,#1e293b,#0f172a)}
+  .hs-i{text-align:center}
+  .hs-ic{width:54px;height:54px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .hs-lb{font-size:8px;margin-top:3px;font-weight:500}
+  .hs-light .hs-lb{color:#475569}
+  .hs-dark .hs-lb{color:#94a3b8}
+
+  .rationale{background:linear-gradient(135deg,#f0fdfa,#ecfdf5);border-radius:20px;padding:40px;margin-top:40px}
+  .rationale h3{font-size:20px;font-weight:700;margin-bottom:12px;color:#0d9488}
+  .rationale p{color:#475569;line-height:1.7;font-size:15px;margin-bottom:12px}
+
+  @media(max-width:768px){
+    .hero h1{font-size:28px}section{padding:40px 16px}
+    .card-inner{flex-direction:column}
+    .card-visual{flex:none;padding:24px}
+    .card-content{border-left:none;border-top:1px solid #f1f5f9}
+    .hs-wrap{flex-direction:column;align-items:center}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Poup — v8</h1>
+  <p>Novas composições e explorações. Mesmo estilo: line art branco, fundo gradiente verde/teal.</p>
+</div>
+
+<section>
+  <h2>8 Variações</h2>
+  <p class="sub">Explorando novas formas de combinar carrinho + elementos de economia, incluindo variações inspiradas nas referências adicionais.</p>
+
+  <div class="grid">
+
+    <!-- ====== 1 — Carrinho + Etiqueta de Preço ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:#e6f7f4">
+          <div style="display:flex;gap:16px;align-items:center">
+            <!-- Grande -->
+            <svg width="110" height="110" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#0f766e"/>
+                  <stop offset="50%" style="stop-color:#0d9488"/>
+                  <stop offset="100%" style="stop-color:#14b8a6"/>
+                </linearGradient>
+              </defs>
+              <rect width="120" height="120" rx="27" fill="url(#g1)"/>
+              <g transform="translate(55,62)" stroke="#fff" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Carrinho -->
+                <polyline points="-30,-10 -23,-10 -12,18 26,18"/>
+                <polyline points="-12,18 -12,-2 30,-2 26,18"/>
+                <circle cx="-4" cy="26" r="4.5" fill="#fff"/>
+                <circle cx="20" cy="26" r="4.5" fill="#fff"/>
+                <!-- Etiqueta de preço pendurada -->
+                <g transform="translate(28,-22) rotate(15)">
+                  <rect x="-11" y="-15" width="22" height="28" rx="3" stroke="#fff" stroke-width="3.5" fill="none"/>
+                  <circle cx="0" cy="-9" r="3" stroke="#fff" stroke-width="2.5" fill="none"/>
+                  <text x="0" y="7" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="14" fill="#fff" stroke="none">%</text>
+                </g>
+                <!-- Linha conectando etiqueta ao carrinho -->
+                <line x1="22" y1="-4" x2="20" y2="-10" stroke-width="2.5" stroke-dasharray="3,3"/>
+              </g>
+            </svg>
+            <!-- Pequeno -->
+            <svg width="56" height="56" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="g1s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="50%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#14b8a6"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#g1s)"/>
+              <g transform="translate(55,62)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="-30,-10 -23,-10 -12,18 26,18"/>
+                <polyline points="-12,18 -12,-2 30,-2 26,18"/>
+                <circle cx="-4" cy="26" r="5" fill="#fff"/>
+                <circle cx="20" cy="26" r="5" fill="#fff"/>
+                <g transform="translate(28,-22) rotate(15)">
+                  <rect x="-12" y="-16" width="24" height="30" rx="3" stroke-width="4" fill="none"/>
+                  <circle cx="0" cy="-9" r="3.5" stroke-width="3" fill="none"/>
+                  <text x="0" y="8" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="15" fill="#fff" stroke="none">%</text>
+                </g>
+              </g>
+            </svg>
+          </div>
+          <div class="mini-label">Etiqueta</div>
+        </div>
+        <div class="card-content">
+          <span class="status new">Novo</span>
+          <h3>Carrinho + Etiqueta de Preço</h3>
+          <p>Etiqueta de preço pendurada no carrinho com % dentro. Referência visual direta a promoções de supermercado — a etiqueta é um símbolo universal de oferta. A rotação leve dá dinamismo.</p>
+          <div class="test">
+            <strong>Leitura:</strong> Carrinho + etiqueta de desconto = app de ofertas de supermercado
+          </div>
+          <div class="tags">
+            <span class="tag">Etiqueta</span>
+            <span class="tag">Promoção</span>
+            <span class="tag">Supermercado</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 2 — Carrinho + Seta Curva de Economia ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:#e6f7f4">
+          <div style="display:flex;gap:16px;align-items:center">
+            <svg width="110" height="110" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#115e59"/>
+                  <stop offset="100%" style="stop-color:#2dd4bf"/>
+                </linearGradient>
+              </defs>
+              <rect width="120" height="120" rx="27" fill="url(#g2)"/>
+              <g transform="translate(58,60)" stroke="#fff" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Carrinho -->
+                <polyline points="-32,-10 -25,-10 -14,18 24,18"/>
+                <polyline points="-14,18 -14,-2 28,-2 24,18"/>
+                <circle cx="-6" cy="26" r="4.5" fill="#fff"/>
+                <circle cx="18" cy="26" r="4.5" fill="#fff"/>
+                <!-- Seta curva descendente (preço caindo) -->
+                <path d="M-8,-20 C8,-22 18,-18 22,-6" stroke-width="4" fill="none"/>
+                <polyline points="18,-10 22,-6 26,-10" stroke-width="3.5"/>
+                <!-- R$ ghost -->
+                <text x="-10" y="-14" font-family="Poppins" font-weight="700" font-size="14" fill="rgba(255,255,255,0.5)" stroke="none">R$</text>
+              </g>
+            </svg>
+            <svg width="56" height="56" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="g2s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#115e59"/><stop offset="100%" style="stop-color:#2dd4bf"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#g2s)"/>
+              <g transform="translate(58,60)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="-32,-10 -25,-10 -14,18 24,18"/>
+                <polyline points="-14,18 -14,-2 28,-2 24,18"/>
+                <circle cx="-6" cy="26" r="5" fill="#fff"/>
+                <circle cx="18" cy="26" r="5" fill="#fff"/>
+                <path d="M-8,-20 C8,-22 18,-18 22,-6" stroke-width="5" fill="none"/>
+                <polyline points="18,-10 22,-6 26,-10" stroke-width="4.5"/>
+              </g>
+            </svg>
+          </div>
+          <div class="mini-label">Seta curva</div>
+        </div>
+        <div class="card-content">
+          <span class="status new">Novo</span>
+          <h3>Carrinho + Seta Curva R$</h3>
+          <p>Seta curva descendente sobre o carrinho representando queda de preço, com "R$" em opacidade baixa como elemento complementar. A curva dá movimento e energia ao ícone.</p>
+          <div class="test">
+            <strong>Leitura:</strong> Carrinho + preço caindo = app que encontra preços mais baixos
+          </div>
+          <div class="tags">
+            <span class="tag">Dinâmico</span>
+            <span class="tag">Preço</span>
+            <span class="tag">Movimento</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 3 — Carrinho + Cifrão Integrado ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:#e6f7f4">
+          <div style="display:flex;gap:16px;align-items:center">
+            <svg width="110" height="110" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" style="stop-color:#0f766e"/>
+                  <stop offset="100%" style="stop-color:#14b8a6"/>
+                </linearGradient>
+              </defs>
+              <rect width="120" height="120" rx="27" fill="url(#g3)"/>
+              <g transform="translate(58,60)" stroke="#fff" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Carrinho -->
+                <polyline points="-32,-10 -25,-10 -14,18 24,18"/>
+                <polyline points="-14,18 -14,-2 28,-2 24,18"/>
+                <circle cx="-6" cy="26" r="4.5" fill="#fff"/>
+                <circle cx="18" cy="26" r="4.5" fill="#fff"/>
+                <!-- Moeda/cifrão dentro do carrinho -->
+                <circle cx="6" cy="8" r="14" stroke-width="3.5"/>
+                <text x="6" y="13" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="18" fill="#fff" stroke="none">$</text>
+                <!-- Seta pra baixo saindo da moeda -->
+                <line x1="6" y1="24" x2="6" y2="18" stroke-width="0"/>
+              </g>
+            </svg>
+            <svg width="56" height="56" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="g3s" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="100%" style="stop-color:#14b8a6"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#g3s)"/>
+              <g transform="translate(58,60)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="-32,-10 -25,-10 -14,18 24,18"/>
+                <polyline points="-14,18 -14,-2 28,-2 24,18"/>
+                <circle cx="-6" cy="26" r="5" fill="#fff"/>
+                <circle cx="18" cy="26" r="5" fill="#fff"/>
+                <circle cx="6" cy="8" r="14" stroke-width="4.5"/>
+                <text x="6" y="14" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="20" fill="#fff" stroke="none">$</text>
+              </g>
+            </svg>
+          </div>
+          <div class="mini-label">Moeda</div>
+        </div>
+        <div class="card-content">
+          <span class="status new">Novo</span>
+          <h3>Carrinho + Moeda</h3>
+          <p>Moeda com cifrão dentro do carrinho — economia clara e direta. O círculo da moeda dentro do espaço do carrinho cria uma composição limpa e equilibrada. Comunica "economizar nas compras".</p>
+          <div class="test">
+            <strong>Leitura:</strong> Carrinho + moeda = app para economizar no supermercado
+          </div>
+          <div class="tags">
+            <span class="tag">Economia</span>
+            <span class="tag">Moeda</span>
+            <span class="tag">Limpo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 4 — Sacola de Compras + % ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:#e6f7f4">
+          <div style="display:flex;gap:16px;align-items:center">
+            <svg width="110" height="110" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="g4" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#134e4a"/>
+                  <stop offset="50%" style="stop-color:#0d9488"/>
+                  <stop offset="100%" style="stop-color:#5eead4"/>
+                </linearGradient>
+              </defs>
+              <rect width="120" height="120" rx="27" fill="url(#g4)"/>
+              <g transform="translate(60,60)" stroke="#fff" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Sacola de compras -->
+                <path d="M-24,-8 L-20,-32 L20,-32 L24,-8 L24,26 C24,28 22,30 20,30 L-20,30 C-22,30 -24,28 -24,26 Z" stroke-width="4"/>
+                <!-- Alça -->
+                <path d="M-10,-32 C-10,-44 10,-44 10,-32" stroke-width="3.5" fill="none"/>
+                <!-- % grande no centro da sacola -->
+                <text x="0" y="16" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="32" fill="#fff" stroke="none">%</text>
+              </g>
+            </svg>
+            <svg width="56" height="56" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="g4s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#134e4a"/><stop offset="50%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#5eead4"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#g4s)"/>
+              <g transform="translate(60,60)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M-24,-8 L-20,-32 L20,-32 L24,-8 L24,26 C24,28 22,30 20,30 L-20,30 C-22,30 -24,28 -24,26 Z" stroke-width="5"/>
+                <path d="M-10,-32 C-10,-44 10,-44 10,-32" stroke-width="4.5" fill="none"/>
+                <text x="0" y="17" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="34" fill="#fff" stroke="none">%</text>
+              </g>
+            </svg>
+          </div>
+          <div class="mini-label">Sacola</div>
+        </div>
+        <div class="card-content">
+          <span class="status mix">Alternativa</span>
+          <h3>Sacola + % Grande</h3>
+          <p>Alternativa ao carrinho: sacola de compras com % centralizado. A sacola é outro símbolo forte de compras. Silhueta mais compacta que o carrinho, o que pode funcionar melhor em tamanhos pequenos. O % enorme deixa o propósito claro.</p>
+          <div class="test">
+            <strong>Leitura:</strong> Sacola de compras + desconto = app de ofertas de compras
+          </div>
+          <div class="tags">
+            <span class="tag">Sacola</span>
+            <span class="tag">Compacto</span>
+            <span class="tag">Versátil</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 5 — Carrinho + Seta ↓ Bold (referência direta estilo app) ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:#e6f7f4">
+          <div style="display:flex;gap:16px;align-items:center">
+            <svg width="110" height="110" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="g5" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#0f766e"/>
+                  <stop offset="100%" style="stop-color:#14b8a6"/>
+                </linearGradient>
+              </defs>
+              <rect width="120" height="120" rx="27" fill="url(#g5)"/>
+              <g transform="translate(56,58)" stroke="#fff" fill="none" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Carrinho -->
+                <polyline points="-32,-12 -24,-12 -12,20 28,20"/>
+                <polyline points="-12,20 -12,-4 32,-4 28,20"/>
+                <circle cx="-4" cy="28" r="4.5" fill="#fff"/>
+                <circle cx="22" cy="28" r="4.5" fill="#fff"/>
+                <!-- Seta bold pra baixo no centro do carrinho -->
+                <line x1="10" y1="-2" x2="10" y2="16" stroke-width="5"/>
+                <polyline points="2,10 10,18 18,10" stroke-width="4.5"/>
+                <!-- % acima do carrinho, menor -->
+                <text x="10" y="-14" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="18" fill="#fff" stroke="none">%</text>
+              </g>
+            </svg>
+            <svg width="56" height="56" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="g5s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="100%" style="stop-color:#14b8a6"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#g5s)"/>
+              <g transform="translate(56,58)" stroke="#fff" fill="none" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="-32,-12 -24,-12 -12,20 28,20"/>
+                <polyline points="-12,20 -12,-4 32,-4 28,20"/>
+                <circle cx="-4" cy="28" r="5" fill="#fff"/>
+                <circle cx="22" cy="28" r="5" fill="#fff"/>
+                <line x1="10" y1="-2" x2="10" y2="16" stroke-width="6"/>
+                <polyline points="2,10 10,18 18,10" stroke-width="5.5"/>
+                <text x="10" y="-14" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="18" fill="#fff" stroke="none">%</text>
+              </g>
+            </svg>
+          </div>
+          <div class="mini-label">↓ Bold</div>
+        </div>
+        <div class="card-content">
+          <span class="status top">Destaque</span>
+          <h3>Carrinho + ↓ Bold + %</h3>
+          <p>Seta para baixo grossa e centralizada dentro do carrinho, com % flutuando acima. A separação dos elementos (% em cima, seta dentro) dá mais legibilidade. A seta bold é visível mesmo em ícones pequenos.</p>
+          <div class="test">
+            <strong>Leitura:</strong> % caindo + carrinho = preços baixos no supermercado
+          </div>
+          <div class="tags">
+            <span class="tag">Bold</span>
+            <span class="tag">Legível</span>
+            <span class="tag">Impactante</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 6 — Carrinho + Raio de Economia ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:#e6f7f4">
+          <div style="display:flex;gap:16px;align-items:center">
+            <svg width="110" height="110" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="g6" x1="0" y1="0" x2="0.7" y2="1">
+                  <stop offset="0%" style="stop-color:#0f766e"/>
+                  <stop offset="100%" style="stop-color:#2dd4bf"/>
+                </linearGradient>
+              </defs>
+              <rect width="120" height="120" rx="27" fill="url(#g6)"/>
+              <g transform="translate(56,60)" stroke="#fff" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Carrinho -->
+                <polyline points="-32,-10 -25,-10 -14,18 24,18"/>
+                <polyline points="-14,18 -14,-2 28,-2 24,18"/>
+                <circle cx="-6" cy="26" r="4.5" fill="#fff"/>
+                <circle cx="18" cy="26" r="4.5" fill="#fff"/>
+                <!-- Raio (flash/relâmpago) — oferta relâmpago -->
+                <path d="M12,-28 L2,-4 L10,-4 L0,22 L18,-6 L10,-6 Z" fill="#fff" stroke="none"/>
+              </g>
+            </svg>
+            <svg width="56" height="56" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="g6s" x1="0" y1="0" x2="0.7" y2="1"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="100%" style="stop-color:#2dd4bf"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#g6s)"/>
+              <g transform="translate(56,60)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="-32,-10 -25,-10 -14,18 24,18"/>
+                <polyline points="-14,18 -14,-2 28,-2 24,18"/>
+                <circle cx="-6" cy="26" r="5" fill="#fff"/>
+                <circle cx="18" cy="26" r="5" fill="#fff"/>
+                <path d="M12,-28 L2,-4 L10,-4 L0,22 L18,-6 L10,-6 Z" fill="#fff" stroke="none"/>
+              </g>
+            </svg>
+          </div>
+          <div class="mini-label">Raio</div>
+        </div>
+        <div class="card-content">
+          <span class="status new">Novo</span>
+          <h3>Carrinho + Raio (Flash Deal)</h3>
+          <p>Raio/relâmpago saindo do carrinho — remete a "oferta relâmpago", "flash deal". Ícone cheio (não line art) do raio cria contraste com o carrinho em stroke. Muito usado em apps de cupons e ofertas. Dinâmico e energético.</p>
+          <div class="test">
+            <strong>Leitura:</strong> Carrinho + raio = ofertas relâmpago de supermercado
+          </div>
+          <div class="tags">
+            <span class="tag">Flash</span>
+            <span class="tag">Energia</span>
+            <span class="tag">Ofertas</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 7 — Carrinho + % dentro de escudo ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:#e6f7f4">
+          <div style="display:flex;gap:16px;align-items:center">
+            <svg width="110" height="110" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="g7" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#115e59"/>
+                  <stop offset="50%" style="stop-color:#0d9488"/>
+                  <stop offset="100%" style="stop-color:#14b8a6"/>
+                </linearGradient>
+              </defs>
+              <rect width="120" height="120" rx="27" fill="url(#g7)"/>
+              <g transform="translate(60,58)" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Escudo com carrinho dentro -->
+                <path d="M0,-40 L28,-28 L28,4 C28,22 0,38 0,38 C0,38 -28,22 -28,4 L-28,-28 Z" stroke-width="3.5"/>
+                <!-- Mini carrinho no topo do escudo -->
+                <g transform="translate(0,0) scale(0.52)" stroke-width="6.5">
+                  <polyline points="-30,-10 -22,-10 -12,16 24,16"/>
+                  <polyline points="-12,16 -12,-2 28,-2 24,16"/>
+                  <circle cx="-4" cy="22" r="5" fill="#fff"/>
+                  <circle cx="18" cy="22" r="5" fill="#fff"/>
+                </g>
+                <!-- % abaixo do carrinho dentro do escudo -->
+                <text x="0" y="28" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="16" fill="#fff" stroke="none">%</text>
+              </g>
+            </svg>
+            <svg width="56" height="56" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="g7s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#115e59"/><stop offset="50%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#14b8a6"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#g7s)"/>
+              <g transform="translate(60,58)" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M0,-40 L28,-28 L28,4 C28,22 0,38 0,38 C0,38 -28,22 -28,4 L-28,-28 Z" stroke-width="4.5"/>
+                <g transform="translate(0,0) scale(0.52)" stroke-width="7.5">
+                  <polyline points="-30,-10 -22,-10 -12,16 24,16"/>
+                  <polyline points="-12,16 -12,-2 28,-2 24,16"/>
+                  <circle cx="-4" cy="22" r="5.5" fill="#fff"/>
+                  <circle cx="18" cy="22" r="5.5" fill="#fff"/>
+                </g>
+                <text x="0" y="28" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="17" fill="#fff" stroke="none">%</text>
+              </g>
+            </svg>
+          </div>
+          <div class="mini-label">Escudo</div>
+        </div>
+        <div class="card-content">
+          <span class="status mix">Alternativa</span>
+          <h3>Escudo + Carrinho + %</h3>
+          <p>Escudo envolvendo carrinho e %, comunica "proteção de preço" e "garantia de melhor oferta". O escudo é um wrapper diferente do pin — associa segurança e confiança. Composição mais vertical.</p>
+          <div class="test">
+            <strong>Leitura:</strong> Escudo + carrinho + % = app que protege seu bolso nas compras
+          </div>
+          <div class="tags">
+            <span class="tag">Proteção</span>
+            <span class="tag">Confiança</span>
+            <span class="tag">Garantia</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 8 — Carrinho + Balão de Preço ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:#e6f7f4">
+          <div style="display:flex;gap:16px;align-items:center">
+            <svg width="110" height="110" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="g8" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" style="stop-color:#0f766e"/>
+                  <stop offset="60%" style="stop-color:#0d9488"/>
+                  <stop offset="100%" style="stop-color:#5eead4"/>
+                </linearGradient>
+              </defs>
+              <rect width="120" height="120" rx="27" fill="url(#g8)"/>
+              <g transform="translate(54,64)" stroke="#fff" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Carrinho -->
+                <polyline points="-30,-6 -23,-6 -12,18 24,18"/>
+                <polyline points="-12,18 -12,0 28,0 24,18"/>
+                <circle cx="-4" cy="26" r="4.5" fill="#fff"/>
+                <circle cx="18" cy="26" r="4.5" fill="#fff"/>
+                <!-- Balão de diálogo / speech bubble com % -->
+                <g transform="translate(24,-26)">
+                  <rect x="-16" y="-16" width="32" height="24" rx="6" stroke="#fff" stroke-width="3.5" fill="none"/>
+                  <!-- Ponta do balão -->
+                  <polygon points="-4,8 4,8 0,16" fill="#fff" stroke="none"/>
+                  <text x="0" y="-1" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="16" fill="#fff" stroke="none">%↓</text>
+                </g>
+              </g>
+            </svg>
+            <svg width="56" height="56" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="g8s" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="60%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#5eead4"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#g8s)"/>
+              <g transform="translate(54,64)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="-30,-6 -23,-6 -12,18 24,18"/>
+                <polyline points="-12,18 -12,0 28,0 24,18"/>
+                <circle cx="-4" cy="26" r="5" fill="#fff"/>
+                <circle cx="18" cy="26" r="5" fill="#fff"/>
+                <g transform="translate(24,-26)">
+                  <rect x="-17" y="-17" width="34" height="26" rx="6" stroke-width="4.5" fill="none"/>
+                  <polygon points="-4,9 4,9 0,17" fill="#fff" stroke="none"/>
+                  <text x="0" y="0" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="17" fill="#fff" stroke="none">%↓</text>
+                </g>
+              </g>
+            </svg>
+          </div>
+          <div class="mini-label">Balão</div>
+        </div>
+        <div class="card-content">
+          <span class="status top">Destaque</span>
+          <h3>Carrinho + Balão "%↓"</h3>
+          <p>Balão de fala/notificação saindo do carrinho com "%↓" dentro. O balão comunica "alerta", "aviso" — como se o carrinho estivesse avisando sobre uma oferta. A ponta do balão aponta pro carrinho, criando conexão visual direta.</p>
+          <div class="test">
+            <strong>Leitura:</strong> Carrinho avisando sobre desconto = app de alertas de ofertas
+          </div>
+          <div class="tags">
+            <span class="tag">Alerta</span>
+            <span class="tag">Notificação</span>
+            <span class="tag">Comunicação</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ========== COMPARAÇÃO EM 60px ========== -->
+<section>
+  <h2>Comparação em 60px</h2>
+  <p class="sub">Tamanho real de home screen. Qual comunica melhor de relance?</p>
+
+  <div class="compare-wrap">
+    <div class="compare-row">
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="c1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="50%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#14b8a6"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#c1)"/><g transform="translate(55,62)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><polyline points="-30,-10 -23,-10 -12,18 26,18"/><polyline points="-12,18 -12,-2 30,-2 26,18"/><circle cx="-4" cy="26" r="5" fill="#fff"/><circle cx="20" cy="26" r="5" fill="#fff"/><g transform="translate(28,-22) rotate(15)"><rect x="-12" y="-16" width="24" height="30" rx="3" stroke-width="4" fill="none"/><circle cx="0" cy="-9" r="3.5" stroke-width="3" fill="none"/><text x="0" y="8" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="15" fill="#fff" stroke="none">%</text></g></g></svg>
+        <div class="cl">Etiqueta</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="c2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#115e59"/><stop offset="100%" style="stop-color:#2dd4bf"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#c2)"/><g transform="translate(58,60)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><polyline points="-32,-10 -25,-10 -14,18 24,18"/><polyline points="-14,18 -14,-2 28,-2 24,18"/><circle cx="-6" cy="26" r="5" fill="#fff"/><circle cx="18" cy="26" r="5" fill="#fff"/><path d="M-8,-20 C8,-22 18,-18 22,-6" stroke-width="5" fill="none"/><polyline points="18,-10 22,-6 26,-10" stroke-width="4.5"/></g></svg>
+        <div class="cl">Seta curva</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="c3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="100%" style="stop-color:#14b8a6"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#c3)"/><g transform="translate(58,60)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><polyline points="-32,-10 -25,-10 -14,18 24,18"/><polyline points="-14,18 -14,-2 28,-2 24,18"/><circle cx="-6" cy="26" r="5" fill="#fff"/><circle cx="18" cy="26" r="5" fill="#fff"/><circle cx="6" cy="8" r="14" stroke-width="4.5"/><text x="6" y="14" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="20" fill="#fff" stroke="none">$</text></g></svg>
+        <div class="cl">Moeda</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="c4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#134e4a"/><stop offset="50%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#5eead4"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#c4)"/><g transform="translate(60,60)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M-24,-8 L-20,-32 L20,-32 L24,-8 L24,26 C24,28 22,30 20,30 L-20,30 C-22,30 -24,28 -24,26 Z" stroke-width="5"/><path d="M-10,-32 C-10,-44 10,-44 10,-32" stroke-width="4.5" fill="none"/><text x="0" y="17" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="34" fill="#fff" stroke="none">%</text></g></svg>
+        <div class="cl">Sacola</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="c5" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="100%" style="stop-color:#14b8a6"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#c5)"/><g transform="translate(56,58)" stroke="#fff" fill="none" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="-32,-12 -24,-12 -12,20 28,20"/><polyline points="-12,20 -12,-4 32,-4 28,20"/><circle cx="-4" cy="28" r="5" fill="#fff"/><circle cx="22" cy="28" r="5" fill="#fff"/><line x1="10" y1="-2" x2="10" y2="16" stroke-width="6"/><polyline points="2,10 10,18 18,10" stroke-width="5.5"/><text x="10" y="-14" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="18" fill="#fff" stroke="none">%</text></g></svg>
+        <div class="cl">↓ Bold</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="c6" x1="0" y1="0" x2="0.7" y2="1"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="100%" style="stop-color:#2dd4bf"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#c6)"/><g transform="translate(56,60)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><polyline points="-32,-10 -25,-10 -14,18 24,18"/><polyline points="-14,18 -14,-2 28,-2 24,18"/><circle cx="-6" cy="26" r="5" fill="#fff"/><circle cx="18" cy="26" r="5" fill="#fff"/><path d="M12,-28 L2,-4 L10,-4 L0,22 L18,-6 L10,-6 Z" fill="#fff" stroke="none"/></g></svg>
+        <div class="cl">Raio</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="c7" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#115e59"/><stop offset="50%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#14b8a6"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#c7)"/><g transform="translate(60,58)" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M0,-40 L28,-28 L28,4 C28,22 0,38 0,38 C0,38 -28,22 -28,4 L-28,-28 Z" stroke-width="4.5"/><g transform="translate(0,0) scale(0.52)" stroke-width="7.5"><polyline points="-30,-10 -22,-10 -12,16 24,16"/><polyline points="-12,16 -12,-2 28,-2 24,16"/><circle cx="-4" cy="22" r="5.5" fill="#fff"/><circle cx="18" cy="22" r="5.5" fill="#fff"/></g><text x="0" y="28" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="17" fill="#fff" stroke="none">%</text></g></svg>
+        <div class="cl">Escudo</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="c8" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="60%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#5eead4"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#c8)"/><g transform="translate(54,64)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><polyline points="-30,-6 -23,-6 -12,18 24,18"/><polyline points="-12,18 -12,0 28,0 24,18"/><circle cx="-4" cy="26" r="5" fill="#fff"/><circle cx="18" cy="26" r="5" fill="#fff"/><g transform="translate(24,-26)"><rect x="-17" y="-17" width="34" height="26" rx="6" stroke-width="4.5" fill="none"/><polygon points="-4,9 4,9 0,17" fill="#fff" stroke="none"/><text x="0" y="0" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="17" fill="#fff" stroke="none">%↓</text></g></g></svg>
+        <div class="cl">Balão</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== V7 FAVORITOS + V8 LADO A LADO ========== -->
+<section>
+  <h2>v7 Favoritos vs v8 Novos</h2>
+  <p class="sub">Comparação direta entre os melhores da v7 e os novos da v8.</p>
+
+  <div class="compare-wrap">
+    <div style="text-align:center;margin-bottom:20px">
+      <span style="display:inline-block;background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:4px 12px;border-radius:8px;margin-right:8px">v7</span>
+      <span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;padding:4px 12px;border-radius:8px">v8</span>
+    </div>
+    <div class="compare-row">
+      <!-- v7 winners -->
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="v7a" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="100%" style="stop-color:#14b8a6"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#v7a)"/><g transform="translate(60,58)" stroke="#fff" fill="none" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="-32,-12 -24,-12 -12,20 28,20"/><polyline points="-12,20 -12,-4 32,-4 28,20"/><circle cx="-4" cy="28" r="5" fill="#fff"/><circle cx="22" cy="28" r="5" fill="#fff"/><circle cx="0" cy="2" r="3.5" fill="#fff"/><circle cx="12" cy="12" r="3.5" fill="#fff"/><line x1="-2" y1="14" x2="14" y2="0" stroke-width="4"/><line x1="22" y1="-10" x2="22" y2="10" stroke-width="5"/><polyline points="16,4 22,12 28,4" stroke-width="5"/></g></svg>
+        <div class="cl" style="color:#065f46">v7 %↓</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="v7b" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#115e59"/><stop offset="50%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#5eead4"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#v7b)"/><g transform="translate(60,58)" stroke="#fff" fill="none" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="-32,-12 -24,-12 -12,20 28,20"/><polyline points="-12,20 -12,-4 32,-4 28,20"/><circle cx="-4" cy="28" r="5" fill="#fff"/><circle cx="22" cy="28" r="5" fill="#fff"/><text x="10" y="14" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="30" fill="#fff" stroke="none">%</text></g></svg>
+        <div class="cl" style="color:#065f46">v7 %</div>
+      </div>
+      <!-- v8 highlights -->
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="v8a" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="100%" style="stop-color:#14b8a6"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#v8a)"/><g transform="translate(56,58)" stroke="#fff" fill="none" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="-32,-12 -24,-12 -12,20 28,20"/><polyline points="-12,20 -12,-4 32,-4 28,20"/><circle cx="-4" cy="28" r="5" fill="#fff"/><circle cx="22" cy="28" r="5" fill="#fff"/><line x1="10" y1="-2" x2="10" y2="16" stroke-width="6"/><polyline points="2,10 10,18 18,10" stroke-width="5.5"/><text x="10" y="-14" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="18" fill="#fff" stroke="none">%</text></g></svg>
+        <div class="cl" style="color:#92400e">v8 ↓Bold</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="v8b" x1="0" y1="0" x2="0.7" y2="1"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="100%" style="stop-color:#2dd4bf"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#v8b)"/><g transform="translate(56,60)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><polyline points="-32,-10 -25,-10 -14,18 24,18"/><polyline points="-14,18 -14,-2 28,-2 24,18"/><circle cx="-6" cy="26" r="5" fill="#fff"/><circle cx="18" cy="26" r="5" fill="#fff"/><path d="M12,-28 L2,-4 L10,-4 L0,22 L18,-6 L10,-6 Z" fill="#fff" stroke="none"/></g></svg>
+        <div class="cl" style="color:#92400e">v8 Raio</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="v8c" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="60%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#5eead4"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#v8c)"/><g transform="translate(54,64)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><polyline points="-30,-6 -23,-6 -12,18 24,18"/><polyline points="-12,18 -12,0 28,0 24,18"/><circle cx="-4" cy="26" r="5" fill="#fff"/><circle cx="18" cy="26" r="5" fill="#fff"/><g transform="translate(24,-26)"><rect x="-17" y="-17" width="34" height="26" rx="6" stroke-width="4.5" fill="none"/><polygon points="-4,9 4,9 0,17" fill="#fff" stroke="none"/><text x="0" y="0" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="17" fill="#fff" stroke="none">%↓</text></g></g></svg>
+        <div class="cl" style="color:#92400e">v8 Balão</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== HOMESCREEN ========== -->
+<section>
+  <div class="ctx">
+    <h3>Na Home Screen — Favoritos v8</h3>
+    <div class="hs-wrap">
+      <div class="hs-mock hs-light">
+        <div class="hs-i"><div class="hs-ic" style="background:#34d399">📱</div><div class="hs-lb">WhatsApp</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#3b82f6">📷</div><div class="hs-lb">Instagram</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#f43f5e">🎵</div><div class="hs-lb">Spotify</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#8b5cf6">💜</div><div class="hs-lb">Nubank</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#ef4444">📍</div><div class="hs-lb">iFood</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#f59e0b">🛒</div><div class="hs-lb">Mercado L.</div></div>
+        <div class="hs-i">
+          <svg width="54" height="54" viewBox="0 0 120 120"><defs><linearGradient id="hl" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="100%" style="stop-color:#14b8a6"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#hl)"/><g transform="translate(56,58)" stroke="#fff" fill="none" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="-32,-12 -24,-12 -12,20 28,20"/><polyline points="-12,20 -12,-4 32,-4 28,20"/><circle cx="-4" cy="28" r="5" fill="#fff"/><circle cx="22" cy="28" r="5" fill="#fff"/><line x1="10" y1="-2" x2="10" y2="16" stroke-width="6"/><polyline points="2,10 10,18 18,10" stroke-width="5.5"/><text x="10" y="-14" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="18" fill="#fff" stroke="none">%</text></g></svg>
+          <div class="hs-lb" style="color:#0d9488;font-weight:700">Poup</div>
+        </div>
+        <div class="hs-i"><div class="hs-ic" style="background:#0ea5e9">☁️</div><div class="hs-lb">Clima</div></div>
+      </div>
+      <div class="hs-mock hs-dark">
+        <div class="hs-i"><div class="hs-ic" style="background:#34d399">📱</div><div class="hs-lb">WhatsApp</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#3b82f6">📷</div><div class="hs-lb">Instagram</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#f43f5e">🎵</div><div class="hs-lb">Spotify</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#8b5cf6">💜</div><div class="hs-lb">Nubank</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#ef4444">📍</div><div class="hs-lb">iFood</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#f59e0b">🛒</div><div class="hs-lb">Mercado L.</div></div>
+        <div class="hs-i">
+          <svg width="54" height="54" viewBox="0 0 120 120"><defs><linearGradient id="hd" x1="0" y1="0" x2="0.7" y2="1"><stop offset="0%" style="stop-color:#0f766e"/><stop offset="100%" style="stop-color:#2dd4bf"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#hd)"/><g transform="translate(56,60)" stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><polyline points="-32,-10 -25,-10 -14,18 24,18"/><polyline points="-14,18 -14,-2 28,-2 24,18"/><circle cx="-6" cy="26" r="5" fill="#fff"/><circle cx="18" cy="26" r="5" fill="#fff"/><path d="M12,-28 L2,-4 L10,-4 L0,22 L18,-6 L10,-6 Z" fill="#fff" stroke="none"/></g></svg>
+          <div class="hs-lb" style="color:#5eead4;font-weight:700">Poup</div>
+        </div>
+        <div class="hs-i"><div class="hs-ic" style="background:#0ea5e9">☁️</div><div class="hs-lb">Clima</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== RACIONAL ========== -->
+<section>
+  <div class="rationale">
+    <h3>Racional v8</h3>
+    <p>Nesta rodada explorei composições que não apareceram nas versões anteriores, mantendo o mesmo estilo line art branco sobre gradiente verde/teal.</p>
+    <p><strong>"Carrinho + Etiqueta"</strong> — a etiqueta de preço é provavelmente o símbolo mais universal de "oferta" em supermercado. A rotação leve dá personalidade.</p>
+    <p><strong>"Carrinho + Seta Curva R$"</strong> — diferente da seta reta da v7, esta curva sugere uma tendência de queda, como um gráfico. O R$ semi-transparente contextualiza para o mercado brasileiro.</p>
+    <p><strong>"Sacola + %"</strong> — alternativa ao carrinho. A sacola tem uma silhueta mais compacta e simétrica, ideal para tamanhos menores. Muitos apps de compras usam sacola.</p>
+    <p><strong>"Carrinho + ↓ Bold + %"</strong> é meu destaque — separa os elementos (% acima, seta dentro) para máxima clareza. A seta grossa é impossível de perder mesmo em 16px.</p>
+    <p><strong>"Carrinho + Raio"</strong> — o raio é sinônimo de "flash sale" e "oferta relâmpago". Muito reconhecível. A forma preenchida (não stroke) cria contraste interessante com o carrinho em linha.</p>
+    <p><strong>"Carrinho + Balão %↓"</strong> — o speech bubble transforma o desconto em uma "notificação", comunicando a feature principal do app: alertar o usuário sobre ofertas.</p>
+    <p>Os que menos recomendo nesta rodada: <strong>Moeda</strong> (pode confundir com app financeiro) e <strong>Escudo</strong> (conceito de "proteção" é mais abstrato).</p>
+  </div>
+</section>
+
+<div style="text-align:center;padding:40px;color:#94a3b8;font-size:12px">Poup — Identidade Visual v8 — Março 2026</div>
+
+</body>
+</html>

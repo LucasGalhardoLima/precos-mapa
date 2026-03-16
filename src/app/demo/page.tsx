@@ -12,7 +12,7 @@ export default function PublicDemoPage() {
     currentMarketId: market.id,
     availableMarketIds: [market.id],
     userName: "Demo Mercado",
-    userEmail: "demo@precomapa.app",
+    userEmail: "demo@poup.com.br",
   };
 
   return (

@@ -1,4 +1,4 @@
--- seed.sql: Development seed data for PrecoMapa
+-- seed.sql: Development seed data for Poup
 -- Source: mobile/data/*.ts mock files
 
 -- =============================================================================
@@ -138,7 +138,7 @@ insert into public.promotions (id, product_id, store_id, original_price, promo_p
 -- =============================================================================
 
 insert into public.testimonials (user_name, text, savings_amount, sort_order) values
-  ('Maria Silva', 'Economizei muito no mes passado so seguindo as ofertas do PrecoMapa! Recomendo para todas as maes.', 120, 0),
+  ('Maria Silva', 'Economizei muito no mes passado so seguindo as ofertas do Poup! Recomendo para todas as maes.', 120, 0),
   ('Carlos Santos', 'Antes eu ia em 3 mercados diferentes. Agora vejo tudo pelo app e ja sei onde comprar mais barato.', 85, 1),
   ('Ana Costa', 'O melhor app para quem quer economizar no supermercado. As ofertas sao sempre atualizadas!', 200, 2);
 

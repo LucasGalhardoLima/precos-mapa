@@ -4,10 +4,10 @@ export {
   storeSetupSchema,
   alertSchema,
   profileUpdateSchema,
-} from '@precomapa/shared/lib/schemas';
+} from '@poup/shared/lib/schemas';
 export type {
   PromotionFormData,
   StoreSetupFormData,
   AlertFormData,
   ProfileUpdateData,
-} from '@precomapa/shared/lib/schemas';
+} from '@poup/shared/lib/schemas';

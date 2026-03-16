@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poup — Ícone do App</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #f1f5f9; color: #1a1a2e; }
+
+  .header {
+    text-align: center; padding: 48px 24px 32px;
+    background: linear-gradient(135deg, #0d9488, #0f766e);
+    color: white;
+  }
+  .header h1 { font-family: 'Poppins'; font-size: 32px; font-weight: 800; }
+  .header p { font-size: 15px; opacity: 0.85; margin-top: 8px; }
+
+  section { max-width: 960px; margin: 0 auto; padding: 48px 24px; }
+  section h2 { font-family: 'Poppins'; font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  section .sub { color: #64748b; font-size: 14px; margin-bottom: 32px; }
+
+  /* Icon display grid */
+  .icon-row {
+    display: flex; gap: 32px; justify-content: center; align-items: end;
+    flex-wrap: wrap; margin-bottom: 48px;
+  }
+  .icon-item { text-align: center; }
+  .icon-item .label {
+    font-size: 11px; color: #94a3b8; font-weight: 600; margin-top: 10px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .icon-item .size { font-size: 10px; color: #cbd5e1; margin-top: 2px; }
+
+  /* App icon base */
+  .app-icon {
+    border-radius: 22.37%; /* iOS standard */
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    display: inline-flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+
+  /* Variants section */
+  .variants-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+  }
+  .variant-card {
+    background: white; border-radius: 16px; padding: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    text-align: center; border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .variant-card:hover { border-color: #0d9488; }
+  .variant-card h3 { font-size: 16px; font-weight: 700; margin: 16px 0 6px; }
+  .variant-card p { font-size: 13px; color: #64748b; line-height: 1.5; }
+  .variant-card .badge {
+    display: inline-block; background: #0d9488; color: white;
+    font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 12px;
+    margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  /* Context mockups */
+  .context-section { background: white; border-radius: 16px; padding: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-top: 32px; }
+  .context-section h3 { font-size: 18px; font-weight: 700; margin-bottom: 24px; text-align: center; }
+
+  .homescreen-mock {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 20px; padding: 32px 20px 20px;
+    max-width: 320px; margin: 0 auto;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 16px; justify-items: center;
+  }
+  .hs-icon {
+    width: 56px; height: 56px; border-radius: 13px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+  }
+  .hs-label { font-size: 9px; color: white; text-align: center; margin-top: 4px; font-weight: 500; opacity: 0.9; }
+  .hs-item { text-align: center; }
+
+  /* Dark mode preview */
+  .dark-preview {
+    background: #0f172a; border-radius: 16px; padding: 32px;
+    text-align: center; margin-top: 24px;
+  }
+  .dark-preview h4 { color: #94a3b8; font-size: 13px; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
+  .dark-icons { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+
+  .note {
+    background: #f0fdfa; border-left: 4px solid #0d9488;
+    padding: 16px 20px; border-radius: 0 8px 8px 0;
+    margin-top: 32px;
+  }
+  .note p { font-size: 14px; color: #475569; line-height: 1.6; }
+  .note strong { color: #0d9488; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Ícone do App — Poup</h1>
+  <p>Variações do conceito Cofrinho otimizadas para ícone de app</p>
+</div>
+
+<!-- ===== VARIAÇÕES PRINCIPAIS ===== -->
+<section>
+  <h2>Variações do Ícone</h2>
+  <p class="sub">Três abordagens diferentes para o ícone, todas baseadas no conceito cofrinho com a paleta Economia Verde.</p>
+
+  <div class="variants-grid">
+
+    <!-- Variação A: Cofrinho minimalista -->
+    <div class="variant-card">
+      <div class="badge">Recomendado</div>
+      <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bgA" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#0d9488"/>
+            <stop offset="100%" style="stop-color:#0f766e"/>
+          </linearGradient>
+        </defs>
+        <rect width="120" height="120" rx="27" fill="url(#bgA)"/>
+        <!-- Cofrinho simplificado -->
+        <g transform="translate(60, 56)">
+          <!-- Corpo -->
+          <ellipse cx="0" cy="4" rx="28" ry="22" fill="#ffffff" opacity="0.95"/>
+          <!-- Orelhas -->
+          <ellipse cx="-18" cy="-14" rx="8" ry="6" fill="#5eead4" transform="rotate(-15 -18 -14)"/>
+          <ellipse cx="18" cy="-14" rx="8" ry="6" fill="#5eead4" transform="rotate(15 18 -14)"/>
+          <!-- Olhos -->
+          <circle cx="-8" cy="-2" r="3.5" fill="#0d9488"/>
+          <circle cx="8" cy="-2" r="3.5" fill="#0d9488"/>
+          <circle cx="-7" cy="-3" r="1.2" fill="white"/>
+          <circle cx="9" cy="-3" r="1.2" fill="white"/>
+          <!-- Focinho -->
+          <ellipse cx="0" cy="8" rx="8" ry="5" fill="#ccfbf1"/>
+          <circle cx="-3" cy="7" r="1.5" fill="#99f6e4"/>
+          <circle cx="3" cy="7" r="1.5" fill="#99f6e4"/>
+          <!-- Boca sorriso -->
+          <path d="M-4,11 Q0,14 4,11" stroke="#0d9488" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <!-- Slot moeda -->
+          <rect x="-8" y="-22" width="16" height="4" rx="2" fill="#f59e0b"/>
+          <!-- Moeda -->
+          <circle cx="2" cy="-26" r="6" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="2" y="-24" text-anchor="middle" font-family="Inter" font-weight="800" font-size="7" fill="#92400e">$</text>
+          <!-- Pernas -->
+          <rect x="-16" y="20" width="8" height="8" rx="4" fill="#99f6e4"/>
+          <rect x="8" y="20" width="8" height="8" rx="4" fill="#99f6e4"/>
+        </g>
+      </svg>
+      <h3>A — Cofrinho Fofo</h3>
+      <p>Cofrinho simpático com moeda caindo. Expressivo e memorável — cria identificação emocional. O sorriso e os olhos geram empatia.</p>
+    </div>
+
+    <!-- Variação B: Cofrinho abstrato/geométrico -->
+    <div class="variant-card">
+      <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bgB" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#0d9488"/>
+            <stop offset="100%" style="stop-color:#14b8a6"/>
+          </linearGradient>
+        </defs>
+        <rect width="120" height="120" rx="27" fill="url(#bgB)"/>
+        <!-- Silhueta cofrinho geométrica -->
+        <g transform="translate(60, 58)">
+          <!-- Corpo principal - forma arredondada -->
+          <ellipse cx="0" cy="0" rx="30" ry="24" fill="white" opacity="0.2"/>
+          <ellipse cx="0" cy="0" rx="28" ry="22" fill="white" opacity="0.95"/>
+          <!-- Orelha esquerda -->
+          <path d="M-22,-16 L-30,-26 L-16,-20 Z" fill="white" opacity="0.95"/>
+          <!-- Orelha direita -->
+          <path d="M22,-16 L30,-26 L16,-20 Z" fill="white" opacity="0.95"/>
+          <!-- Focinho -->
+          <ellipse cx="0" cy="6" rx="10" ry="7" fill="#ccfbf1"/>
+          <circle cx="-3" cy="5" r="2" fill="#0d9488" opacity="0.3"/>
+          <circle cx="3" cy="5" r="2" fill="#0d9488" opacity="0.3"/>
+          <!-- Olhos minimalistas -->
+          <circle cx="-10" cy="-4" r="3" fill="#0d9488"/>
+          <circle cx="10" cy="-4" r="3" fill="#0d9488"/>
+          <!-- Slot -->
+          <rect x="-10" y="-20" width="20" height="4" rx="2" fill="#f59e0b"/>
+          <!-- Moeda entrando -->
+          <rect x="-4" y="-30" width="8" height="12" rx="4" fill="#fbbf24"/>
+        </g>
+      </svg>
+      <h3>B — Cofrinho Geométrico</h3>
+      <p>Versão mais limpa e geométrica, com orelhas triangulares e formas simples. Mais moderno e escalável para tamanhos menores.</p>
+    </div>
+
+    <!-- Variação C: Letra P + Cofrinho -->
+    <div class="variant-card">
+      <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bgC" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#115e59"/>
+            <stop offset="100%" style="stop-color:#0d9488"/>
+          </linearGradient>
+        </defs>
+        <rect width="120" height="120" rx="27" fill="url(#bgC)"/>
+        <!-- P estilizado que parece cofrinho -->
+        <g transform="translate(32, 20)">
+          <!-- Haste do P -->
+          <rect x="0" y="8" width="14" height="68" rx="7" fill="white" opacity="0.95"/>
+          <!-- Barriga do P = corpo do cofrinho -->
+          <ellipse cx="32" cy="34" rx="26" ry="24" fill="white" opacity="0.95"/>
+          <!-- Conexão haste-barriga -->
+          <rect x="7" y="16" width="26" height="36" rx="0" fill="white" opacity="0.95"/>
+          <!-- Orelha -->
+          <ellipse cx="42" cy="12" rx="8" ry="6" fill="#5eead4" transform="rotate(15 42 12)"/>
+          <!-- Olho -->
+          <circle cx="38" cy="28" r="4" fill="#0d9488"/>
+          <circle cx="39" cy="27" r="1.5" fill="white"/>
+          <!-- Focinho -->
+          <ellipse cx="52" cy="36" rx="7" ry="5" fill="#ccfbf1"/>
+          <circle cx="50" cy="35" r="1.5" fill="#99f6e4"/>
+          <circle cx="54" cy="35" r="1.5" fill="#99f6e4"/>
+          <!-- Slot moeda -->
+          <rect x="24" y="8" width="14" height="4" rx="2" fill="#f59e0b"/>
+          <circle cx="31" cy="4" r="5" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="31" y="6" text-anchor="middle" font-family="Inter" font-weight="800" font-size="6" fill="#92400e">$</text>
+        </g>
+      </svg>
+      <h3>C — Letra P-Cofrinho</h3>
+      <p>A letra "P" de Poup se funde com o cofrinho — a barriga do P vira o corpo do porquinho. Conceitual e único.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===== TAMANHOS ===== -->
+<section>
+  <h2>Escalabilidade</h2>
+  <p class="sub">O ícone precisa funcionar desde 16px (favicon) até 1024px (App Store). Aqui está a variação A em diferentes tamanhos.</p>
+
+  <div class="icon-row">
+    <!-- 16px -->
+    <div class="icon-item">
+      <svg width="16" height="16" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="s1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+        <rect width="120" height="120" rx="27" fill="url(#s1)"/>
+        <g transform="translate(60, 58)">
+          <ellipse cx="0" cy="2" rx="28" ry="22" fill="white" opacity="0.95"/>
+          <ellipse cx="-16" cy="-14" rx="7" ry="5" fill="#5eead4" transform="rotate(-15 -16 -14)"/>
+          <ellipse cx="16" cy="-14" rx="7" ry="5" fill="#5eead4" transform="rotate(15 16 -14)"/>
+          <circle cx="-8" cy="-2" r="4" fill="#0d9488"/>
+          <circle cx="8" cy="-2" r="4" fill="#0d9488"/>
+          <rect x="-8" y="-22" width="16" height="4" rx="2" fill="#f59e0b"/>
+          <circle cx="2" cy="-26" r="6" fill="#fbbf24"/>
+        </g>
+      </svg>
+      <div class="label">Favicon</div>
+      <div class="size">16×16</div>
+    </div>
+
+    <!-- 29px -->
+    <div class="icon-item">
+      <svg width="29" height="29" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="s2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+        <rect width="120" height="120" rx="27" fill="url(#s2)"/>
+        <g transform="translate(60, 58)">
+          <ellipse cx="0" cy="2" rx="28" ry="22" fill="white" opacity="0.95"/>
+          <ellipse cx="-16" cy="-14" rx="7" ry="5" fill="#5eead4" transform="rotate(-15 -16 -14)"/>
+          <ellipse cx="16" cy="-14" rx="7" ry="5" fill="#5eead4" transform="rotate(15 16 -14)"/>
+          <circle cx="-8" cy="-2" r="4" fill="#0d9488"/>
+          <circle cx="8" cy="-2" r="4" fill="#0d9488"/>
+          <rect x="-8" y="-22" width="16" height="4" rx="2" fill="#f59e0b"/>
+          <circle cx="2" cy="-26" r="6" fill="#fbbf24"/>
+        </g>
+      </svg>
+      <div class="label">Spotlight</div>
+      <div class="size">29×29</div>
+    </div>
+
+    <!-- 60px -->
+    <div class="icon-item">
+      <svg width="60" height="60" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="s3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+        <rect width="120" height="120" rx="27" fill="url(#s3)"/>
+        <g transform="translate(60, 56)">
+          <ellipse cx="0" cy="4" rx="28" ry="22" fill="#ffffff" opacity="0.95"/>
+          <ellipse cx="-18" cy="-14" rx="8" ry="6" fill="#5eead4" transform="rotate(-15 -18 -14)"/>
+          <ellipse cx="18" cy="-14" rx="8" ry="6" fill="#5eead4" transform="rotate(15 18 -14)"/>
+          <circle cx="-8" cy="-2" r="3.5" fill="#0d9488"/>
+          <circle cx="8" cy="-2" r="3.5" fill="#0d9488"/>
+          <circle cx="-7" cy="-3" r="1.2" fill="white"/>
+          <circle cx="9" cy="-3" r="1.2" fill="white"/>
+          <ellipse cx="0" cy="8" rx="8" ry="5" fill="#ccfbf1"/>
+          <circle cx="-3" cy="7" r="1.5" fill="#99f6e4"/>
+          <circle cx="3" cy="7" r="1.5" fill="#99f6e4"/>
+          <rect x="-8" y="-22" width="16" height="4" rx="2" fill="#f59e0b"/>
+          <circle cx="2" cy="-26" r="6" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"/>
+          <rect x="-16" y="20" width="8" height="8" rx="4" fill="#99f6e4"/>
+          <rect x="8" y="20" width="8" height="8" rx="4" fill="#99f6e4"/>
+        </g>
+      </svg>
+      <div class="label">Home Screen</div>
+      <div class="size">60×60</div>
+    </div>
+
+    <!-- 120px -->
+    <div class="icon-item">
+      <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="s4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+        <rect width="120" height="120" rx="27" fill="url(#s4)"/>
+        <g transform="translate(60, 56)">
+          <ellipse cx="0" cy="4" rx="28" ry="22" fill="#ffffff" opacity="0.95"/>
+          <ellipse cx="-18" cy="-14" rx="8" ry="6" fill="#5eead4" transform="rotate(-15 -18 -14)"/>
+          <ellipse cx="18" cy="-14" rx="8" ry="6" fill="#5eead4" transform="rotate(15 18 -14)"/>
+          <circle cx="-8" cy="-2" r="3.5" fill="#0d9488"/>
+          <circle cx="8" cy="-2" r="3.5" fill="#0d9488"/>
+          <circle cx="-7" cy="-3" r="1.2" fill="white"/>
+          <circle cx="9" cy="-3" r="1.2" fill="white"/>
+          <ellipse cx="0" cy="8" rx="8" ry="5" fill="#ccfbf1"/>
+          <circle cx="-3" cy="7" r="1.5" fill="#99f6e4"/>
+          <circle cx="3" cy="7" r="1.5" fill="#99f6e4"/>
+          <path d="M-4,11 Q0,14 4,11" stroke="#0d9488" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <rect x="-8" y="-22" width="16" height="4" rx="2" fill="#f59e0b"/>
+          <circle cx="2" cy="-26" r="6" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="2" y="-24" text-anchor="middle" font-family="Inter" font-weight="800" font-size="7" fill="#92400e">$</text>
+          <rect x="-16" y="20" width="8" height="8" rx="4" fill="#99f6e4"/>
+          <rect x="8" y="20" width="8" height="8" rx="4" fill="#99f6e4"/>
+        </g>
+      </svg>
+      <div class="label">@2x Retina</div>
+      <div class="size">120×120</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CONTEXTO HOME SCREEN ===== -->
+<section>
+  <div class="context-section">
+    <h3>Como ficaria na Home Screen</h3>
+
+    <div class="homescreen-mock">
+      <div class="hs-item">
+        <div class="hs-icon" style="background: #34d399;">📱</div>
+        <div class="hs-label">WhatsApp</div>
+      </div>
+      <div class="hs-item">
+        <div class="hs-icon" style="background: #3b82f6;">📷</div>
+        <div class="hs-label">Instagram</div>
+      </div>
+      <div class="hs-item">
+        <div class="hs-icon" style="background: #f43f5e;">🎵</div>
+        <div class="hs-label">Spotify</div>
+      </div>
+      <div class="hs-item">
+        <div class="hs-icon" style="background: #8b5cf6;">💜</div>
+        <div class="hs-label">Nubank</div>
+      </div>
+      <div class="hs-item">
+        <div class="hs-icon" style="background: #ef4444;">📍</div>
+        <div class="hs-label">iFood</div>
+      </div>
+      <div class="hs-item">
+        <div class="hs-icon" style="background: #f59e0b;">🛒</div>
+        <div class="hs-label">Mercado L.</div>
+      </div>
+      <div class="hs-item">
+        <!-- POUP icon inline -->
+        <svg width="56" height="56" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="hs" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+          <rect width="120" height="120" rx="27" fill="url(#hs)"/>
+          <g transform="translate(60, 58)">
+            <ellipse cx="0" cy="2" rx="28" ry="22" fill="white" opacity="0.95"/>
+            <ellipse cx="-16" cy="-14" rx="7" ry="5" fill="#5eead4" transform="rotate(-15 -16 -14)"/>
+            <ellipse cx="16" cy="-14" rx="7" ry="5" fill="#5eead4" transform="rotate(15 16 -14)"/>
+            <circle cx="-8" cy="-2" r="3.5" fill="#0d9488"/>
+            <circle cx="8" cy="-2" r="3.5" fill="#0d9488"/>
+            <ellipse cx="0" cy="8" rx="8" ry="5" fill="#ccfbf1"/>
+            <rect x="-8" y="-22" width="16" height="4" rx="2" fill="#f59e0b"/>
+            <circle cx="2" cy="-26" r="6" fill="#fbbf24"/>
+          </g>
+        </svg>
+        <div class="hs-label" style="color: #fbbf24; font-weight: 700;">Poup</div>
+      </div>
+      <div class="hs-item">
+        <div class="hs-icon" style="background: #0ea5e9;">☁️</div>
+        <div class="hs-label">Clima</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dark mode -->
+  <div class="dark-preview">
+    <h4>Fundo escuro</h4>
+    <div class="dark-icons">
+      <div class="icon-item">
+        <svg width="80" height="80" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="d1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+          <rect width="120" height="120" rx="27" fill="url(#d1)"/>
+          <g transform="translate(60, 56)">
+            <ellipse cx="0" cy="4" rx="28" ry="22" fill="#ffffff" opacity="0.95"/>
+            <ellipse cx="-18" cy="-14" rx="8" ry="6" fill="#5eead4" transform="rotate(-15 -18 -14)"/>
+            <ellipse cx="18" cy="-14" rx="8" ry="6" fill="#5eead4" transform="rotate(15 18 -14)"/>
+            <circle cx="-8" cy="-2" r="3.5" fill="#0d9488"/>
+            <circle cx="8" cy="-2" r="3.5" fill="#0d9488"/>
+            <circle cx="-7" cy="-3" r="1.2" fill="white"/>
+            <circle cx="9" cy="-3" r="1.2" fill="white"/>
+            <ellipse cx="0" cy="8" rx="8" ry="5" fill="#ccfbf1"/>
+            <circle cx="-3" cy="7" r="1.5" fill="#99f6e4"/>
+            <circle cx="3" cy="7" r="1.5" fill="#99f6e4"/>
+            <path d="M-4,11 Q0,14 4,11" stroke="#0d9488" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <rect x="-8" y="-22" width="16" height="4" rx="2" fill="#f59e0b"/>
+            <circle cx="2" cy="-26" r="6" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"/>
+            <rect x="-16" y="20" width="8" height="8" rx="4" fill="#99f6e4"/>
+            <rect x="8" y="20" width="8" height="8" rx="4" fill="#99f6e4"/>
+          </g>
+        </svg>
+        <div class="label" style="color: #64748b;">Fundo teal</div>
+      </div>
+
+      <div class="icon-item">
+        <svg width="80" height="80" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+          <rect width="120" height="120" rx="27" fill="white"/>
+          <g transform="translate(60, 56)">
+            <ellipse cx="0" cy="4" rx="28" ry="22" fill="#0d9488"/>
+            <ellipse cx="-18" cy="-14" rx="8" ry="6" fill="#14b8a6" transform="rotate(-15 -18 -14)"/>
+            <ellipse cx="18" cy="-14" rx="8" ry="6" fill="#14b8a6" transform="rotate(15 18 -14)"/>
+            <circle cx="-8" cy="-2" r="3.5" fill="white"/>
+            <circle cx="8" cy="-2" r="3.5" fill="white"/>
+            <circle cx="-7" cy="-3" r="1.2" fill="#0d9488"/>
+            <circle cx="9" cy="-3" r="1.2" fill="#0d9488"/>
+            <ellipse cx="0" cy="8" rx="8" ry="5" fill="#0f766e"/>
+            <circle cx="-3" cy="7" r="1.5" fill="#115e59"/>
+            <circle cx="3" cy="7" r="1.5" fill="#115e59"/>
+            <path d="M-4,11 Q0,14 4,11" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <rect x="-8" y="-22" width="16" height="4" rx="2" fill="#f59e0b"/>
+            <circle cx="2" cy="-26" r="6" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"/>
+            <rect x="-16" y="20" width="8" height="8" rx="4" fill="#14b8a6"/>
+            <rect x="8" y="20" width="8" height="8" rx="4" fill="#14b8a6"/>
+          </g>
+        </svg>
+        <div class="label" style="color: #64748b;">Fundo branco</div>
+      </div>
+
+      <div class="icon-item">
+        <svg width="80" height="80" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+          <rect width="120" height="120" rx="27" fill="#1a1a2e"/>
+          <g transform="translate(60, 56)">
+            <ellipse cx="0" cy="4" rx="28" ry="22" fill="#14b8a6"/>
+            <ellipse cx="-18" cy="-14" rx="8" ry="6" fill="#5eead4" transform="rotate(-15 -18 -14)"/>
+            <ellipse cx="18" cy="-14" rx="8" ry="6" fill="#5eead4" transform="rotate(15 18 -14)"/>
+            <circle cx="-8" cy="-2" r="3.5" fill="#1a1a2e"/>
+            <circle cx="8" cy="-2" r="3.5" fill="#1a1a2e"/>
+            <circle cx="-7" cy="-3" r="1.2" fill="#5eead4"/>
+            <circle cx="9" cy="-3" r="1.2" fill="#5eead4"/>
+            <ellipse cx="0" cy="8" rx="8" ry="5" fill="#0d9488"/>
+            <circle cx="-3" cy="7" r="1.5" fill="#0f766e"/>
+            <circle cx="3" cy="7" r="1.5" fill="#0f766e"/>
+            <path d="M-4,11 Q0,14 4,11" stroke="#1a1a2e" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <rect x="-8" y="-22" width="16" height="4" rx="2" fill="#f59e0b"/>
+            <circle cx="2" cy="-26" r="6" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"/>
+            <rect x="-16" y="20" width="8" height="8" rx="4" fill="#0d9488"/>
+            <rect x="8" y="20" width="8" height="8" rx="4" fill="#0d9488"/>
+          </g>
+        </svg>
+        <div class="label" style="color: #64748b;">Fundo escuro</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <div class="note">
+    <p><strong>Nota sobre produção:</strong> Esses são conceitos em SVG para aprovação da direção visual. Para o ícone final de produção, recomendo contratar um designer para refinar os detalhes em uma ferramenta como Figma, garantindo pixel-perfect rendering em todos os tamanhos exigidos pela Apple (1024×1024) e Google Play (512×512). O SVG aqui serve como briefing visual detalhado para o designer.</p>
+  </div>
+</section>
+
+</body>
+</html>

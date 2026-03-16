@@ -13,7 +13,7 @@ import {
   Inter_500Medium,
 } from '@expo-google-fonts/inter';
 import { useAuth } from '@/hooks/use-auth';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function RootLayout() {

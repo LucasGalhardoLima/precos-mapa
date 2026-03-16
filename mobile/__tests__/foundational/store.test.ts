@@ -1,4 +1,4 @@
-import { useAuthStore } from '@precomapa/shared/store/auth-store';
+import { useAuthStore } from '@poup/shared/store/auth-store';
 import { useFilterStore } from '../../store/app-store';
 
 describe('Auth store (shared)', () => {

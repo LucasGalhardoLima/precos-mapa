@@ -60,7 +60,7 @@ intelligence features. Covers Phase 1 (MVP, months 1-3) and Phase 2
 
 ### Delivery 1.5 — Price Intelligence Authority (Weeks 4-6 post-D1)
 
-Strategic pivot: position PrecoMapa as the **Regional Price Intelligence
+Strategic pivot: position Poup as the **Regional Price Intelligence
 Authority** — an independent platform that becomes the reference for
 local economic data via the **Indice Regional de Precos do Varejo**.
 
@@ -137,7 +137,7 @@ distinct tab experiences within the same app.
 ### User Story 0 - Onboarding and Dual-Role Authentication (Priority: P1)
 
 As a first-time visitor, I want to immediately understand what
-PrecoMapa does, see proof that it works (user stats, savings,
+Poup does, see proof that it works (user stats, savings,
 testimonials), choose whether I am a consumer or a store owner,
 authenticate with my Google or Apple account, and be routed to the
 correct experience so I can get started quickly.
@@ -149,7 +149,7 @@ onboarding and auth, acquisition and activation rates suffer
 regardless of how good the core features are.
 
 **Independent Test**: Open the app for the first time. See the
-PrecoMapa brand, location context, social proof stats, testimonials,
+Poup brand, location context, social proof stats, testimonials,
 a preview of featured deals, and two clear entry paths. Tap "Sou
 Consumidor", authenticate with Google Sign-In, grant location
 permission, and arrive at the consumer home screen. Sign out, reopen,
@@ -158,7 +158,7 @@ tap "Sou Lojista", authenticate, and arrive at the business dashboard.
 **Acceptance Scenarios**:
 
 1. **Given** a first-time user opens the app, **When** the onboarding
-   screen loads, **Then** they see: the PrecoMapa logo and tagline
+   screen loads, **Then** they see: the Poup logo and tagline
    ("Compre com inteligencia. Economize com dados."), their detected
    city/region, social proof stats (user count and average monthly
    savings), user testimonials with savings amounts, a preview carousel
@@ -410,7 +410,7 @@ annual billing discount.
 
 As a consumer, I want to optionally upgrade to a Plus or Family plan
 to unlock premium features like unlimited favorites, more alerts, and
-an ad-free experience so I can get the most out of PrecoMapa.
+an ad-free experience so I can get the most out of Poup.
 
 **Why this priority**: B2C monetization diversifies revenue beyond
 B2B. It depends on having an engaged consumer base (US1-US3).
@@ -778,7 +778,7 @@ unlock immediately.
 
 ### Authority, Not App
 
-PrecoMapa is not a "price comparison app" — it is a **Regional Price
+Poup is not a "price comparison app" — it is a **Regional Price
 Intelligence Authority**. The platform becomes the independent reference
 for local grocery pricing data, analogous to how the IBGE publishes IPCA
 but at regional/city granularity.

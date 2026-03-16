@@ -1,4 +1,4 @@
-import { useAuthStore } from '@precomapa/shared/store/auth-store';
+import { useAuthStore } from '@poup/shared/store/auth-store';
 
 describe('US0 — Auth & Role Routing', () => {
   beforeEach(() => {

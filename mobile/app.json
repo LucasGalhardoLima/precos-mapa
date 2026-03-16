@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "PrecoMapa",
-    "slug": "precomapa",
+    "name": "Poup",
+    "slug": "poup",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "precomapa",
+    "scheme": "poup",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.precomapa.consumer",
+      "bundleIdentifier": "com.poup.app",
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Precisamos da sua localizacao para mostrar lojas e ofertas perto de voce.",
@@ -28,7 +28,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.precomapa.consumer",
+      "package": "com.poup.app",
       "config": {
         "googleMaps": {
           "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"

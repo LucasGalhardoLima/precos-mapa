@@ -1,6 +1,6 @@
 # E2E: Open map tab, verify map loads, interact with markers
 # Precondition: Metro running on 8081
-appId: com.precomapa.consumer
+appId: com.poup.app
 ---
 - launchApp
 

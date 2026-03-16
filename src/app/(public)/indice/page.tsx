@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   if (!data) {
     return {
-      title: "Indice Regional de Precos | PrecoMapa",
+      title: "Indice Regional de Precos | Poup",
       description: "Acompanhe a evolucao dos precos do varejo na sua regiao com dados reais e metodologia transparente.",
     };
   }
@@ -30,13 +30,13 @@ export async function generateMetadata(): Promise<Metadata> {
   const period = formatPeriodLabel(index.periodStart);
 
   return {
-    title: `Indice de Precos de ${index.city} - ${period} | PrecoMapa`,
+    title: `Indice de Precos de ${index.city} - ${period} | Poup`,
     description: getIndexSummary(index),
     openGraph: {
       title: `Indice de Precos de ${index.city} - ${period}`,
       description: getIndexSummary(index),
       type: "website",
-      siteName: "PrecoMapa",
+      siteName: "Poup",
     },
   };
 }
@@ -135,7 +135,7 @@ export default async function PublicIndexPage() {
     },
     creator: {
       "@type": "Organization",
-      name: "PrecoMapa",
+      name: "Poup",
       description: "Plataforma independente de inteligencia de precos do varejo",
     },
     distribution: {

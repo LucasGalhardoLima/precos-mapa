@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poup — Ícone Wordmark</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&family=Poppins:wght@800;900&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Nunito',sans-serif;background:#c9ede6;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:60px 24px}
+  h1{font-family:'Nunito';font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:8px}
+  .sub{color:#476b66;font-size:14px;margin-bottom:48px;text-align:center}
+
+  .icon-showcase{display:flex;flex-direction:column;gap:48px;align-items:center;max-width:960px;width:100%}
+  .main-icon{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .main-icon .label{font-size:11px;color:#6b9e98;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+
+  .sizes-row{display:flex;gap:32px;align-items:flex-end;justify-content:center;flex-wrap:wrap;background:#fff;border-radius:20px;padding:40px;box-shadow:0 2px 8px rgba(0,0,0,.06);width:100%}
+  .sz{text-align:center}
+  .sz .sl{font-size:10px;color:#94a3b8;font-weight:600;margin-top:8px}
+
+  .hs-section{background:#fff;border-radius:20px;padding:40px;box-shadow:0 2px 8px rgba(0,0,0,.06);width:100%;text-align:center}
+  .hs-section h2{font-family:'Nunito';font-size:20px;font-weight:800;margin-bottom:24px;color:#1a1a2e}
+  .hs-wrap{display:flex;gap:32px;justify-content:center;flex-wrap:wrap}
+  .hs-mock{border-radius:28px;padding:36px 16px 20px;width:300px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;justify-items:center}
+  .hs-light{background:linear-gradient(160deg,#e8f5f1,#d1e8e0)}
+  .hs-dark{background:linear-gradient(160deg,#1e293b,#0f172a)}
+  .hs-i{text-align:center}
+  .hs-ic{width:54px;height:54px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .hs-lb{font-size:8px;margin-top:3px;font-weight:600}
+  .hs-light .hs-lb{color:#475569}
+  .hs-dark .hs-lb{color:#94a3b8}
+
+  .footer{margin-top:40px;color:#6b9e98;font-size:11px;text-align:center}
+</style>
+</head>
+<body>
+
+<h1>Poup — Ícone Wordmark</h1>
+<p class="sub">P + Moeda($) + UP + Carrinho — Paleta Economia Verde</p>
+
+<div class="icon-showcase">
+
+  <!-- ===== ÍCONE PRINCIPAL 300px ===== -->
+  <div class="main-icon">
+    <svg width="300" height="300" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Fundo -->
+        <linearGradient id="bg" x1="0" y1="0" x2="0.3" y2="1">
+          <stop offset="0%" style="stop-color:#18908a"/>
+          <stop offset="100%" style="stop-color:#0c7169"/>
+        </linearGradient>
+        <!-- Moeda gradiente -->
+        <linearGradient id="coinGrad" x1="0.2" y1="0" x2="0.9" y2="1">
+          <stop offset="0%" style="stop-color:#f5c842"/>
+          <stop offset="40%" style="stop-color:#e8a820"/>
+          <stop offset="100%" style="stop-color:#c07810"/>
+        </linearGradient>
+        <!-- Moeda borda lateral (3D effect) -->
+        <linearGradient id="coinEdge" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" style="stop-color:#a86510"/>
+          <stop offset="100%" style="stop-color:#7a4a08"/>
+        </linearGradient>
+        <!-- Brilho moeda -->
+        <radialGradient id="coinShine" cx="38%" cy="30%" r="55%">
+          <stop offset="0%" style="stop-color:rgba(255,245,180,0.7)"/>
+          <stop offset="100%" style="stop-color:rgba(255,255,255,0)"/>
+        </radialGradient>
+        <!-- Sombra -->
+        <filter id="shadow">
+          <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="rgba(0,0,0,0.22)"/>
+        </filter>
+        <filter id="textShadow">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.18)"/>
+        </filter>
+        <filter id="coinShadow">
+          <feDropShadow dx="2" dy="5" stdDeviation="6" flood-color="rgba(0,0,0,0.30)"/>
+        </filter>
+      </defs>
+
+      <!-- Fundo do ícone -->
+      <rect width="400" height="400" rx="90" fill="url(#bg)" filter="url(#shadow)"/>
+
+      <!-- ===== CARRINHO (embaixo, atrás do texto) ===== -->
+      <g transform="translate(200,270)" stroke="#e8d9b8" fill="none" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.95">
+        <!-- Cabo -->
+        <polyline points="-100,-15 -78,-15"/>
+        <!-- Corpo -->
+        <path d="M-78,-15 L-64,55 L84,55 L94,-8 L-60,-8" stroke-width="14"/>
+        <!-- Rodas -->
+        <circle cx="-38" cy="74" r="14" stroke-width="13" fill="none"/>
+        <circle cx="66" cy="74" r="14" stroke-width="13" fill="none"/>
+      </g>
+
+      <!-- ===== TEXTO "P" ===== -->
+      <text x="48" y="248"
+        font-family="Nunito, sans-serif"
+        font-weight="900"
+        font-size="178"
+        fill="#e8d9b8"
+        filter="url(#textShadow)"
+        letter-spacing="-4">P</text>
+
+      <!-- ===== TEXTO "UP" ===== -->
+      <text x="218" y="248"
+        font-family="Nunito, sans-serif"
+        font-weight="900"
+        font-size="178"
+        fill="#e8d9b8"
+        filter="url(#textShadow)"
+        letter-spacing="-4">UP</text>
+
+      <!-- ===== MOEDA 3D (substitui o O) ===== -->
+      <!-- Borda/espessura da moeda (efeito 3D) -->
+      <ellipse cx="203" cy="184" rx="64" ry="66" fill="url(#coinEdge)"/>
+      <!-- Face frontal da moeda -->
+      <ellipse cx="200" cy="178" rx="64" ry="66" fill="url(#coinGrad)" filter="url(#coinShadow)"/>
+      <!-- Brilho -->
+      <ellipse cx="200" cy="178" rx="64" ry="66" fill="url(#coinShine)"/>
+      <!-- Borda interna da moeda (anel) -->
+      <ellipse cx="200" cy="178" rx="54" ry="56" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="3"/>
+      <!-- $ na moeda -->
+      <text x="200" y="202"
+        text-anchor="middle"
+        font-family="Nunito, sans-serif"
+        font-weight="900"
+        font-size="72"
+        fill="#fff"
+        style="text-shadow: 0 2px 4px rgba(0,0,0,0.3)">$</text>
+
+      <!-- ===== BRILHINHO / SPARKLE ===== -->
+      <!-- Estrela de 4 pontas -->
+      <g transform="translate(118, 105)" fill="#e8d9b8" opacity="0.9">
+        <path d="M0,-14 C0,-4 -4,0 -14,0 C-4,0 0,4 0,14 C0,4 4,0 14,0 C4,0 0,-4 0,-14Z"/>
+      </g>
+      <!-- Pontinhos decorativos -->
+      <circle cx="88" cy="105" r="3.5" fill="#e8d9b8" opacity="0.6"/>
+      <circle cx="148" cy="90" r="2.5" fill="#e8d9b8" opacity="0.45"/>
+
+    </svg>
+    <div class="label">300 × 300 — Preview Principal</div>
+  </div>
+
+  <!-- ===== MÚLTIPLOS TAMANHOS ===== -->
+  <div class="sizes-row">
+
+    <div class="sz">
+      <svg width="160" height="160" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg2" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" style="stop-color:#18908a"/><stop offset="100%" style="stop-color:#0c7169"/></linearGradient>
+          <linearGradient id="cg2" x1="0.2" y1="0" x2="0.9" y2="1"><stop offset="0%" style="stop-color:#f5c842"/><stop offset="40%" style="stop-color:#e8a820"/><stop offset="100%" style="stop-color:#c07810"/></linearGradient>
+          <linearGradient id="ce2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#a86510"/><stop offset="100%" style="stop-color:#7a4a08"/></linearGradient>
+        </defs>
+        <rect width="400" height="400" rx="90" fill="url(#bg2)"/>
+        <g transform="translate(200,270)" stroke="#e8d9b8" fill="none" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="-100,-15 -78,-15"/>
+          <path d="M-78,-15 L-64,55 L84,55 L94,-8 L-60,-8"/>
+          <circle cx="-38" cy="74" r="14" stroke-width="13" fill="none"/>
+          <circle cx="66" cy="74" r="14" stroke-width="13" fill="none"/>
+        </g>
+        <text x="48" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">P</text>
+        <text x="218" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">UP</text>
+        <ellipse cx="203" cy="184" rx="64" ry="66" fill="url(#ce2)"/>
+        <ellipse cx="200" cy="178" rx="64" ry="66" fill="url(#cg2)"/>
+        <text x="200" y="202" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="900" font-size="72" fill="#fff">$</text>
+        <g transform="translate(118,105)" fill="#e8d9b8" opacity="0.9"><path d="M0,-14 C0,-4 -4,0 -14,0 C-4,0 0,4 0,14 C0,4 4,0 14,0 C4,0 0,-4 0,-14Z"/></g>
+      </svg>
+      <div class="sl">160px</div>
+    </div>
+
+    <div class="sz">
+      <svg width="100" height="100" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg3" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" style="stop-color:#18908a"/><stop offset="100%" style="stop-color:#0c7169"/></linearGradient>
+          <linearGradient id="cg3" x1="0.2" y1="0" x2="0.9" y2="1"><stop offset="0%" style="stop-color:#f5c842"/><stop offset="40%" style="stop-color:#e8a820"/><stop offset="100%" style="stop-color:#c07810"/></linearGradient>
+          <linearGradient id="ce3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#a86510"/><stop offset="100%" style="stop-color:#7a4a08"/></linearGradient>
+        </defs>
+        <rect width="400" height="400" rx="90" fill="url(#bg3)"/>
+        <g transform="translate(200,270)" stroke="#e8d9b8" fill="none" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="-100,-15 -78,-15"/>
+          <path d="M-78,-15 L-64,55 L84,55 L94,-8 L-60,-8"/>
+          <circle cx="-38" cy="74" r="14" stroke-width="13" fill="none"/>
+          <circle cx="66" cy="74" r="14" stroke-width="13" fill="none"/>
+        </g>
+        <text x="48" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">P</text>
+        <text x="218" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">UP</text>
+        <ellipse cx="203" cy="184" rx="64" ry="66" fill="url(#ce3)"/>
+        <ellipse cx="200" cy="178" rx="64" ry="66" fill="url(#cg3)"/>
+        <text x="200" y="202" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="900" font-size="72" fill="#fff">$</text>
+      </svg>
+      <div class="sl">100px</div>
+    </div>
+
+    <div class="sz">
+      <svg width="64" height="64" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg4" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" style="stop-color:#18908a"/><stop offset="100%" style="stop-color:#0c7169"/></linearGradient>
+          <linearGradient id="cg4" x1="0.2" y1="0" x2="0.9" y2="1"><stop offset="0%" style="stop-color:#f5c842"/><stop offset="40%" style="stop-color:#e8a820"/><stop offset="100%" style="stop-color:#c07810"/></linearGradient>
+          <linearGradient id="ce4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#a86510"/><stop offset="100%" style="stop-color:#7a4a08"/></linearGradient>
+        </defs>
+        <rect width="400" height="400" rx="90" fill="url(#bg4)"/>
+        <g transform="translate(200,270)" stroke="#e8d9b8" fill="none" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="-100,-15 -78,-15"/>
+          <path d="M-78,-15 L-64,55 L84,55 L94,-8 L-60,-8"/>
+          <circle cx="-38" cy="74" r="14" stroke-width="13" fill="none"/>
+          <circle cx="66" cy="74" r="14" stroke-width="13" fill="none"/>
+        </g>
+        <text x="48" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">P</text>
+        <text x="218" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">UP</text>
+        <ellipse cx="203" cy="184" rx="64" ry="66" fill="url(#ce4)"/>
+        <ellipse cx="200" cy="178" rx="64" ry="66" fill="url(#cg4)"/>
+        <text x="200" y="202" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="900" font-size="72" fill="#fff">$</text>
+      </svg>
+      <div class="sl">64px (home)</div>
+    </div>
+
+    <div class="sz">
+      <svg width="44" height="44" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg5" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" style="stop-color:#18908a"/><stop offset="100%" style="stop-color:#0c7169"/></linearGradient>
+          <linearGradient id="cg5" x1="0.2" y1="0" x2="0.9" y2="1"><stop offset="0%" style="stop-color:#f5c842"/><stop offset="40%" style="stop-color:#e8a820"/><stop offset="100%" style="stop-color:#c07810"/></linearGradient>
+          <linearGradient id="ce5" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#a86510"/><stop offset="100%" style="stop-color:#7a4a08"/></linearGradient>
+        </defs>
+        <rect width="400" height="400" rx="90" fill="url(#bg5)"/>
+        <g transform="translate(200,270)" stroke="#e8d9b8" fill="none" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="-100,-15 -78,-15"/>
+          <path d="M-78,-15 L-64,55 L84,55 L94,-8 L-60,-8"/>
+          <circle cx="-38" cy="74" r="16" stroke-width="15" fill="none"/>
+          <circle cx="66" cy="74" r="16" stroke-width="15" fill="none"/>
+        </g>
+        <text x="48" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">P</text>
+        <text x="218" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">UP</text>
+        <ellipse cx="203" cy="184" rx="64" ry="66" fill="url(#ce5)"/>
+        <ellipse cx="200" cy="178" rx="64" ry="66" fill="url(#cg5)"/>
+        <text x="200" y="202" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="900" font-size="72" fill="#fff">$</text>
+      </svg>
+      <div class="sl">44px</div>
+    </div>
+
+    <div class="sz">
+      <svg width="29" height="29" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg6" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" style="stop-color:#18908a"/><stop offset="100%" style="stop-color:#0c7169"/></linearGradient>
+          <linearGradient id="cg6" x1="0.2" y1="0" x2="0.9" y2="1"><stop offset="0%" style="stop-color:#f5c842"/><stop offset="40%" style="stop-color:#e8a820"/><stop offset="100%" style="stop-color:#c07810"/></linearGradient>
+          <linearGradient id="ce6" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#a86510"/><stop offset="100%" style="stop-color:#7a4a08"/></linearGradient>
+        </defs>
+        <rect width="400" height="400" rx="90" fill="url(#bg6)"/>
+        <text x="48" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">P</text>
+        <text x="218" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">UP</text>
+        <ellipse cx="203" cy="184" rx="64" ry="66" fill="url(#ce6)"/>
+        <ellipse cx="200" cy="178" rx="64" ry="66" fill="url(#cg6)"/>
+        <text x="200" y="202" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="900" font-size="72" fill="#fff">$</text>
+      </svg>
+      <div class="sl">29px</div>
+    </div>
+
+  </div>
+
+  <!-- ===== HOME SCREEN ===== -->
+  <div class="hs-section">
+    <h2>Na Home Screen</h2>
+    <div class="hs-wrap">
+
+      <div class="hs-mock hs-light">
+        <div class="hs-i"><div class="hs-ic" style="background:#25d366">📱</div><div class="hs-lb">WhatsApp</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#e1306c">📷</div><div class="hs-lb">Instagram</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#1db954">🎵</div><div class="hs-lb">Spotify</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#8b5cf6">💜</div><div class="hs-lb">Nubank</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#ea1d2c">📍</div><div class="hs-lb">iFood</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#0000ff">🛒</div><div class="hs-lb">Americanas</div></div>
+        <div class="hs-i">
+          <svg width="54" height="54" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="hsl" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" style="stop-color:#18908a"/><stop offset="100%" style="stop-color:#0c7169"/></linearGradient>
+              <linearGradient id="hcl" x1="0.2" y1="0" x2="0.9" y2="1"><stop offset="0%" style="stop-color:#f5c842"/><stop offset="40%" style="stop-color:#e8a820"/><stop offset="100%" style="stop-color:#c07810"/></linearGradient>
+              <linearGradient id="hel" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#a86510"/><stop offset="100%" style="stop-color:#7a4a08"/></linearGradient>
+            </defs>
+            <rect width="400" height="400" rx="90" fill="url(#hsl)"/>
+            <g transform="translate(200,270)" stroke="#e8d9b8" fill="none" stroke-width="15" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="-100,-15 -78,-15"/>
+              <path d="M-78,-15 L-64,55 L84,55 L94,-8 L-60,-8"/>
+              <circle cx="-38" cy="74" r="14" stroke-width="13" fill="none"/>
+              <circle cx="66" cy="74" r="14" stroke-width="13" fill="none"/>
+            </g>
+            <text x="48" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">P</text>
+            <text x="218" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">UP</text>
+            <ellipse cx="203" cy="184" rx="64" ry="66" fill="url(#hel)"/>
+            <ellipse cx="200" cy="178" rx="64" ry="66" fill="url(#hcl)"/>
+            <text x="200" y="202" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="900" font-size="72" fill="#fff">$</text>
+          </svg>
+          <div class="hs-lb" style="color:#0d9488;font-weight:800">Poup</div>
+        </div>
+        <div class="hs-i"><div class="hs-ic" style="background:#0ea5e9">☁️</div><div class="hs-lb">Clima</div></div>
+      </div>
+
+      <div class="hs-mock hs-dark">
+        <div class="hs-i"><div class="hs-ic" style="background:#25d366">📱</div><div class="hs-lb">WhatsApp</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#e1306c">📷</div><div class="hs-lb">Instagram</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#1db954">🎵</div><div class="hs-lb">Spotify</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#8b5cf6">💜</div><div class="hs-lb">Nubank</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#ea1d2c">📍</div><div class="hs-lb">iFood</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#0000ff">🛒</div><div class="hs-lb">Americanas</div></div>
+        <div class="hs-i">
+          <svg width="54" height="54" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="hsd" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0%" style="stop-color:#18908a"/><stop offset="100%" style="stop-color:#0c7169"/></linearGradient>
+              <linearGradient id="hcd" x1="0.2" y1="0" x2="0.9" y2="1"><stop offset="0%" style="stop-color:#f5c842"/><stop offset="40%" style="stop-color:#e8a820"/><stop offset="100%" style="stop-color:#c07810"/></linearGradient>
+              <linearGradient id="hed" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#a86510"/><stop offset="100%" style="stop-color:#7a4a08"/></linearGradient>
+            </defs>
+            <rect width="400" height="400" rx="90" fill="url(#hsd)"/>
+            <g transform="translate(200,270)" stroke="#e8d9b8" fill="none" stroke-width="15" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="-100,-15 -78,-15"/>
+              <path d="M-78,-15 L-64,55 L84,55 L94,-8 L-60,-8"/>
+              <circle cx="-38" cy="74" r="14" stroke-width="13" fill="none"/>
+              <circle cx="66" cy="74" r="14" stroke-width="13" fill="none"/>
+            </g>
+            <text x="48" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">P</text>
+            <text x="218" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">UP</text>
+            <ellipse cx="203" cy="184" rx="64" ry="66" fill="url(#hed)"/>
+            <ellipse cx="200" cy="178" rx="64" ry="66" fill="url(#hcd)"/>
+            <text x="200" y="202" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="900" font-size="72" fill="#fff">$</text>
+          </svg>
+          <div class="hs-lb" style="color:#5eead4;font-weight:800">Poup</div>
+        </div>
+        <div class="hs-i"><div class="hs-ic" style="background:#0ea5e9">☁️</div><div class="hs-lb">Clima</div></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">Poup — Ícone Wordmark — P + Moeda($) + UP + Carrinho — Paleta Economia Verde — Março 2026</div>
+
+</body>
+</html>

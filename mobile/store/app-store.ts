@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import type { SortMode } from '@precomapa/shared/types';
+import type { SortMode } from '@poup/shared/types';
 
 // Re-export auth store for convenience
-export { useAuthStore } from '@precomapa/shared/store/auth-store';
+export { useAuthStore } from '@poup/shared/store/auth-store';
 
 interface FilterState {
   selectedCategoryId: string | null;

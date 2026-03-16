@@ -2,7 +2,7 @@
 -- Run with: supabase db execute --file supabase/seed-admin.sql
 -- Or paste into Supabase Studio SQL Editor
 
--- 1. Create auth user (email: admin@precomapa.com / password: admin123456)
+-- 1. Create auth user (email: admin@poup.com.br / password: admin123456)
 INSERT INTO auth.users (
   id,
   instance_id,
@@ -21,14 +21,14 @@ INSERT INTO auth.users (
   '00000000-0000-0000-0000-000000000000',
   'authenticated',
   'authenticated',
-  'admin@precomapa.com',
+  'admin@poup.com.br',
   crypt('admin123456', gen_salt('bf')),
   now(),
   now(),
   now(),
   '',
   '{"provider": "email", "providers": ["email"]}',
-  '{"display_name": "Admin PrecoMapa"}'
+  '{"display_name": "Admin Poup"}'
 ) ON CONFLICT (id) DO NOTHING;
 
 -- 2. Create identity for email auth
@@ -44,9 +44,9 @@ INSERT INTO auth.identities (
 ) VALUES (
   'a0000000-0000-4000-b000-000000000001',
   'a0000000-0000-4000-b000-000000000001',
-  'admin@precomapa.com',
+  'admin@poup.com.br',
   'email',
-  jsonb_build_object('sub', 'a0000000-0000-4000-b000-000000000001', 'email', 'admin@precomapa.com'),
+  jsonb_build_object('sub', 'a0000000-0000-4000-b000-000000000001', 'email', 'admin@poup.com.br'),
   now(),
   now(),
   now()
@@ -55,10 +55,10 @@ INSERT INTO auth.identities (
 -- 3. Set role to super_admin in profiles (trigger creates the row, so update it)
 -- Wait a moment for the trigger, then update:
 UPDATE public.profiles
-SET role = 'super_admin', display_name = 'Admin PrecoMapa'
+SET role = 'super_admin', display_name = 'Admin Poup'
 WHERE id = 'a0000000-0000-4000-b000-000000000001';
 
 -- If trigger didn't fire (e.g., already existed), insert directly:
 INSERT INTO public.profiles (id, role, display_name)
-VALUES ('a0000000-0000-4000-b000-000000000001', 'super_admin', 'Admin PrecoMapa')
-ON CONFLICT (id) DO UPDATE SET role = 'super_admin', display_name = 'Admin PrecoMapa';
+VALUES ('a0000000-0000-4000-b000-000000000001', 'super_admin', 'Admin Poup')
+ON CONFLICT (id) DO UPDATE SET role = 'super_admin', display_name = 'Admin Poup';

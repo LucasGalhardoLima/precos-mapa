@@ -3,13 +3,13 @@ module.exports = {
   preset: 'jest-expo',
   setupFilesAfterEnv: ['./jest.setup.ts'],
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|moti|@gorhom/.*|nativewind|react-native-reanimated|lucide-react-native|@supabase/.*|react-native-purchases|@react-native-google-signin/.*|expo-apple-authentication|expo-location|expo-notifications|expo-secure-store|expo-device|expo-constants|@precomapa/.*)',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|moti|@gorhom/.*|nativewind|react-native-reanimated|lucide-react-native|@supabase/.*|react-native-purchases|@react-native-google-signin/.*|expo-apple-authentication|expo-location|expo-notifications|expo-secure-store|expo-device|expo-constants|@poup/.*)',
   ],
   modulePaths: ['<rootDir>/node_modules'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
-    '^@precomapa/shared$': '<rootDir>/../packages/shared/src/index.ts',
-    '^@precomapa/shared/(.*)$': '<rootDir>/../packages/shared/src/$1',
+    '^@poup/shared$': '<rootDir>/../packages/shared/src/index.ts',
+    '^@poup/shared/(.*)$': '<rootDir>/../packages/shared/src/$1',
     // Force native modules to resolve from mobile/node_modules so jest.mock
     // in jest.setup.ts matches the same resolved path for imports from packages/shared
     '^expo-secure-store$': '<rootDir>/node_modules/expo-secure-store',

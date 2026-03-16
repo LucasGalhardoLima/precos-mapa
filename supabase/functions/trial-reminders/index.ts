@@ -4,14 +4,14 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const APP_URL = Deno.env.get('NEXT_PUBLIC_APP_URL') ?? 'https://precomapa.com.br';
+const APP_URL = Deno.env.get('NEXT_PUBLIC_APP_URL') ?? 'https://poup.com.br';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const REMINDERS: Record<number, { subject: string; body: string }> = {
   3: {
     subject: 'Voce ja usou metade do seu periodo de teste',
-    body: 'Voce ainda tem 4 dias para explorar todos os recursos Premium do PrecoMapa. Nao perca a chance de importar ofertas com IA e ver dados competitivos.',
+    body: 'Voce ainda tem 4 dias para explorar todos os recursos Premium do Poup. Nao perca a chance de importar ofertas com IA e ver dados competitivos.',
   },
   5: {
     subject: 'Faltam 2 dias para o fim do seu teste',
@@ -74,7 +74,7 @@ serve(async () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'PrecoMapa <noreply@precomapa.com.br>',
+          from: 'Poup <noreply@poup.com.br>',
           to: email,
           subject: `${reminder.subject} — ${store.name}`,
           html: `
@@ -86,7 +86,7 @@ serve(async () => {
               </a>
               <hr style="margin-top:32px;border:none;border-top:1px solid #eee" />
               <p style="color:#999;font-size:11px;margin-top:16px">
-                Enviado por PrecoMapa. Para cancelar, acesse as configuracoes do seu painel.
+                Enviado por Poup. Para cancelar, acesse as configuracoes do seu painel.
               </p>
             </div>
           `,

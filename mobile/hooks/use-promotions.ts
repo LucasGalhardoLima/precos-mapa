@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useRealtime } from '@/hooks/use-realtime';
 import { getGamificationMessage } from '@/constants/messages';
 import { calculateDistanceKm } from '@/hooks/use-location';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 import type { PromotionWithRelations, EnrichedPromotion, SortMode } from '@/types';
 
 interface UsePromotionsParams {

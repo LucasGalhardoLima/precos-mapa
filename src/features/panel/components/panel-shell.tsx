@@ -87,7 +87,7 @@ export function PanelShell({ session, markets, children }: PanelShellProps) {
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-muted)]">Painel</p>
-              <p className="text-xl font-semibold">PrecoMapa</p>
+              <p className="text-xl font-semibold">Poup</p>
             </div>
           </div>
 

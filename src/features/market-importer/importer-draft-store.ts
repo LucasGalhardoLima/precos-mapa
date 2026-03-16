@@ -21,7 +21,7 @@ interface ImporterDraftStore {
   clearDraft: () => void;
 }
 
-const STORAGE_KEY = "precomapa_importer_draft_v1";
+const STORAGE_KEY = "poup_importer_draft_v1";
 
 function stripImages(payload: ImporterPayload | null): ImporterPayload | null {
   if (!payload) return null;

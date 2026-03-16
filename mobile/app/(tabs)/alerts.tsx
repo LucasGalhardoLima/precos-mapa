@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
 import { Bell, MapPin, Crown } from 'lucide-react-native';
 import { useAlerts } from '@/hooks/use-alerts';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 import { useTheme } from '@/theme/use-theme';
 import { Paywall } from '@/components/paywall';
 import type { AlertWithProduct } from '@/types';

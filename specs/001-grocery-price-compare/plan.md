@@ -214,7 +214,7 @@ structure with feature flags or plan-gated access.
 
 ## Phase D1.5: Price Intelligence Authority (Weeks 4-6 post-D1)
 
-Strategic pivot to position PrecoMapa as the Regional Price Intelligence
+Strategic pivot to position Poup as the Regional Price Intelligence
 Authority. Builds on existing D1 infrastructure (price_snapshots,
 daily-price-snapshot, reference_price, competitive intelligence RPCs).
 

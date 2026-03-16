@@ -35,7 +35,7 @@ const PRIVACY_SECTIONS = [
   },
   {
     title: '8. Contato do DPO',
-    body: 'Para dúvidas sobre privacidade, entre em contato com nosso Encarregado de Dados (DPO) pelo e-mail: privacidade@precomapa.com.br',
+    body: 'Para dúvidas sobre privacidade, entre em contato com nosso Encarregado de Dados (DPO) pelo e-mail: privacidade@poup.com.br',
   },
 ];
 

@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 import { Badge } from '@/components/ui/badge';
 import { Colors } from '@/constants/colors';
 

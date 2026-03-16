@@ -1,7 +1,7 @@
 # E2E: Fresh app launch, onboarding flow, navigate to auth and back
 # Note: This flow tests the onboarding experience for new users.
 # If user is already signed in, the flow verifies the home screen instead.
-appId: com.precomapa.consumer
+appId: com.poup.app
 ---
 - launchApp
 
@@ -12,7 +12,7 @@ appId: com.precomapa.consumer
 
 # If we land on the dev client launcher, tap the recently opened entry
 - tapOn:
-    text: "PrecoMapa"
+    text: "Poup"
     optional: true
 
 # Wait for either onboarding or home screen to load

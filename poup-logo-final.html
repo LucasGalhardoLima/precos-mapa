@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poup — Logo Final — App Icon</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Poppins', sans-serif; background: #e8f5f1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+
+  h1 { font-size: 28px; font-weight: 800; color: #0f766e; margin-bottom: 8px; }
+  .subtitle { color: #64748b; font-size: 14px; margin-bottom: 40px; }
+
+  .sizes { display: flex; flex-wrap: wrap; gap: 48px; justify-content: center; align-items: end; margin-bottom: 60px; }
+  .size-item { text-align: center; }
+  .size-label { font-size: 12px; color: #94a3b8; font-weight: 600; margin-top: 8px; }
+
+  .export-section { background: #fff; border-radius: 20px; padding: 40px; max-width: 900px; width: 100%; box-shadow: 0 2px 12px rgba(0,0,0,.06); margin-bottom: 40px; }
+  .export-section h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #1a1a2e; }
+  .export-section p { font-size: 13px; color: #64748b; line-height: 1.6; margin-bottom: 24px; }
+
+  .icon-row { display: flex; gap: 32px; justify-content: center; align-items: center; flex-wrap: wrap; }
+
+  /* Homescreen mockup */
+  .hs-mock { border-radius: 28px; padding: 40px 20px 24px; width: 300px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; justify-items: center; }
+  .hs-light { background: linear-gradient(160deg, #e8f5f1, #d1e8e0); }
+  .hs-dark { background: linear-gradient(160deg, #1e293b, #0f172a); }
+  .hs-i { text-align: center; }
+  .hs-ic { width: 54px; height: 54px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .hs-lb { font-size: 8px; margin-top: 3px; font-weight: 500; }
+  .hs-light .hs-lb { color: #475569; }
+  .hs-dark .hs-lb { color: #94a3b8; }
+
+  .context-section { display: flex; gap: 32px; justify-content: center; flex-wrap: wrap; margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<h1>Poup — Logo Final</h1>
+<p class="subtitle">Carrinho + Moeda dourada no "O" — versão aprovada para app icon</p>
+
+<!-- ===== MAIN ICON SVG (reusable) ===== -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <defs>
+    <!-- Teal gradient background -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a6b62"/>
+      <stop offset="40%" stop-color="#1f7a6f"/>
+      <stop offset="100%" stop-color="#1a6b62"/>
+    </linearGradient>
+    <!-- Gold coin gradient -->
+    <linearGradient id="coinGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#f0c75e"/>
+      <stop offset="35%" stop-color="#d4a843"/>
+      <stop offset="65%" stop-color="#c9993a"/>
+      <stop offset="100%" stop-color="#b8862f"/>
+    </linearGradient>
+    <!-- Coin highlight -->
+    <linearGradient id="coinHighlight" x1="30%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="#f5d98a"/>
+      <stop offset="100%" stop-color="#d4a843"/>
+    </linearGradient>
+    <!-- Coin inner ring gradient -->
+    <linearGradient id="coinRing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e8bd55"/>
+      <stop offset="100%" stop-color="#b8862f"/>
+    </linearGradient>
+  </defs>
+
+  <symbol id="poup-icon" viewBox="0 0 512 512">
+    <!-- Background -->
+    <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+
+    <!-- Subtle inner shadow/depth -->
+    <rect width="512" height="512" rx="112" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="2"/>
+
+    <!-- === SHOPPING CART (white line art) === -->
+    <g stroke="#f5f0e8" fill="none" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.95">
+      <!-- Cart handle bar extending from P -->
+      <path d="M 120,270 L 155,270 L 185,370 L 380,370" stroke-width="13"/>
+      <!-- Cart body -->
+      <path d="M 185,370 L 175,290 L 395,290 L 380,370" stroke-width="12"/>
+      <!-- Wheels -->
+      <circle cx="215" cy="398" r="16" fill="#f5f0e8" stroke="none"/>
+      <circle cx="215" cy="398" r="6" fill="#1a6b62" stroke="none"/>
+      <circle cx="350" cy="398" r="16" fill="#f5f0e8" stroke="none"/>
+      <circle cx="350" cy="398" r="6" fill="#1a6b62" stroke="none"/>
+    </g>
+
+    <!-- === TEXT "P" === -->
+    <g fill="#f5f0e8">
+      <!-- P letter -->
+      <text x="118" y="258" font-family="Poppins, sans-serif" font-weight="800" font-size="145" fill="#f5f0e8" letter-spacing="-2">P</text>
+    </g>
+
+    <!-- === GOLD COIN (replaces O) === -->
+    <g transform="translate(268, 190)">
+      <!-- Coin shadow -->
+      <ellipse cx="4" cy="8" rx="52" ry="52" fill="rgba(0,0,0,0.15)"/>
+      <!-- Coin outer body - slightly tilted -->
+      <g transform="rotate(-12)">
+        <!-- Main coin circle -->
+        <circle cx="0" cy="0" r="52" fill="url(#coinGrad)"/>
+        <!-- Inner ring -->
+        <circle cx="0" cy="0" r="42" fill="none" stroke="url(#coinRing)" stroke-width="3" opacity="0.6"/>
+        <!-- Highlight arc -->
+        <path d="M -30,-38 A 52,52 0 0,1 38,-30" fill="none" stroke="#f5d98a" stroke-width="4" opacity="0.4" stroke-linecap="round"/>
+        <!-- Dollar sign -->
+        <text x="0" y="12" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="800" font-size="52" fill="#f5f0e8" opacity="0.95">$</text>
+        <!-- Inner shadow bottom -->
+        <path d="M -38,30 A 52,52 0 0,0 30,38" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="4" stroke-linecap="round"/>
+      </g>
+    </g>
+
+    <!-- === TEXT "UP" === -->
+    <g fill="#f5f0e8">
+      <text x="316" y="258" font-family="Poppins, sans-serif" font-weight="800" font-size="145" fill="#f5f0e8" letter-spacing="-2">UP</text>
+    </g>
+
+    <!-- === SPARKLES === -->
+    <!-- Top sparkle (4-point star) -->
+    <g transform="translate(250, 108)" fill="#f5f0e8" opacity="0.85">
+      <path d="M 0,-10 L 2.5,0 L 0,10 L -2.5,0 Z"/>
+      <path d="M -8,0 L 0,-2.5 L 8,0 L 0,2.5 Z"/>
+    </g>
+    <!-- Small sparkle -->
+    <g transform="translate(230, 128)" fill="#f5f0e8" opacity="0.5">
+      <path d="M 0,-5 L 1.5,0 L 0,5 L -1.5,0 Z"/>
+      <path d="M -4,0 L 0,-1.5 L 4,0 L 0,1.5 Z"/>
+    </g>
+  </symbol>
+</svg>
+
+<!-- ===== SIZE DEMOS ===== -->
+<div class="sizes">
+  <div class="size-item">
+    <svg width="512" height="512"><use href="#poup-icon"/></svg>
+    <div class="size-label">512 × 512</div>
+  </div>
+</div>
+
+<div class="sizes">
+  <div class="size-item">
+    <svg width="180" height="180"><use href="#poup-icon"/></svg>
+    <div class="size-label">180 × 180</div>
+  </div>
+  <div class="size-item">
+    <svg width="120" height="120"><use href="#poup-icon"/></svg>
+    <div class="size-label">120 × 120</div>
+  </div>
+  <div class="size-item">
+    <svg width="60" height="60"><use href="#poup-icon"/></svg>
+    <div class="size-label">60 × 60</div>
+  </div>
+  <div class="size-item">
+    <svg width="40" height="40"><use href="#poup-icon"/></svg>
+    <div class="size-label">40 × 40</div>
+  </div>
+  <div class="size-item">
+    <svg width="20" height="20"><use href="#poup-icon"/></svg>
+    <div class="size-label">20 × 20</div>
+  </div>
+</div>
+
+<!-- ===== EXPORT GUIDE ===== -->
+<div class="export-section">
+  <h2>Assets Necessários</h2>
+  <p>Para usar como app icon no Expo, exporte o SVG 512px como PNG nos seguintes tamanhos:</p>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <thead>
+      <tr style="border-bottom:2px solid #e2e8f0;">
+        <th style="text-align:left;padding:10px;color:#475569;">Arquivo</th>
+        <th style="text-align:left;padding:10px;color:#475569;">Tamanho</th>
+        <th style="text-align:left;padding:10px;color:#475569;">Uso</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid #f1f5f9;">
+        <td style="padding:10px;font-weight:600;">icon.png</td>
+        <td style="padding:10px;">1024 × 1024</td>
+        <td style="padding:10px;color:#64748b;">App Store / Google Play icon</td>
+      </tr>
+      <tr style="border-bottom:1px solid #f1f5f9;">
+        <td style="padding:10px;font-weight:600;">adaptive-icon.png</td>
+        <td style="padding:10px;">1024 × 1024</td>
+        <td style="padding:10px;color:#64748b;">Android adaptive icon (foreground)</td>
+      </tr>
+      <tr style="border-bottom:1px solid #f1f5f9;">
+        <td style="padding:10px;font-weight:600;">splash-icon.png</td>
+        <td style="padding:10px;">512 × 512</td>
+        <td style="padding:10px;color:#64748b;">Splash screen center image</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;font-weight:600;">favicon.png</td>
+        <td style="padding:10px;">48 × 48</td>
+        <td style="padding:10px;color:#64748b;">Web favicon</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== HOMESCREEN CONTEXT ===== -->
+<div class="export-section">
+  <h2>Contexto — Home Screen</h2>
+  <div class="context-section">
+    <!-- Light mockup -->
+    <div class="hs-mock hs-light">
+      <div class="hs-i"><div class="hs-ic" style="background:#34C759">📞</div><div class="hs-lb">Telefone</div></div>
+      <div class="hs-i"><div class="hs-ic" style="background:#FF9500">🎵</div><div class="hs-lb">Música</div></div>
+      <div class="hs-i"><div class="hs-ic" style="background:#007AFF">✉️</div><div class="hs-lb">Mail</div></div>
+      <div class="hs-i"><div class="hs-ic" style="background:#FF2D55">❤️</div><div class="hs-lb">Saúde</div></div>
+      <div class="hs-i"><div class="hs-ic" style="background:#5856D6">📸</div><div class="hs-lb">Fotos</div></div>
+      <div class="hs-i"><div class="hs-ic" style="background:#FF3B30">📺</div><div class="hs-lb">YouTube</div></div>
+      <div class="hs-i">
+        <div class="hs-ic" style="padding:0;overflow:hidden">
+          <svg width="54" height="54"><use href="#poup-icon"/></svg>
+        </div>
+        <div class="hs-lb">Poup</div>
+      </div>
+      <div class="hs-i"><div class="hs-ic" style="background:#1DB954">🎧</div><div class="hs-lb">Spotify</div></div>
+    </div>
+    <!-- Dark mockup -->
+    <div class="hs-mock hs-dark">
+      <div class="hs-i"><div class="hs-ic" style="background:#34C759">📞</div><div class="hs-lb">Telefone</div></div>
+      <div class="hs-i"><div class="hs-ic" style="background:#FF9500">🎵</div><div class="hs-lb">Música</div></div>
+      <div class="hs-i"><div class="hs-ic" style="background:#007AFF">✉️</div><div class="hs-lb">Mail</div></div>
+      <div class="hs-i"><div class="hs-ic" style="background:#FF2D55">❤️</div><div class="hs-lb">Saúde</div></div>
+      <div class="hs-i"><div class="hs-ic" style="background:#5856D6">📸</div><div class="hs-lb">Fotos</div></div>
+      <div class="hs-i"><div class="hs-ic" style="background:#FF3B30">📺</div><div class="hs-lb">YouTube</div></div>
+      <div class="hs-i">
+        <div class="hs-ic" style="padding:0;overflow:hidden">
+          <svg width="54" height="54"><use href="#poup-icon"/></svg>
+        </div>
+        <div class="hs-lb">Poup</div>
+      </div>
+      <div class="hs-i"><div class="hs-ic" style="background:#1DB954">🎧</div><div class="hs-lb">Spotify</div></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
