@@ -1,7 +1,7 @@
-# App Store Metadata — PrecoMapa
+# App Store Metadata — Poup
 
 ## App Name
-PrecoMapa — Precos e Ofertas
+Poup — Precos e Ofertas
 
 ## Subtitle (iOS, 30 chars)
 Compare precos de mercados
@@ -11,7 +11,7 @@ Compare precos de mercados perto de voce e economize nas compras do dia a dia.
 
 ## Full Description (pt-BR)
 
-PrecoMapa e o app que ajuda voce a encontrar os melhores precos de produtos de mercado na sua regiao.
+Poup e o app que ajuda voce a encontrar os melhores precos de produtos de mercado na sua regiao.
 
 **Como funciona:**
 - Veja ofertas de mercados proximos no mapa ou em lista
@@ -38,7 +38,7 @@ PrecoMapa e o app que ajuda voce a encontrar os melhores precos de produtos de m
 - Plus (R$9,90/mes): favoritos e alertas ilimitados, listas inteligentes, historico de precos, sem anuncios
 - Family (R$19,90/mes): tudo do Plus + ate 5 membros da familia
 
-Economize tempo e dinheiro. Baixe o PrecoMapa agora!
+Economize tempo e dinheiro. Baixe o Poup agora!
 
 ## Keywords (iOS, 100 chars)
 precos,ofertas,mercado,supermercado,compras,economia,promocao,comparar,mapa,lista
@@ -54,7 +54,7 @@ precos,ofertas,mercado,supermercado,compras,economia,promocao,comparar,mapa,list
 - **Android**: Everyone
 
 ## Privacy Policy URL
-https://precomapa.com.br/privacidade
+https://poup.com.br/privacidade
 
 ## Screenshots Required
 | Device | Size | Count |
