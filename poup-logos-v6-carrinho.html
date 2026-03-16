@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poup — Logos v6 — Reconhecimento Instantâneo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#f8fafc;color:#1a1a2e}
+  .hero{text-align:center;padding:56px 24px 40px;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff}
+  .hero h1{font-family:'Poppins';font-size:36px;font-weight:800}
+  .hero p{font-size:15px;opacity:.85;margin-top:8px;max-width:580px;margin-inline:auto;line-height:1.5}
+  section{max-width:1100px;margin:0 auto;padding:56px 24px}
+  section h2{font-family:'Poppins';font-size:24px;font-weight:700;margin-bottom:6px}
+  .sub{color:#64748b;font-size:14px;margin-bottom:36px;line-height:1.5}
+
+  .grid{display:grid;grid-template-columns:1fr;gap:28px}
+  .card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);border:2px solid transparent;transition:.25s}
+  .card:hover{border-color:#0d9488;box-shadow:0 8px 28px rgba(13,148,136,.12);transform:translateY(-2px)}
+  .card-inner{display:flex;align-items:stretch;min-height:240px}
+  .card-visual{flex:0 0 280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px}
+  .card-icons{display:flex;gap:12px;align-items:center}
+  .card-content{flex:1;padding:24px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid #f1f5f9}
+  .card-content .status{display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;width:fit-content}
+  .status.improved{background:#fef3c7;color:#92400e}
+  .status.new{background:#dbeafe;color:#1e40af}
+  .card-content h3{font-size:18px;font-weight:700;margin-bottom:8px;line-height:1.3}
+  .card-content p{color:#64748b;font-size:13px;line-height:1.6}
+  .card-content .test{margin-top:12px;background:#f8fafc;border-radius:8px;padding:10px 14px;font-size:12px;color:#475569;line-height:1.5}
+  .card-content .test strong{color:#0d9488}
+  .tags{display:flex;gap:5px;margin-top:12px;flex-wrap:wrap}
+  .tag{background:#f0fdfa;color:#0d9488;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px}
+
+  .mini-label{font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+
+  /* Compare section */
+  .compare-wrap{background:#fff;border-radius:16px;padding:40px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .compare-row{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
+  .compare-item{text-align:center;flex:0 0 120px}
+  .compare-item .cl{font-size:10px;color:#64748b;font-weight:600;margin-top:8px}
+  .compare-item .cl2{font-size:9px;color:#94a3b8;margin-top:2px;line-height:1.3}
+
+  /* Homescreen */
+  .ctx{background:#fff;border-radius:16px;padding:40px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-top:32px}
+  .ctx h3{font-size:18px;font-weight:700;margin-bottom:24px;text-align:center}
+  .hs-wrap{display:flex;gap:32px;justify-content:center;flex-wrap:wrap}
+  .hs-mock{border-radius:24px;padding:36px 20px 24px;width:300px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;justify-items:center}
+  .hs-light{background:linear-gradient(135deg,#e2e8f0,#cbd5e1)}
+  .hs-dark{background:linear-gradient(135deg,#1e293b,#334155)}
+  .hs-i{text-align:center}
+  .hs-ic{width:54px;height:54px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .hs-lb{font-size:8px;margin-top:3px;font-weight:500}
+  .hs-light .hs-lb{color:#475569}
+  .hs-dark .hs-lb{color:#94a3b8}
+
+  .rationale{background:linear-gradient(135deg,#f0fdfa,#ecfdf5);border-radius:16px;padding:40px;margin-top:40px}
+  .rationale h3{font-size:20px;font-weight:700;margin-bottom:12px;color:#0d9488}
+  .rationale p{color:#475569;line-height:1.7;font-size:15px;margin-bottom:12px}
+
+  @media(max-width:768px){
+    .hero h1{font-size:28px}section{padding:40px 16px}
+    .card-inner{flex-direction:column}
+    .card-visual{flex:none;padding:24px}
+    .card-content{border-left:none;border-top:1px solid #f1f5f9}
+    .hs-wrap{flex-direction:column;align-items:center}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Poup — v6</h1>
+  <p>Critério principal: o usuário bate o olho e já sabe do que se trata. Cada ícone foi pensado para comunicar "ofertas de supermercado" em menos de 1 segundo.</p>
+</div>
+
+<section>
+  <h2>6 Variações</h2>
+  <p class="sub">3 melhoradas + 3 novas. Todas testadas com a pergunta: "Se você visse só o ícone na App Store, saberia que é um app de ofertas de supermercado?"</p>
+
+  <div class="grid">
+
+    <!-- ====== V1 — SELO DE OFERTA (melhorada) ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:linear-gradient(135deg,#f0fdfa,#ccfbf1)">
+          <div class="card-icons">
+            <!-- Ícone grande -->
+            <svg width="100" height="100" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="v1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#v1)"/>
+              <g transform="translate(52,60)">
+                <!-- Carrinho limpo -->
+                <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="-4" cy="24" r="5" fill="#fff"/>
+                <circle cx="20" cy="24" r="5" fill="#fff"/>
+                <!-- Selo starburst maior, mais pontas, mais "gritante" -->
+                <g transform="translate(20,-20)">
+                  <polygon points="0,-18 4,-10 10,-15 8,-6 16,-7 10,-1 18,3 10,5 13,13 6,9 4,17 0,10 -4,17 -6,9 -13,13 -10,5 -18,3 -10,-1 -16,-7 -8,-6 -10,-15 -4,-10" fill="#f59e0b"/>
+                  <circle cx="0" cy="0" r="9" fill="#fbbf24"/>
+                  <text x="0" y="4.5" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="13" fill="#fff">%</text>
+                </g>
+              </g>
+            </svg>
+            <!-- Ícone pequeno -->
+            <svg width="52" height="52" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="v1s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#v1s)"/>
+              <g transform="translate(52,60)">
+                <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="-4" cy="24" r="5.5" fill="#fff"/>
+                <circle cx="20" cy="24" r="5.5" fill="#fff"/>
+                <g transform="translate(20,-20)">
+                  <polygon points="0,-18 4,-10 10,-15 8,-6 16,-7 10,-1 18,3 10,5 13,13 6,9 4,17 0,10 -4,17 -6,9 -13,13 -10,5 -18,3 -10,-1 -16,-7 -8,-6 -10,-15 -4,-10" fill="#f59e0b"/>
+                  <circle cx="0" cy="0" r="9" fill="#fbbf24"/>
+                  <text x="0" y="4.5" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="13" fill="#fff">%</text>
+                </g>
+              </g>
+            </svg>
+          </div>
+          <div class="mini-label">Grande e pequeno</div>
+        </div>
+        <div class="card-content">
+          <span class="status improved">Melhorada</span>
+          <h3>Carrinho + Selo Starburst</h3>
+          <p>Selo com mais pontas e mais expressivo — aquele "splash" de oferta que todo supermercado usa. Maior e posicionado no canto superior do carrinho como um badge de notificação. O % dentro é o gatilho universal de "desconto".</p>
+          <div class="test">
+            <strong>Teste do olhar:</strong> "Carrinho com selo amarelo de desconto" → App de ofertas de supermercado ✓
+          </div>
+          <div class="tags">
+            <span class="tag">Oferta</span>
+            <span class="tag">Supermercado</span>
+            <span class="tag">Impactante</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== V2 — VERIFICADO (melhorada) ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5)">
+          <div class="card-icons">
+            <svg width="100" height="100" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="v2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#v2)"/>
+              <g transform="translate(50,62)">
+                <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="-4" cy="24" r="5" fill="#fff"/>
+                <circle cx="20" cy="24" r="5" fill="#fff"/>
+                <!-- Badge circular com check + "menor preço" -->
+                <g transform="translate(24,-22)">
+                  <circle cx="0" cy="0" r="16" fill="#f59e0b"/>
+                  <circle cx="0" cy="0" r="13" fill="#fbbf24"/>
+                  <!-- Check bold -->
+                  <path d="M-6,1 L-2,6 L7,-4" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </g>
+                <!-- Mini texto "menor" dentro do carrinho -->
+                <text x="8" y="8" text-anchor="middle" font-family="Inter" font-weight="700" font-size="7" fill="rgba(255,255,255,.5)">MENOR</text>
+                <text x="8" y="16" text-anchor="middle" font-family="Inter" font-weight="700" font-size="7" fill="rgba(255,255,255,.5)">PREÇO</text>
+              </g>
+            </svg>
+            <svg width="52" height="52" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="v2s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#v2s)"/>
+              <g transform="translate(50,62)">
+                <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="-4" cy="24" r="5.5" fill="#fff"/>
+                <circle cx="20" cy="24" r="5.5" fill="#fff"/>
+                <g transform="translate(24,-22)">
+                  <circle cx="0" cy="0" r="16" fill="#f59e0b"/>
+                  <circle cx="0" cy="0" r="13" fill="#fbbf24"/>
+                  <path d="M-6,1 L-2,6 L7,-4" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </g>
+              </g>
+            </svg>
+          </div>
+          <div class="mini-label">Grande e pequeno</div>
+        </div>
+        <div class="card-content">
+          <span class="status improved">Melhorada</span>
+          <h3>Carrinho + Badge "Menor Preço"</h3>
+          <p>Badge circular dourado com check (padrão de apps — como badge de verificado do Instagram). O texto "MENOR PREÇO" dentro do carrinho reforça a mensagem em tamanhos maiores. No ícone pequeno, o badge sozinho já funciona.</p>
+          <div class="test">
+            <strong>Teste do olhar:</strong> "Carrinho com selo de aprovado" → App que verifica o melhor preço ✓
+          </div>
+          <div class="tags">
+            <span class="tag">Verificado</span>
+            <span class="tag">Badge</span>
+            <span class="tag">Confiança</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== V3 — ECONOMIA (melhorada) ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:linear-gradient(135deg,#fefce8,#fef9c3)">
+          <div class="card-icons">
+            <svg width="100" height="100" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="v3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#v3)"/>
+              <g transform="translate(52,60)">
+                <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="-4" cy="24" r="5" fill="#fff"/>
+                <circle cx="20" cy="24" r="5" fill="#fff"/>
+                <!-- Moeda grande e clara dentro do carrinho -->
+                <g transform="translate(10,-2)">
+                  <circle cx="0" cy="0" r="16" fill="#f59e0b"/>
+                  <circle cx="0" cy="0" r="13" fill="#fbbf24"/>
+                  <text x="0" y="5" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="15" fill="#fff">$</text>
+                </g>
+                <!-- Seta pra baixo ao lado da moeda -->
+                <g transform="translate(28,-6)">
+                  <line x1="0" y1="-6" x2="0" y2="6" stroke="#5eead4" stroke-width="3" stroke-linecap="round"/>
+                  <path d="M-4,3 L0,8 L4,3" stroke="#5eead4" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </g>
+              </g>
+            </svg>
+            <svg width="52" height="52" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="v3s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#v3s)"/>
+              <g transform="translate(52,60)">
+                <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="-4" cy="24" r="5.5" fill="#fff"/>
+                <circle cx="20" cy="24" r="5.5" fill="#fff"/>
+                <g transform="translate(10,-2)">
+                  <circle cx="0" cy="0" r="16" fill="#f59e0b"/>
+                  <circle cx="0" cy="0" r="13" fill="#fbbf24"/>
+                  <text x="0" y="5" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="15" fill="#fff">$</text>
+                </g>
+                <g transform="translate(28,-6)">
+                  <line x1="0" y1="-6" x2="0" y2="6" stroke="#5eead4" stroke-width="3.5" stroke-linecap="round"/>
+                  <path d="M-4,3 L0,8 L4,3" stroke="#5eead4" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </g>
+              </g>
+            </svg>
+          </div>
+          <div class="mini-label">Grande e pequeno</div>
+        </div>
+        <div class="card-content">
+          <span class="status improved">Melhorada</span>
+          <h3>Carrinho + Moeda Caindo</h3>
+          <p>Simplificada: uma moeda grande e clara ($) dentro do carrinho com seta teal pra baixo ao lado. Sem empilhamento confuso — uma moeda, uma seta, uma mensagem: "economize na compra". A seta verde reforça a cor da marca.</p>
+          <div class="test">
+            <strong>Teste do olhar:</strong> "Carrinho com moeda e seta pra baixo" → App pra economizar nas compras ✓
+          </div>
+          <div class="tags">
+            <span class="tag">Economia</span>
+            <span class="tag">Simples</span>
+            <span class="tag">Claro</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== V4 — NOVA: Carrinho com preço cortado ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:linear-gradient(135deg,#f0fdfa,#ccfbf1)">
+          <div class="card-icons">
+            <svg width="100" height="100" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="v4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#v4)"/>
+              <g transform="translate(52,62)">
+                <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="-4" cy="24" r="5" fill="#fff"/>
+                <circle cx="20" cy="24" r="5" fill="#fff"/>
+                <!-- Preço caro riscado -->
+                <g transform="translate(2,-8)">
+                  <text x="0" y="0" font-family="Poppins" font-weight="700" font-size="11" fill="rgba(255,255,255,.35)">R$8</text>
+                  <line x1="-4" y1="-2" x2="20" y2="-2" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
+                </g>
+                <!-- Preço barato em destaque -->
+                <g transform="translate(2,8)">
+                  <text x="0" y="0" font-family="Poppins" font-weight="800" font-size="14" fill="#fbbf24">R$4</text>
+                </g>
+              </g>
+            </svg>
+            <svg width="52" height="52" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="v4s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#v4s)"/>
+              <g transform="translate(52,62)">
+                <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="-4" cy="24" r="5.5" fill="#fff"/>
+                <circle cx="20" cy="24" r="5.5" fill="#fff"/>
+                <g transform="translate(2,-8)">
+                  <text x="0" y="0" font-family="Poppins" font-weight="700" font-size="11" fill="rgba(255,255,255,.35)">R$8</text>
+                  <line x1="-4" y1="-2" x2="20" y2="-2" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
+                </g>
+                <g transform="translate(2,8)">
+                  <text x="0" y="0" font-family="Poppins" font-weight="800" font-size="14" fill="#fbbf24">R$4</text>
+                </g>
+              </g>
+            </svg>
+          </div>
+          <div class="mini-label">Grande e pequeno</div>
+        </div>
+        <div class="card-content">
+          <span class="status new">Nova</span>
+          <h3>Carrinho + Preço Cortado</h3>
+          <p>O padrão visual mais reconhecível do mundo de ofertas: preço antigo riscado em vermelho, preço novo em destaque dourado. Dentro do carrinho. É o que todo encarte de supermercado faz. Nenhuma explicação necessária.</p>
+          <div class="test">
+            <strong>Teste do olhar:</strong> "Carrinho com preço cortado" → App de ofertas/promoção ✓✓✓ (reconhecimento máximo)
+          </div>
+          <div class="tags">
+            <span class="tag">Promoção</span>
+            <span class="tag">Universal</span>
+            <span class="tag">Encarte</span>
+            <span class="tag">Instantâneo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== V5 — NOVA: Carrinho + Comparação lado a lado ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5)">
+          <div class="card-icons">
+            <svg width="100" height="100" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="v5" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#v5)"/>
+              <g transform="translate(52,60)">
+                <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="-4" cy="24" r="5" fill="#fff"/>
+                <circle cx="20" cy="24" r="5" fill="#fff"/>
+                <!-- Dois mini-cards de preço lado a lado = comparação -->
+                <g transform="translate(-2,-4)">
+                  <!-- Card "caro" -->
+                  <rect x="-4" y="-10" width="16" height="18" rx="3" fill="rgba(255,255,255,.2)" stroke="rgba(255,255,255,.3)" stroke-width="1"/>
+                  <text x="4" y="2" text-anchor="middle" font-family="Poppins" font-weight="700" font-size="7" fill="rgba(255,255,255,.4)">R$9</text>
+                </g>
+                <g transform="translate(18,-4)">
+                  <!-- Card "barato" em destaque -->
+                  <rect x="-4" y="-10" width="16" height="18" rx="3" fill="#f59e0b"/>
+                  <text x="4" y="2" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="7" fill="#fff">R$5</text>
+                </g>
+                <!-- Setas apontando pro mais barato -->
+                <path d="M10,-18 L18,-14" stroke="#5eead4" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <path d="M16,-15 L19,-14 L17,-11" stroke="#5eead4" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+            </svg>
+            <svg width="52" height="52" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="v5s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#v5s)"/>
+              <g transform="translate(52,60)">
+                <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="-4" cy="24" r="5.5" fill="#fff"/>
+                <circle cx="20" cy="24" r="5.5" fill="#fff"/>
+                <g transform="translate(-2,-4)">
+                  <rect x="-4" y="-10" width="16" height="18" rx="3" fill="rgba(255,255,255,.2)" stroke="rgba(255,255,255,.3)" stroke-width="1"/>
+                  <text x="4" y="2" text-anchor="middle" font-family="Poppins" font-weight="700" font-size="7" fill="rgba(255,255,255,.4)">R$9</text>
+                </g>
+                <g transform="translate(18,-4)">
+                  <rect x="-4" y="-10" width="16" height="18" rx="3" fill="#f59e0b"/>
+                  <text x="4" y="2" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="7" fill="#fff">R$5</text>
+                </g>
+              </g>
+            </svg>
+          </div>
+          <div class="mini-label">Grande e pequeno</div>
+        </div>
+        <div class="card-content">
+          <span class="status new">Nova</span>
+          <h3>Carrinho + Comparação de Preços</h3>
+          <p>Dois mini-cards dentro do carrinho: preço caro (apagado) e preço barato (destaque dourado). Seta apontando pro menor. Comunica exatamente o que o app faz: compara preços entre mercados e mostra o mais barato.</p>
+          <div class="test">
+            <strong>Teste do olhar:</strong> "Carrinho com dois preços e seta pro menor" → App que compara preços de supermercado ✓✓
+          </div>
+          <div class="tags">
+            <span class="tag">Comparação</span>
+            <span class="tag">Preços</span>
+            <span class="tag">Visual</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== V6 — NOVA: Carrinho + Sacola com desconto ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:linear-gradient(135deg,#f0fdfa,#e0f7f5)">
+          <div class="card-icons">
+            <svg width="100" height="100" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="v6" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#v6)"/>
+              <g transform="translate(52,58)">
+                <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="-4" cy="24" r="5" fill="#fff"/>
+                <circle cx="20" cy="24" r="5" fill="#fff"/>
+                <!-- % grande e bold centralizado no carrinho -->
+                <text x="12" y="10" text-anchor="middle" font-family="Poppins" font-weight="900" font-size="28" fill="#f59e0b">%</text>
+              </g>
+            </svg>
+            <svg width="52" height="52" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="v6s" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+              <rect width="120" height="120" rx="27" fill="url(#v6s)"/>
+              <g transform="translate(52,58)">
+                <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="-4" cy="24" r="5.5" fill="#fff"/>
+                <circle cx="20" cy="24" r="5.5" fill="#fff"/>
+                <text x="12" y="10" text-anchor="middle" font-family="Poppins" font-weight="900" font-size="28" fill="#f59e0b">%</text>
+              </g>
+            </svg>
+          </div>
+          <div class="mini-label">Grande e pequeno</div>
+        </div>
+        <div class="card-content">
+          <span class="status new">Nova</span>
+          <h3>Carrinho + % Puro</h3>
+          <p>A versão mais minimalista e direta: carrinho com um % enorme dourado dentro. Nenhum ruído, nenhum elemento extra. Dois símbolos: carrinho (compras) + % (desconto). A simplicidade é a força — funciona em qualquer tamanho.</p>
+          <div class="test">
+            <strong>Teste do olhar:</strong> "Carrinho com porcentagem" → App de desconto/ofertas de compras ✓✓✓
+          </div>
+          <div class="tags">
+            <span class="tag">Minimalista</span>
+            <span class="tag">Escalável</span>
+            <span class="tag">Impactante</span>
+            <span class="tag">Atemporal</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ========== COMPARAÇÃO ========== -->
+<section>
+  <h2>Comparação Lado a Lado</h2>
+  <p class="sub">Todos os 6 ícones em tamanho real de home screen (60px) para avaliar reconhecimento rápido.</p>
+
+  <div class="compare-wrap">
+    <div class="compare-row">
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="x1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#x1)"/><g transform="translate(52,60)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5" fill="#fff"/><circle cx="20" cy="24" r="5" fill="#fff"/><g transform="translate(20,-20)"><polygon points="0,-18 4,-10 10,-15 8,-6 16,-7 10,-1 18,3 10,5 13,13 6,9 4,17 0,10 -4,17 -6,9 -13,13 -10,5 -18,3 -10,-1 -16,-7 -8,-6 -10,-15 -4,-10" fill="#f59e0b"/><circle cx="0" cy="0" r="9" fill="#fbbf24"/><text x="0" y="4.5" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="13" fill="#fff">%</text></g></g></svg>
+        <div class="cl">Selo</div>
+        <div class="cl2">Oferta de super</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="x2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#x2)"/><g transform="translate(50,62)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5" fill="#fff"/><circle cx="20" cy="24" r="5" fill="#fff"/><g transform="translate(24,-22)"><circle cx="0" cy="0" r="16" fill="#f59e0b"/><circle cx="0" cy="0" r="13" fill="#fbbf24"/><path d="M-6,1 L-2,6 L7,-4" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></g></svg>
+        <div class="cl">Verificado</div>
+        <div class="cl2">Menor preço conferido</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="x3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#x3)"/><g transform="translate(52,60)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5" fill="#fff"/><circle cx="20" cy="24" r="5" fill="#fff"/><g transform="translate(10,-2)"><circle cx="0" cy="0" r="16" fill="#f59e0b"/><circle cx="0" cy="0" r="13" fill="#fbbf24"/><text x="0" y="5" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="15" fill="#fff">$</text></g><g transform="translate(28,-6)"><line x1="0" y1="-6" x2="0" y2="6" stroke="#5eead4" stroke-width="3.5" stroke-linecap="round"/><path d="M-4,3 L0,8 L4,3" stroke="#5eead4" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></g></svg>
+        <div class="cl">Economia</div>
+        <div class="cl2">Economize nas compras</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="x4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#x4)"/><g transform="translate(52,62)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5" fill="#fff"/><circle cx="20" cy="24" r="5" fill="#fff"/><g transform="translate(2,-8)"><text x="0" y="0" font-family="Poppins" font-weight="700" font-size="11" fill="rgba(255,255,255,.35)">R$8</text><line x1="-4" y1="-2" x2="20" y2="-2" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/></g><g transform="translate(2,8)"><text x="0" y="0" font-family="Poppins" font-weight="800" font-size="14" fill="#fbbf24">R$4</text></g></g></svg>
+        <div class="cl">Preço Cortado</div>
+        <div class="cl2">De / Por — promoção</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="x5" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#x5)"/><g transform="translate(52,60)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5" fill="#fff"/><circle cx="20" cy="24" r="5" fill="#fff"/><g transform="translate(-2,-4)"><rect x="-4" y="-10" width="16" height="18" rx="3" fill="rgba(255,255,255,.2)" stroke="rgba(255,255,255,.3)" stroke-width="1"/><text x="4" y="2" text-anchor="middle" font-family="Poppins" font-weight="700" font-size="7" fill="rgba(255,255,255,.4)">R$9</text></g><g transform="translate(18,-4)"><rect x="-4" y="-10" width="16" height="18" rx="3" fill="#f59e0b"/><text x="4" y="2" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="7" fill="#fff">R$5</text></g></g></svg>
+        <div class="cl">Comparação</div>
+        <div class="cl2">Compara preços</div>
+      </div>
+      <div class="compare-item">
+        <svg width="60" height="60" viewBox="0 0 120 120"><defs><linearGradient id="x6" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#x6)"/><g transform="translate(52,58)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5" fill="#fff"/><circle cx="20" cy="24" r="5" fill="#fff"/><text x="12" y="10" text-anchor="middle" font-family="Poppins" font-weight="900" font-size="28" fill="#f59e0b">%</text></g></svg>
+        <div class="cl">% Puro</div>
+        <div class="cl2">Descontos nas compras</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== HOMESCREEN ========== -->
+<section>
+  <div class="ctx">
+    <h3>Na Home Screen — Claro & Escuro</h3>
+    <div class="hs-wrap">
+      <div class="hs-mock hs-light">
+        <div class="hs-i"><div class="hs-ic" style="background:#34d399">📱</div><div class="hs-lb">WhatsApp</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#3b82f6">📷</div><div class="hs-lb">Instagram</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#f43f5e">🎵</div><div class="hs-lb">Spotify</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#8b5cf6">💜</div><div class="hs-lb">Nubank</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#ef4444">📍</div><div class="hs-lb">iFood</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#f59e0b">🛒</div><div class="hs-lb">Mercado L.</div></div>
+        <div class="hs-i">
+          <svg width="54" height="54" viewBox="0 0 120 120"><defs><linearGradient id="hl1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#hl1)"/><g transform="translate(52,58)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5.5" fill="#fff"/><circle cx="20" cy="24" r="5.5" fill="#fff"/><text x="12" y="10" text-anchor="middle" font-family="Poppins" font-weight="900" font-size="28" fill="#f59e0b">%</text></g></svg>
+          <div class="hs-lb" style="color:#0d9488;font-weight:700">Poup</div>
+        </div>
+        <div class="hs-i"><div class="hs-ic" style="background:#0ea5e9">☁️</div><div class="hs-lb">Clima</div></div>
+      </div>
+      <div class="hs-mock hs-dark">
+        <div class="hs-i"><div class="hs-ic" style="background:#34d399">📱</div><div class="hs-lb">WhatsApp</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#3b82f6">📷</div><div class="hs-lb">Instagram</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#f43f5e">🎵</div><div class="hs-lb">Spotify</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#8b5cf6">💜</div><div class="hs-lb">Nubank</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#ef4444">📍</div><div class="hs-lb">iFood</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#f59e0b">🛒</div><div class="hs-lb">Mercado L.</div></div>
+        <div class="hs-i">
+          <svg width="54" height="54" viewBox="0 0 120 120"><defs><linearGradient id="hd1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#hd1)"/><g transform="translate(52,58)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5.5" fill="#fff"/><circle cx="20" cy="24" r="5.5" fill="#fff"/><text x="12" y="10" text-anchor="middle" font-family="Poppins" font-weight="900" font-size="28" fill="#f59e0b">%</text></g></svg>
+          <div class="hs-lb" style="color:#5eead4;font-weight:700">Poup</div>
+        </div>
+        <div class="hs-i"><div class="hs-ic" style="background:#0ea5e9">☁️</div><div class="hs-lb">Clima</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== RACIONAL ========== -->
+<section>
+  <div class="rationale">
+    <h3>Racional — Reconhecimento Instantâneo</h3>
+    <p><strong>"Preço Cortado"</strong> é provavelmente a variação com reconhecimento mais rápido. O padrão "De R$X / Por R$Y" é algo que todo brasileiro vê em encartes, gôndolas, e propagandas desde sempre. Não precisa de nenhuma explicação — é visceral.</p>
+    <p><strong>"% Puro"</strong> é a mais limpa e escalável. Apenas dois elementos: carrinho + %. Funciona de 16px a 1024px sem perder nada. É a aposta mais segura para longevidade da marca — nunca vai parecer datada.</p>
+    <p><strong>"Selo Starburst"</strong> é a mais "gritante" — aquele selo de oferta de supermercado que chama atenção na gôndola. Funciona muito bem pra marketing e materiais promocionais.</p>
+    <p><strong>"Comparação"</strong> é a que melhor explica a funcionalidade do app (comparar preços), mas pode ser sutil demais em tamanhos pequenos. Funciona melhor como conceito para telas internas.</p>
+    <p>Minha recomendação final seria escolher entre <strong>"Preço Cortado"</strong> (mais expressivo e reconhecível) ou <strong>"% Puro"</strong> (mais limpo e atemporal), dependendo do posicionamento que você quer: popular/supermercado vs moderno/clean.</p>
+  </div>
+</section>
+
+<div style="text-align:center;padding:40px;color:#94a3b8;font-size:12px">Poup — Identidade Visual v6 — Março 2026</div>
+
+</body>
+</html>

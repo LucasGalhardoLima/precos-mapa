@@ -11,7 +11,7 @@ Templates requiring updates: None (additive changes only)
 Follow-up TODOs: None
 -->
 
-# Precos Mapa Constitution
+# Poup Constitution
 
 ## Core Principles
 
@@ -156,7 +156,7 @@ lean and comprehensible.
 ## Governance
 
 This constitution is the highest-authority document for development
-decisions in the Precos Mapa project. When a practice conflicts with
+decisions in the Poup project. When a practice conflicts with
 this constitution, the constitution prevails.
 
 - **Amendments**: Any change to this document MUST be proposed via PR,

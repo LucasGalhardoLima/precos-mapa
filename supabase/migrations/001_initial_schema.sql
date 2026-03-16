@@ -1,5 +1,5 @@
 -- 001_initial_schema.sql
--- PrecoMapa: Grocery Price Comparison Platform
+-- Poup: Grocery Price Comparison Platform
 -- All tables, RLS policies, functions, triggers, and indexes
 
 -- =============================================================================

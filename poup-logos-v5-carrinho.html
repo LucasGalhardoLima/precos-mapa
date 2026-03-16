@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poup — Logos v5 — Carrinho Refinado</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#f8fafc;color:#1a1a2e}
+  .hero{text-align:center;padding:56px 24px 40px;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff}
+  .hero h1{font-family:'Poppins';font-size:36px;font-weight:800}
+  .hero p{font-size:15px;opacity:.85;margin-top:8px;max-width:560px;margin-inline:auto;line-height:1.5}
+  section{max-width:1100px;margin:0 auto;padding:56px 24px}
+  section h2{font-family:'Poppins';font-size:24px;font-weight:700;margin-bottom:6px}
+  .sub{color:#64748b;font-size:14px;margin-bottom:36px;line-height:1.5}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:28px}
+  .card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);border:2px solid transparent;transition:.25s}
+  .card:hover{border-color:#0d9488;box-shadow:0 8px 28px rgba(13,148,136,.12);transform:translateY(-2px)}
+  .card-inner{display:flex;align-items:stretch;min-height:280px}
+  .card-visual{flex:0 0 220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+  .card-content{flex:1;padding:24px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid #f1f5f9}
+  .card-content .status{display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+  .status.improved{background:#fef3c7;color:#92400e}
+  .status.new{background:#dbeafe;color:#1e40af}
+  .card-content h3{font-size:18px;font-weight:700;margin-bottom:8px;line-height:1.3}
+  .card-content p{color:#64748b;font-size:13px;line-height:1.6}
+  .card-content .delivers{margin-top:12px;font-size:12px;color:#475569;line-height:1.6}
+  .card-content .delivers strong{color:#0d9488}
+  .tags{display:flex;gap:5px;margin-top:12px;flex-wrap:wrap}
+  .tag{background:#f0fdfa;color:#0d9488;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px}
+
+  /* Ícone pequeno na visual */
+  .mini-icon{margin-top:4px;opacity:.7;font-size:10px;color:#94a3b8;font-weight:600}
+
+  /* Icons grid */
+  .icons-wrap{background:#fff;border-radius:16px;padding:40px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .icons-row{display:flex;gap:28px;justify-content:center;flex-wrap:wrap}
+  .icon-box{text-align:center}
+  .icon-box .lbl{font-size:10px;color:#64748b;font-weight:600;margin-top:8px}
+
+  /* Homescreen */
+  .ctx{background:#fff;border-radius:16px;padding:40px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-top:32px}
+  .ctx h3{font-size:18px;font-weight:700;margin-bottom:24px;text-align:center}
+  .hs-wrap{display:flex;gap:32px;justify-content:center;flex-wrap:wrap}
+  .hs-mock{border-radius:24px;padding:36px 20px 24px;width:300px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;justify-items:center}
+  .hs-light{background:linear-gradient(135deg,#e2e8f0,#cbd5e1)}
+  .hs-dark{background:linear-gradient(135deg,#1e293b,#334155)}
+  .hs-i{text-align:center}
+  .hs-ic{width:54px;height:54px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .hs-lb{font-size:8px;margin-top:3px;font-weight:500}
+  .hs-light .hs-lb{color:#475569}
+  .hs-dark .hs-lb{color:#94a3b8}
+
+  .dark-strip{background:#0f172a;border-radius:16px;padding:32px;text-align:center;margin-top:24px}
+  .dark-strip h4{color:#64748b;font-size:11px;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px}
+  .dark-row{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
+  .dark-row .di{text-align:center}
+  .dark-row .di .dl{font-size:9px;color:#64748b;margin-top:6px}
+
+  .rationale{background:linear-gradient(135deg,#f0fdfa,#ecfdf5);border-radius:16px;padding:40px;margin-top:40px}
+  .rationale h3{font-size:20px;font-weight:700;margin-bottom:12px;color:#0d9488}
+  .rationale p{color:#475569;line-height:1.7;font-size:15px;margin-bottom:12px}
+
+  @media(max-width:768px){
+    .hero h1{font-size:28px}section{padding:40px 16px}
+    .grid{grid-template-columns:1fr}
+    .card-inner{flex-direction:column}
+    .card-visual{flex:none;height:200px}
+    .card-content{border-left:none;border-top:1px solid #f1f5f9}
+    .hs-wrap{flex-direction:column;align-items:center}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Poup — Carrinho v5</h1>
+  <p>3 variações melhoradas + 2 novos conceitos. Foco em clareza de comunicação para o usuário final.</p>
+</div>
+
+<section>
+  <h2>5 Variações</h2>
+  <p class="sub">Cada uma comunica uma entrega clara do Poup. O objetivo: o usuário bater o olho e entender o que o app faz.</p>
+
+  <div class="grid">
+
+    <!-- ====== V1 — PREÇO BAIXO (melhorada) ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:linear-gradient(135deg,#f0fdfa,#ccfbf1)">
+          <!-- Logo completo -->
+          <svg width="180" height="70" viewBox="0 0 300 70" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(38,35)">
+              <path d="M-30,-10 L-22,-10 L-10,18 L26,18 L32,-6 L-2,-6" stroke="#0d9488" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="-6" cy="26" r="5.5" fill="#0d9488"/>
+              <circle cx="22" cy="26" r="5.5" fill="#0d9488"/>
+              <!-- Cifrão cortado com seta pra baixo = preço caindo claramente -->
+              <g transform="translate(12,-2)">
+                <text x="0" y="6" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="24" fill="#94a3b8" opacity=".35">R$</text>
+                <!-- Seta pra baixo por cima do cifrão = preço caindo -->
+                <line x1="0" y1="-14" x2="0" y2="8" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
+                <path d="M-7,2 L0,12 L7,2" stroke="#f59e0b" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+            </g>
+            <text x="88" y="48" font-family="Poppins" font-weight="800" font-size="40" fill="#0d9488">Poup</text>
+          </svg>
+          <!-- Ícone -->
+          <svg width="64" height="64" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="i1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+            <rect width="120" height="120" rx="27" fill="url(#i1)"/>
+            <g transform="translate(56,56)">
+              <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="-4" cy="24" r="5" fill="#fff"/>
+              <circle cx="20" cy="24" r="5" fill="#fff"/>
+              <g transform="translate(12,-2)">
+                <text x="0" y="5" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="20" fill="rgba(255,255,255,.2)">R$</text>
+                <line x1="0" y1="-12" x2="0" y2="6" stroke="#f59e0b" stroke-width="4.5" stroke-linecap="round"/>
+                <path d="M-6,1 L0,9 L6,1" stroke="#f59e0b" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+            </g>
+          </svg>
+          <div class="mini-icon">Ícone do app</div>
+        </div>
+        <div class="card-content">
+          <span class="status improved">Melhorada</span>
+          <h3>Carrinho + Preço Caindo</h3>
+          <p>O "R$" fantasma atrás da seta dá contexto imediato: é sobre dinheiro/preço. A seta dourada por cima comunica que o preço está caindo. O usuário não precisa pensar — é literal.</p>
+          <div class="delivers">
+            <strong>O que o usuário entende:</strong> "Esse app me ajuda a pagar menos"<br>
+            <strong>Entrega do app:</strong> Comparação de preços entre supermercados, menor preço sempre visível
+          </div>
+          <div class="tags">
+            <span class="tag">Preço</span>
+            <span class="tag">Economia</span>
+            <span class="tag">Literal</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== V2 — OFERTAS (melhorada) ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5)">
+          <svg width="180" height="70" viewBox="0 0 300 70" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(38,35)">
+              <path d="M-30,-10 L-22,-10 L-10,18 L26,18 L32,-6 L-2,-6" stroke="#0d9488" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="-6" cy="26" r="5.5" fill="#0d9488"/>
+              <circle cx="22" cy="26" r="5.5" fill="#0d9488"/>
+              <!-- Estrela grande de oferta dentro do carrinho -->
+              <g transform="translate(12,-2)">
+                <!-- Starburst / selo de oferta -->
+                <g fill="#f59e0b">
+                  <circle cx="0" cy="0" r="14"/>
+                  <!-- Pontas do starburst -->
+                  <polygon points="0,-18 3,-14 0,-10" />
+                  <polygon points="0,18 -3,14 0,10" />
+                  <polygon points="-18,0 -14,-3 -10,0" />
+                  <polygon points="18,0 14,3 10,0" />
+                  <polygon points="-13,-13 -9,-11 -11,-9"/>
+                  <polygon points="13,-13 11,-9 9,-11"/>
+                  <polygon points="-13,13 -11,9 -9,11"/>
+                  <polygon points="13,13 9,11 11,9"/>
+                </g>
+                <circle cx="0" cy="0" r="10" fill="#fbbf24"/>
+                <text x="0" y="5" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="14" fill="#fff">%</text>
+              </g>
+            </g>
+            <text x="88" y="48" font-family="Poppins" font-weight="800" font-size="40" fill="#0d9488">Poup</text>
+          </svg>
+          <svg width="64" height="64" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="i2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+            <rect width="120" height="120" rx="27" fill="url(#i2)"/>
+            <g transform="translate(54,58)">
+              <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="-4" cy="24" r="5" fill="#fff"/>
+              <circle cx="20" cy="24" r="5" fill="#fff"/>
+              <g transform="translate(12,-4)">
+                <g fill="#f59e0b">
+                  <circle cx="0" cy="0" r="13"/>
+                  <polygon points="0,-17 3,-13 0,-9"/>
+                  <polygon points="0,17 -3,13 0,9"/>
+                  <polygon points="-17,0 -13,-3 -9,0"/>
+                  <polygon points="17,0 13,3 9,0"/>
+                  <polygon points="-12,-12 -9,-10 -10,-9"/>
+                  <polygon points="12,-12 10,-9 9,-10"/>
+                  <polygon points="-12,12 -10,9 -9,10"/>
+                  <polygon points="12,12 9,10 10,9"/>
+                </g>
+                <circle cx="0" cy="0" r="9" fill="#fbbf24"/>
+                <text x="0" y="4" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="12" fill="#fff">%</text>
+              </g>
+            </g>
+          </svg>
+          <div class="mini-icon">Ícone do app</div>
+        </div>
+        <div class="card-content">
+          <span class="status improved">Melhorada</span>
+          <h3>Carrinho + Selo de Oferta</h3>
+          <p>O starburst (selo dentado) é o símbolo universal de "OFERTA!" em supermercados — aquelas placas amarelas nas gôndolas. O % dentro não deixa dúvida. O usuário reconhece instantaneamente: promoção.</p>
+          <div class="delivers">
+            <strong>O que o usuário entende:</strong> "Esse app encontra as promoções pra mim"<br>
+            <strong>Entrega do app:</strong> Agregação de ofertas de múltiplos supermercados, alertas de promoção
+          </div>
+          <div class="tags">
+            <span class="tag">Promoção</span>
+            <span class="tag">Oferta</span>
+            <span class="tag">Supermercado</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== V3 — GARANTIA (melhorada) ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:linear-gradient(135deg,#fefce8,#fef9c3)">
+          <svg width="180" height="70" viewBox="0 0 300 70" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(38,35)">
+              <path d="M-30,-10 L-22,-10 L-10,18 L26,18 L32,-6 L-2,-6" stroke="#0d9488" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="-6" cy="26" r="5.5" fill="#0d9488"/>
+              <circle cx="22" cy="26" r="5.5" fill="#0d9488"/>
+              <!-- Escudo com check = melhor preço verificado -->
+              <g transform="translate(12,-18)">
+                <path d="M0,-18 L16,-12 L16,6 C16,16 8,24 0,28 C-8,24 -16,16 -16,6 L-16,-12 Z" fill="#f59e0b"/>
+                <path d="M0,-14 L12,-9 L12,4 C12,12 6,19 0,22 C-6,19 -12,12 -12,4 L-12,-9 Z" fill="#fbbf24"/>
+                <!-- Check grande e claro -->
+                <path d="M-6,2 L-1,8 L8,-4" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+            </g>
+            <text x="88" y="48" font-family="Poppins" font-weight="800" font-size="40" fill="#0d9488">Poup</text>
+          </svg>
+          <svg width="64" height="64" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="i3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+            <rect width="120" height="120" rx="27" fill="url(#i3)"/>
+            <g transform="translate(56,60)">
+              <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="-4" cy="24" r="5" fill="#fff"/>
+              <circle cx="20" cy="24" r="5" fill="#fff"/>
+              <g transform="translate(12,-18)">
+                <path d="M0,-16 L14,-11 L14,4 C14,12 7,18 0,22 C-7,18 -14,12 -14,4 L-14,-11 Z" fill="#f59e0b"/>
+                <path d="M0,-12 L10,-8 L10,2 C10,9 5,14 0,17 C-5,14 -10,9 -10,2 L-10,-8 Z" fill="#fbbf24"/>
+                <path d="M-5,1 L-1,6 L7,-3" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+            </g>
+          </svg>
+          <div class="mini-icon">Ícone do app</div>
+        </div>
+        <div class="card-content">
+          <span class="status improved">Melhorada</span>
+          <h3>Carrinho + Preço Verificado</h3>
+          <p>Escudo com check = "verificado, conferido, aprovado". Diferente da versão anterior (que tinha seta pra baixo no escudo), agora o check deixa claro: os preços foram comparados e este é o melhor. É o selo de qualidade do Poup.</p>
+          <div class="delivers">
+            <strong>O que o usuário entende:</strong> "Esse app confere os preços e me mostra o melhor"<br>
+            <strong>Entrega do app:</strong> Comparação verificada entre supermercados, confiabilidade dos dados
+          </div>
+          <div class="tags">
+            <span class="tag">Verificado</span>
+            <span class="tag">Confiança</span>
+            <span class="tag">Melhor preço</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== V4 — NOVA: Carrinho + Moeda/Economia visível ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:linear-gradient(135deg,#f0fdfa,#ccfbf1)">
+          <svg width="180" height="70" viewBox="0 0 300 70" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(38,35)">
+              <path d="M-30,-10 L-22,-10 L-10,18 L26,18 L32,-6 L-2,-6" stroke="#0d9488" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="-6" cy="26" r="5.5" fill="#0d9488"/>
+              <circle cx="22" cy="26" r="5.5" fill="#0d9488"/>
+              <!-- Moedas empilhadas saindo do carrinho = economia tangível -->
+              <g transform="translate(8,-4)">
+                <!-- Moeda 1 (fundo) -->
+                <ellipse cx="0" cy="4" rx="10" ry="4" fill="#d97706" opacity=".5"/>
+                <ellipse cx="0" cy="2" rx="10" ry="4" fill="#f59e0b" opacity=".6"/>
+                <!-- Moeda 2 (meio) -->
+                <ellipse cx="0" cy="-2" rx="10" ry="4" fill="#d97706" opacity=".6"/>
+                <ellipse cx="0" cy="-4" rx="10" ry="4" fill="#f59e0b" opacity=".8"/>
+                <!-- Moeda 3 (topo, principal) -->
+                <ellipse cx="0" cy="-8" rx="10" ry="4" fill="#d97706"/>
+                <ellipse cx="0" cy="-10" rx="10" ry="4" fill="#fbbf24"/>
+                <text x="0" y="-7" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="6" fill="#92400e">R$</text>
+              </g>
+              <!-- Sparkle de economia -->
+              <g fill="#5eead4" opacity=".6">
+                <g transform="translate(24,-20)"><path d="M0,-4 L1,-1 L4,0 L1,1 L0,4 L-1,1 L-4,0 L-1,-1Z"/></g>
+              </g>
+            </g>
+            <text x="88" y="48" font-family="Poppins" font-weight="800" font-size="40" fill="#0d9488">Poup</text>
+          </svg>
+          <svg width="64" height="64" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="i4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+            <rect width="120" height="120" rx="27" fill="url(#i4)"/>
+            <g transform="translate(56,58)">
+              <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="-4" cy="24" r="5" fill="#fff"/>
+              <circle cx="20" cy="24" r="5" fill="#fff"/>
+              <g transform="translate(10,-4)">
+                <ellipse cx="0" cy="2" rx="10" ry="4" fill="rgba(255,255,255,.25)"/>
+                <ellipse cx="0" cy="-2" rx="10" ry="4" fill="rgba(255,255,255,.35)"/>
+                <ellipse cx="0" cy="-6" rx="10" ry="4" fill="#d97706"/>
+                <ellipse cx="0" cy="-8" rx="10" ry="4" fill="#fbbf24"/>
+                <ellipse cx="0" cy="-12" rx="10" ry="4" fill="#f59e0b"/>
+                <ellipse cx="0" cy="-14" rx="10" ry="4" fill="#fbbf24"/>
+                <text x="0" y="-11" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="6" fill="#fff">R$</text>
+              </g>
+            </g>
+          </svg>
+          <div class="mini-icon">Ícone do app</div>
+        </div>
+        <div class="card-content">
+          <span class="status new">Nova</span>
+          <h3>Carrinho + Economia Visível</h3>
+          <p>Moedas empilhadas crescendo dentro do carrinho — a economia é tangível e acumula. Quanto mais você usa o app, mais moedas (economia) se acumulam. O "R$" na moeda do topo ancora no contexto brasileiro.</p>
+          <div class="delivers">
+            <strong>O que o usuário entende:</strong> "Esse app me faz economizar dinheiro real"<br>
+            <strong>Entrega do app:</strong> Economia acumulada visível, quanto você já economizou usando o Poup
+          </div>
+          <div class="tags">
+            <span class="tag">Economia</span>
+            <span class="tag">Tangível</span>
+            <span class="tag">Acumulativo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== V5 — NOVA: Carrinho + Lupa integrada ====== -->
+    <div class="card">
+      <div class="card-inner">
+        <div class="card-visual" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5)">
+          <svg width="180" height="70" viewBox="0 0 300 70" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(38,35)">
+              <path d="M-30,-10 L-22,-10 L-10,18 L26,18 L32,-6 L-2,-6" stroke="#0d9488" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="-6" cy="26" r="5.5" fill="#0d9488"/>
+              <circle cx="22" cy="26" r="5.5" fill="#0d9488"/>
+              <!-- Lupa sobre o carrinho = buscando melhores preços -->
+              <g transform="translate(16,-10)">
+                <circle cx="0" cy="0" r="14" stroke="#f59e0b" stroke-width="4.5" fill="rgba(251,191,36,.1)"/>
+                <line x1="10" y1="10" x2="20" y2="20" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
+                <!-- Seta pra baixo minúscula dentro da lupa -->
+                <line x1="0" y1="-5" x2="0" y2="4" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+                <path d="M-4,1 L0,6 L4,1" stroke="#f59e0b" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+            </g>
+            <text x="88" y="48" font-family="Poppins" font-weight="800" font-size="40" fill="#0d9488">Poup</text>
+          </svg>
+          <svg width="64" height="64" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="i5" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs>
+            <rect width="120" height="120" rx="27" fill="url(#i5)"/>
+            <g transform="translate(54,58)">
+              <path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="-4" cy="24" r="5" fill="#fff"/>
+              <circle cx="20" cy="24" r="5" fill="#fff"/>
+              <g transform="translate(16,-10)">
+                <circle cx="0" cy="0" r="14" stroke="#f59e0b" stroke-width="4.5" fill="rgba(251,191,36,.15)"/>
+                <line x1="10" y1="10" x2="18" y2="18" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
+                <line x1="0" y1="-5" x2="0" y2="4" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+                <path d="M-4,1 L0,6 L4,1" stroke="#f59e0b" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+            </g>
+          </svg>
+          <div class="mini-icon">Ícone do app</div>
+        </div>
+        <div class="card-content">
+          <span class="status new">Nova</span>
+          <h3>Carrinho + Busca de Menor Preço</h3>
+          <p>Lupa dourada sobre o carrinho com seta pra baixo dentro dela — "buscando o menor preço no seu carrinho". Combina busca ativa (lupa) com resultado (preço baixo). Dois conceitos em um símbolo.</p>
+          <div class="delivers">
+            <strong>O que o usuário entende:</strong> "Esse app busca o menor preço pra mim"<br>
+            <strong>Entrega do app:</strong> Busca automática de preços, comparação entre mercados, recomendação do mais barato
+          </div>
+          <div class="tags">
+            <span class="tag">Busca</span>
+            <span class="tag">Menor preço</span>
+            <span class="tag">Automático</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ========== ÍCONES COMPARAÇÃO ========== -->
+<section>
+  <h2>Comparação dos Ícones</h2>
+  <p class="sub">Todos os 5 ícones lado a lado para facilitar a escolha.</p>
+
+  <div class="icons-wrap">
+    <div class="icons-row">
+      <div class="icon-box">
+        <svg width="80" height="80" viewBox="0 0 120 120"><defs><linearGradient id="c1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#c1)"/><g transform="translate(56,56)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5" fill="#fff"/><circle cx="20" cy="24" r="5" fill="#fff"/><g transform="translate(12,-2)"><text x="0" y="5" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="20" fill="rgba(255,255,255,.2)">R$</text><line x1="0" y1="-12" x2="0" y2="6" stroke="#f59e0b" stroke-width="4.5" stroke-linecap="round"/><path d="M-6,1 L0,9 L6,1" stroke="#f59e0b" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></g></svg>
+        <div class="lbl">Preço Caindo</div>
+      </div>
+      <div class="icon-box">
+        <svg width="80" height="80" viewBox="0 0 120 120"><defs><linearGradient id="c2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#c2)"/><g transform="translate(54,58)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5" fill="#fff"/><circle cx="20" cy="24" r="5" fill="#fff"/><g transform="translate(12,-4)"><g fill="#f59e0b"><circle cx="0" cy="0" r="13"/><polygon points="0,-17 3,-13 0,-9"/><polygon points="0,17 -3,13 0,9"/><polygon points="-17,0 -13,-3 -9,0"/><polygon points="17,0 13,3 9,0"/><polygon points="-12,-12 -9,-10 -10,-9"/><polygon points="12,-12 10,-9 9,-10"/><polygon points="-12,12 -10,9 -9,10"/><polygon points="12,12 9,10 10,9"/></g><circle cx="0" cy="0" r="9" fill="#fbbf24"/><text x="0" y="4" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="12" fill="#fff">%</text></g></g></svg>
+        <div class="lbl">Selo de Oferta</div>
+      </div>
+      <div class="icon-box">
+        <svg width="80" height="80" viewBox="0 0 120 120"><defs><linearGradient id="c3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#c3)"/><g transform="translate(56,60)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5" fill="#fff"/><circle cx="20" cy="24" r="5" fill="#fff"/><g transform="translate(12,-18)"><path d="M0,-16 L14,-11 L14,4 C14,12 7,18 0,22 C-7,18 -14,12 -14,4 L-14,-11 Z" fill="#f59e0b"/><path d="M0,-12 L10,-8 L10,2 C10,9 5,14 0,17 C-5,14 -10,9 -10,2 L-10,-8 Z" fill="#fbbf24"/><path d="M-5,1 L-1,6 L7,-3" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></g></svg>
+        <div class="lbl">Verificado</div>
+      </div>
+      <div class="icon-box">
+        <svg width="80" height="80" viewBox="0 0 120 120"><defs><linearGradient id="c4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#c4)"/><g transform="translate(56,58)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5" fill="#fff"/><circle cx="20" cy="24" r="5" fill="#fff"/><g transform="translate(10,-4)"><ellipse cx="0" cy="2" rx="10" ry="4" fill="rgba(255,255,255,.25)"/><ellipse cx="0" cy="-2" rx="10" ry="4" fill="rgba(255,255,255,.35)"/><ellipse cx="0" cy="-6" rx="10" ry="4" fill="#d97706"/><ellipse cx="0" cy="-8" rx="10" ry="4" fill="#fbbf24"/><ellipse cx="0" cy="-12" rx="10" ry="4" fill="#f59e0b"/><ellipse cx="0" cy="-14" rx="10" ry="4" fill="#fbbf24"/><text x="0" y="-11" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="6" fill="#fff">R$</text></g></g></svg>
+        <div class="lbl">Economia</div>
+      </div>
+      <div class="icon-box">
+        <svg width="80" height="80" viewBox="0 0 120 120"><defs><linearGradient id="c5" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#c5)"/><g transform="translate(54,58)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5" fill="#fff"/><circle cx="20" cy="24" r="5" fill="#fff"/><g transform="translate(16,-10)"><circle cx="0" cy="0" r="14" stroke="#f59e0b" stroke-width="4.5" fill="rgba(251,191,36,.15)"/><line x1="10" y1="10" x2="18" y2="18" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/><line x1="0" y1="-5" x2="0" y2="4" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/><path d="M-4,1 L0,6 L4,1" stroke="#f59e0b" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></g></svg>
+        <div class="lbl">Busca Preço</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== HOMESCREEN ========== -->
+<section>
+  <div class="ctx">
+    <h3>Na Home Screen — Claro & Escuro</h3>
+    <div class="hs-wrap">
+      <!-- Light -->
+      <div class="hs-mock hs-light">
+        <div class="hs-i"><div class="hs-ic" style="background:#34d399">📱</div><div class="hs-lb">WhatsApp</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#3b82f6">📷</div><div class="hs-lb">Instagram</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#f43f5e">🎵</div><div class="hs-lb">Spotify</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#8b5cf6">💜</div><div class="hs-lb">Nubank</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#ef4444">📍</div><div class="hs-lb">iFood</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#f59e0b">🛒</div><div class="hs-lb">Mercado L.</div></div>
+        <div class="hs-i">
+          <svg width="54" height="54" viewBox="0 0 120 120"><defs><linearGradient id="hl" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#hl)"/><g transform="translate(54,58)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5" fill="#fff"/><circle cx="20" cy="24" r="5" fill="#fff"/><g transform="translate(12,-4)"><g fill="#f59e0b"><circle cx="0" cy="0" r="13"/><polygon points="0,-17 3,-13 0,-9"/><polygon points="0,17 -3,13 0,9"/><polygon points="-17,0 -13,-3 -9,0"/><polygon points="17,0 13,3 9,0"/></g><circle cx="0" cy="0" r="9" fill="#fbbf24"/><text x="0" y="4" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="12" fill="#fff">%</text></g></g></svg>
+          <div class="hs-lb" style="color:#0d9488;font-weight:700">Poup</div>
+        </div>
+        <div class="hs-i"><div class="hs-ic" style="background:#0ea5e9">☁️</div><div class="hs-lb">Clima</div></div>
+      </div>
+      <!-- Dark -->
+      <div class="hs-mock hs-dark">
+        <div class="hs-i"><div class="hs-ic" style="background:#34d399">📱</div><div class="hs-lb">WhatsApp</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#3b82f6">📷</div><div class="hs-lb">Instagram</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#f43f5e">🎵</div><div class="hs-lb">Spotify</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#8b5cf6">💜</div><div class="hs-lb">Nubank</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#ef4444">📍</div><div class="hs-lb">iFood</div></div>
+        <div class="hs-i"><div class="hs-ic" style="background:#f59e0b">🛒</div><div class="hs-lb">Mercado L.</div></div>
+        <div class="hs-i">
+          <svg width="54" height="54" viewBox="0 0 120 120"><defs><linearGradient id="hd" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0d9488"/><stop offset="100%" style="stop-color:#0f766e"/></linearGradient></defs><rect width="120" height="120" rx="27" fill="url(#hd)"/><g transform="translate(54,58)"><path d="M-28,-10 L-20,-10 L-8,16 L24,16 L30,-6 L-2,-6" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="24" r="5" fill="#fff"/><circle cx="20" cy="24" r="5" fill="#fff"/><g transform="translate(12,-4)"><g fill="#f59e0b"><circle cx="0" cy="0" r="13"/><polygon points="0,-17 3,-13 0,-9"/><polygon points="0,17 -3,13 0,9"/><polygon points="-17,0 -13,-3 -9,0"/><polygon points="17,0 13,3 9,0"/></g><circle cx="0" cy="0" r="9" fill="#fbbf24"/><text x="0" y="4" text-anchor="middle" font-family="Poppins" font-weight="800" font-size="12" fill="#fff">%</text></g></g></svg>
+          <div class="hs-lb" style="color:#5eead4;font-weight:700">Poup</div>
+        </div>
+        <div class="hs-i"><div class="hs-ic" style="background:#0ea5e9">☁️</div><div class="hs-lb">Clima</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== RACIONAL ========== -->
+<section>
+  <div class="rationale">
+    <h3>Racional</h3>
+    <p><strong>"Selo de Oferta"</strong> é a variação que mais grita "supermercado" — o starburst é aquele selo dentado que todo brasileiro reconhece das gôndolas e encartes. O % dentro não deixa dúvida. É a mais visceral e imediata.</p>
+    <p><strong>"Preço Caindo"</strong> ficou mais clara com o R$ fantasma dando contexto. O usuário entende que é sobre dinheiro/preço sem precisar pensar. A seta dourada é bold e funciona bem em tamanhos pequenos.</p>
+    <p><strong>"Preço Verificado"</strong> agora usa check em vez de seta no escudo — o significado mudou de "preço baixo" para "preço conferido e aprovado". Mais alinhado com a proposta de comparação confiável.</p>
+    <p><strong>"Economia Visível"</strong> é a mais emocional — moedas empilhadas crescendo dentro do carrinho mostram que a economia é real e acumula. Ideal pra quem quer comunicar o benefício tangível ao longo do tempo.</p>
+    <p><strong>"Busca de Menor Preço"</strong> combina lupa (busca ativa) + seta pra baixo (menor preço) sobre o carrinho. Dois conceitos em um único símbolo. É a que melhor resume "buscamos o menor preço pra você".</p>
+  </div>
+</section>
+
+<div style="text-align:center;padding:40px;color:#94a3b8;font-size:12px">Poup — Identidade Visual v5 — Março 2026</div>
+
+</body>
+</html>

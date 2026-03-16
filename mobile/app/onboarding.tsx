@@ -260,6 +260,34 @@ export default function OnboardingScreen() {
     setStep('auth');
   };
 
+  // Dev-only: skip auth and go straight to the app with a mock profile
+  const handleDevLogin = (role: UserRole) => {
+    const mockProfile = {
+      id: 'dev-mock-user',
+      role,
+      display_name: `Dev ${role}`,
+      avatar_url: null,
+      city: 'Matão',
+      state: 'SP',
+      b2c_plan: 'free',
+      search_radius_km: 10,
+      rc_customer_id: null,
+      push_token: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as Profile;
+    useAuthStore.getState().setProfile(mockProfile);
+    // Create a minimal fake session so the app doesn't redirect back
+    useAuthStore.getState().setSession({ user: { id: 'dev-mock-user' } } as any);
+    setHasSeenOnboarding(true);
+
+    if (role === 'consumer') {
+      router.replace('/(tabs)');
+    } else {
+      router.replace('/(business)');
+    }
+  };
+
   // -----------------------------------------------------------------------
   // Store setup step (full screen)
   // -----------------------------------------------------------------------
@@ -429,6 +457,44 @@ export default function OnboardingScreen() {
             <Text style={styles.signInLink}>Já tenho conta</Text>
           </Pressable>
         </MotiView>
+
+        {/* Dev-only role toggle — skips auth entirely */}
+        {__DEV__ && (
+          <MotiView
+            from={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ type: 'timing', duration: 300, delay: 900 }}
+            style={styles.devToggleContainer}
+          >
+            <Text style={styles.devLabel}>DEV MODE</Text>
+            <View style={styles.devButtonsRow}>
+              <Pressable
+                onPress={() => handleDevLogin('consumer')}
+                style={[styles.devButton, { borderColor: primaryColor }]}
+              >
+                <Text style={[styles.devButtonText, { color: primaryColor }]}>
+                  Consumer
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handleDevLogin('business')}
+                style={[styles.devButton, { borderColor: '#F59E0B' }]}
+              >
+                <Text style={[styles.devButtonText, { color: '#F59E0B' }]}>
+                  Business
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handleDevLogin('super_admin')}
+                style={[styles.devButton, { borderColor: '#EF4444' }]}
+              >
+                <Text style={[styles.devButtonText, { color: '#EF4444' }]}>
+                  Admin
+                </Text>
+              </Pressable>
+            </View>
+          </MotiView>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -579,5 +645,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: 'rgba(255,255,255,0.4)',
+  },
+
+  // Dev toggle
+  devToggleContainer: {
+    marginTop: 32,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    gap: 10,
+  },
+  devLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.3)',
+    letterSpacing: 2,
+  },
+  devButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  devButton: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  devButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

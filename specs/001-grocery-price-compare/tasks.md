@@ -15,7 +15,7 @@
 
 **Purpose**: Initialize Supabase project, install production dependencies, configure environment files, EAS Build profiles, and testing infrastructure.
 
-- [X] T001 Initialize Supabase project by running `supabase init` in repo root to create `supabase/` directory with `config.toml`. Configure project settings (project name: precomapa, db port, API port)
+- [X] T001 Initialize Supabase project by running `supabase init` in repo root to create `supabase/` directory with `config.toml`. Configure project settings (project name: poup, db port, API port)
 - [X] T002 Install production mobile dependencies in `mobile/`: run `npx expo install @supabase/supabase-js expo-secure-store expo-apple-authentication expo-location expo-notifications expo-device expo-constants expo-dev-client react-native-purchases react-native-purchases-ui` and `npm install @react-native-google-signin/google-signin --legacy-peer-deps`
 - [X] T003 [P] Install production admin panel dependencies in repo root: run `npm install stripe @stripe/stripe-js @supabase/supabase-js @supabase/ssr resend zod`
 - [X] T004 [P] Create environment files: `.env.local` in repo root (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, RESEND_API_KEY) and `mobile/.env` (EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY, EXPO_PUBLIC_GOOGLE_MAPS_API_KEY, EXPO_PUBLIC_RC_APPLE_KEY, EXPO_PUBLIC_RC_GOOGLE_KEY). Add both to `.gitignore`
@@ -69,7 +69,7 @@
 
 **Goal**: First-time users see a compelling onboarding screen, authenticate with Google or Apple Sign-In, select a role (consumer or business), and are routed to the correct tab experience.
 
-**Independent Test**: Open app for the first time → see PrecoMapa brand, "Compre com inteligencia. Economize com dados." tagline, social proof stats, testimonials, featured deals, and dual CTAs. Tap "Sou Consumidor" → Google/Apple Sign-In → grant location → land on consumer Home tab. Sign out, reopen → "Sou Lojista" → authenticate → store setup → land on business Dashboard. Returning users skip onboarding.
+**Independent Test**: Open app for the first time → see Poup brand, "Compre com inteligencia. Economize com dados." tagline, social proof stats, testimonials, featured deals, and dual CTAs. Tap "Sou Consumidor" → Google/Apple Sign-In → grant location → land on consumer Home tab. Sign out, reopen → "Sou Lojista" → authenticate → store setup → land on business Dashboard. Returning users skip onboarding.
 
 ### Implementation
 
@@ -78,7 +78,7 @@
 - [X] T020 [P] [US0] Create auth screen component `mobile/components/auth-buttons.tsx`: Google Sign-In button (via `@react-native-google-signin/google-signin`) and Apple Sign-In button (via `expo-apple-authentication`). Both call `supabase.auth.signInWithIdToken()` per contracts/supabase-api.md. Handle first-time Apple name caching. Depends on T010, T014
 - [X] T021 [US0] Create store setup flow `mobile/components/store-setup.tsx`: modal/screen for business users after first auth. Collects store name (required), address (required), city/state (required), GPS coordinates (auto-detected via expo-location or manual map pin drop). Validates with `storeSetupSchema` (Zod). Creates store row in Supabase `stores` table and `store_members` entry with role 'owner'. Logo, phone, hours, CNPJ deferred to profile screen. Depends on T010, T013, T014
 - [X] T022 [US0] Rewrite root layout `mobile/app/_layout.tsx`: check Supabase session via `use-auth` hook. Three states: (1) no session → show onboarding, (2) session + consumer role → render `(tabs)/` group, (3) session + business role → render `(business)/` group. Wrap app in `GestureHandlerRootView`, `SafeAreaProvider`, `BottomSheetModalProvider`. Import `global.css`. Depends on T014, T016
-- [X] T023 [US0] Create onboarding screen `mobile/app/onboarding.tsx`: full screen composed of PrecoMapa logo + tagline ("Compre com inteligencia. Economize com dados."), city context, `<SocialProof />`, `<FeaturedDealsCarousel />`, and two CTA cards — "Sou Consumidor" (primary) and "Sou Lojista" (secondary). Each CTA shows `<AuthButtons />` then sets role in Supabase profiles table. Consumer → location permission → `(tabs)/`. Business → `<StoreSetup />` → `(business)/`. Depends on T018, T019, T020, T021, T022
+- [X] T023 [US0] Create onboarding screen `mobile/app/onboarding.tsx`: full screen composed of Poup logo + tagline ("Compre com inteligencia. Economize com dados."), city context, `<SocialProof />`, `<FeaturedDealsCarousel />`, and two CTA cards — "Sou Consumidor" (primary) and "Sou Lojista" (secondary). Each CTA shows `<AuthButtons />` then sets role in Supabase profiles table. Consumer → location permission → `(tabs)/`. Business → `<StoreSetup />` → `(business)/`. Depends on T018, T019, T020, T021, T022
 - [X] T024 [US0] Create consumer tab layout `mobile/app/(tabs)/_layout.tsx`: 4 tabs — Home (house icon), Map (map-pin icon), Favorites (heart icon), Alerts (bell icon) — using lucide-react-native. NativeWind-styled tab bar with brand colors. Home as default tab. Depends on T012
 - [X] T025 [US0] Create location permission request flow in `mobile/hooks/use-location.ts`: rewrite to use `expo-location` for real GPS. Request `requestForegroundPermissionsAsync()`. If denied, prompt for manual neighborhood/ZIP input. Store last known location. Keep `calculateDistanceKm()` Haversine utility. Depends on T010
 
@@ -424,7 +424,7 @@ Add **Phases 8-10 (T061-T092)** for Premium B2B (Stripe), Plus B2C (RevenueCat),
 
 - [X] T109 Rebrand `src/app/page.tsx`: replace demo content with institutional "Inteligencia Regional de Precos" hero, three audience CTAs (consumers, business, public data), trust bar
 
-- [X] T110 Update `src/app/layout.tsx`: metadata title to "PrecoMapa | Inteligencia Regional de Precos", description to institutional positioning
+- [X] T110 Update `src/app/layout.tsx`: metadata title to "Poup | Inteligencia Regional de Precos", description to institutional positioning
 
 ### Spec Updates
 

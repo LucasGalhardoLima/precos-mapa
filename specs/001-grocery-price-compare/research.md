@@ -225,7 +225,7 @@ digest alerts and trial reminder emails. No heavy SMTP config.
 - Edge Function `trial-reminders/` runs daily
 - Sends reminders at day 3 ("50% do trial usado"), day 5 ("2 dias restantes"),
   day 7 ("Ultimo dia! Assine para nao perder acesso")
-- Use Resend domains for `noreply@precomapa.com.br`
+- Use Resend domains for `noreply@poup.com.br`
 - HTML templates with inline styles (email client compat)
 **Gotchas**:
 - Resend free tier: 100 emails/day, 3,000/month (sufficient for D1)

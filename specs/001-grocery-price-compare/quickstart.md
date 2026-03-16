@@ -1,4 +1,4 @@
-# Quickstart: PrecoMapa — Production Setup
+# Quickstart: Poup — Production Setup
 
 **Feature**: `001-grocery-price-compare`
 **Date**: 2026-02-11

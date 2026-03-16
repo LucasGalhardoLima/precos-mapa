@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poup — Identidade Visual</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Nunito:wght@700;800;900&family=Poppins:wght@600;700;800;900&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #f8f9fa; color: #1a1a2e; }
+
+  /* Navigation */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+    border-bottom: 1px solid #e5e7eb;
+    padding: 16px 32px;
+    display: flex; justify-content: center; gap: 32px;
+  }
+  nav a {
+    text-decoration: none; color: #64748b; font-weight: 600; font-size: 14px;
+    padding: 8px 16px; border-radius: 8px; transition: all 0.2s;
+  }
+  nav a:hover, nav a.active { color: #0d9488; background: #f0fdfa; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 80px 32px 48px;
+    background: linear-gradient(135deg, #0d9488 0%, #0891b2 50%, #6366f1 100%);
+    color: white;
+  }
+  .hero h1 { font-family: 'Poppins', sans-serif; font-size: 48px; font-weight: 800; margin-bottom: 12px; }
+  .hero p { font-size: 18px; opacity: 0.9; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+
+  /* Sections */
+  section { max-width: 1100px; margin: 0 auto; padding: 64px 32px; }
+  section h2 {
+    font-family: 'Poppins', sans-serif; font-size: 32px; font-weight: 700;
+    margin-bottom: 8px; color: #1a1a2e;
+  }
+  section .subtitle { color: #64748b; font-size: 16px; margin-bottom: 40px; line-height: 1.5; }
+
+  /* Logo Cards */
+  .logo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+  .logo-card {
+    background: white; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 2px solid transparent;
+    transition: all 0.3s; cursor: pointer;
+  }
+  .logo-card:hover { border-color: #0d9488; box-shadow: 0 8px 24px rgba(13,148,136,0.15); transform: translateY(-2px); }
+  .logo-preview {
+    height: 220px; display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .logo-preview .badge {
+    position: absolute; top: 12px; right: 12px;
+    background: #0d9488; color: white; font-size: 11px; font-weight: 700;
+    padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .logo-info { padding: 20px; border-top: 1px solid #f1f5f9; }
+  .logo-info h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .logo-info p { color: #64748b; font-size: 14px; line-height: 1.5; }
+  .logo-info .tags { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .logo-info .tag {
+    background: #f0fdfa; color: #0d9488; font-size: 11px; font-weight: 600;
+    padding: 3px 8px; border-radius: 6px;
+  }
+
+  /* SVG Logos */
+  .logo-svg { max-width: 220px; }
+
+  /* Palette Section */
+  .palette-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+  .palette-card {
+    background: white; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 2px solid transparent;
+    transition: all 0.3s;
+  }
+  .palette-card:hover { border-color: #0d9488; box-shadow: 0 8px 24px rgba(13,148,136,0.15); }
+  .palette-colors { display: flex; height: 100px; }
+  .palette-colors div { flex: 1; position: relative; cursor: pointer; transition: flex 0.3s; }
+  .palette-colors div:hover { flex: 1.5; }
+  .palette-colors div span {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; font-weight: 700; color: white;
+    background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px;
+    opacity: 0; transition: opacity 0.2s; white-space: nowrap;
+  }
+  .palette-colors div:hover span { opacity: 1; }
+  .palette-info { padding: 20px; }
+  .palette-info h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .palette-info p { color: #64748b; font-size: 14px; line-height: 1.5; }
+  .palette-info .mood { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .palette-info .mood span {
+    background: #f1f5f9; color: #475569; font-size: 11px; font-weight: 600;
+    padding: 3px 8px; border-radius: 6px;
+  }
+
+  /* Typography Section */
+  .type-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+  .type-card {
+    background: white; border-radius: 16px; padding: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .type-card .sample { font-size: 36px; margin-bottom: 16px; color: #0d9488; }
+  .type-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .type-card p { color: #64748b; font-size: 13px; line-height: 1.5; }
+
+  /* Mockup Section */
+  .mockup-container { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+  .phone-frame {
+    width: 280px; height: 560px; background: #1a1a2e; border-radius: 40px;
+    padding: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  .phone-screen {
+    width: 100%; height: 100%; border-radius: 30px; overflow: hidden;
+    background: white;
+  }
+  .phone-statusbar {
+    height: 44px; background: #0d9488; display: flex; align-items: center;
+    justify-content: center; color: white; font-size: 12px; font-weight: 600;
+  }
+  .phone-content { padding: 16px; }
+  .phone-content .app-logo { text-align: center; margin: 16px 0; }
+  .phone-content .app-logo .name {
+    font-family: 'Poppins', sans-serif; font-size: 28px; font-weight: 800;
+    color: #0d9488;
+  }
+  .phone-content .app-logo .tagline { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+  .phone-content .deal-card {
+    background: #f0fdfa; border-radius: 12px; padding: 12px; margin: 8px 0;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .phone-content .deal-icon {
+    width: 40px; height: 40px; background: #0d9488; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;
+  }
+  .phone-content .deal-text .name { font-size: 13px; font-weight: 600; color: #1a1a2e; }
+  .phone-content .deal-text .price { font-size: 11px; color: #0d9488; font-weight: 700; }
+  .phone-content .deal-text .old-price { font-size: 10px; color: #94a3b8; text-decoration: line-through; }
+
+  /* Rationale */
+  .rationale {
+    background: linear-gradient(135deg, #f0fdfa, #ecfdf5);
+    border-radius: 16px; padding: 40px; margin-top: 40px;
+  }
+  .rationale h3 { font-size: 20px; font-weight: 700; margin-bottom: 16px; color: #0d9488; }
+  .rationale p { color: #475569; line-height: 1.7; font-size: 15px; }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 32px; }
+    section { padding: 40px 20px; }
+    .logo-grid, .palette-grid { grid-template-columns: 1fr; }
+    .mockup-container { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#logos" class="active">Logotipos</a>
+  <a href="#paletas">Paletas</a>
+  <a href="#tipografia">Tipografia</a>
+  <a href="#mockups">Mockups</a>
+</nav>
+
+<div class="hero">
+  <h1>Poup</h1>
+  <p>Identidade visual para o app de comparação de preços que ajuda brasileiros a economizar nas compras do dia a dia.</p>
+</div>
+
+<!-- ============ LOGOTIPOS ============ -->
+<section id="logos">
+  <h2>Propostas de Logotipo</h2>
+  <p class="subtitle">Quatro conceitos distintos, cada um comunicando um aspecto diferente do Poup: economia, localização, praticidade e confiança.</p>
+
+  <div class="logo-grid">
+
+    <!-- Logo 1: Cofre / Poupar -->
+    <div class="logo-card">
+      <div class="logo-preview" style="background: linear-gradient(135deg, #f0fdfa, #ccfbf1);">
+        <div class="badge">Recomendado</div>
+        <svg class="logo-svg" viewBox="0 0 260 80" xmlns="http://www.w3.org/2000/svg">
+          <!-- Piggy icon simplified -->
+          <circle cx="36" cy="40" r="26" fill="#0d9488"/>
+          <ellipse cx="28" cy="33" rx="4" ry="5" fill="#5eead4"/>
+          <ellipse cx="44" cy="33" rx="4" ry="5" fill="#5eead4"/>
+          <circle cx="29" cy="33" r="2" fill="#1a1a2e"/>
+          <circle cx="45" cy="33" r="2" fill="#1a1a2e"/>
+          <ellipse cx="36" cy="42" rx="7" ry="4" fill="#14b8a6"/>
+          <circle cx="33" cy="41" r="1.5" fill="#0d9488"/>
+          <circle cx="39" cy="41" r="1.5" fill="#0d9488"/>
+          <!-- Coin slot -->
+          <rect x="29" y="16" width="14" height="4" rx="2" fill="#fbbf24"/>
+          <rect x="32" y="13" width="8" height="4" rx="2" fill="#f59e0b"/>
+          <!-- Ears -->
+          <ellipse cx="18" cy="24" rx="7" ry="5" fill="#14b8a6" transform="rotate(-20 18 24)"/>
+          <ellipse cx="54" cy="24" rx="7" ry="5" fill="#14b8a6" transform="rotate(20 54 24)"/>
+          <!-- Legs -->
+          <rect x="24" y="60" width="6" height="8" rx="3" fill="#0d9488"/>
+          <rect x="42" y="60" width="6" height="8" rx="3" fill="#0d9488"/>
+          <!-- Text -->
+          <text x="78" y="52" font-family="Poppins, sans-serif" font-weight="800" font-size="42" fill="#0d9488">Poup</text>
+        </svg>
+      </div>
+      <div class="logo-info">
+        <h3>Conceito "Cofrinho"</h3>
+        <p>Referência direta a poupar dinheiro. O cofrinho é um símbolo universal de economia, com a moeda caindo representando as ofertas encontradas.</p>
+        <div class="tags">
+          <span class="tag">Economia</span>
+          <span class="tag">Confiança</span>
+          <span class="tag">Simpático</span>
+          <span class="tag">Memorável</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logo 2: Pin de Mapa + Etiqueta de Preço -->
+    <div class="logo-card">
+      <div class="logo-preview" style="background: linear-gradient(135deg, #eff6ff, #dbeafe);">
+        <svg class="logo-svg" viewBox="0 0 260 80" xmlns="http://www.w3.org/2000/svg">
+          <!-- Map pin with price tag -->
+          <g transform="translate(36, 40)">
+            <!-- Pin body -->
+            <path d="M0,-28 C15,-28 24,-18 24,-6 C24,8 0,32 0,32 C0,32 -24,8 -24,-6 C-24,-18 -15,-28 0,-28Z" fill="#0891b2"/>
+            <!-- Dollar sign inside -->
+            <text x="0" y="2" text-anchor="middle" font-family="Inter" font-weight="800" font-size="20" fill="white">$</text>
+            <!-- Price tag wing -->
+            <circle cx="12" cy="-14" r="3" fill="#67e8f9" opacity="0.6"/>
+          </g>
+          <!-- Text -->
+          <text x="78" y="52" font-family="Poppins, sans-serif" font-weight="800" font-size="42" fill="#0891b2">Poup</text>
+        </svg>
+      </div>
+      <div class="logo-info">
+        <h3>Conceito "Pin de Preço"</h3>
+        <p>Combina pin de mapa com cifrão, representando a essência do app: encontrar os melhores preços perto de você. Ideal para o aspecto geolocalizado.</p>
+        <div class="tags">
+          <span class="tag">Localização</span>
+          <span class="tag">Preços</span>
+          <span class="tag">Moderno</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logo 3: Seta de Desconto -->
+    <div class="logo-card">
+      <div class="logo-preview" style="background: linear-gradient(135deg, #fef3c7, #fef9c3);">
+        <svg class="logo-svg" viewBox="0 0 260 80" xmlns="http://www.w3.org/2000/svg">
+          <!-- P with downward arrow integrated -->
+          <g transform="translate(10, 8)">
+            <!-- Stylized P -->
+            <rect x="8" y="8" width="10" height="52" rx="5" fill="#d97706"/>
+            <path d="M13,8 L13,8 C30,8 42,16 42,28 C42,40 30,48 13,48" stroke="#d97706" stroke-width="10" fill="none" stroke-linecap="round"/>
+            <!-- Down arrow (prices going down) -->
+            <path d="M34,36 L44,50 L54,36" stroke="#16a34a" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="44" y1="20" x2="44" y2="50" stroke="#16a34a" stroke-width="5" stroke-linecap="round"/>
+          </g>
+          <!-- Text -->
+          <text x="78" y="52" font-family="Poppins, sans-serif" font-weight="800" font-size="42" fill="#d97706">
+            <tspan fill="#d97706">P</tspan><tspan fill="#b45309">oup</tspan>
+          </text>
+        </svg>
+      </div>
+      <div class="logo-info">
+        <h3>Conceito "Preço Baixo"</h3>
+        <p>A seta para baixo integrada ao "P" comunica queda de preços. Transmite a ideia de que o app ajuda a encontrar onde os preços caem.</p>
+        <div class="tags">
+          <span class="tag">Desconto</span>
+          <span class="tag">Dinâmico</span>
+          <span class="tag">Direto</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logo 4: Carrinho + Escudo -->
+    <div class="logo-card">
+      <div class="logo-preview" style="background: linear-gradient(135deg, #faf5ff, #f3e8ff);">
+        <svg class="logo-svg" viewBox="0 0 260 80" xmlns="http://www.w3.org/2000/svg">
+          <!-- Shopping cart simplified -->
+          <g transform="translate(36, 38)">
+            <!-- Cart body -->
+            <path d="M-20,-12 L-14,-12 L-6,12 L18,12 L22,-4 L-8,-4" stroke="#7c3aed" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Wheels -->
+            <circle cx="-2" cy="18" r="4" fill="#7c3aed"/>
+            <circle cx="14" cy="18" r="4" fill="#7c3aed"/>
+            <!-- Shield/check -->
+            <path d="M6,-18 L14,-14 L14,-4 C14,2 10,6 6,8 C2,6 -2,2 -2,-4 L-2,-14 Z" fill="#a78bfa" opacity="0.8"/>
+            <path d="M2,-6 L5,-2 L10,-10" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+          <!-- Text -->
+          <text x="78" y="52" font-family="Poppins, sans-serif" font-weight="800" font-size="42" fill="#7c3aed">Poup</text>
+        </svg>
+      </div>
+      <div class="logo-info">
+        <h3>Conceito "Compra Inteligente"</h3>
+        <p>Carrinho com escudo de verificação: suas compras são protegidas com os melhores preços. Ideal para transmitir segurança e inteligência.</p>
+        <div class="tags">
+          <span class="tag">Segurança</span>
+          <span class="tag">Inteligência</span>
+          <span class="tag">Premium</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ PALETAS ============ -->
+<section id="paletas">
+  <h2>Paletas de Cores</h2>
+  <p class="subtitle">Três paletas pensadas para diferentes posicionamentos de marca, todas funcionais para interfaces mobile e adaptáveis a temas claro/escuro.</p>
+
+  <div class="palette-grid">
+
+    <!-- Palette A -->
+    <div class="palette-card">
+      <div class="palette-colors">
+        <div style="background: #0d9488;"><span>#0D9488</span></div>
+        <div style="background: #14b8a6;"><span>#14B8A6</span></div>
+        <div style="background: #5eead4;"><span>#5EEAD4</span></div>
+        <div style="background: #f59e0b;"><span>#F59E0B</span></div>
+        <div style="background: #1a1a2e;"><span>#1A1A2E</span></div>
+        <div style="background: #f0fdfa;"><span>#F0FDFA</span></div>
+      </div>
+      <div class="palette-info">
+        <h3>A — "Economia Verde"</h3>
+        <p>Teal como cor principal transmite confiança e economia. O amarelo dourado traz energia para CTAs e badges de preço. Clean e profissional.</p>
+        <div class="mood">
+          <span>Confiança</span>
+          <span>Economia</span>
+          <span>Frescor</span>
+          <span>Equilíbrio</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Palette B -->
+    <div class="palette-card">
+      <div class="palette-colors">
+        <div style="background: #059669;"><span>#059669</span></div>
+        <div style="background: #10b981;"><span>#10B981</span></div>
+        <div style="background: #6ee7b7;"><span>#6EE7B7</span></div>
+        <div style="background: #ef4444;"><span>#EF4444</span></div>
+        <div style="background: #1e293b;"><span>#1E293B</span></div>
+        <div style="background: #ecfdf5;"><span>#ECFDF5</span></div>
+      </div>
+      <div class="palette-info">
+        <h3>B — "Encarte Digital"</h3>
+        <p>Verde vibrante de supermercado com vermelho para promoções — remetendo a encartes e etiquetas de preço. Familiar e acolhedor para o público brasileiro.</p>
+        <div class="mood">
+          <span>Familiar</span>
+          <span>Promoção</span>
+          <span>Urgência</span>
+          <span>Popular</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Palette C -->
+    <div class="palette-card">
+      <div class="palette-colors">
+        <div style="background: #0891b2;"><span>#0891B2</span></div>
+        <div style="background: #22d3ee;"><span>#22D3EE</span></div>
+        <div style="background: #a5f3fc;"><span>#A5F3FC</span></div>
+        <div style="background: #8b5cf6;"><span>#8B5CF6</span></div>
+        <div style="background: #0f172a;"><span>#0F172A</span></div>
+        <div style="background: #f0f9ff;"><span>#F0F9FF</span></div>
+      </div>
+      <div class="palette-info">
+        <h3>C — "Fintech Moderna"</h3>
+        <p>Cyan com toques de roxo — posicionamento premium estilo app financeiro. Ideal se quiser competir com apps como Méliuz, Picpay ou bancos digitais.</p>
+        <div class="mood">
+          <span>Tecnologia</span>
+          <span>Premium</span>
+          <span>Inovação</span>
+          <span>Sofisticação</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Cores auxiliares -->
+  <div class="rationale" style="margin-top: 32px;">
+    <h3>Cores Funcionais (Comuns a Todas as Paletas)</h3>
+    <p style="margin-bottom: 16px;">Além da paleta principal, o app precisa de cores funcionais para estados e feedback:</p>
+    <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 32px; height: 32px; background: #16a34a; border-radius: 8px;"></div>
+        <div><strong style="font-size: 13px;">Sucesso</strong><br><span style="font-size: 11px; color: #64748b;">#16A34A — preço baixo, economia</span></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 32px; height: 32px; background: #ef4444; border-radius: 8px;"></div>
+        <div><strong style="font-size: 13px;">Alerta</strong><br><span style="font-size: 11px; color: #64748b;">#EF4444 — preço alto, erro</span></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 32px; height: 32px; background: #f59e0b; border-radius: 8px;"></div>
+        <div><strong style="font-size: 13px;">Aviso</strong><br><span style="font-size: 11px; color: #64748b;">#F59E0B — promoção, atenção</span></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 32px; height: 32px; background: #64748b; border-radius: 8px;"></div>
+        <div><strong style="font-size: 13px;">Neutro</strong><br><span style="font-size: 11px; color: #64748b;">#64748B — texto secundário</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TIPOGRAFIA ============ -->
+<section id="tipografia">
+  <h2>Tipografia Sugerida</h2>
+  <p class="subtitle">Combinações de fontes pensadas para leitura confortável em telas pequenas e personalidade de marca.</p>
+
+  <div class="type-grid">
+    <div class="type-card">
+      <div class="sample" style="font-family: 'Poppins', sans-serif; font-weight: 800;">Poup</div>
+      <h3>Poppins (Display / Logo)</h3>
+      <p>Geométrica e bold, ideal para o logotipo e títulos. Transmite modernidade e força sem perder a simpatia.</p>
+    </div>
+    <div class="type-card">
+      <div class="sample" style="font-family: 'Nunito', sans-serif; font-weight: 800;">Poup</div>
+      <h3>Nunito (Alternativa Display)</h3>
+      <p>Arredondada e amigável, ótima alternativa para um tom mais acessível e acolhedor. Funciona bem para público amplo.</p>
+    </div>
+    <div class="type-card">
+      <div class="sample" style="font-family: 'Fredoka', sans-serif; font-weight: 600;">Poup</div>
+      <h3>Fredoka (Alternativa Divertida)</h3>
+      <p>Mais lúdica e descontraída. Ideal se o posicionamento for mais jovem e descolado, tipo app de cashback.</p>
+    </div>
+    <div class="type-card">
+      <div class="sample" style="font-family: 'Inter', sans-serif; font-weight: 400;">Corpo do texto</div>
+      <h3>Inter (Body Text)</h3>
+      <p>A melhor fonte para interfaces mobile. Alta legibilidade em todos os tamanhos, otimizada para telas. Usar como fonte de corpo em todo o app.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MOCKUPS ============ -->
+<section id="mockups">
+  <h2>Mockup Ilustrativo</h2>
+  <p class="subtitle">Visualização simplificada de como a identidade visual ficaria aplicada no app.</p>
+
+  <div class="mockup-container">
+
+    <!-- Phone 1: Paleta A -->
+    <div class="phone-frame">
+      <div class="phone-screen">
+        <div class="phone-statusbar" style="background: #0d9488;">
+          9:41 — Poup
+        </div>
+        <div class="phone-content">
+          <div class="app-logo">
+            <div class="name" style="color: #0d9488;">Poup</div>
+            <div class="tagline">Economize em cada compra</div>
+          </div>
+          <div style="font-size: 14px; font-weight: 700; color: #1a1a2e; margin: 12px 0 8px;">Ofertas perto de você</div>
+          <div class="deal-card" style="background: #f0fdfa;">
+            <div class="deal-icon" style="background: #0d9488;">🥛</div>
+            <div class="deal-text">
+              <div class="name">Leite Integral 1L</div>
+              <div><span class="old-price">R$ 6,49</span> <span class="price" style="color: #0d9488;">R$ 4,29</span></div>
+            </div>
+          </div>
+          <div class="deal-card" style="background: #f0fdfa;">
+            <div class="deal-icon" style="background: #14b8a6;">🍚</div>
+            <div class="deal-text">
+              <div class="name">Arroz 5kg</div>
+              <div><span class="old-price">R$ 28,90</span> <span class="price" style="color: #0d9488;">R$ 21,99</span></div>
+            </div>
+          </div>
+          <div class="deal-card" style="background: #f0fdfa;">
+            <div class="deal-icon" style="background: #5eead4; color: #0d9488;">☕</div>
+            <div class="deal-text">
+              <div class="name">Café 500g</div>
+              <div><span class="old-price">R$ 18,90</span> <span class="price" style="color: #0d9488;">R$ 14,49</span></div>
+            </div>
+          </div>
+          <div style="text-align: center; margin-top: 16px;">
+            <div style="display: inline-block; background: #f59e0b; color: white; padding: 10px 24px; border-radius: 12px; font-size: 13px; font-weight: 700;">
+              Ver no mapa 📍
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone 2: Paleta C / Fintech -->
+    <div class="phone-frame">
+      <div class="phone-screen">
+        <div class="phone-statusbar" style="background: #0891b2;">
+          9:41 — Poup
+        </div>
+        <div class="phone-content">
+          <div class="app-logo">
+            <div class="name" style="color: #0891b2;">Poup</div>
+            <div class="tagline">Sua economia, inteligente</div>
+          </div>
+          <div style="background: linear-gradient(135deg, #0891b2, #8b5cf6); border-radius: 14px; padding: 16px; color: white; margin: 8px 0;">
+            <div style="font-size: 11px; opacity: 0.8;">Economia este mês</div>
+            <div style="font-size: 28px; font-weight: 800; font-family: Poppins;">R$ 127,40</div>
+            <div style="font-size: 11px; margin-top: 4px; color: #a5f3fc;">↑ 23% vs mês passado</div>
+          </div>
+          <div class="deal-card" style="background: #f0f9ff;">
+            <div class="deal-icon" style="background: #0891b2;">🛒</div>
+            <div class="deal-text">
+              <div class="name">Lista inteligente</div>
+              <div class="price" style="color: #0891b2;">3 itens com desconto</div>
+            </div>
+          </div>
+          <div class="deal-card" style="background: #f0f9ff;">
+            <div class="deal-icon" style="background: #8b5cf6;">📊</div>
+            <div class="deal-text">
+              <div class="name">Histórico de preços</div>
+              <div class="price" style="color: #8b5cf6;">Melhor hora pra comprar</div>
+            </div>
+          </div>
+          <div style="text-align: center; margin-top: 16px;">
+            <div style="display: inline-block; background: linear-gradient(135deg, #0891b2, #8b5cf6); color: white; padding: 10px 24px; border-radius: 12px; font-size: 13px; font-weight: 700;">
+              Explorar ofertas
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ RACIONAL ============ -->
+<section>
+  <div class="rationale">
+    <h3>Racional da Identidade</h3>
+    <p><strong>Nome "Poup"</strong> é curto, sonoro e vem de "poupar" — perfeito para um app de economia. É fácil de lembrar, digitar e falar. Funciona bem como marca em ícones de app e materiais de marketing.</p>
+    <br>
+    <p><strong>Minha recomendação:</strong> o conceito "Cofrinho" com a paleta "Economia Verde" (Paleta A) seria a combinação mais forte para o lançamento. O cofrinho é um ícone universalmente reconhecido de economia e cria conexão emocional imediata. O teal é uma cor diferenciada no mercado brasileiro de apps — se destaca dos verdes tradicionais de supermercado e dos azuis de bancos digitais. O amarelo dourado como cor de destaque traz energia para promoções e CTAs sem competir com a cor principal.</p>
+    <br>
+    <p>Para o futuro, a paleta "Fintech Moderna" (C) seria ideal para posicionar funcionalidades premium como histórico de preços e inteligência de compras, podendo ser usada em telas específicas do plano Plus.</p>
+  </div>
+</section>
+
+<div style="text-align: center; padding: 40px; color: #94a3b8; font-size: 13px;">
+  Poup — Identidade Visual v1.0 — Março 2026
+</div>
+
+</body>
+</html>

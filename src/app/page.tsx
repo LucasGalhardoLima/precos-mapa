@@ -11,7 +11,7 @@ export default function HomePage() {
             <BarChart3 className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-[var(--color-ink)]">PrecoMapa</p>
+            <p className="text-sm font-semibold text-[var(--color-ink)]">Poup</p>
             <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--color-muted)]">
               Inteligencia Regional de Precos
             </p>

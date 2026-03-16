@@ -27,20 +27,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .single();
 
   if (!data) {
-    return { title: "Indice nao encontrado | PrecoMapa" };
+    return { title: "Indice nao encontrado | Poup" };
   }
 
   const index = mapDbToIndex(data);
   const period = formatPeriodLabel(index.periodStart);
 
   return {
-    title: `Indice de Precos de ${index.city} - ${period} | PrecoMapa`,
+    title: `Indice de Precos de ${index.city} - ${period} | Poup`,
     description: getIndexSummary(index),
     openGraph: {
       title: `Indice de Precos de ${index.city} - ${period}`,
       description: getIndexSummary(index),
       type: "website",
-      siteName: "PrecoMapa",
+      siteName: "Poup",
     },
   };
 }

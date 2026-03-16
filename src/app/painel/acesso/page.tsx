@@ -25,7 +25,7 @@ export default async function PainelAcessoPage({
             <ShieldCheck className="h-3.5 w-3.5" />
             Acesso Administrativo
           </p>
-          <h1 className="text-4xl font-semibold tracking-tight text-[var(--color-ink)]">Painel PrecoMapa</h1>
+          <h1 className="text-4xl font-semibold tracking-tight text-[var(--color-ink)]">Painel Poup</h1>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-[var(--color-muted)]">
             Acesse o painel de gestao da sua loja. Gerencie ofertas, acompanhe metricas e utilize o importador IA.
           </p>
