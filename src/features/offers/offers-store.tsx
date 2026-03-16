@@ -14,7 +14,7 @@ interface OffersStoreValue {
   toggleOfferStatus: (marketId: string, offerId: string) => void;
 }
 
-const STORAGE_KEY = "precomapa_offers_store_v1";
+const STORAGE_KEY = "poup_offers_store_v1";
 
 function createInitialStore(): Record<string, Offer[]> {
   return JSON.parse(JSON.stringify(mockOffersByMarket)) as Record<string, Offer[]>;

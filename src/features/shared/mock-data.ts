@@ -266,7 +266,7 @@ export const mockPlatformUsers: PlatformUser[] = [
   {
     id: "usr-1",
     name: "Lucas Galhardo",
-    email: "lucas@precomapa.com",
+    email: "lucas@poup.com.br",
     role: "super_admin",
     status: "ativo",
     lastAccess: "2026-02-09 11:14",
@@ -274,7 +274,7 @@ export const mockPlatformUsers: PlatformUser[] = [
   {
     id: "usr-2",
     name: "Ana Martins",
-    email: "ana@precomapa.com",
+    email: "ana@poup.com.br",
     role: "analista",
     status: "ativo",
     lastAccess: "2026-02-09 09:48",
@@ -282,7 +282,7 @@ export const mockPlatformUsers: PlatformUser[] = [
   {
     id: "usr-3",
     name: "Pedro Costa",
-    email: "pedro@precomapa.com",
+    email: "pedro@poup.com.br",
     role: "suporte",
     status: "inativo",
     lastAccess: "2026-02-07 17:05",
@@ -370,7 +370,7 @@ export const mockAlertPreferences: AlertPreference[] = [
 export const defaultSessionByRole: Record<UserRole, { userName: string; userEmail: string; availableMarketIds: string[] }> = {
   super_admin: {
     userName: "Lucas Galhardo",
-    userEmail: "lucas@precomapa.com",
+    userEmail: "lucas@poup.com.br",
     availableMarketIds: [DEMO_MARKET_ID],
   },
   admin_mercado: {
