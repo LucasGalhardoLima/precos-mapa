@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
 import { BarChart3, Tag, Eye, TrendingUp, Trophy, Lock } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 import { useCompetitive } from '@/hooks/use-competitive';
 import { StyledButton } from '@/components/ui/button';
 import { Colors } from '@/constants/colors';

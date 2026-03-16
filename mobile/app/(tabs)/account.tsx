@@ -29,7 +29,7 @@ import {
 } from 'lucide-react-native';
 
 import { useTheme } from '@/theme/use-theme';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useAlerts } from '@/hooks/use-alerts';
 import { useSubscription } from '@/hooks/use-subscription';

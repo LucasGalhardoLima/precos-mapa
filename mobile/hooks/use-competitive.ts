@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 
 interface CompetitorPrice {
   product_id: string;

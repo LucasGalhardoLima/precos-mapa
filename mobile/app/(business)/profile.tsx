@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { LogOut } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { storeSetupSchema } from '@/lib/schemas';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 import { StyledButton } from '@/components/ui/button';
 import { Colors } from '@/constants/colors';
 

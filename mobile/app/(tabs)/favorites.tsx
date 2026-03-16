@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
 import { Heart, MapPin, Star, Crown } from 'lucide-react-native';
 import { useFavorites } from '@/hooks/use-favorites';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 import { useTheme } from '@/theme/use-theme';
 import { Paywall } from '@/components/paywall';
 import type { FavoriteWithProduct } from '@/types';

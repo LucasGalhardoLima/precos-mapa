@@ -16,7 +16,7 @@ import { useTheme } from '@/theme/use-theme';
 import { triggerHaptic } from '@/hooks/use-haptics';
 import { useShoppingList } from '@/hooks/use-shopping-list';
 import { useLocation } from '@/hooks/use-location';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 import { ListItem } from '@/components/themed/list-item';
 import { CouponLine } from '@/components/themed/coupon-line';
 import { ListSkeleton } from '@/components/skeleton/list-skeleton';

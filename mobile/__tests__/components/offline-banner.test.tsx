@@ -4,7 +4,7 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { OfflineBanner } from '../../components/offline-banner';
 
 // The OfflineBanner is re-exported from shared; mock the shared module path
-jest.mock('@precomapa/shared/components/offline-banner', () => {
+jest.mock('@poup/shared/components/offline-banner', () => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { View, Text, Pressable } = require('react-native');
 

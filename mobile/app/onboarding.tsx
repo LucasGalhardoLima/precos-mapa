@@ -14,7 +14,7 @@ import { Store, MapPin, TrendingDown } from 'lucide-react-native';
 import Svg, { Circle, Rect, Path, G, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { AuthButtons } from '@/components/auth-buttons';
 import { StoreSetup } from '@/components/store-setup';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 import { useTheme } from '@/theme/use-theme';
 import { supabase } from '@/lib/supabase';
 import type { UserRole, Profile } from '@/types';

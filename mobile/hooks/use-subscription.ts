@@ -5,7 +5,7 @@ import Purchases, {
   PurchasesPackage,
 } from 'react-native-purchases';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 
 type B2CPlan = 'free' | 'plus' | 'family';
 

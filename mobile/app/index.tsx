@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router';
-import { useAuthStore } from '@precomapa/shared';
+import { useAuthStore } from '@poup/shared';
 
 export default function Index() {
   const hasSeenOnboarding = useAuthStore((s) => s.hasSeenOnboarding);
