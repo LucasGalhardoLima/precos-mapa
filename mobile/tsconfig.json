@@ -5,8 +5,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@precomapa/shared": ["../packages/shared/src/index.ts"],
-      "@precomapa/shared/*": ["../packages/shared/src/*"]
+      "@poup/shared": ["../packages/shared/src/index.ts"],
+      "@poup/shared/*": ["../packages/shared/src/*"]
     }
   },
   "include": [
