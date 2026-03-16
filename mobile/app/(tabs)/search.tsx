@@ -10,8 +10,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search, X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
-
 import { useTheme } from '@/theme/use-theme';
 import { triggerHaptic } from '@/hooks/use-haptics';
 import { usePromotions } from '@/hooks/use-promotions';
@@ -21,8 +19,6 @@ import { SearchSkeleton } from '@/components/skeleton/search-skeleton';
 import { Paywall } from '@/components/paywall';
 
 import type { SortMode, EnrichedPromotion } from '@/types';
-
-const HAS_GLASS = isLiquidGlassAvailable();
 
 // ---------------------------------------------------------------------------
 // Sort tab config
@@ -99,42 +95,28 @@ export default function SearchScreen() {
     <View style={[styles.screen, { backgroundColor: tokens.bg }]}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         {/* Search input */}
-        {(() => {
-          const searchInputContent = (
-            <>
-              <Search size={18} color={tokens.textHint} />
-              <TextInput
-                style={[styles.searchInput, { color: tokens.textPrimary }]}
-                placeholder="Buscar produto..."
-                placeholderTextColor={tokens.textHint}
-                value={query}
-                onChangeText={setQuery}
-                returnKeyType="search"
-                autoCorrect={false}
-              />
-              {query.length > 0 && (
-                <Pressable onPress={clearQuery} hitSlop={8}>
-                  <X size={18} color={tokens.textHint} />
-                </Pressable>
-              )}
-            </>
-          );
-
-          return HAS_GLASS ? (
-            <GlassView glassEffectStyle="regular" style={styles.searchBar}>
-              {searchInputContent}
-            </GlassView>
-          ) : (
-            <View
-              style={[
-                styles.searchBar,
-                { backgroundColor: tokens.surface, borderWidth: 1, borderColor: tokens.border },
-              ]}
-            >
-              {searchInputContent}
-            </View>
-          );
-        })()}
+        <View
+          style={[
+            styles.searchBar,
+            { backgroundColor: tokens.surface, borderWidth: 1, borderColor: tokens.border },
+          ]}
+        >
+          <Search size={18} color={tokens.textHint} />
+          <TextInput
+            style={[styles.searchInput, { color: tokens.textPrimary }]}
+            placeholder="Buscar produto..."
+            placeholderTextColor={tokens.textHint}
+            value={query}
+            onChangeText={setQuery}
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          {query.length > 0 && (
+            <Pressable onPress={clearQuery} hitSlop={8}>
+              <X size={18} color={tokens.textHint} />
+            </Pressable>
+          )}
+        </View>
 
         {/* Sort tabs */}
         <View style={styles.sortRow}>
@@ -154,25 +136,6 @@ export default function SearchScreen() {
                   <Text style={[styles.sortPillText, { color: '#FFFFFF' }]}>
                     {tab.label}
                   </Text>
-                </Pressable>
-              );
-            }
-
-            if (HAS_GLASS) {
-              return (
-                <Pressable
-                  key={tab.mode}
-                  onPress={() => {
-                    triggerHaptic();
-                    setSortMode(tab.mode);
-                  }}
-                  style={[styles.sortPill, { padding: 0, overflow: 'hidden' }]}
-                >
-                  <GlassView glassEffectStyle="clear" style={styles.sortPillGlass}>
-                    <Text style={[styles.sortPillText, { color: tokens.textSecondary }]}>
-                      {tab.label}
-                    </Text>
-                  </GlassView>
                 </Pressable>
               );
             }
@@ -288,11 +251,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
-  },
-  sortPillGlass: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
   },
   sortPillText: {
     fontSize: 13,

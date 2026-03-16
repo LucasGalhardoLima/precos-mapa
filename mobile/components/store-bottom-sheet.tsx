@@ -2,13 +2,10 @@ import { View, Text, Linking, Platform } from 'react-native';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { forwardRef, useMemo, useCallback } from 'react';
 import { MapPin, ShoppingBag, Navigation } from 'lucide-react-native';
-import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { DealCard } from '@/components/deal-card';
 import { StyledButton } from '@/components/ui/button';
 import { Colors } from '@/constants/colors';
 import type { StoreWithPromotions } from '@/types';
-
-const HAS_GLASS = isLiquidGlassAvailable();
 
 interface StoreBottomSheetProps {
   storeData: StoreWithPromotions | null;
@@ -107,17 +104,10 @@ export const StoreBottomSheet = forwardRef<BottomSheet, StoreBottomSheetProps>(
         enablePanDownToClose
         backgroundStyle={{
           borderRadius: 24,
-          ...(HAS_GLASS && { backgroundColor: 'transparent' }),
         }}
         handleIndicatorStyle={{ backgroundColor: Colors.text.tertiary }}
       >
-        {HAS_GLASS ? (
-          <GlassView glassEffectStyle="regular" style={{ flex: 1, borderRadius: 24 }}>
-            {sheetContent}
-          </GlassView>
-        ) : (
-          sheetContent
-        )}
+        {sheetContent}
       </BottomSheet>
     );
   }
