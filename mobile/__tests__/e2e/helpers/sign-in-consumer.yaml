@@ -1,6 +1,6 @@
 # Helper: Sign in as test consumer user via email/password
 # Called before authenticated flows
-appId: com.precomapa.consumer
+appId: com.poup.app
 ---
 - launchApp
 

@@ -82,7 +82,7 @@ function buildEmailHtml(
 
       <hr style="margin-top:32px;border:none;border-top:1px solid #eee" />
       <p style="color:#999;font-size:11px;margin-top:16px">
-        Enviado por PrecoMapa. Para cancelar, acesse as configuracoes do seu painel.
+        Enviado por Poup. Para cancelar, acesse as configuracoes do seu painel.
       </p>
     </div>
   `;
@@ -196,7 +196,7 @@ serve(async () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'PrecoMapa <digest@precomapa.com.br>',
+          from: 'Poup <digest@poup.com.br>',
           to: email,
           subject: `Digest Competitivo — ${store.name}`,
           html,

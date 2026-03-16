@@ -2,7 +2,7 @@
 # Precondition: Metro running on 8081
 # Data dependency: Supabase must have promotions matching "Leite" (if list is empty)
 # Auth: testconsumer@gmail.com / TestConsumer2026 (consumer role)
-appId: com.precomapa.consumer
+appId: com.poup.app
 ---
 - launchApp
 
