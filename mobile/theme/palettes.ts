@@ -26,6 +26,20 @@ export type PaletteTokens = {
   dark: string;
   darkSurface: string;
   mist: string;
+  // Header gradient stops
+  headerGradientStart: string;
+  headerGradientMid: string;
+  headerGradientEnd: string;
+  // Semantic colors
+  successLight: string;
+  // Badge colors
+  purple: string;
+  purpleLight: string;
+  // Text shades
+  textDark: string;
+  textMuted: string;
+  // Background
+  bgLight: string;
 };
 
 const SHARED = {
@@ -56,4 +70,18 @@ export const TOKENS: PaletteTokens = {
   dark: '#1A1A2E',
   darkSurface: '#2D2D44',
   mist: '#F0FDFA',
+  // Header gradient stops
+  headerGradientStart: '#115E59',
+  headerGradientMid: '#0D9488',
+  headerGradientEnd: '#14B8A6',
+  // Semantic colors
+  successLight: '#DCFCE7',
+  // Badge colors
+  purple: '#7C3AED',
+  purpleLight: '#F3E8FF',
+  // Text shades
+  textDark: '#134E4A',
+  textMuted: '#9CA3AF',
+  // Background
+  bgLight: '#CCFBF1',
 };
