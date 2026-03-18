@@ -2,22 +2,221 @@ import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  FlatList,
-  Switch,
+  ScrollView,
   Pressable,
   RefreshControl,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
-import { Bell, MapPin, Crown } from 'lucide-react-native';
+import { Bell, Plus } from 'lucide-react-native';
 import { useAlerts } from '@/hooks/use-alerts';
 import { useAuthStore } from '@poup/shared';
 import { useTheme } from '@/theme/use-theme';
+import type { PaletteTokens } from '@/theme/palettes';
 import { Paywall } from '@/components/paywall';
+import { AlertCard } from '@/components/alert-card';
+import { SuggestedProductCard, type SuggestedProduct } from '@/components/suggested-product-card';
 import type { AlertWithProduct } from '@/types';
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const FREE_ALERT_LIMIT = 3;
+
+const SUGGESTED_PRODUCTS: SuggestedProduct[] = [
+  { emoji: '🥛', name: 'Leite Integral 1L', subtitle: 'Em promoção em 3 mercados' },
+  { emoji: '🍚', name: 'Arroz 5kg', subtitle: 'Preço caiu 8% essa semana' },
+  { emoji: '☕', name: 'Café 500g', subtitle: 'Menor preço em 30 dias' },
+];
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Splits alerts into triggered (novidades) vs monitoring groups.
+ * The current data model has no `triggered_at` field, so all alerts are
+ * placed in "monitorando" until the backend adds that distinction.
+ */
+function splitAlerts(alerts: AlertWithProduct[]) {
+  const triggered: AlertWithProduct[] = [];
+  const monitoring: AlertWithProduct[] = [];
+
+  for (const alert of alerts) {
+    // Future: check alert.triggered_at or alert.last_triggered_price
+    // For now, all active alerts go to monitoring.
+    monitoring.push(alert);
+  }
+
+  return { triggered, monitoring };
+}
+
+// ---------------------------------------------------------------------------
+// Empty State
+// ---------------------------------------------------------------------------
+
+interface EmptyStateProps {
+  tokens: PaletteTokens;
+  onCreateAlert: () => void;
+}
+
+function EmptyState({ tokens, onCreateAlert }: EmptyStateProps) {
+  return (
+    <ScrollView
+      contentContainerStyle={styles.emptyScroll}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Hero */}
+      <MotiView
+        from={{ opacity: 0, translateY: 20 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 400 }}
+        style={styles.emptyHero}
+      >
+        <View style={[styles.bellCircle, { backgroundColor: tokens.bgLight }]}>
+          <Bell size={36} color={tokens.primary} />
+        </View>
+        <Text style={[styles.emptyTitle, { color: tokens.textDark }]}>
+          Receba quando o preço cair
+        </Text>
+        <Text style={[styles.emptySubtitle, { color: tokens.textSecondary }]}>
+          Defina um preço alvo e avisamos quando um mercado perto de você atingir esse valor.
+        </Text>
+        <Pressable
+          onPress={onCreateAlert}
+          accessibilityLabel="Criar primeiro alerta"
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            styles.emptyCtaBtn,
+            { backgroundColor: tokens.primary },
+            pressed && styles.pressedOpacity,
+          ]}
+        >
+          <Text style={styles.emptyCtaText}>Criar primeiro alerta</Text>
+        </Pressable>
+      </MotiView>
+
+      {/* Suggestions */}
+      <MotiView
+        from={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ type: 'timing', duration: 400, delay: 150 }}
+      >
+        <Text style={[styles.sectionLabel, { color: tokens.textDark }]}>
+          Sugestões perto de você
+        </Text>
+        {SUGGESTED_PRODUCTS.map((item) => (
+          <SuggestedProductCard
+            key={item.name}
+            item={item}
+            onCreateAlert={onCreateAlert}
+          />
+        ))}
+      </MotiView>
+    </ScrollView>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section Header
+// ---------------------------------------------------------------------------
+
+interface SectionHeaderProps {
+  label: string;
+  count: number;
+  variant: 'novidades' | 'monitorando';
+  tokens: PaletteTokens;
+}
+
+function SectionHeader({ label, count, variant, tokens }: SectionHeaderProps) {
+  const isDanger = variant === 'novidades';
+  const badgeBg = isDanger ? tokens.danger : tokens.border;
+  const badgeText = isDanger ? '#FFFFFF' : tokens.textSecondary;
+
+  return (
+    <View style={styles.sectionHeader}>
+      {isDanger && <View style={[styles.redDot, { backgroundColor: tokens.danger }]} />}
+      <Text style={[styles.sectionLabel, { color: tokens.textDark }]}>{label}</Text>
+      <View style={[styles.countBadge, { backgroundColor: badgeBg }]}>
+        <Text style={[styles.countBadgeText, { color: badgeText }]}>{count}</Text>
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Upsell Card
+// ---------------------------------------------------------------------------
+
+interface UpsellCardProps {
+  count: number;
+  limit: number;
+  tokens: PaletteTokens;
+  onUpgrade: () => void;
+}
+
+function UpsellCard({ count, limit, tokens, onUpgrade }: UpsellCardProps) {
+  return (
+    <View
+      style={[
+        styles.upsellCard,
+        { borderColor: tokens.primary, backgroundColor: tokens.mist },
+      ]}
+    >
+      <Text style={[styles.upsellTitle, { color: tokens.textDark }]}>
+        Você está usando {count} de {limit} alertas
+      </Text>
+      <Text style={[styles.upsellSubtitle, { color: tokens.textSecondary }]}>
+        Assine o Poup Plus para alertas ilimitados
+      </Text>
+      <Pressable
+        onPress={onUpgrade}
+        accessibilityLabel="Ver planos"
+        accessibilityRole="button"
+        style={({ pressed }) => [
+          styles.upsellBtn,
+          { backgroundColor: tokens.primary },
+          pressed && styles.pressedOpacity,
+        ]}
+      >
+        <Text style={styles.upsellBtnText}>Ver planos</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Skeleton Loading
+// ---------------------------------------------------------------------------
+
+function SkeletonLoader({ tokens }: { tokens: PaletteTokens }) {
+  return (
+    <View style={styles.skeletonList}>
+      {[0, 1, 2].map((i) => (
+        <MotiView
+          key={i}
+          from={{ opacity: 0.4 }}
+          animate={{ opacity: 1 }}
+          transition={{ type: 'timing', duration: 800, loop: true }}
+          style={[styles.skeletonCard, { backgroundColor: tokens.surface, borderColor: tokens.border }]}
+        >
+          <View style={[styles.skeletonCircle, { backgroundColor: tokens.border }]} />
+          <View style={styles.skeletonLines}>
+            <View style={[styles.skeletonLine, styles.skeletonLineLong, { backgroundColor: tokens.border }]} />
+            <View style={[styles.skeletonLine, styles.skeletonLineShort, { backgroundColor: tokens.border }]} />
+          </View>
+          <View style={[styles.skeletonDot, { backgroundColor: tokens.border }]} />
+        </MotiView>
+      ))}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main Screen
+// ---------------------------------------------------------------------------
 
 export default function AlertsScreen() {
   const { tokens } = useTheme();
@@ -26,7 +225,9 @@ export default function AlertsScreen() {
   const isFree = profile?.b2c_plan === 'free';
   const [showPaywall, setShowPaywall] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const limitReached = isFree && count >= FREE_ALERT_LIMIT;
+
+  const nearLimit = isFree && count >= FREE_ALERT_LIMIT - 1;
+  const atLimit = isFree && count >= FREE_ALERT_LIMIT;
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -34,192 +235,317 @@ export default function AlertsScreen() {
     setRefreshing(false);
   }, [refresh]);
 
-  const renderItem = ({ item, index }: { item: AlertWithProduct; index: number }) => (
-    <MotiView
-      from={{ opacity: 0, translateY: 12 }}
-      animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'timing', duration: 300, delay: index * 50 }}
-    >
-      <View style={[styles.card, { backgroundColor: tokens.surface, borderColor: tokens.border }]}>
-        <View style={[styles.iconCircle, { backgroundColor: tokens.primaryMuted }]}>
-          <Bell size={20} color={tokens.primary} />
-        </View>
-        <View style={styles.cardContent}>
-          <Text style={[styles.productName, { color: tokens.textPrimary }]}>
-            {item.product.name}
-          </Text>
-          {item.target_price && (
-            <Text style={[styles.targetPrice, { color: tokens.textSecondary }]}>
-              Alvo: R$ {item.target_price.toFixed(2)}
-            </Text>
-          )}
-          <View style={styles.radiusRow}>
-            <MapPin size={10} color={tokens.textHint} />
-            <Text style={[styles.radiusText, { color: tokens.textHint }]}>
-              Raio: {item.radius_km} km
-            </Text>
-          </View>
-        </View>
-        <Switch
-          value={item.is_active}
-          onValueChange={(value) => {
-            if (!value) disable(item.id);
-          }}
-          trackColor={{ false: tokens.border, true: tokens.primary }}
-          accessibilityLabel={`Desativar alerta para ${item.product.name}`}
-          accessibilityRole="switch"
-        />
-      </View>
-    </MotiView>
-  );
+  const handleCreateAlert = useCallback(() => {
+    if (atLimit) {
+      setShowPaywall(true);
+    }
+    // TODO: navigate to create alert flow when implemented
+  }, [atLimit]);
+
+  const { triggered, monitoring } = splitAlerts(alerts);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: tokens.bg }]} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: tokens.textPrimary }]}>
-          Alertas de Ofertas
-        </Text>
-        <Text style={[styles.subtitle, { color: tokens.textSecondary }]}>
-          Receba notificações quando seus produtos favoritos entrarem em promoção
-        </Text>
-        {isFree && (
-          <Pressable
-            onPress={() => limitReached && setShowPaywall(true)}
-            accessibilityLabel={`${count} de ${FREE_ALERT_LIMIT} alertas usados`}
-            accessibilityRole={limitReached ? 'button' : undefined}
-            style={[styles.limitBadge, { backgroundColor: tokens.primaryMuted }]}
-          >
-            <Text style={[styles.limitText, { color: tokens.primary }]}>
-              {count}/{FREE_ALERT_LIMIT} alertas
-            </Text>
-            {limitReached && <Crown size={12} color={tokens.primary} />}
-          </Pressable>
-        )}
-        {limitReached && (
-          <Pressable
-            onPress={() => setShowPaywall(true)}
-            accessibilityLabel="Fazer upgrade para alertas ilimitados"
-            accessibilityRole="button"
-            style={[styles.upgradeBanner, { backgroundColor: tokens.accentSoft }]}
-          >
-            <Crown size={16} color={tokens.accent} />
-            <Text style={[styles.upgradeText, { color: tokens.textSecondary }]}>
-              Limite de alertas atingido.{' '}
-              <Text style={{ color: tokens.primary, fontWeight: '600' }}>
-                Faça upgrade
-              </Text>{' '}
-              para alertas ilimitados.
-            </Text>
-          </Pressable>
-        )}
-      </View>
-
+      {/* ---- Loading ---- */}
       {isLoading ? (
-        <View style={styles.skeletonList}>
-          {[0, 1, 2].map((i) => (
-            <MotiView
-              key={i}
-              from={{ opacity: 0.4 }}
-              animate={{ opacity: 1 }}
-              transition={{ type: 'timing', duration: 800, loop: true }}
-              style={[styles.card, { backgroundColor: tokens.surface, borderColor: tokens.border }]}
-            >
-              <View style={[styles.skeletonCircle, { backgroundColor: tokens.border }]} />
-              <View style={styles.skeletonLines}>
-                <View style={[styles.skeletonLine, styles.skeletonLineLong, { backgroundColor: tokens.border }]} />
-                <View style={[styles.skeletonLine, styles.skeletonLineShort, { backgroundColor: tokens.border }]} />
-              </View>
-              <View style={[styles.skeletonSwitch, { backgroundColor: tokens.border }]} />
-            </MotiView>
-          ))}
-        </View>
+        <SkeletonLoader tokens={tokens} />
       ) : alerts.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Bell size={48} color={tokens.textHint} />
-          <Text style={[styles.emptyTitle, { color: tokens.textPrimary }]}>
-            Nenhum alerta ativo
-          </Text>
-          <Text style={[styles.emptySubtitle, { color: tokens.textSecondary }]}>
-            Receba notificações quando seus produtos favoritos entrarem em promoção perto de você
-          </Text>
-        </View>
+        /* ---- Empty State ---- */
+        <EmptyState tokens={tokens} onCreateAlert={handleCreateAlert} />
       ) : (
-        <FlatList
-          data={alerts}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          renderItem={renderItem}
-          keyboardDismissMode="on-drag"
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={tokens.primary} />
-          }
-        />
+        /* ---- Populated State ---- */
+        <>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={[styles.screenTitle, { color: tokens.textDark }]}>Alertas</Text>
+            <Pressable
+              onPress={handleCreateAlert}
+              accessibilityLabel="Criar novo alerta"
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.addBtn,
+                { backgroundColor: tokens.primary },
+                pressed && styles.pressedOpacity,
+              ]}
+            >
+              <Plus size={18} color="#FFFFFF" />
+            </Pressable>
+          </View>
+
+          <ScrollView
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={tokens.primary}
+              />
+            }
+          >
+            {/* Upsell card (near limit) */}
+            {nearLimit && (
+              <UpsellCard
+                count={count}
+                limit={FREE_ALERT_LIMIT}
+                tokens={tokens}
+                onUpgrade={() => setShowPaywall(true)}
+              />
+            )}
+
+            {/* Novidades section */}
+            {triggered.length > 0 && (
+              <MotiView
+                from={{ opacity: 0, translateY: 8 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                transition={{ type: 'timing', duration: 300 }}
+              >
+                <SectionHeader
+                  label="Novidades"
+                  count={triggered.length}
+                  variant="novidades"
+                  tokens={tokens}
+                />
+                <View style={styles.sectionCards}>
+                  {triggered.map((alert, index) => (
+                    <MotiView
+                      key={alert.id}
+                      from={{ opacity: 0, translateY: 12 }}
+                      animate={{ opacity: 1, translateY: 0 }}
+                      transition={{ type: 'timing', duration: 300, delay: index * 50 }}
+                    >
+                      <AlertCard
+                        alert={alert}
+                        variant="triggered"
+                        emoji="🛒"
+                        onDisable={disable}
+                      />
+                    </MotiView>
+                  ))}
+                </View>
+              </MotiView>
+            )}
+
+            {/* Monitorando section */}
+            {monitoring.length > 0 && (
+              <MotiView
+                from={{ opacity: 0, translateY: 8 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                transition={{ type: 'timing', duration: 300, delay: triggered.length > 0 ? 100 : 0 }}
+              >
+                <SectionHeader
+                  label="Monitorando"
+                  count={monitoring.length}
+                  variant="monitorando"
+                  tokens={tokens}
+                />
+                <View style={styles.sectionCards}>
+                  {monitoring.map((alert, index) => (
+                    <MotiView
+                      key={alert.id}
+                      from={{ opacity: 0, translateY: 12 }}
+                      animate={{ opacity: 1, translateY: 0 }}
+                      transition={{ type: 'timing', duration: 300, delay: index * 50 }}
+                    >
+                      <AlertCard
+                        alert={alert}
+                        variant="monitoring"
+                        emoji="🛒"
+                        onDisable={disable}
+                      />
+                    </MotiView>
+                  ))}
+                </View>
+              </MotiView>
+            )}
+          </ScrollView>
+        </>
       )}
+
       <Paywall visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </SafeAreaView>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
+
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 12 },
-  title: { fontSize: 24, fontWeight: '700' },
-  subtitle: { fontSize: 14, marginTop: 4 },
-  limitBadge: {
+  safe: {
+    flex: 1,
+  },
+
+  // Header (populated state)
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+  },
+  screenTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  addBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Content list
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+    gap: 4,
+  },
+
+  // Section header
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  sectionLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  redDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  countBadge: {
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  countBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  sectionCards: {
+    gap: 10,
+  },
+
+  // Upsell card
+  upsellCard: {
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 12,
+    gap: 4,
+  },
+  upsellTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  upsellSubtitle: {
+    fontSize: 12,
+  },
+  upsellBtn: {
+    marginTop: 10,
     alignSelf: 'flex-start',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginTop: 8,
-  },
-  limitText: { fontSize: 12, fontWeight: '600' },
-  upgradeBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginTop: 8,
+    paddingVertical: 8,
   },
-  upgradeText: { fontSize: 12, flex: 1 },
-  listContent: { gap: 12, paddingHorizontal: 16, paddingBottom: 16 },
-  card: {
+  upsellBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  // Empty state
+  emptyScroll: {
+    paddingHorizontal: 20,
+    paddingTop: 32,
+    paddingBottom: 32,
+  },
+  emptyHero: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  bellCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  emptyCtaBtn: {
+    borderRadius: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+  },
+  emptyCtaText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  // Skeleton
+  skeletonList: {
+    gap: 12,
+    paddingHorizontal: 16,
+    marginTop: 16,
+  },
+  skeletonCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     borderRadius: 16,
     borderWidth: 1,
-    padding: 16,
+    padding: 14,
   },
-  iconCircle: {
+  skeletonCircle: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 8,
   },
-  cardContent: { flex: 1 },
-  productName: { fontSize: 14, fontWeight: '600' },
-  targetPrice: { fontSize: 12, marginTop: 2 },
-  radiusRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  radiusText: { fontSize: 12 },
-  emptyState: {
+  skeletonLines: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
+    gap: 6,
   },
-  emptyTitle: { fontSize: 18, fontWeight: '600', marginTop: 16 },
-  emptySubtitle: { fontSize: 14, textAlign: 'center', marginTop: 8 },
-  skeletonList: { gap: 12, paddingHorizontal: 16, marginTop: 8 },
-  skeletonCircle: { width: 40, height: 40, borderRadius: 20 },
-  skeletonLines: { flex: 1, gap: 6 },
-  skeletonLine: { borderRadius: 8, height: 16 },
-  skeletonLineLong: { width: '66%' },
-  skeletonLineShort: { width: '33%', height: 12 },
-  skeletonSwitch: { width: 48, height: 32, borderRadius: 16 },
+  skeletonLine: {
+    borderRadius: 8,
+    height: 14,
+  },
+  skeletonLineLong: {
+    width: '66%',
+  },
+  skeletonLineShort: {
+    width: '40%',
+    height: 12,
+  },
+  skeletonDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+
+  // Shared
+  pressedOpacity: {
+    opacity: 0.75,
+  },
 });
