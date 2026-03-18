@@ -25,7 +25,7 @@ export function GradientHeader() {
   const insets = useSafeAreaInsets();
   const profile = useAuthStore((s) => s.profile);
 
-  const firstName = profile?.full_name?.split(' ')[0] ?? 'Usuário';
+  const firstName = profile?.display_name?.split(' ')[0] ?? 'Usuário';
   const initial = firstName.charAt(0).toUpperCase();
   const greeting = getGreeting();
 
