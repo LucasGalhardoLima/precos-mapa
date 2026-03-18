@@ -6,9 +6,10 @@ import {
   Search,
   MapPin,
   ListChecks,
-  User,
+  Bell,
 } from 'lucide-react-native';
 import { useTheme } from '../theme/use-theme';
+import { useAlerts } from '../hooks/use-alerts';
 
 /** Height of the tab bar itself, excluding safe-area insets. */
 export const TAB_BAR_HEIGHT = 72;
@@ -18,7 +19,7 @@ const TAB_CONFIG: Record<string, { Icon: typeof Home; label: string }> = {
   search: { Icon: Search, label: 'Busca' },
   map: { Icon: MapPin, label: 'Mapa' },
   list: { Icon: ListChecks, label: 'Lista' },
-  account: { Icon: User, label: 'Conta' },
+  alerts: { Icon: Bell, label: 'Alertas' },
 };
 
 export function FloatingTabBar({
@@ -28,6 +29,7 @@ export function FloatingTabBar({
 }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { tokens } = useTheme();
+  const { count: alertCount = 0 } = useAlerts();
 
   return (
     <View
@@ -81,6 +83,9 @@ export function FloatingTabBar({
               style={styles.tab}
             >
               <Icon size={22} color={color} />
+              {route.name === 'alerts' && alertCount > 0 && (
+                <View style={styles.alertDot} />
+              )}
               <Text
                 style={[
                   styles.label,
@@ -99,10 +104,6 @@ export function FloatingTabBar({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     ...Platform.select({
@@ -133,5 +134,14 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     marginTop: 2,
+  },
+  alertDot: {
+    position: 'absolute',
+    top: 2,
+    right: '30%',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
   },
 });
