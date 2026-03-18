@@ -5,32 +5,26 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Plus, ShoppingCart, MapPin } from 'lucide-react-native';
+import { Edit3, Plus } from 'lucide-react-native';
 
 import { useTheme } from '@/theme/use-theme';
 import { triggerHaptic } from '@/hooks/use-haptics';
 import { useShoppingList } from '@/hooks/use-shopping-list';
 import { useLocation } from '@/hooks/use-location';
-import { useAuthStore } from '@poup/shared';
+import { useAuthStore } from '@precomapa/shared';
 import { ListItem } from '@/components/themed/list-item';
 import { CouponLine } from '@/components/themed/coupon-line';
 import { ListSkeleton } from '@/components/skeleton/list-skeleton';
 import { Paywall } from '@/components/paywall';
-
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Format a number as Brazilian currency (R$ X,XX). */
-function formatBRL(value: number): string {
-  return `R$ ${value.toFixed(2).replace('.', ',')}`;
-}
+import {
+  ListTemplateCard,
+  LIST_TEMPLATES,
+} from '@/components/list-template-card';
+import { OptimizationSummary } from '@/components/optimization-summary';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -117,21 +111,12 @@ export default function ListScreen() {
     [removeItem],
   );
 
-  const handleOpenRoute = useCallback(() => {
-    if (optimization?.mapsUrl) {
-      Linking.openURL(optimization.mapsUrl);
-    }
-  }, [optimization]);
-
   const handleOpenPaywall = useCallback(() => {
     setPaywallVisible(true);
   }, []);
 
   // Derived values
   const isFreeUser = profile?.b2c_plan === 'free';
-  const storeCount = optimization?.stores.length ?? 0;
-  const estimatedSavings = optimization?.estimatedSavings ?? 0;
-  const hasMapsUrl = Boolean(optimization?.mapsUrl);
 
   // ---------------------------------------------------------------------------
   // Loading state
@@ -155,40 +140,47 @@ export default function ListScreen() {
     return (
       <View style={[styles.screen, { backgroundColor: tokens.bg }]}>
         <SafeAreaView edges={['top']} style={styles.flex}>
-          {/* Header */}
-          <View style={styles.headerRow}>
-            <Text style={[styles.headerTitle, { color: tokens.textPrimary }]}>
-              Minha Lista
-            </Text>
-          </View>
+          <ScrollView
+            contentContainerStyle={[
+              styles.emptyScroll,
+              { paddingBottom: insets.bottom + 24 },
+            ]}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Icon */}
+            <View style={styles.emptyIconWrap}>
+              <Edit3 size={36} color="#0D9488" />
+            </View>
 
-          {/* Empty content */}
-          <View style={styles.emptyContainer}>
-            <ShoppingCart size={56} color={tokens.textHint} />
-            <Text
-              style={[
-                styles.emptyTitle,
-                { color: tokens.textPrimary, marginTop: 16 },
-              ]}
-            >
-              Sua lista está vazia
+            {/* Copy */}
+            <Text style={styles.emptyTitle}>
+              Monte sua lista de compras
             </Text>
-            <Text
-              style={[
-                styles.emptySubtitle,
-                { color: tokens.textHint, marginTop: 6 },
-              ]}
-            >
-              Adicione produtos para comparar preços
+            <Text style={styles.emptySubtitle}>
+              Adicione itens e descubra onde comprar tudo pelo menor preço.
             </Text>
+
+            {/* CTA */}
             <Pressable
               onPress={handleAddItem}
-              style={[styles.emptyButton, { backgroundColor: tokens.primary }]}
+              style={styles.emptyButton}
             >
-              <Plus size={18} color="#FFFFFF" />
-              <Text style={styles.emptyButtonText}>Adicionar</Text>
+              <Plus size={16} color="#FFFFFF" />
+              <Text style={styles.emptyButtonText}>Adicionar itens</Text>
             </Pressable>
-          </View>
+
+            {/* Template cards */}
+            <Text style={styles.templatesLabel}>Começar com um modelo</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.templatesScroll}
+            >
+              {LIST_TEMPLATES.map((template) => (
+                <ListTemplateCard key={template.id} template={template} />
+              ))}
+            </ScrollView>
+          </ScrollView>
         </SafeAreaView>
       </View>
     );
@@ -202,66 +194,63 @@ export default function ListScreen() {
     <View style={[styles.screen, { backgroundColor: tokens.bg }]}>
       <SafeAreaView edges={['top']} style={styles.flex}>
         <ScrollView
-          contentContainerStyle={{
-            paddingBottom: insets.bottom,
-          }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header row */}
+          {/* ── Header ── */}
           <View style={styles.headerRow}>
-            <Text style={[styles.headerTitle, { color: tokens.textPrimary }]}>
-              Minha Lista
-            </Text>
+            <View>
+              <Text style={[styles.headerTitle, { color: tokens.textPrimary }]}>
+                Minha Lista
+              </Text>
+              <Text style={styles.headerCount}>
+                {items.length} {items.length === 1 ? 'item' : 'itens'}
+              </Text>
+            </View>
+
             <Pressable
               onPress={handleAddItem}
-              style={[styles.addButton, { backgroundColor: tokens.primary }]}
+              style={styles.addButton}
             >
-              <Text style={styles.addButtonText}>+ Produto</Text>
+              <Plus size={18} color="#FFFFFF" />
             </Pressable>
           </View>
 
-          {/* Economy savings card */}
-          {optimization && (
-            <View
-              style={[styles.savingsCard, { backgroundColor: tokens.dark }]}
-            >
-              <Text style={styles.savingsAmount}>
-                {formatBRL(estimatedSavings)}
-              </Text>
-              <Text style={styles.savingsLabel}>economia estimada</Text>
-
-              <Text style={styles.savingsDetail}>
-                {items.length} {items.length === 1 ? 'item' : 'itens'} ·{' '}
-                {storeCount} {storeCount === 1 ? 'mercado' : 'mercados'}
-              </Text>
-
-              {hasMapsUrl && (
-                <Pressable
-                  onPress={handleOpenRoute}
-                  style={styles.routeButton}
-                >
-                  <MapPin size={14} color="#FFFFFF" />
-                  <Text style={styles.routeButtonText}>Ver rota</Text>
-                </Pressable>
-              )}
-            </View>
+          {/* ── Optimization summary ── */}
+          {optimization && optimization.stores.length > 0 && (
+            <OptimizationSummary
+              stores={optimization.stores}
+              totalCost={optimization.totalCost}
+              estimatedSavings={optimization.estimatedSavings}
+              itemCount={items.length}
+            />
           )}
 
-          {/* Item list */}
-          <View style={styles.itemsContainer}>
+          {/* ── Item list ── */}
+          <View
+            style={[
+              styles.itemsCard,
+              { backgroundColor: tokens.surface, borderColor: tokens.border },
+            ]}
+          >
             {items.map((item) => {
-              // Find cheapest price from optimization result
+              // Resolve cheapest price and store from optimization result
               let cheapestPrice: number | undefined;
+              let cheapestStoreName: string | undefined;
+
               if (optimization) {
                 for (const store of optimization.stores) {
                   const found = store.items.find(
                     (si) => si.productName === (item.product?.name ?? ''),
                   );
-                  if (
-                    found &&
-                    (cheapestPrice == null || found.price < cheapestPrice)
-                  ) {
-                    cheapestPrice = found.price;
+                  if (found) {
+                    if (
+                      cheapestPrice == null ||
+                      found.price < cheapestPrice
+                    ) {
+                      cheapestPrice = found.price;
+                      cheapestStoreName = store.storeName;
+                    }
                   }
                 }
               }
@@ -275,6 +264,7 @@ export default function ListScreen() {
                     quantity: item.quantity,
                     checked: item.is_checked,
                     price: cheapestPrice,
+                    store_name: cheapestStoreName,
                   }}
                   onToggle={() => handleToggle(item.id, !item.is_checked)}
                   onRemove={() => handleRemove(item.id)}
@@ -284,7 +274,7 @@ export default function ListScreen() {
             })}
           </View>
 
-          {/* Plus upsell for free users */}
+          {/* ── Plus upsell for free users ── */}
           {isFreeUser && (
             <View style={styles.upsellSection}>
               <CouponLine />
@@ -299,10 +289,7 @@ export default function ListScreen() {
                 ]}
               >
                 <Text
-                  style={[
-                    styles.upsellTitle,
-                    { color: tokens.textPrimary },
-                  ]}
+                  style={[styles.upsellTitle, { color: tokens.textPrimary }]}
                 >
                   Assine Plus · listas ilimitadas
                 </Text>
@@ -342,98 +329,79 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Header
+  // ── Header ──────────────────────────────────────────────────────────────
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
   },
-  addButton: {
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  // Savings card
-  savingsCard: {
-    marginHorizontal: 16,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-  },
-  savingsAmount: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  savingsLabel: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 14,
+  headerCount: {
+    fontSize: 13,
+    color: '#6B7280',
     marginTop: 2,
   },
-  savingsDetail: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    marginTop: 12,
-  },
-  routeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+  addButton: {
+    width: 32,
+    height: 32,
     borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    marginTop: 14,
-  },
-  routeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-
-  // Items
-  itemsContainer: {
-    paddingHorizontal: 16,
-  },
-
-  // Empty state
-  emptyContainer: {
-    flex: 1,
+    backgroundColor: '#0D9488',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // ── Items card ──────────────────────────────────────────────────────────
+  itemsCard: {
+    marginHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+
+  // ── Empty state ─────────────────────────────────────────────────────────
+  emptyScroll: {
+    alignItems: 'center',
+    paddingTop: 56,
     paddingHorizontal: 32,
   },
+  emptyIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#CCFBF1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
   emptyTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#134E4A',
     textAlign: 'center',
+    marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
+    color: '#6B7280',
     textAlign: 'center',
+    lineHeight: 20,
   },
   emptyButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+    backgroundColor: '#0D9488',
     borderRadius: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 13,
     marginTop: 24,
   },
   emptyButtonText: {
@@ -442,7 +410,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Upsell
+  // ── Template cards ───────────────────────────────────────────────────────
+  templatesLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 32,
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  templatesScroll: {
+    gap: 10,
+    paddingRight: 8,
+  },
+
+  // ── Upsell ───────────────────────────────────────────────────────────────
   upsellSection: {
     paddingHorizontal: 16,
     marginTop: 8,
