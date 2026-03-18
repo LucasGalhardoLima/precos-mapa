@@ -5,11 +5,13 @@ import {
   ScrollView,
   FlatList,
   Pressable,
+  StatusBar,
   StyleSheet,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+
+import { GradientHeader } from '@/components/gradient-header';
 
 import { useTheme } from '@/theme/use-theme';
 import { useStoreRanking } from '@/hooks/use-store-ranking';
@@ -17,7 +19,6 @@ import { usePromotions } from '@/hooks/use-promotions';
 import { useCategories } from '@/hooks/use-categories';
 import { useLocation } from '@/hooks/use-location';
 import { StoreRanking as StoreRankingComponent } from '@/components/store-ranking';
-import { SearchBar } from '@/components/search-bar';
 import { DealCard } from '@/components/themed/deal-card';
 import { SectionDivider } from '@/components/themed/section-divider';
 import { HomeSkeleton } from '@/components/skeleton/home-skeleton';
@@ -93,25 +94,23 @@ export default function HomeScreen() {
 
   if (hasError) {
     return (
-      <SafeAreaView
-        edges={['top']}
-        style={[styles.safeArea, { backgroundColor: tokens.bg }]}
-      >
+      <View style={[styles.safeArea, { backgroundColor: tokens.bg }]}>
+        <StatusBar barStyle="light-content" />
+        <GradientHeader />
         <View style={styles.errorContainer}>
           <InlineError onRetry={handleRetry} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (isLoading) {
     return (
-      <SafeAreaView
-        edges={['top']}
-        style={[styles.safeArea, { backgroundColor: tokens.bg }]}
-      >
+      <View style={[styles.safeArea, { backgroundColor: tokens.bg }]}>
+        <StatusBar barStyle="light-content" />
+        <GradientHeader />
         <HomeSkeleton />
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -119,21 +118,15 @@ export default function HomeScreen() {
   // Render
   // ---------------------------------------------------------------------------
   return (
-    <SafeAreaView
-      edges={['top']}
-      style={[styles.safeArea, { backgroundColor: tokens.bg }]}
-    >
+    <View style={[styles.safeArea, { backgroundColor: tokens.bg }]}>
+      <StatusBar barStyle="light-content" />
+      <GradientHeader />
       <ScrollView
         contentContainerStyle={{
           paddingBottom: insets.bottom,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Search Bar */}
-        <View style={styles.searchBarWrapper}>
-          <SearchBar />
-        </View>
-
         {/* Category Chips */}
         <ScrollView
           horizontal
@@ -249,7 +242,7 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -265,10 +258,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 16,
-  },
-  searchBarWrapper: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
   },
   chipsScrollView: {
     marginTop: 12,
