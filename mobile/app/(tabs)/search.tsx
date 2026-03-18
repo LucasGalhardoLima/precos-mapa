@@ -4,17 +4,21 @@ import {
   TextInput,
   Text,
   Pressable,
+  FlatList,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search, X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+
 import { useTheme } from '@/theme/use-theme';
 import { triggerHaptic } from '@/hooks/use-haptics';
 import { usePromotions } from '@/hooks/use-promotions';
 import { useLocation } from '@/hooks/use-location';
-import { SearchResults } from '@/components/search-results';
+import { useRecentSearches } from '@/hooks/use-recent-searches';
+import { SearchDiscovery } from '@/components/search-discovery';
+import { SearchResultCard } from '@/components/search-result-card';
 import { SearchSkeleton } from '@/components/skeleton/search-skeleton';
 import { Paywall } from '@/components/paywall';
 
@@ -39,12 +43,14 @@ export default function SearchScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { latitude, longitude } = useLocation();
+  const { recentSearches, addSearch, clearSearches } = useRecentSearches();
 
   // Local state
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [sortMode, setSortMode] = useState<SortMode>('cheapest');
   const [paywallVisible, setPaywallVisible] = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
   // Debounce query input (300ms)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -67,7 +73,7 @@ export default function SearchScreen() {
     userLongitude: longitude,
   });
 
-  // Navigation handlers
+  // Navigation / interaction handlers
   const handlePressItem = useCallback(
     (promotion: EnrichedPromotion) => {
       router.push(`/product/${promotion.product_id}`);
@@ -84,46 +90,82 @@ export default function SearchScreen() {
     setDebouncedQuery('');
   }, []);
 
-  // Determine view state
+  const submitSearch = useCallback((text: string) => {
+    const trimmed = text.trim();
+    if (trimmed) {
+      addSearch(trimmed);
+    }
+  }, [addSearch]);
+
+  const handleSelectRecent = useCallback((recent: string) => {
+    setQuery(recent);
+    setDebouncedQuery(recent);
+    triggerHaptic();
+  }, []);
+
+  const handleSelectCategory = useCallback((categoryName: string) => {
+    setQuery(categoryName);
+    setDebouncedQuery(categoryName);
+    addSearch(categoryName);
+    triggerHaptic();
+  }, [addSearch]);
+
+  const handleSelectTrending = useCallback((productName: string) => {
+    setQuery(productName);
+    setDebouncedQuery(productName);
+    addSearch(productName);
+    triggerHaptic();
+  }, [addSearch]);
+
+  // View state
   const hasQuery = debouncedQuery.length > 0;
   const showLoading = hasQuery && isLoading;
-  const showEmpty = hasQuery && isEmpty;
+  const showEmpty = hasQuery && !isLoading && isEmpty;
   const showResults = hasQuery && !isLoading && !isEmpty;
-  const showInitial = !hasQuery;
+  const showDiscovery = !hasQuery;
+
+  // Search bar style: focused (teal) when query is active
+  const searchBarStyle = hasQuery
+    ? [styles.searchBar, { backgroundColor: tokens.surface, borderColor: tokens.primary, borderWidth: 1.5 }]
+    : [styles.searchBar, { backgroundColor: tokens.surface, borderColor: COLORS.border, borderWidth: 1 }];
+
+  const searchIconColor = hasQuery ? tokens.primary : COLORS.textMuted;
 
   return (
     <View style={[styles.screen, { backgroundColor: tokens.bg }]}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        {/* Search input */}
-        <View
-          style={[
-            styles.searchBar,
-            { backgroundColor: tokens.surface, borderWidth: 1, borderColor: tokens.border },
-          ]}
-        >
-          <Search size={18} color={tokens.textHint} />
+
+        {/* Search bar */}
+        <View style={searchBarStyle}>
+          <Search size={18} color={searchIconColor} />
           <TextInput
+            ref={inputRef}
             style={[styles.searchInput, { color: tokens.textPrimary }]}
-            placeholder="Buscar produto..."
-            placeholderTextColor={tokens.textHint}
+            placeholder="Buscar produto ou marca..."
+            placeholderTextColor={COLORS.textMuted}
             value={query}
             onChangeText={setQuery}
+            onSubmitEditing={() => submitSearch(query)}
             returnKeyType="search"
             autoCorrect={false}
+            autoFocus={false}
           />
           {query.length > 0 && (
-            <Pressable onPress={clearQuery} hitSlop={8}>
-              <X size={18} color={tokens.textHint} />
+            <Pressable
+              onPress={clearQuery}
+              hitSlop={8}
+              style={styles.clearButton}
+            >
+              <X size={14} color={COLORS.textSecondary} />
             </Pressable>
           )}
         </View>
 
-        {/* Sort tabs */}
-        <View style={styles.sortRow}>
-          {SORT_TABS.map((tab) => {
-            const active = sortMode === tab.mode;
-
-            if (active) {
+        {/* Sort tabs — shown only when viewing results */}
+        {showResults && (
+          <View style={styles.sortRow}>
+            {SORT_TABS.map((tab) => {
+              const active = sortMode === tab.mode;
               return (
                 <Pressable
                   key={tab.mode}
@@ -131,54 +173,73 @@ export default function SearchScreen() {
                     triggerHaptic();
                     setSortMode(tab.mode);
                   }}
-                  style={[styles.sortPill, { backgroundColor: tokens.primary }]}
+                  style={[
+                    styles.sortPill,
+                    active
+                      ? { backgroundColor: tokens.primary }
+                      : {
+                          backgroundColor: tokens.surface,
+                          borderWidth: 1,
+                          borderColor: COLORS.border,
+                        },
+                  ]}
                 >
-                  <Text style={[styles.sortPillText, { color: '#FFFFFF' }]}>
+                  <Text
+                    style={[
+                      styles.sortPillText,
+                      { color: active ? '#FFFFFF' : COLORS.textSecondary },
+                    ]}
+                  >
                     {tab.label}
                   </Text>
                 </Pressable>
               );
-            }
+            })}
+          </View>
+        )}
 
-            return (
-              <Pressable
-                key={tab.mode}
-                onPress={() => {
-                  triggerHaptic();
-                  setSortMode(tab.mode);
-                }}
-                style={[
-                  styles.sortPill,
-                  {
-                    backgroundColor: tokens.surface,
-                    borderWidth: 1,
-                    borderColor: tokens.border,
-                  },
-                ]}
-              >
-                <Text style={[styles.sortPillText, { color: tokens.textSecondary }]}>
-                  {tab.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {/* Content area */}
+        {/* Loading */}
         {showLoading && <SearchSkeleton />}
 
-        {showResults && (
-          <SearchResults
-            promotions={promotions}
-            onPressItem={handlePressItem}
-            onPressLocked={handlePressLocked}
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingBottom: insets.bottom,
-            }}
+        {/* Discovery view */}
+        {showDiscovery && (
+          <SearchDiscovery
+            recentSearches={recentSearches}
+            onSelectRecent={handleSelectRecent}
+            onClearRecents={clearSearches}
+            onSelectCategory={handleSelectCategory}
+            onSelectTrending={handleSelectTrending}
           />
         )}
 
+        {/* Results list */}
+        {showResults && (
+          <>
+            <Text style={[styles.resultCount, { color: COLORS.textSecondary }]}>
+              {promotions.length} resultado{promotions.length !== 1 ? 's' : ''} perto de você
+            </Text>
+            <FlatList
+              data={promotions}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item, index }) => (
+                <SearchResultCard
+                  promotion={item}
+                  onPress={handlePressItem}
+                  onPressLocked={handlePressLocked}
+                  testID={`result-card-${index}`}
+                />
+              )}
+              contentContainerStyle={[
+                styles.resultsList,
+                { paddingBottom: insets.bottom + 16 },
+              ]}
+              showsVerticalScrollIndicator={false}
+              keyboardDismissMode="on-drag"
+            />
+          </>
+        )}
+
+        {/* Empty state */}
         {showEmpty && (
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyTitle, { color: tokens.textPrimary }]}>
@@ -190,19 +251,6 @@ export default function SearchScreen() {
           </View>
         )}
 
-        {showInitial && (
-          <View style={styles.emptyContainer}>
-            <Search size={48} color={tokens.textHint} />
-            <Text
-              style={[
-                styles.initialText,
-                { color: tokens.textSecondary, marginTop: 16 },
-              ]}
-            >
-              Pesquise um produto para comparar preços
-            </Text>
-          </View>
-        )}
       </SafeAreaView>
 
       {/* Paywall modal */}
@@ -213,6 +261,16 @@ export default function SearchScreen() {
     </View>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Colors (matching spec)
+// ---------------------------------------------------------------------------
+
+const COLORS = {
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  border: '#E5E7EB',
+};
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -240,27 +298,45 @@ const styles = StyleSheet.create({
     fontSize: 15,
     padding: 0,
   },
+  clearButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   sortRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     marginTop: 12,
-    marginBottom: 12,
+    marginBottom: 4,
     gap: 8,
   },
   sortPill: {
     borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 7,
   },
   sortPillText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  resultCount: {
+    fontSize: 13,
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  resultsList: {
+    paddingHorizontal: 16,
   },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
+    gap: 6,
   },
   emptyTitle: {
     fontSize: 16,
@@ -269,11 +345,6 @@ const styles = StyleSheet.create({
   },
   emptySubtitle: {
     fontSize: 14,
-    textAlign: 'center',
-    marginTop: 6,
-  },
-  initialText: {
-    fontSize: 15,
     textAlign: 'center',
   },
 });
