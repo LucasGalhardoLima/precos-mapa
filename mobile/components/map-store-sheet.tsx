@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { forwardRef, useMemo, useCallback } from 'react';
+import { useRouter } from 'expo-router';
 import { Navigation2, MapPin } from 'lucide-react-native';
 import type { StoreWithPromotions, EnrichedPromotion } from '@/types';
 import type { PinRank } from '@/components/map-store-pin';
@@ -59,8 +60,12 @@ const RANK_BADGE_COLORS: Record<PinRank, { bg: string; text: string }> = {
 // ---------------------------------------------------------------------------
 
 function DealMiniCard({ deal }: { deal: EnrichedPromotion }) {
+  const router = useRouter();
   return (
-    <View style={miniStyles.card}>
+    <Pressable
+      onPress={() => router.push(`/product/${deal.product.id}` as any)}
+      style={({ pressed }) => [miniStyles.card, pressed && { opacity: 0.7 }]}
+    >
       <Text style={miniStyles.productName} numberOfLines={2}>
         {deal.product.name}
       </Text>
@@ -72,7 +77,7 @@ function DealMiniCard({ deal }: { deal: EnrichedPromotion }) {
           <Text style={miniStyles.badgeText}>-{deal.discountPercent}%</Text>
         </View>
       )}
-    </View>
+    </Pressable>
   );
 }
 

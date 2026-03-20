@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Burnt from 'burnt';
+import { toast } from 'burnt';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -52,7 +52,7 @@ export const LIST_TEMPLATES: ListTemplate[] = [
 
 export function ListTemplateCard({ template }: ListTemplateCardProps) {
   const handlePress = () => {
-    Burnt.toast({ title: 'Em breve!' });
+    toast({ title: 'Em breve!' });
   };
 
   return (
