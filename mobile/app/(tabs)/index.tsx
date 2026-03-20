@@ -276,7 +276,7 @@ export default function HomeScreen() {
                 distanceKm={sw.distanceKm}
                 dealCount={sw.activePromotionCount}
                 isOpen
-                onPress={() => router.push(`/store/${sw.store.id}` as any)}
+                onPress={() => router.push({ pathname: '/(tabs)/map', params: { storeId: sw.store.id } } as any)}
               />
             ))}
           </View>

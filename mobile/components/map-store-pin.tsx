@@ -29,7 +29,13 @@ export function MapStorePin({
   const { store } = storeData;
   const color = RANK_COLORS[rank];
   const medalEmoji = position >= 1 && position <= 3 ? MEDAL_EMOJIS[position - 1] : null;
-  const initials = store.name.substring(0, 2).toUpperCase();
+  // Show abbreviated name: first word if short, or first word + initial of second
+  const words = store.name.split(' ');
+  const displayName = words.length === 1
+    ? words[0].substring(0, 6)
+    : words[0].length <= 5
+      ? words[0]
+      : words[0].substring(0, 5);
 
   return (
     <Marker
@@ -43,7 +49,7 @@ export function MapStorePin({
           {medalEmoji !== null && (
             <Text style={styles.medal}>{medalEmoji}</Text>
           )}
-          <Text style={styles.initials}>{initials}</Text>
+          <Text style={styles.initials}>{displayName}</Text>
         </View>
 
         {/* Downward triangle pointer */}

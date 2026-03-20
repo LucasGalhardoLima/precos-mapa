@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -220,6 +221,7 @@ function SkeletonLoader({ tokens }: { tokens: PaletteTokens }) {
 
 export default function AlertsScreen() {
   const { tokens } = useTheme();
+  const router = useRouter();
   const { alerts, isLoading, disable, count, refresh } = useAlerts();
   const profile = useAuthStore((s) => s.profile);
   const isFree = profile?.b2c_plan === 'free';
@@ -238,9 +240,11 @@ export default function AlertsScreen() {
   const handleCreateAlert = useCallback(() => {
     if (atLimit) {
       setShowPaywall(true);
+    } else {
+      // Navigate to search so user can find a product and create an alert from the product page
+      router.push('/(tabs)/search' as any);
     }
-    // TODO: navigate to create alert flow when implemented
-  }, [atLimit]);
+  }, [atLimit, router]);
 
   const { triggered, monitoring } = splitAlerts(alerts);
 
