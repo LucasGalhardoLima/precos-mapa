@@ -1,11 +1,10 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MotiView } from 'moti';
-import { Check, Circle, X } from 'lucide-react-native';
+import { Check, X } from 'lucide-react-native';
 
 import { useTheme } from '../../theme/use-theme';
 import { triggerHaptic } from '@/hooks/use-haptics';
-import { RuleDivider } from '../fintech/rule-divider';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -27,6 +26,7 @@ interface ListItemData {
   unit?: string;
   checked: boolean;
   store_name?: string;
+  store_color?: string;
   price?: number;
 }
 
@@ -43,18 +43,15 @@ interface ListItemProps {
 // ---------------------------------------------------------------------------
 
 /**
- * Themed shopping list item row.
+ * Redesigned shopping list item row.
  *
- * - Encarte: receipt-style with dotted separator, check/circle icon, product
- *   name left-aligned and price right-aligned. Dimmed when checked.
- * - Fintech: clean row with solid separator, same layout in a cleaner style.
+ * Checkbox design:
+ *  - Unchecked: 22×22 rounded (6px) box, 2px border #D1D5DB
+ *  - Checked: teal (#0D9488) filled box with white checkmark
  *
- * Locked state adds a semi-transparent overlay and disables interactions.
- *
- * Animations (Moti):
- * - Checkmark icon scales in with a spring bounce when checked.
- * - Row opacity fades to 0.45 when checked.
- * - Subtle green background tint fades in when checked.
+ * Checked state:
+ *  - Product name gets strikethrough
+ *  - Row fades to 0.5 opacity
  */
 export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) {
   const { tokens } = useTheme();
@@ -64,28 +61,18 @@ export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) 
       ? `${item.quantity}${item.unit ? ` ${item.unit}` : ''}`
       : null;
 
-  return (
-    <View style={[styles.container, isLocked && styles.locked]}>
-      {/* Checked background tint */}
-      <MotiView
-        animate={{
-          opacity: item.checked ? 1 : 0,
-        }}
-        transition={{ type: 'timing', duration: 200 }}
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor: tokens.primaryMuted, borderRadius: 6 },
-        ]}
-        pointerEvents="none"
-      />
+  const metaParts: string[] = [];
+  if (item.price != null) metaParts.push(formatBRL(item.price));
+  if (item.store_name) metaParts.push(item.store_name);
 
-      {/* Row with animated opacity */}
-      <MotiView
-        animate={{ opacity: item.checked ? 0.45 : 1 }}
-        transition={{ type: 'timing', duration: 200 }}
-        style={styles.row}
-      >
-        {/* Toggle (check / circle) */}
+  return (
+    <MotiView
+      animate={{ opacity: item.checked ? 0.5 : 1 }}
+      transition={{ type: 'timing', duration: 200 }}
+      style={[styles.container, isLocked && styles.locked]}
+    >
+      <View style={styles.row}>
+        {/* ── Checkbox ── */}
         <Pressable
           onPress={() => {
             triggerHaptic();
@@ -93,86 +80,81 @@ export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) 
           }}
           disabled={isLocked}
           hitSlop={8}
-          style={styles.toggleHit}
+          style={styles.checkboxHit}
         >
-          <View style={styles.iconContainer}>
-            {/* Circle icon — fades out when checked */}
-            <MotiView
-              animate={{
-                opacity: item.checked ? 0 : 1,
-                scale: item.checked ? 0.6 : 1,
-              }}
-              transition={{ type: 'timing', duration: 150 }}
-              style={styles.iconAbsolute}
-            >
-              <Circle size={20} color={tokens.textHint} />
-            </MotiView>
-
-            {/* Check icon — springs in when checked */}
+          <MotiView
+            animate={{
+              backgroundColor: item.checked ? '#0D9488' : '#FFFFFF',
+              borderColor: item.checked ? '#0D9488' : '#D1D5DB',
+            }}
+            transition={{ type: 'timing', duration: 150 }}
+            style={styles.checkbox}
+          >
             <MotiView
               animate={{
                 scale: item.checked ? 1 : 0,
                 opacity: item.checked ? 1 : 0,
               }}
               transition={{
-                scale: { type: 'spring', damping: 12, stiffness: 200 },
+                scale: { type: 'spring', damping: 12, stiffness: 220 },
                 opacity: { type: 'timing', duration: 100 },
               }}
-              style={styles.iconAbsolute}
             >
-              <Check size={20} color={tokens.primary} />
+              <Check size={14} color="#FFFFFF" strokeWidth={3} />
             </MotiView>
-          </View>
+          </MotiView>
         </Pressable>
 
-        {/* Product name + optional quantity */}
+        {/* ── Product name + meta ── */}
         <View style={styles.nameColumn}>
           <Text
             numberOfLines={1}
             style={[
               styles.productName,
               { color: tokens.textPrimary },
-              item.checked && styles.checkedText,
+              item.checked && styles.strikethrough,
             ]}
           >
             {item.product_name}
           </Text>
-          {(quantityLabel || item.store_name) && (
+
+          {(quantityLabel || metaParts.length > 0) && (
             <Text
               numberOfLines={1}
               style={[styles.meta, { color: tokens.textHint }]}
             >
-              {[quantityLabel, item.store_name].filter(Boolean).join(' · ')}
+              {[quantityLabel, ...metaParts].filter(Boolean).join(' · ')}
             </Text>
           )}
         </View>
 
-        {/* Price (right-aligned) */}
+        {/* ── Price right-aligned ── */}
         {item.price != null && (
           <Text
             style={[
               styles.price,
               { color: tokens.textPrimary },
-              item.checked && styles.checkedText,
+              item.checked && styles.strikethrough,
             ]}
           >
             {formatBRL(item.price)}
           </Text>
         )}
 
-        {/* Remove button */}
+        {/* ── Remove button ── */}
         <Pressable
           onPress={onRemove}
           disabled={isLocked}
           hitSlop={8}
           style={styles.removeHit}
         >
-          <X size={18} color={tokens.textHint} />
+          <X size={16} color={tokens.textHint} />
         </Pressable>
-      </MotiView>
+      </View>
 
-      <RuleDivider spacing={0} />
-    </View>
+      {/* Divider */}
+      <View style={[styles.divider, { backgroundColor: tokens.border }]} />
+    </MotiView>
   );
 }
 
@@ -190,48 +172,54 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    gap: 10,
+    paddingVertical: 13,
+    gap: 12,
   },
-  toggleHit: {
+
+  // Checkbox
+  checkboxHit: {
     padding: 2,
   },
-  iconContainer: {
-    width: 20,
-    height: 20,
-    position: 'relative',
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  iconAbsolute: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
+
+  // Name
   nameColumn: {
     flex: 1,
-    marginRight: 8,
   },
   productName: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '700',
   },
-  checkedText: {
+  strikethrough: {
     textDecorationLine: 'line-through',
   },
   meta: {
     fontSize: 12,
     marginTop: 2,
   },
+
+  // Price
   price: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     textAlign: 'right',
-    minWidth: 70,
   },
+
+  // Remove
   removeHit: {
     padding: 2,
   },
-  separator: {
-    marginTop: 2,
+
+  // Divider
+  divider: {
+    height: 1,
+    marginLeft: 36,
   },
 });

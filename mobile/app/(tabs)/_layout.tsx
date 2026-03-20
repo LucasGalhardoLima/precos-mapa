@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { router } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { useAuthStore } from '@poup/shared';
 import { ThemeProvider } from '../../theme/provider';
-import { NativeTabLayout } from '../../components/native-tab-layout';
+import { FloatingTabBar } from '../../components/floating-tab-bar';
 
 export default function TabLayout() {
   const session = useAuthStore((s) => s.session);
@@ -15,7 +15,23 @@ export default function TabLayout() {
 
   return (
     <ThemeProvider>
-      <NativeTabLayout />
+      <Tabs
+        tabBar={(props) => <FloatingTabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        {/* ---- Visible tabs ---- */}
+        <Tabs.Screen name="index" />
+        <Tabs.Screen name="search" />
+        <Tabs.Screen name="map" />
+        <Tabs.Screen name="list" />
+        <Tabs.Screen name="alerts" />
+
+        {/* ---- Hidden screens — kept to avoid breaking deep links ---- */}
+        <Tabs.Screen name="favorites" options={{ href: null }} />
+        <Tabs.Screen name="account" options={{ href: null }} />
+      </Tabs>
     </ThemeProvider>
   );
 }

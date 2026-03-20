@@ -45,6 +45,15 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="(business)" />
             <Stack.Screen name="product/[id]" options={{ animation: 'default' }} />
+            <Stack.Screen
+              name="account"
+              options={{
+                headerShown: true,
+                title: 'Conta',
+                headerBackTitle: 'Voltar',
+                headerTintColor: '#0D9488',
+              }}
+            />
           </Stack>
         </BottomSheetModalProvider>
       </SafeAreaProvider>

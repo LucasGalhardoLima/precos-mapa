@@ -8,7 +8,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
-import MapView, { Marker, type Region } from 'react-native-maps';
+import MapView, { type Region } from 'react-native-maps';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { useFocusEffect } from 'expo-router';
 import {
@@ -16,10 +16,14 @@ import {
   ListChecks,
   Navigation2,
   ShoppingCart,
+  Filter,
 } from 'lucide-react-native';
-import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
-import { StoreMarker } from '@/components/store-marker';
-import { StoreBottomSheet } from '@/components/store-bottom-sheet';
+import { MapLegend } from '@/components/map-legend';
+import { MapStorePin, type PinRank } from '@/components/map-store-pin';
+import {
+  MapStoreSheet,
+  type ShoppingListSummary,
+} from '@/components/map-store-sheet';
 
 import { useStores } from '@/hooks/use-stores';
 import { useLocation } from '@/hooks/use-location';
@@ -27,8 +31,6 @@ import { useShoppingList } from '@/hooks/use-shopping-list';
 import { useTheme } from '@/theme/use-theme';
 import { Colors } from '@/constants/colors';
 import type { StoreWithPromotions } from '@/types';
-
-const HAS_GLASS = isLiquidGlassAvailable();
 
 // ---------------------------------------------------------------------------
 // Types
@@ -41,6 +43,13 @@ interface StoreListMatch {
   isCheapest: boolean;
 }
 
+interface RankedStore {
+  storeData: StoreWithPromotions;
+  rank: PinRank;
+  /** 1-based position among all stores (sorted by score). */
+  position: number;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -49,6 +58,50 @@ function formatBRL(value: number): string {
   return value.toLocaleString('pt-BR', {
     style: 'currency',
     currency: 'BRL',
+  });
+}
+
+/**
+ * Assign color-coded rankings to stores.
+ *
+ * Scoring heuristic: average promo_price of top deals. Lower average = cheaper.
+ * Stores with no deals are ranked last.
+ *
+ * Top third → green (#16A34A)
+ * Middle third → yellow (#F59E0B)
+ * Bottom third → red (#EF4444)
+ */
+function rankStores(stores: StoreWithPromotions[]): RankedStore[] {
+  if (stores.length === 0) return [];
+
+  // Compute a score per store (lower = cheaper)
+  const scored = stores.map((s) => {
+    const deals = s.topDeals;
+    if (deals.length === 0) {
+      return { storeData: s, score: Infinity };
+    }
+    const avgPrice =
+      deals.reduce((sum, d) => sum + d.promo_price, 0) / deals.length;
+    return { storeData: s, score: avgPrice };
+  });
+
+  // Sort ascending by score (cheapest first)
+  scored.sort((a, b) => a.score - b.score);
+
+  const total = scored.length;
+  const third = Math.ceil(total / 3);
+
+  return scored.map((item, idx) => {
+    const position = idx + 1;
+    let rank: PinRank;
+    if (position <= third) {
+      rank = 'green';
+    } else if (position <= third * 2) {
+      rank = 'yellow';
+    } else {
+      rank = 'red';
+    }
+    return { storeData: item.storeData, rank, position };
   });
 }
 
@@ -66,15 +119,18 @@ export default function MapScreen() {
   const { tokens } = useTheme();
 
   const mapRef = useRef<MapView>(null);
-  const storeBottomSheetRef = useRef<BottomSheet>(null);
+  const storeSheetRef = useRef<BottomSheet>(null);
   const listBottomSheetRef = useRef<BottomSheet>(null);
 
-  const defaultRegion: Region = useMemo(() => ({
-    latitude,
-    longitude,
-    latitudeDelta: 1.2,
-    longitudeDelta: 1.2,
-  }), [latitude, longitude]);
+  const defaultRegion: Region = useMemo(
+    () => ({
+      latitude,
+      longitude,
+      latitudeDelta: 1.2,
+      longitudeDelta: 1.2,
+    }),
+    [latitude, longitude],
+  );
 
   // Reset map to default zoom when tab gains focus
   useFocusEffect(
@@ -85,6 +141,9 @@ export default function MapScreen() {
 
   const [selectedStore, setSelectedStore] =
     useState<StoreWithPromotions | null>(null);
+
+  // When true, pin colors reflect shopping list prices instead of global ranking
+  const [listFilterActive, setListFilterActive] = useState(false);
 
   // -------------------------------------------------------------------------
   // Derive the active shopping list items (first non-empty list)
@@ -100,20 +159,16 @@ export default function MapScreen() {
 
   // -------------------------------------------------------------------------
   // Compute store-to-list mapping
-  // Group list items by their origin store_id. Items without a store_id
-  // fall back to matching against topDeals (legacy behavior).
   // -------------------------------------------------------------------------
 
   const storeListMatches = useMemo((): StoreListMatch[] => {
     if (!hasListItems) return [];
 
-    // Build a lookup from store id to StoreWithPromotions
     const storeById = new Map<string, StoreWithPromotions>();
     for (const s of stores) {
       storeById.set(s.store.id, s);
     }
 
-    // Group items by origin store_id
     const storeItemsMap = new Map<string, StoreListMatch['matchedItems']>();
     const storeSubtotals = new Map<string, number>();
     const legacyItems: typeof listItems = [];
@@ -121,10 +176,9 @@ export default function MapScreen() {
     for (const item of listItems) {
       if (item.store_id && storeById.has(item.store_id)) {
         const existing = storeItemsMap.get(item.store_id) ?? [];
-        const price = 0; // We'll look up the price from promotions
         existing.push({
           productName: item.product?.name ?? 'Produto',
-          price,
+          price: 0,
           quantity: item.quantity,
         });
         storeItemsMap.set(item.store_id, existing);
@@ -133,19 +187,20 @@ export default function MapScreen() {
       }
     }
 
-    // For items with store_id, try to find their promo price from the store's promotions
     for (const [storeId, items] of storeItemsMap) {
       const storeData = storeById.get(storeId)!;
       let subtotal = 0;
 
       for (const matchedItem of items) {
-        // Find the matching list item to get product_id
         const listItem = listItems.find(
-          (li) => li.store_id === storeId && li.product?.name === matchedItem.productName,
+          (li) =>
+            li.store_id === storeId &&
+            li.product?.name === matchedItem.productName,
         );
         if (listItem) {
-          // Look for promo price in topDeals
-          const deal = storeData.topDeals.find((d) => d.product_id === listItem.product_id);
+          const deal = storeData.topDeals.find(
+            (d) => d.product_id === listItem.product_id,
+          );
           if (deal) {
             matchedItem.price = deal.promo_price;
           }
@@ -156,7 +211,6 @@ export default function MapScreen() {
       storeSubtotals.set(storeId, subtotal);
     }
 
-    // Build matches from origin-store grouped items
     const matches: StoreListMatch[] = [];
     for (const [storeId, matchedItems] of storeItemsMap) {
       const storeData = storeById.get(storeId)!;
@@ -168,7 +222,6 @@ export default function MapScreen() {
       });
     }
 
-    // Legacy fallback: match items without store_id against topDeals
     if (legacyItems.length > 0) {
       const legacyProductIds = new Set(legacyItems.map((item) => item.product_id));
       const quantityMap = new Map<string, number>();
@@ -180,7 +233,6 @@ export default function MapScreen() {
       }
 
       for (const storeData of stores) {
-        // Skip stores already matched via origin
         if (storeItemsMap.has(storeData.store.id)) continue;
 
         const legacyMatched: StoreListMatch['matchedItems'] = [];
@@ -200,12 +252,16 @@ export default function MapScreen() {
         }
 
         if (legacyMatched.length > 0) {
-          matches.push({ storeData, matchedItems: legacyMatched, subtotal, isCheapest: false });
+          matches.push({
+            storeData,
+            matchedItems: legacyMatched,
+            subtotal,
+            isCheapest: false,
+          });
         }
       }
     }
 
-    // Sort by subtotal ascending, mark cheapest
     matches.sort((a, b) => a.subtotal - b.subtotal);
     if (matches.length > 0) {
       matches[0].isCheapest = true;
@@ -214,7 +270,6 @@ export default function MapScreen() {
     return matches;
   }, [stores, listItems, hasListItems]);
 
-  // Build a quick lookup: storeId -> StoreListMatch
   const storeMatchMap = useMemo(() => {
     const map = new Map<string, StoreListMatch>();
     for (const m of storeListMatches) {
@@ -224,16 +279,72 @@ export default function MapScreen() {
   }, [storeListMatches]);
 
   // -------------------------------------------------------------------------
+  // Ranking logic
+  // Global ranking: based on average deal prices.
+  // List-filter ranking: based on list subtotals when filter is active.
+  // -------------------------------------------------------------------------
+
+  const globalRanked = useMemo(() => rankStores(stores), [stores]);
+
+  /** Ranking using list subtotals when filter pill is active */
+  const listRanked = useMemo((): RankedStore[] => {
+    if (storeListMatches.length === 0) return globalRanked;
+
+    const total = storeListMatches.length;
+    const third = Math.ceil(total / 3);
+
+    return storeListMatches.map((match, idx) => {
+      const position = idx + 1;
+      let rank: PinRank;
+      if (position <= third) {
+        rank = 'green';
+      } else if (position <= third * 2) {
+        rank = 'yellow';
+      } else {
+        rank = 'red';
+      }
+      return { storeData: match.storeData, rank, position };
+    });
+  }, [storeListMatches, globalRanked]);
+
+  const activeRanked = listFilterActive && hasListItems ? listRanked : globalRanked;
+
+  const rankByStoreId = useMemo(() => {
+    const map = new Map<string, { rank: PinRank; position: number }>();
+    for (const r of activeRanked) {
+      map.set(r.storeData.store.id, { rank: r.rank, position: r.position });
+    }
+    return map;
+  }, [activeRanked]);
+
+  // -------------------------------------------------------------------------
+  // Selected store rank info (for sheet)
+  // -------------------------------------------------------------------------
+
+  const selectedRank = selectedStore
+    ? rankByStoreId.get(selectedStore.store.id)
+    : null;
+
+  const selectedListSummary: ShoppingListSummary | null = useMemo(() => {
+    if (!selectedStore) return null;
+    const match = storeMatchMap.get(selectedStore.store.id);
+    if (!match) return null;
+    return {
+      itemCount: listItems.length,
+      availableCount: match.matchedItems.length,
+      total: match.subtotal,
+      isCheapest: match.isCheapest,
+    };
+  }, [selectedStore, storeMatchMap, listItems]);
+
+  // -------------------------------------------------------------------------
   // Handlers
   // -------------------------------------------------------------------------
 
-  const handleMarkerPress = useCallback(
-    (storeData: StoreWithPromotions) => {
-      setSelectedStore(storeData);
-      storeBottomSheetRef.current?.snapToIndex(0);
-    },
-    [],
-  );
+  const handleMarkerPress = useCallback((storeData: StoreWithPromotions) => {
+    setSelectedStore(storeData);
+    storeSheetRef.current?.snapToIndex(0);
+  }, []);
 
   const handleCloseStoreSheet = useCallback(() => {
     setSelectedStore(null);
@@ -243,9 +354,8 @@ export default function MapScreen() {
     listBottomSheetRef.current?.snapToIndex(0);
   }, []);
 
-  const handleRoute = useCallback((lat: number, lng: number) => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-    Linking.openURL(url);
+  const handleToggleListFilter = useCallback(() => {
+    setListFilterActive((prev) => !prev);
   }, []);
 
   // -------------------------------------------------------------------------
@@ -275,7 +385,6 @@ export default function MapScreen() {
             },
           ]}
         >
-          {/* Store header */}
           <View style={styles.listRowHeader}>
             <View
               style={[
@@ -312,7 +421,6 @@ export default function MapScreen() {
             </View>
           </View>
 
-          {/* Subtotal + Route */}
           <View style={styles.listRowFooter}>
             <Text
               style={[
@@ -325,7 +433,10 @@ export default function MapScreen() {
 
             <Pressable
               style={[styles.routeButton, { backgroundColor: tokens.primary }]}
-              onPress={() => handleRoute(store.latitude, store.longitude)}
+              onPress={() => {
+                const url = `https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}`;
+                Linking.openURL(url);
+              }}
             >
               <Navigation2 size={14} color="#FFFFFF" />
               <Text style={styles.routeButtonText}>Rota</Text>
@@ -334,7 +445,7 @@ export default function MapScreen() {
         </View>
       );
     },
-    [tokens, handleRoute],
+    [tokens],
   );
 
   // -------------------------------------------------------------------------
@@ -345,54 +456,24 @@ export default function MapScreen() {
     <View style={styles.container}>
       {/* Location denied banner */}
       {permissionGranted === false && (
-        HAS_GLASS ? (
-          <GlassView glassEffectStyle="regular" style={[styles.locationBanner, styles.locationBannerGlass]}>
-            <View style={styles.locationBannerRow}>
-              <MapPin size={18} color={Colors.semantic.warning} />
-              <Text
-                style={[styles.locationBannerText, { color: tokens.textSecondary }]}
-              >
-                Permita acesso à localização para ver lojas perto de você
-              </Text>
-            </View>
-          </GlassView>
-        ) : (
-          <View
-            style={[
-              styles.locationBanner,
-              { backgroundColor: tokens.surface, borderColor: tokens.border },
-            ]}
-          >
-            <View style={styles.locationBannerRow}>
-              <MapPin size={18} color={Colors.semantic.warning} />
-              <Text
-                style={[styles.locationBannerText, { color: tokens.textSecondary }]}
-              >
-                Permita acesso à localização para ver lojas perto de você
-              </Text>
-            </View>
-          </View>
-        )
-      )}
-
-      {/* "Ver minha lista" floating pill button — only when user has list items */}
-      {hasListItems && (
-        <Pressable
-          style={[styles.listPill, !HAS_GLASS && { backgroundColor: tokens.primary }]}
-          onPress={handleShowListPanel}
+        <View
+          style={[
+            styles.locationBanner,
+            { backgroundColor: tokens.surface, borderColor: tokens.border },
+          ]}
         >
-          {HAS_GLASS ? (
-            <GlassView glassEffectStyle="regular" tintColor={tokens.primary} style={styles.listPillGlass}>
-              <ListChecks size={16} color="#FFFFFF" />
-              <Text style={styles.listPillText}>Ver minha lista</Text>
-            </GlassView>
-          ) : (
-            <>
-              <ListChecks size={16} color="#FFFFFF" />
-              <Text style={styles.listPillText}>Ver minha lista</Text>
-            </>
-          )}
-        </Pressable>
+          <View style={styles.locationBannerRow}>
+            <MapPin size={18} color={Colors.semantic.warning} />
+            <Text
+              style={[
+                styles.locationBannerText,
+                { color: tokens.textSecondary },
+              ]}
+            >
+              Permita acesso à localização para ver lojas perto de você
+            </Text>
+          </View>
+        </View>
       )}
 
       {/* Map */}
@@ -404,111 +485,72 @@ export default function MapScreen() {
         showsMyLocationButton={permissionGranted === true}
       >
         {stores.map((storeData) => {
-          const match = storeMatchMap.get(storeData.store.id);
+          const info = rankByStoreId.get(storeData.store.id);
+          const rank: PinRank = info?.rank ?? 'yellow';
+          const position = info?.position ?? 0;
 
-          // When user has list items AND this store has matching deals,
-          // render an enhanced marker with subtotal / cheapest badge.
-          if (hasListItems && match) {
-            const { store } = storeData;
-            return (
-              <Marker
-                key={store.id}
-                coordinate={{
-                  latitude: store.latitude,
-                  longitude: store.longitude,
-                }}
-                onPress={() => handleMarkerPress(storeData)}
-              >
-                <View style={styles.markerContainer}>
-                  {/* "Mais barato" label above the cheapest store */}
-                  {match.isCheapest && (
-                    <View
-                      style={[
-                        styles.cheapestMarkerLabel,
-                        { backgroundColor: tokens.primary },
-                      ]}
-                    >
-                      <Text style={styles.cheapestMarkerLabelText}>
-                        Mais barato
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Circle avatar */}
-                  <View
-                    style={[
-                      styles.markerCircle,
-                      {
-                        backgroundColor: match.isCheapest
-                          ? tokens.primary
-                          : store.logo_color,
-                        borderColor: match.isCheapest
-                          ? tokens.primaryMuted
-                          : '#FFFFFF',
-                      },
-                    ]}
-                  >
-                    <Text style={styles.markerInitial}>
-                      {store.logo_initial}
-                    </Text>
-                  </View>
-
-                  {/* Subtotal badge below */}
-                  <View
-                    style={[
-                      styles.markerSubtotalBadge,
-                      {
-                        backgroundColor: match.isCheapest
-                          ? tokens.primary
-                          : tokens.surface,
-                        borderColor: match.isCheapest
-                          ? tokens.primary
-                          : tokens.border,
-                      },
-                    ]}
-                  >
-                    <ShoppingCart
-                      size={8}
-                      color={match.isCheapest ? '#FFFFFF' : tokens.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.markerSubtotalText,
-                        {
-                          color: match.isCheapest
-                            ? '#FFFFFF'
-                            : tokens.textPrimary,
-                        },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {formatBRL(match.subtotal)}
-                    </Text>
-                  </View>
-                </View>
-              </Marker>
-            );
-          }
-
-          // Default marker: store name + deal count (existing behavior)
           return (
-            <StoreMarker
+            <MapStorePin
               key={storeData.store.id}
               storeData={storeData}
+              rank={rank}
+              position={position}
               onPress={() => handleMarkerPress(storeData)}
             />
           );
         })}
       </MapView>
 
-      {/* Individual store bottom sheet (existing) */}
-      <StoreBottomSheet
-        ref={storeBottomSheetRef}
+      {/* ── Floating overlays ── */}
+
+      {/* Legend — top-left */}
+      <View style={styles.legendContainer}>
+        <MapLegend />
+      </View>
+
+      {/* Filter pill — top-right */}
+      {hasListItems && (
+        <Pressable
+          style={[
+            styles.filterPill,
+            listFilterActive && styles.filterPillActive,
+          ]}
+          onPress={handleToggleListFilter}
+        >
+          <Filter size={14} color={listFilterActive ? '#FFFFFF' : '#0D9488'} />
+          <Text
+            style={[
+              styles.filterPillText,
+              listFilterActive && styles.filterPillTextActive,
+            ]}
+          >
+            Minha lista
+          </Text>
+        </Pressable>
+      )}
+
+      {/* "Ver minha lista" pill — only when user has list items */}
+      {hasListItems && (
+        <Pressable
+          style={[styles.listPill, { backgroundColor: tokens.primary }]}
+          onPress={handleShowListPanel}
+        >
+          <ListChecks size={16} color="#FFFFFF" />
+          <Text style={styles.listPillText}>Ver minha lista</Text>
+        </Pressable>
+      )}
+
+      {/* Individual store bottom sheet (redesigned) */}
+      <MapStoreSheet
+        ref={storeSheetRef}
         storeData={selectedStore}
+        rank={selectedRank?.rank ?? 'yellow'}
+        position={selectedRank?.position ?? 0}
+        listSummary={selectedListSummary}
         onClose={handleCloseStoreSheet}
       />
 
-      {/* List panel bottom sheet — "Itens da lista por mercado" */}
+      {/* List panel bottom sheet */}
       {hasListItems && (
         <BottomSheet
           ref={listBottomSheetRef}
@@ -517,76 +559,56 @@ export default function MapScreen() {
           enablePanDownToClose
           backgroundStyle={[
             styles.listSheetBg,
-            { backgroundColor: HAS_GLASS ? 'transparent' : tokens.bg },
+            { backgroundColor: tokens.bg },
           ]}
           handleIndicatorStyle={{ backgroundColor: tokens.textHint }}
         >
-          {(() => {
-            const listSheetContent = (
-              <BottomSheetView style={styles.listSheetContent}>
-                {/* Header */}
-                <View style={styles.listSheetHeader}>
-                  <ListChecks size={20} color={tokens.primary} />
-                  <Text
-                    style={[
-                      styles.listSheetTitle,
-                      { color: tokens.textPrimary },
-                    ]}
-                  >
-                    Itens da lista por mercado
-                  </Text>
-                </View>
+          <BottomSheetView style={styles.listSheetContent}>
+            <View style={styles.listSheetHeader}>
+              <ListChecks size={20} color={tokens.primary} />
+              <Text
+                style={[styles.listSheetTitle, { color: tokens.textPrimary }]}
+              >
+                Itens da lista por mercado
+              </Text>
+            </View>
 
+            <Text
+              style={[
+                styles.listSheetSubtitle,
+                { color: tokens.textSecondary },
+              ]}
+            >
+              {listItems.length}{' '}
+              {listItems.length === 1 ? 'item' : 'itens'} na sua lista
+              {' \u2022 '}
+              {storeListMatches.length}{' '}
+              {storeListMatches.length === 1 ? 'mercado' : 'mercados'} com
+              ofertas
+            </Text>
+
+            {storeListMatches.length > 0 ? (
+              <FlatList
+                data={storeListMatches}
+                keyExtractor={(item) => item.storeData.store.id}
+                renderItem={renderListStoreRow}
+                contentContainerStyle={{ paddingBottom: 16, gap: 12 }}
+                showsVerticalScrollIndicator={false}
+              />
+            ) : (
+              <View style={styles.emptyListPanel}>
+                <ShoppingCart size={32} color={tokens.textHint} />
                 <Text
                   style={[
-                    styles.listSheetSubtitle,
+                    styles.emptyListText,
                     { color: tokens.textSecondary },
                   ]}
                 >
-                  {listItems.length}{' '}
-                  {listItems.length === 1 ? 'item' : 'itens'} na sua lista
-                  {' \u2022 '}
-                  {storeListMatches.length}{' '}
-                  {storeListMatches.length === 1 ? 'mercado' : 'mercados'} com
-                  ofertas
+                  Nenhum mercado com ofertas para itens da sua lista
                 </Text>
-
-                {/* Store list */}
-                {storeListMatches.length > 0 ? (
-                  <FlatList
-                    data={storeListMatches}
-                    keyExtractor={(item) => item.storeData.store.id}
-                    renderItem={renderListStoreRow}
-                    contentContainerStyle={{
-                      paddingBottom: 16,
-                      gap: 12,
-                    }}
-                    showsVerticalScrollIndicator={false}
-                  />
-                ) : (
-                  <View style={styles.emptyListPanel}>
-                    <ShoppingCart size={32} color={tokens.textHint} />
-                    <Text
-                      style={[
-                        styles.emptyListText,
-                        { color: tokens.textSecondary },
-                      ]}
-                    >
-                      Nenhum mercado com ofertas para itens da sua lista
-                    </Text>
-                  </View>
-                )}
-              </BottomSheetView>
-            );
-
-            return HAS_GLASS ? (
-              <GlassView glassEffectStyle="regular" style={{ flex: 1, borderRadius: 24 }}>
-                {listSheetContent}
-              </GlassView>
-            ) : (
-              listSheetContent
-            );
-          })()}
+              </View>
+            )}
+          </BottomSheetView>
         </BottomSheet>
       )}
     </View>
@@ -625,9 +647,6 @@ const styles = StyleSheet.create({
       android: { elevation: 3 },
     }),
   },
-  locationBannerGlass: {
-    overflow: 'hidden',
-  },
   locationBannerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -638,10 +657,56 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Floating "Ver minha lista" pill
-  listPill: {
+  // Legend overlay (top-left)
+  legendContainer: {
     position: 'absolute',
     top: 56,
+    left: 16,
+    zIndex: 20,
+  },
+
+  // Filter pill (top-right)
+  filterPill: {
+    position: 'absolute',
+    top: 56,
+    right: 16,
+    zIndex: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#0D9488',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  filterPillActive: {
+    backgroundColor: '#0D9488',
+    borderColor: '#0D9488',
+  },
+  filterPillText: {
+    color: '#0D9488',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  filterPillTextActive: {
+    color: '#FFFFFF',
+  },
+
+  // "Ver minha lista" floating pill (bottom-right area, above sheet)
+  listPill: {
+    position: 'absolute',
+    bottom: 100,
     right: 16,
     zIndex: 20,
     flexDirection: 'row',
@@ -650,7 +715,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 24,
-    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -661,61 +725,9 @@ const styles = StyleSheet.create({
       android: { elevation: 4 },
     }),
   },
-  listPillGlass: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 24,
-  },
   listPillText: {
     color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '700',
-  },
-
-  // Enhanced marker styles
-  markerContainer: {
-    alignItems: 'center',
-  },
-  cheapestMarkerLabel: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginBottom: 2,
-  },
-  cheapestMarkerLabelText: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-  },
-  markerCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-  },
-  markerInitial: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  markerSubtotalBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginTop: 2,
-    borderWidth: 0.5,
-  },
-  markerSubtotalText: {
-    fontSize: 10,
     fontWeight: '700',
   },
 

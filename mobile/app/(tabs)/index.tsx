@@ -5,21 +5,22 @@ import {
   ScrollView,
   FlatList,
   Pressable,
+  StatusBar,
   StyleSheet,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
+import { GradientHeader } from '@/components/gradient-header';
 import { useTheme } from '@/theme/use-theme';
 import { useStoreRanking } from '@/hooks/use-store-ranking';
 import { usePromotions } from '@/hooks/use-promotions';
 import { useCategories } from '@/hooks/use-categories';
 import { useLocation } from '@/hooks/use-location';
+import { useStores } from '@/hooks/use-stores';
 import { StoreRanking as StoreRankingComponent } from '@/components/store-ranking';
-import { SearchBar } from '@/components/search-bar';
+import { StoreCard } from '@/components/store-card';
 import { DealCard } from '@/components/themed/deal-card';
-import { SectionDivider } from '@/components/themed/section-divider';
 import { HomeSkeleton } from '@/components/skeleton/home-skeleton';
 import { InlineError } from '@/components/inline-error';
 
@@ -44,9 +45,7 @@ export default function HomeScreen() {
   // ---------------------------------------------------------------------------
   // Data hooks
   // ---------------------------------------------------------------------------
-  const {
-    ranking,
-  } = useStoreRanking({
+  const { ranking } = useStoreRanking({
     userLatitude: latitude,
     userLongitude: longitude,
   });
@@ -66,8 +65,16 @@ export default function HomeScreen() {
     isLoading: categoriesLoading,
   } = useCategories();
 
+  const {
+    stores,
+    isLoading: storesLoading,
+  } = useStores({
+    userLatitude: latitude,
+    userLongitude: longitude,
+  });
+
   // ---------------------------------------------------------------------------
-  // Error state (simplified: track if any hook threw)
+  // Error state
   // ---------------------------------------------------------------------------
   const [hasError, setHasError] = useState(false);
 
@@ -76,7 +83,7 @@ export default function HomeScreen() {
   }, []);
 
   // ---------------------------------------------------------------------------
-  // Loading / Error
+  // Render helpers
   // ---------------------------------------------------------------------------
   const renderDealCard = useCallback(
     ({ item }: { item: EnrichedPromotion }) => (
@@ -89,29 +96,27 @@ export default function HomeScreen() {
     [],
   );
 
-  const isLoading = promotionsLoading || categoriesLoading;
+  const isLoading = promotionsLoading || categoriesLoading || storesLoading;
 
   if (hasError) {
     return (
-      <SafeAreaView
-        edges={['top']}
-        style={[styles.safeArea, { backgroundColor: tokens.bg }]}
-      >
+      <View style={[styles.safeArea, { backgroundColor: tokens.bg }]}>
+        <StatusBar barStyle="light-content" />
+        <GradientHeader />
         <View style={styles.errorContainer}>
           <InlineError onRetry={handleRetry} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (isLoading) {
     return (
-      <SafeAreaView
-        edges={['top']}
-        style={[styles.safeArea, { backgroundColor: tokens.bg }]}
-      >
+      <View style={[styles.safeArea, { backgroundColor: tokens.bg }]}>
+        <StatusBar barStyle="light-content" />
+        <GradientHeader />
         <HomeSkeleton />
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -119,29 +124,47 @@ export default function HomeScreen() {
   // Render
   // ---------------------------------------------------------------------------
   return (
-    <SafeAreaView
-      edges={['top']}
-      style={[styles.safeArea, { backgroundColor: tokens.bg }]}
-    >
+    <View style={[styles.safeArea, { backgroundColor: tokens.bg }]}>
+      <StatusBar barStyle="light-content" />
+      <GradientHeader />
+
       <ScrollView
-        contentContainerStyle={{
-          paddingBottom: insets.bottom,
-        }}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 16 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Search Bar */}
-        <View style={styles.searchBarWrapper}>
-          <SearchBar />
-        </View>
+        {/* ------------------------------------------------------------------ */}
+        {/* 1. Ranking em Destaque                                              */}
+        {/* ------------------------------------------------------------------ */}
+        {ranking && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: tokens.textDark }]}>
+                🏆 Ranking em Destaque
+              </Text>
+              <Pressable
+                onPress={() => router.push('/search')}
+                accessibilityLabel="Ver todos os rankings"
+                accessibilityRole="link"
+              >
+                <Text style={[styles.sectionLink, { color: tokens.primary }]}>
+                  Ver todos →
+                </Text>
+              </Pressable>
+            </View>
+            <StoreRankingComponent ranking={ranking} />
+          </View>
+        )}
 
-        {/* Category Chips */}
+        {/* ------------------------------------------------------------------ */}
+        {/* 2. Category pills                                                   */}
+        {/* ------------------------------------------------------------------ */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.chipsScrollView}
           contentContainerStyle={styles.chipsContentContainer}
         >
-          {/* "Todos" chip */}
+          {/* "Todos" pill */}
           <Pressable
             onPress={() => setSelectedCategory(null)}
             accessibilityLabel="Todos"
@@ -205,12 +228,12 @@ export default function HomeScreen() {
           })}
         </ScrollView>
 
-        {/* Deals Carousel */}
-        <View style={styles.dealsSection}>
-          <View style={styles.dealsSectionHeader}>
-            <Text
-              style={[styles.dealsSectionTitle, { color: tokens.textPrimary }]}
-            >
+        {/* ------------------------------------------------------------------ */}
+        {/* 3. Ofertas perto de você                                            */}
+        {/* ------------------------------------------------------------------ */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: tokens.textDark }]}>
               Ofertas perto de você
             </Text>
             <Pressable
@@ -218,10 +241,8 @@ export default function HomeScreen() {
               accessibilityLabel="Ver todas as ofertas"
               accessibilityRole="link"
             >
-              <Text
-                style={[styles.dealsSectionLink, { color: tokens.primary }]}
-              >
-                Ver todas
+              <Text style={[styles.sectionLink, { color: tokens.primary }]}>
+                Ver todas →
               </Text>
             </Pressable>
           </View>
@@ -237,19 +258,31 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* Section Divider */}
-        <SectionDivider
-          style={{ marginVertical: 20, marginHorizontal: 16 }}
-        />
+        {/* ------------------------------------------------------------------ */}
+        {/* 4. Mercados perto de você                                           */}
+        {/* ------------------------------------------------------------------ */}
+        {stores.length > 0 && (
+          <View style={[styles.section, styles.sectionLast]}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: tokens.textDark }]}>
+                Mercados perto de você
+              </Text>
+            </View>
 
-        {/* Store Ranking */}
-        {ranking && (
-          <View style={styles.rankingWrapper}>
-            <StoreRankingComponent ranking={ranking} />
+            {stores.slice(0, 6).map((sw) => (
+              <StoreCard
+                key={sw.store.id}
+                name={sw.store.name}
+                distanceKm={sw.distanceKm}
+                dealCount={sw.activePromotionCount}
+                isOpen
+                onPress={() => router.push(`/store/${sw.store.id}` as any)}
+              />
+            ))}
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -266,12 +299,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
   },
-  searchBarWrapper: {
-    paddingHorizontal: 16,
+  scrollContent: {
     paddingTop: 16,
   },
+  section: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  sectionLast: {
+    marginBottom: 0,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  sectionLink: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // Category pills
   chipsScrollView: {
-    marginTop: 12,
+    marginBottom: 24,
   },
   chipsContentContainer: {
     paddingLeft: 16,
@@ -286,31 +340,13 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 13,
   },
-  dealsSection: {
-    marginTop: 20,
-  },
-  dealsSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  dealsSectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  dealsSectionLink: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  // Deals
   dealsList: {
-    marginTop: 12,
+    // no extra margin needed; section already has paddingHorizontal
   },
   dealsListContent: {
-    paddingHorizontal: 16,
     gap: 12,
-  },
-  rankingWrapper: {
-    paddingHorizontal: 16,
+    // the section has horizontal padding but the FlatList needs to break out for full bleed
+    paddingHorizontal: 0,
   },
 });
