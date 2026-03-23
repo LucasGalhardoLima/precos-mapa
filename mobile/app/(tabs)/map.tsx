@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
+  ScrollView,
   StyleSheet,
   Pressable,
   FlatList,
@@ -16,18 +17,14 @@ import {
   ListChecks,
   Navigation2,
   ShoppingCart,
-  Filter,
+  Eye,
 } from 'lucide-react-native';
-import { MapLegend } from '@/components/map-legend';
 import { MapStorePin, type PinRank } from '@/components/map-store-pin';
-import {
-  MapStoreSheet,
-  type ShoppingListSummary,
-} from '@/components/map-store-sheet';
 
 import { useStores } from '@/hooks/use-stores';
 import { useLocation } from '@/hooks/use-location';
 import { useShoppingList } from '@/hooks/use-shopping-list';
+import { useCategories } from '@/hooks/use-categories';
 import { useTheme } from '@/theme/use-theme';
 import { Colors } from '@/constants/colors';
 import type { StoreWithPromotions } from '@/types';
@@ -116,10 +113,12 @@ export default function MapScreen() {
     userLongitude: longitude,
   });
   const { lists } = useShoppingList();
+  const { categories } = useCategories();
   const { tokens } = useTheme();
 
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
   const mapRef = useRef<MapView>(null);
-  const storeSheetRef = useRef<BottomSheet>(null);
   const listBottomSheetRef = useRef<BottomSheet>(null);
 
   const defaultRegion: Region = useMemo(
@@ -143,7 +142,6 @@ export default function MapScreen() {
         const match = stores.find((s) => s.store.id === storeId);
         if (match) {
           setSelectedStore(match);
-          storeSheetRef.current?.snapToIndex(0);
           mapRef.current?.animateToRegion(
             {
               latitude: match.store.latitude,
@@ -338,25 +336,7 @@ export default function MapScreen() {
     return map;
   }, [activeRanked]);
 
-  // -------------------------------------------------------------------------
-  // Selected store rank info (for sheet)
-  // -------------------------------------------------------------------------
-
-  const selectedRank = selectedStore
-    ? rankByStoreId.get(selectedStore.store.id)
-    : null;
-
-  const selectedListSummary: ShoppingListSummary | null = useMemo(() => {
-    if (!selectedStore) return null;
-    const match = storeMatchMap.get(selectedStore.store.id);
-    if (!match) return null;
-    return {
-      itemCount: listItems.length,
-      availableCount: match.matchedItems.length,
-      total: match.subtotal,
-      isCheapest: match.isCheapest,
-    };
-  }, [selectedStore, storeMatchMap, listItems]);
+  // (Selected store info is rendered inline in the floating card)
 
   // -------------------------------------------------------------------------
   // Handlers
@@ -364,7 +344,6 @@ export default function MapScreen() {
 
   const handleMarkerPress = useCallback((storeData: StoreWithPromotions) => {
     setSelectedStore(storeData);
-    storeSheetRef.current?.snapToIndex(0);
   }, []);
 
   const handleCloseStoreSheet = useCallback(() => {
@@ -509,6 +488,8 @@ export default function MapScreen() {
           const info = rankByStoreId.get(storeData.store.id);
           const rank: PinRank = info?.rank ?? 'yellow';
           const position = info?.position ?? 0;
+          const isSelected = selectedStore?.store.id === storeData.store.id;
+          const isDimmed = selectedStore != null && !isSelected;
 
           return (
             <MapStorePin
@@ -516,39 +497,61 @@ export default function MapScreen() {
               storeData={storeData}
               rank={rank}
               position={position}
+              selected={isSelected}
+              dimmed={isDimmed}
               onPress={() => handleMarkerPress(storeData)}
             />
           );
         })}
       </MapView>
 
-      {/* ── Floating overlays ── */}
-
-      {/* Legend — top-left */}
-      <View style={styles.legendContainer}>
-        <MapLegend />
-      </View>
-
-      {/* Filter pill — top-right */}
-      {hasListItems && (
-        <Pressable
-          style={[
-            styles.filterPill,
-            listFilterActive && styles.filterPillActive,
-          ]}
-          onPress={handleToggleListFilter}
+      {/* ── Category filter pills (floating over map) ── */}
+      <View style={styles.categoryBar}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryBarContent}
         >
-          <Filter size={14} color={listFilterActive ? '#FFFFFF' : '#0D9488'} />
-          <Text
+          <Pressable
+            onPress={() => setSelectedCategory(null)}
             style={[
-              styles.filterPillText,
-              listFilterActive && styles.filterPillTextActive,
+              styles.categoryChip,
+              !selectedCategory && styles.categoryChipActive,
             ]}
           >
-            Minha lista
-          </Text>
-        </Pressable>
-      )}
+            <Text
+              style={[
+                styles.categoryChipText,
+                !selectedCategory && styles.categoryChipTextActive,
+              ]}
+            >
+              Todos
+            </Text>
+          </Pressable>
+          {categories.map((cat) => {
+            const isActive = selectedCategory === cat.id;
+            return (
+              <Pressable
+                key={cat.id}
+                onPress={() => setSelectedCategory(cat.id)}
+                style={[
+                  styles.categoryChip,
+                  isActive && styles.categoryChipActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    isActive && styles.categoryChipTextActive,
+                  ]}
+                >
+                  {cat.name}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {/* "Ver minha lista" pill — only when user has list items */}
       {hasListItems && (
@@ -561,15 +564,55 @@ export default function MapScreen() {
         </Pressable>
       )}
 
-      {/* Individual store bottom sheet (redesigned) */}
-      <MapStoreSheet
-        ref={storeSheetRef}
-        storeData={selectedStore}
-        rank={selectedRank?.rank ?? 'yellow'}
-        position={selectedRank?.position ?? 0}
-        listSummary={selectedListSummary}
-        onClose={handleCloseStoreSheet}
-      />
+      {/* Category filter info pill */}
+      {selectedCategory && !selectedStore && (() => {
+        const catName = categories.find((c) => c.id === selectedCategory)?.name ?? '';
+        const storesWithOffers = stores.filter((s) => s.activePromotionCount > 0).length;
+        return (
+          <View style={styles.filterInfoPill}>
+            <Text style={styles.filterInfoCount}>{storesWithOffers}</Text>
+            <Text style={styles.filterInfoText}> mercados com ofertas em {catName}</Text>
+          </View>
+        );
+      })()}
+
+      {/* Floating store card (matches mockup) */}
+      {selectedStore && (
+        <View style={styles.floatingCard}>
+          <Pressable style={styles.floatingCardDismiss} onPress={handleCloseStoreSheet} />
+          <View style={styles.floatingCardTop}>
+            <View style={[styles.floatingCardAvatar, { backgroundColor: selectedStore.store.logo_color }]}>
+              <Text style={styles.floatingCardAvatarText}>{selectedStore.store.logo_initial}</Text>
+            </View>
+            <View style={styles.floatingCardInfo}>
+              <Text style={styles.floatingCardName} numberOfLines={1}>{selectedStore.store.name}</Text>
+              <Text style={styles.floatingCardAddr} numberOfLines={1}>{selectedStore.store.address}</Text>
+            </View>
+          </View>
+          <View style={styles.floatingCardTags}>
+            <View style={styles.fcTagDist}><Text style={styles.fcTagDistText}>{selectedStore.distanceKm.toFixed(1)} km</Text></View>
+            <View style={styles.fcTagDeals}><Text style={styles.fcTagDealsText}>{selectedStore.activePromotionCount} ofertas</Text></View>
+            <View style={styles.fcTagOpen}><Text style={styles.fcTagOpenText}>Aberto</Text></View>
+          </View>
+          <View style={styles.floatingCardActions}>
+            <Pressable style={styles.fcBtnSecondary} onPress={() => {}}>
+              <Eye size={14} color="#64748B" />
+              <Text style={styles.fcBtnSecondaryText}>Ver ofertas</Text>
+            </Pressable>
+            <Pressable style={styles.fcBtnPrimary} onPress={() => {
+              const { latitude, longitude } = selectedStore.store;
+              const url = Platform.select({
+                ios: `maps://app?daddr=${latitude},${longitude}`,
+                android: `geo:${latitude},${longitude}?q=${latitude},${longitude}`,
+              }) ?? `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+              Linking.openURL(url);
+            }}>
+              <Navigation2 size={14} color="#FFFFFF" />
+              <Text style={styles.fcBtnPrimaryText}>Como chegar</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       {/* List panel bottom sheet */}
       {hasListItems && (
@@ -678,49 +721,47 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Legend overlay (top-left)
-  legendContainer: {
+  // Category filter bar (floating over map)
+  categoryBar: {
     position: 'absolute',
-    top: 56,
-    left: 16,
-    zIndex: 20,
+    top: 50,
+    left: 0,
+    right: 0,
+    zIndex: 15,
   },
-
-  // Filter pill (top-right)
-  filterPill: {
-    position: 'absolute',
-    top: 56,
-    right: 16,
-    zIndex: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+  categoryBarContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  categoryChip: {
     paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     borderWidth: 1.5,
-    borderColor: '#0D9488',
+    borderColor: '#d1d5db',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.12,
-        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
       },
-      android: { elevation: 4 },
+      android: { elevation: 2 },
     }),
   },
-  filterPillActive: {
+  categoryChipActive: {
     backgroundColor: '#0D9488',
     borderColor: '#0D9488',
   },
-  filterPillText: {
-    color: '#0D9488',
-    fontSize: 13,
-    fontWeight: '700',
+  categoryChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    fontFamily: 'Inter_500Medium',
+    color: '#64748B',
   },
-  filterPillTextActive: {
+  categoryChipTextActive: {
     color: '#FFFFFF',
   },
 
@@ -851,6 +892,167 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
+  },
+
+  // Category filter info pill
+  filterInfoPill: {
+    position: 'absolute',
+    bottom: 82,
+    alignSelf: 'center',
+    zIndex: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  filterInfoCount: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0D9488',
+  },
+  filterInfoText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+
+  // Floating store card (replaces BottomSheet)
+  floatingCard: {
+    position: 'absolute',
+    bottom: 78,
+    left: 12,
+    right: 12,
+    zIndex: 15,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  floatingCardDismiss: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 24,
+    height: 24,
+    zIndex: 1,
+  },
+  floatingCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  floatingCardAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  floatingCardAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  floatingCardInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  floatingCardName: {
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
+    color: '#1A1A2E',
+  },
+  floatingCardAddr: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 1,
+  },
+  floatingCardTags: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 10,
+  },
+  fcTagDist: {
+    backgroundColor: '#e0f2fe',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  fcTagDistText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#0369a1',
+  },
+  fcTagDeals: {
+    backgroundColor: '#fef3c7',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  fcTagDealsText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#92400e',
+  },
+  fcTagOpen: {
+    backgroundColor: '#dcfce7',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  fcTagOpenText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#166534',
+  },
+  floatingCardActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  fcBtnSecondary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 11,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+  },
+  fcBtnSecondaryText: {
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Inter_500Medium',
+    color: '#64748B',
+  },
+  fcBtnPrimary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 11,
+    borderRadius: 10,
+    backgroundColor: '#0D9488',
+  },
+  fcBtnPrimaryText: {
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Inter_500Medium',
+    color: '#FFFFFF',
   },
 
   // Empty state inside list panel

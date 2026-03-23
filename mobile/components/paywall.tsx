@@ -10,10 +10,9 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Check, Minus, Sparkles } from 'lucide-react-native';
+import { Check, Minus, Sparkles, TrendingDown, Star, ShieldCheck } from 'lucide-react-native';
 import { useSubscription } from '@/hooks/use-subscription';
 import { useTheme } from '@/theme/use-theme';
-import { DiscountBadge } from '@/components/themed/discount-badge';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,8 +48,18 @@ const COMPARISON_ROWS: ComparisonRow[] = [
 // ---------------------------------------------------------------------------
 
 const FALLBACK_MONTHLY_PRICE = 'R$ 9,90';
-const FALLBACK_ANNUAL_PRICE = 'R$ 6,90';
-const FALLBACK_ANNUAL_TOTAL = 'R$ 82,80/ano';
+const FALLBACK_ANNUAL_PRICE = 'R$ 7,90';
+const FALLBACK_ANNUAL_TOTAL = 'R$ 94,90/ano';
+
+// ---------------------------------------------------------------------------
+// Highlights
+// ---------------------------------------------------------------------------
+
+const HIGHLIGHTS = [
+  { icon: TrendingDown, text: 'Economize até R$ 120/mês' },
+  { icon: Star, text: 'Favoritos e alertas ilimitados' },
+  { icon: ShieldCheck, text: 'Sem anúncios, sem limites' },
+];
 
 // ---------------------------------------------------------------------------
 // Component
@@ -108,49 +117,26 @@ export function Paywall({ visible, onClose }: PaywallProps) {
   };
 
   // -----------------------------------------------------------------------
-  // Dynamic styles based on theme tokens
-  // -----------------------------------------------------------------------
-
-  const dynamicStyles = {
-    container: {
-      backgroundColor: tokens.dark,
-      paddingTop: insets.top,
-      paddingBottom: insets.bottom,
-    } as const,
-    closeButton: {
-      backgroundColor: tokens.darkSurface,
-    } as const,
-    comparisonHeader: {
-      borderBottomColor: 'rgba(255,255,255,0.1)',
-    } as const,
-    comparisonRow: {
-      borderBottomColor: 'rgba(255,255,255,0.08)',
-    } as const,
-    pricingCardBase: {
-      backgroundColor: tokens.darkSurface,
-      borderColor: tokens.darkSurface,
-    } as const,
-    pricingCardSelected: {
-      backgroundColor: tokens.darkSurface,
-      borderColor: tokens.primary,
-    } as const,
-    ctaButton: {
-      backgroundColor: tokens.primary,
-    } as const,
-  };
-
-  // -----------------------------------------------------------------------
   // Render helpers
   // -----------------------------------------------------------------------
 
-  function renderComparisonCell(value: string | null) {
+  function renderComparisonCell(value: string | null, isPlus?: boolean) {
     if (value === null) {
       return <Minus size={16} color={tokens.textHint} />;
     }
     if (value === '✓') {
-      return <Check size={16} color={tokens.primary} />;
+      return <Check size={18} color={tokens.primary} strokeWidth={3} />;
     }
-    return <Text style={styles.cellText}>{value}</Text>;
+    return (
+      <Text
+        style={[
+          styles.cellText,
+          { color: isPlus ? tokens.primary : tokens.textSecondary, fontWeight: isPlus ? '700' : '500' },
+        ]}
+      >
+        {value}
+      </Text>
+    );
   }
 
   // -----------------------------------------------------------------------
@@ -164,16 +150,10 @@ export function Paywall({ visible, onClose }: PaywallProps) {
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={[styles.container, dynamicStyles.container]}>
-        {/* Close button — top right */}
-        <View style={styles.closeRow}>
-          <Pressable
-            onPress={onClose}
-            style={[styles.closeButton, dynamicStyles.closeButton]}
-            hitSlop={12}
-          >
-            <X size={20} color="#FFFFFF" />
-          </Pressable>
+      <View style={[styles.container, { backgroundColor: tokens.bg, paddingBottom: insets.bottom }]}>
+        {/* Drag handle */}
+        <View style={styles.handleRow}>
+          <View style={[styles.handle, { backgroundColor: tokens.textHint }]} />
         </View>
 
         {isLoading ? (
@@ -187,65 +167,29 @@ export function Paywall({ visible, onClose }: PaywallProps) {
             showsVerticalScrollIndicator={false}
             bounces={false}
           >
-            {/* Hero — savings number */}
+            {/* Hero */}
             <View style={styles.heroSection}>
-              <Sparkles size={24} color={tokens.warning} />
-              <Text style={styles.savingsAmount}>R$ 120</Text>
-              <Text style={styles.savingsSubtitle}>economizados por mês</Text>
-            </View>
-
-            {/* Branding */}
-            <View style={styles.brandingSection}>
-              <Text style={styles.brandingPlus}>
-                {'+ '}
-                <Text style={[styles.brandingPoup, { color: tokens.primary }]}>
-                  POUP
-                </Text>
-                {' PLUS'}
+              <View style={[styles.iconCircle, { backgroundColor: tokens.primaryMuted }]}>
+                <Sparkles size={28} color={tokens.primary} />
+              </View>
+              <Text style={[styles.heroTitle, { color: tokens.textPrimary }]}>
+                Poup <Text style={{ color: tokens.primary }}>Plus</Text>
               </Text>
-              <Text style={styles.tagline}>
+              <Text style={[styles.heroSubtitle, { color: tokens.textSecondary }]}>
                 Economize mais. Sem limites.
               </Text>
             </View>
 
-            {/* Comparison table */}
-            <View style={[styles.comparisonTable, { backgroundColor: tokens.darkSurface }]}>
-              {/* Header */}
-              <View
-                style={[styles.comparisonHeaderRow, dynamicStyles.comparisonHeader]}
-              >
-                <Text style={styles.comparisonHeaderLabel} />
-                <Text style={styles.comparisonHeaderValue}>Grátis</Text>
-                <Text
-                  style={[
-                    styles.comparisonHeaderValue,
-                    styles.comparisonHeaderPlus,
-                    { color: tokens.primary },
-                  ]}
-                >
-                  Plus
-                </Text>
-              </View>
-
-              {/* Rows */}
-              {COMPARISON_ROWS.map((row, index) => (
-                <View
-                  key={row.label}
-                  style={[
-                    styles.comparisonRowContainer,
-                    index < COMPARISON_ROWS.length - 1 &&
-                      dynamicStyles.comparisonRow,
-                    index < COMPARISON_ROWS.length - 1 &&
-                      styles.comparisonRowBorder,
-                  ]}
-                >
-                  <Text style={styles.comparisonLabel}>{row.label}</Text>
-                  <View style={styles.comparisonCell}>
-                    {renderComparisonCell(row.free)}
+            {/* Highlights */}
+            <View style={[styles.highlightsCard, { backgroundColor: tokens.surface, borderColor: tokens.border }]}>
+              {HIGHLIGHTS.map(({ icon: Icon, text }) => (
+                <View key={text} style={styles.highlightRow}>
+                  <View style={[styles.highlightIcon, { backgroundColor: tokens.primaryMuted }]}>
+                    <Icon size={16} color={tokens.primary} />
                   </View>
-                  <View style={styles.comparisonCell}>
-                    {renderComparisonCell(row.plus)}
-                  </View>
+                  <Text style={[styles.highlightText, { color: tokens.textPrimary }]}>
+                    {text}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -256,40 +200,54 @@ export function Paywall({ visible, onClose }: PaywallProps) {
               <Pressable
                 style={[
                   styles.pricingCard,
-                  selectedCycle === 'monthly'
-                    ? dynamicStyles.pricingCardSelected
-                    : dynamicStyles.pricingCardBase,
+                  {
+                    backgroundColor: selectedCycle === 'monthly' ? tokens.surface : tokens.bg,
+                    borderColor: selectedCycle === 'monthly' ? tokens.primary : tokens.border,
+                    borderWidth: selectedCycle === 'monthly' ? 2 : 1,
+                  },
                 ]}
                 onPress={() => setSelectedCycle('monthly')}
               >
-                <Text style={styles.pricingCycleLabel}>Mensal</Text>
-                <Text style={styles.pricingPrice}>
+                <Text style={[styles.pricingCycleLabel, { color: tokens.textSecondary }]}>
+                  Mensal
+                </Text>
+                <Text style={[styles.pricingPrice, { color: tokens.textPrimary }]}>
                   {monthlyPackage?.product?.priceString ?? FALLBACK_MONTHLY_PRICE}
                 </Text>
-                <Text style={styles.pricingPeriod}>/mês</Text>
+                <Text style={[styles.pricingPeriod, { color: tokens.textHint }]}>
+                  /mês
+                </Text>
               </Pressable>
 
               {/* Annual */}
               <Pressable
                 style={[
                   styles.pricingCard,
-                  selectedCycle === 'annual'
-                    ? dynamicStyles.pricingCardSelected
-                    : dynamicStyles.pricingCardBase,
+                  {
+                    backgroundColor: selectedCycle === 'annual' ? tokens.surface : tokens.bg,
+                    borderColor: selectedCycle === 'annual' ? tokens.primary : tokens.border,
+                    borderWidth: selectedCycle === 'annual' ? 2 : 1,
+                  },
                 ]}
                 onPress={() => setSelectedCycle('annual')}
               >
-                <View style={styles.badgeContainer}>
-                  <DiscountBadge label="-30%" variant="discount" />
+                <View style={[styles.discountBadge, { backgroundColor: tokens.primaryMuted }]}>
+                  <Text style={[styles.discountBadgeText, { color: tokens.primary }]}>
+                    -20%
+                  </Text>
                 </View>
-                <Text style={styles.pricingCycleLabel}>Anual</Text>
-                <Text style={styles.pricingPrice}>
+                <Text style={[styles.pricingCycleLabel, { color: tokens.textSecondary }]}>
+                  Anual
+                </Text>
+                <Text style={[styles.pricingPrice, { color: tokens.textPrimary }]}>
                   {annualPackage?.product
                     ? `R$ ${(annualPackage.product.price / 12).toFixed(2).replace('.', ',')}`
                     : FALLBACK_ANNUAL_PRICE}
                 </Text>
-                <Text style={styles.pricingPeriod}>/mês</Text>
-                <Text style={styles.pricingTotal}>
+                <Text style={[styles.pricingPeriod, { color: tokens.textHint }]}>
+                  /mês
+                </Text>
+                <Text style={[styles.pricingTotal, { color: tokens.textHint }]}>
                   {annualPackage?.product?.priceString
                     ? `${annualPackage.product.priceString}/ano`
                     : FALLBACK_ANNUAL_TOTAL}
@@ -301,7 +259,7 @@ export function Paywall({ visible, onClose }: PaywallProps) {
             <Pressable
               style={[
                 styles.ctaButton,
-                dynamicStyles.ctaButton,
+                { backgroundColor: tokens.primary },
                 isPurchasing && styles.ctaDisabled,
               ]}
               onPress={handlePurchase}
@@ -326,6 +284,44 @@ export function Paywall({ visible, onClose }: PaywallProps) {
                 Restaurar compras
               </Text>
             </Pressable>
+
+            {/* Comparison table */}
+            <View style={[styles.comparisonTable, { backgroundColor: tokens.surface, borderColor: tokens.border }]}>
+              {/* Header */}
+              <View style={[styles.comparisonHeaderRow, { borderBottomColor: tokens.border }]}>
+                <Text style={styles.comparisonHeaderLabel} />
+                <Text style={[styles.comparisonHeaderValue, { color: tokens.textHint }]}>
+                  Grátis
+                </Text>
+                <Text style={[styles.comparisonHeaderValue, { color: tokens.primary, fontWeight: '700' }]}>
+                  Plus
+                </Text>
+              </View>
+
+              {/* Rows */}
+              {COMPARISON_ROWS.map((row, index) => (
+                <View
+                  key={row.label}
+                  style={[
+                    styles.comparisonRowContainer,
+                    index < COMPARISON_ROWS.length - 1 && {
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      borderBottomColor: tokens.border,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.comparisonLabel, { color: tokens.textPrimary }]}>
+                    {row.label}
+                  </Text>
+                  <View style={styles.comparisonCell}>
+                    {renderComparisonCell(row.free)}
+                  </View>
+                  <View style={styles.comparisonCell}>
+                    {renderComparisonCell(row.plus, true)}
+                  </View>
+                </View>
+              ))}
+            </View>
           </ScrollView>
         )}
       </View>
@@ -334,7 +330,7 @@ export function Paywall({ visible, onClose }: PaywallProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Static styles
+// Styles
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
@@ -347,19 +343,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Close button
-  closeRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  // Drag handle
+  handleRow: {
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  handle: {
+    width: 36,
+    height: 5,
+    borderRadius: 3,
+    opacity: 0.3,
   },
 
   // Scroll
@@ -368,55 +362,137 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: 32,
   },
 
   // Hero
   heroSection: {
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 4,
-  },
-  savingsAmount: {
-    fontSize: 52,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginTop: 8,
-    letterSpacing: -1,
-  },
-  savingsSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.6)',
-    marginTop: 2,
-  },
-
-  // Branding
-  brandingSection: {
-    alignItems: 'center',
     marginTop: 8,
     marginBottom: 24,
   },
-  brandingPlus: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 1.5,
+  iconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
-  brandingPoup: {
+  heroTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  heroSubtitle: {
+    fontSize: 15,
+    marginTop: 6,
+  },
+
+  // Highlights card
+  highlightsCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+    gap: 14,
+    marginBottom: 24,
+  },
+  highlightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  highlightIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  highlightText: {
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
+  },
+
+  // Pricing cards
+  pricingRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  pricingCard: {
+    flex: 1,
+    borderRadius: 14,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: -10,
+    right: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  discountBadgeText: {
+    fontSize: 11,
     fontWeight: '800',
   },
-  tagline: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 6,
+  pricingCycleLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  pricingPrice: {
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  pricingPeriod: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  pricingTotal: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+
+  // CTA
+  ctaButton: {
+    borderRadius: 14,
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  ctaDisabled: {
+    opacity: 0.7,
+  },
+  ctaText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  // Restore
+  restoreButton: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginBottom: 24,
+  },
+  restoreText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 
   // Comparison table
   comparisonTable: {
-    borderRadius: 16,
+    borderRadius: 14,
+    borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 4,
-    marginBottom: 24,
   },
   comparisonHeaderRow: {
     flexDirection: 'row',
@@ -432,25 +508,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 13,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.5)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  comparisonHeaderPlus: {
-    fontWeight: '700',
   },
   comparisonRowContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 14,
   },
-  comparisonRowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
   comparisonLabel: {
     flex: 1.4,
     fontSize: 14,
-    color: 'rgba(255,255,255,0.85)',
   },
   comparisonCell: {
     flex: 0.8,
@@ -459,78 +527,6 @@ const styles = StyleSheet.create({
   },
   cellText: {
     fontSize: 13,
-    color: '#FFFFFF',
-    fontWeight: '500',
     textAlign: 'center',
-  },
-
-  // Pricing cards
-  pricingRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-  },
-  pricingCard: {
-    flex: 1,
-    borderRadius: 16,
-    borderWidth: 2,
-    paddingVertical: 20,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    position: 'relative',
-  },
-  badgeContainer: {
-    position: 'absolute',
-    top: -10,
-    right: -4,
-  },
-  pricingCycleLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.7)',
-    marginBottom: 6,
-  },
-  pricingPrice: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  pricingPeriod: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.5)',
-    marginTop: 2,
-  },
-  pricingTotal: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.4)',
-    marginTop: 4,
-  },
-
-  // CTA
-  ctaButton: {
-    borderRadius: 14,
-    paddingVertical: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  ctaDisabled: {
-    opacity: 0.7,
-  },
-  ctaText: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-
-  // Restore
-  restoreButton: {
-    alignItems: 'center',
-    paddingVertical: 8,
-    marginBottom: 8,
-  },
-  restoreText: {
-    fontSize: 14,
-    fontWeight: '500',
   },
 });

@@ -1,11 +1,12 @@
-import { View, TextInput, Pressable, Text } from "react-native";
-import { Search, X } from "lucide-react-native";
-import { useState, useEffect, useCallback } from "react";
-import { useFilterStore } from "@/store/app-store";
-import { useSearch } from "@/hooks/use-search";
-import { Colors } from "@/constants/colors";
+import { View, TextInput, Pressable, Text, StyleSheet } from 'react-native';
+import { Search, X } from 'lucide-react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { useFilterStore } from '@/store/app-store';
+import { useSearch } from '@/hooks/use-search';
+import { useTheme } from '@/theme/use-theme';
 
 export function SearchBar() {
+  const { tokens } = useTheme();
   const searchQuery = useFilterStore((s) => s.searchQuery);
   const setSearchQuery = useFilterStore((s) => s.setSearchQuery);
   const [localQuery, setLocalQuery] = useState(searchQuery);
@@ -20,8 +21,8 @@ export function SearchBar() {
   }, [localQuery, setSearchQuery]);
 
   const handleClear = useCallback(() => {
-    setLocalQuery("");
-    setSearchQuery("");
+    setLocalQuery('');
+    setSearchQuery('');
     setShowSuggestions(false);
   }, [setSearchQuery]);
 
@@ -31,17 +32,22 @@ export function SearchBar() {
       setSearchQuery(suggestion);
       setShowSuggestions(false);
     },
-    [setSearchQuery]
+    [setSearchQuery],
   );
 
   return (
-    <View className="relative z-10">
-      <View className="flex-row items-center bg-surface-tertiary rounded-xl px-4 py-3 gap-3">
-        <Search size={20} color={Colors.text.tertiary} />
+    <View style={styles.container}>
+      <View
+        style={[
+          styles.searchBar,
+          { backgroundColor: tokens.surface, borderColor: tokens.border },
+        ]}
+      >
+        <Search size={18} color={tokens.textHint} />
         <TextInput
-          className="flex-1 text-base text-text-primary"
+          style={[styles.searchInput, { color: tokens.textPrimary }]}
           placeholder="Buscar produto..."
-          placeholderTextColor={Colors.text.tertiary}
+          placeholderTextColor={tokens.textHint}
           value={localQuery}
           onChangeText={(text) => {
             setLocalQuery(text);
@@ -51,21 +57,28 @@ export function SearchBar() {
           onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
         />
         {localQuery.length > 0 && (
-          <Pressable onPress={handleClear}>
-            <X size={18} color={Colors.text.tertiary} />
+          <Pressable onPress={handleClear} hitSlop={8}>
+            <X size={18} color={tokens.textHint} />
           </Pressable>
         )}
       </View>
 
       {showSuggestions && suggestions.length > 0 && (
-        <View className="absolute top-full left-0 right-0 bg-white rounded-xl mt-1 border border-border shadow-sm z-20">
+        <View
+          style={[
+            styles.suggestionsContainer,
+            { backgroundColor: tokens.surface, borderColor: tokens.border },
+          ]}
+        >
           {suggestions.map((s, i) => (
             <Pressable
               key={i}
-              className="px-4 py-3 border-b border-border-light"
+              style={[styles.suggestionItem, { borderBottomColor: tokens.border }]}
               onPress={() => handleSuggestionPress(s)}
             >
-              <Text className="text-sm text-text-primary">{s}</Text>
+              <Text style={[styles.suggestionText, { color: tokens.textPrimary }]}>
+                {s}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -73,3 +86,42 @@ export function SearchBar() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'relative',
+    zIndex: 10,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    padding: 0,
+  },
+  suggestionsContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    borderRadius: 12,
+    marginTop: 4,
+    borderWidth: 1,
+    zIndex: 20,
+  },
+  suggestionItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  suggestionText: {
+    fontSize: 14,
+  },
+});

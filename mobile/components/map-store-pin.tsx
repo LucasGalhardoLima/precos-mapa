@@ -12,17 +12,14 @@ const PIN_GRAY = '#94A3B8';
 interface MapStorePinProps {
   storeData: StoreWithPromotions;
   rank: PinRank;
-  /** 1-based position in sorted list (1 = cheapest). 0 means unranked. */
   position: number;
+  /** Whether this pin is the currently selected store */
+  selected?: boolean;
+  /** Whether another store is selected (dim this pin) */
+  dimmed?: boolean;
   onPress: () => void;
 }
 
-/**
- * Determine pin color based on active promotion count:
- * - teal: has offers (>= 10)
- * - gold: few offers (1-9)
- * - gray: no offers (0)
- */
 function pinColorForOffers(count: number): string {
   if (count >= 10) return PIN_TEAL;
   if (count > 0) return PIN_GOLD;
@@ -31,6 +28,8 @@ function pinColorForOffers(count: number): string {
 
 export function MapStorePin({
   storeData,
+  selected = false,
+  dimmed = false,
   onPress,
 }: MapStorePinProps) {
   const { store, activePromotionCount } = storeData;
@@ -42,21 +41,29 @@ export function MapStorePin({
       onPress={onPress}
       tracksViewChanges={false}
     >
-      <View style={styles.container}>
-        {/* Teardrop pin with offer count */}
-        <View style={[styles.pinBody, { backgroundColor: color }]}>
+      <View style={[styles.container, dimmed && styles.dimmed]}>
+        {/* Pin circle with offer count */}
+        <View
+          style={[
+            styles.pinBody,
+            { backgroundColor: color },
+            selected && styles.pinSelected,
+          ]}
+        >
           <Text style={styles.pinCount}>{activePromotionCount}</Text>
         </View>
 
         {/* Downward triangle pointer */}
         <View style={[styles.arrow, { borderTopColor: color }]} />
 
-        {/* Store name label */}
-        <View style={styles.labelBg}>
-          <Text style={styles.labelText} numberOfLines={1}>
-            {store.name}
-          </Text>
-        </View>
+        {/* Store name label (shown always for selected, only when not dimmed otherwise) */}
+        {!dimmed && (
+          <View style={styles.labelBg}>
+            <Text style={styles.labelText} numberOfLines={1}>
+              {store.name}
+            </Text>
+          </View>
+        )}
       </View>
     </Marker>
   );
@@ -65,6 +72,9 @@ export function MapStorePin({
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
+  },
+  dimmed: {
+    opacity: 0.4,
   },
   pinBody: {
     width: 36,
@@ -79,6 +89,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
+  },
+  pinSelected: {
+    borderWidth: 3,
+    borderColor: '#5EEAD4',
+    shadowColor: '#0D9488',
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 8,
   },
   pinCount: {
     color: '#FFFFFF',

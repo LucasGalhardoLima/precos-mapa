@@ -282,55 +282,42 @@ export default function ProductDetailScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Product image placeholder */}
-          <View
-            style={[styles.imagePlaceholder, { backgroundColor: tokens.mist }]}
-          >
-            <Package size={48} color={tokens.textHint} strokeWidth={1.2} />
-          </View>
-
-          {/* Product metadata */}
-          <View style={styles.metadataSection}>
-            <Text
-              style={[styles.productName, { color: tokens.textPrimary }]}
-              numberOfLines={2}
-            >
-              {product.name}
-            </Text>
-
-            {categoryName && (
+          {/* Product header (matches mockup: image + name + category + best price) */}
+          <View style={styles.productHeader}>
+            <View style={[styles.productImageWrap, { backgroundColor: tokens.mist }]}>
+              <Package size={32} color={tokens.textHint} strokeWidth={1.2} />
+            </View>
+            <View style={styles.productHeaderInfo}>
               <Text
-                style={[styles.categoryText, { color: tokens.textSecondary }]}
+                style={[styles.productName, { color: tokens.textPrimary }]}
+                numberOfLines={2}
               >
-                {categoryName}
+                {product.name}
               </Text>
-            )}
-
-            {product.brand && (
-              <Text style={[styles.brandText, { color: tokens.textHint }]}>
-                {product.brand}
-              </Text>
-            )}
-
-            <View style={styles.referencePriceRow}>
-              <Text
-                style={[
-                  styles.referencePriceLabel,
-                  { color: tokens.textHint },
-                ]}
-              >
-                Preço de referência:
-              </Text>
-              <Text
-                style={[
-                  styles.referencePriceValue,
-                  { color: tokens.textPrimary },
-                ]}
-              >
-                R$ {product.reference_price.toFixed(2)}
-              </Text>
+              {categoryName && (
+                <Text style={styles.productCategory}>
+                  {categoryName}{product.brand ? ` · ${product.brand}` : ''}
+                </Text>
+              )}
             </View>
           </View>
+
+          {/* Best price callout */}
+          {promotions.length > 0 && (
+            <View style={styles.bestPriceSection}>
+              <Text style={styles.bestPriceLabel}>A partir de</Text>
+              <Text style={styles.bestPriceValue}>
+                R$ {promotions[0].promo_price.toFixed(2).replace('.', ',')}
+              </Text>
+              <Text style={styles.bestPriceStore}>
+                {promotions[0].store.name} · {
+                  latitude && longitude
+                    ? `${calculateDistanceKm(latitude, longitude, promotions[0].store.latitude, promotions[0].store.longitude)} km`
+                    : ''
+                }
+              </Text>
+            </View>
+          )}
 
           <SectionDivider style={{ marginVertical: 16 }} />
 
@@ -457,11 +444,10 @@ export default function ProductDetailScreen() {
 
           {/* Store comparison */}
           <View style={styles.sectionPadding}>
-            <Text
-              style={[styles.sectionTitle, { color: tokens.textPrimary }]}
-            >
-              Comparar mercados
-            </Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Comparar mercados</Text>
+              <Text style={styles.sectionCount}>{promotions.length} mercados</Text>
+            </View>
 
             {isLoadingPromotions ? (
               <View style={styles.promotionsLoading}>
@@ -512,14 +498,21 @@ export default function ProductDetailScreen() {
                         styles.storeRow,
                         {
                           backgroundColor: tokens.surface,
-                          borderColor: tokens.border,
+                          borderColor: '#e8edf2',
                         },
                         index === 0 && {
-                          borderColor: tokens.primary,
+                          borderColor: '#0D9488',
                           borderWidth: 2,
                         },
                       ]}
                     >
+                      {/* Position number */}
+                      <View style={[styles.positionCircle, index === 0 && styles.positionCircleFirst]}>
+                        <Text style={[styles.positionText, index === 0 && styles.positionTextFirst]}>
+                          {index + 1}
+                        </Text>
+                      </View>
+
                       {/* Store logo initial */}
                       <View
                         style={[
@@ -535,27 +528,14 @@ export default function ProductDetailScreen() {
                       {/* Store info */}
                       <View style={styles.storeInfo}>
                         <Text
-                          style={[
-                            styles.storeName,
-                            { color: tokens.textPrimary },
-                          ]}
+                          style={[styles.storeName, { color: tokens.textPrimary }]}
                           numberOfLines={1}
                         >
                           {promo.store.name}
                         </Text>
-                        {distanceKm != null && (
-                          <View style={styles.storeDistanceRow}>
-                            <MapPin size={12} color={tokens.textHint} />
-                            <Text
-                              style={[
-                                styles.storeDistance,
-                                { color: tokens.textHint },
-                              ]}
-                            >
-                              {distanceKm} km
-                            </Text>
-                          </View>
-                        )}
+                        <Text style={styles.storeMetaText}>
+                          {distanceKm != null ? `${distanceKm} km` : ''} · Aberto
+                        </Text>
                       </View>
 
                       {/* Price + badge */}
@@ -563,22 +543,20 @@ export default function ProductDetailScreen() {
                         <Text
                           style={[
                             styles.storePrice,
-                            {
-                              color:
-                                index === 0
-                                  ? tokens.primary
-                                  : tokens.textPrimary,
-                            },
+                            { color: index === 0 ? '#0D9488' : tokens.textPrimary },
                           ]}
                         >
-                          R$ {promo.promo_price.toFixed(2)}
+                          R$ {promo.promo_price.toFixed(2).replace('.', ',')}
                         </Text>
-                        {isSignificantDiscount && (
-                          <DiscountBadge
-                            label={`-${discountPercent}%`}
-                            variant="discount"
-                          />
-                        )}
+                        {index === 0 ? (
+                          <View style={styles.bestPriceBadge}>
+                            <Text style={styles.bestPriceBadgeText}>Menor preço</Text>
+                          </View>
+                        ) : isSignificantDiscount ? (
+                          <View style={styles.discountBadge}>
+                            <Text style={styles.discountBadgeText}>-{discountPercent}%</Text>
+                          </View>
+                        ) : null}
                       </View>
                     </View>
                   );
@@ -733,42 +711,57 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
 
-  // Image placeholder
-  imagePlaceholder: {
-    height: 200,
+  // Product header (inline image + name)
+  productHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Metadata
-  metadataSection: {
+    gap: 14,
     paddingHorizontal: 16,
     paddingTop: 16,
   },
+  productImageWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  productHeaderInfo: {
+    flex: 1,
+  },
   productName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
-    lineHeight: 28,
+    fontFamily: 'Poppins_700Bold',
+    lineHeight: 26,
+    color: '#1A1A2E',
   },
-  categoryText: {
-    fontSize: 14,
-    marginTop: 4,
-  },
-  brandText: {
+  productCategory: {
     fontSize: 13,
+    color: '#94A3B8',
     marginTop: 2,
   },
-  referencePriceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
+
+  // Best price callout
+  bestPriceSection: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
-  referencePriceLabel: {
+  bestPriceLabel: {
     fontSize: 13,
+    color: '#94A3B8',
   },
-  referencePriceValue: {
-    fontSize: 15,
+  bestPriceValue: {
+    fontSize: 28,
+    fontWeight: '800',
+    fontFamily: 'Poppins_700Bold',
+    color: '#0D9488',
+  },
+  bestPriceStore: {
+    fontSize: 13,
     fontWeight: '600',
+    color: '#0D9488',
+    marginTop: 2,
   },
 
   // Section padding
@@ -843,11 +836,22 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // Section title
+  // Section header
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 12,
+    fontFamily: 'Poppins_700Bold',
+    color: '#1A1A2E',
+  },
+  sectionCount: {
+    fontSize: 12,
+    color: '#94A3B8',
   },
 
   // Promotions / store comparison
@@ -875,14 +879,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 1.5,
     padding: 12,
-    gap: 12,
+    gap: 10,
+    marginBottom: 8,
+  },
+  positionCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  positionCircleFirst: {
+    backgroundColor: '#dcfce7',
+  },
+  positionText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
+  positionTextFirst: {
+    color: '#166534',
   },
   storeLogoCircle: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -897,15 +921,12 @@ const styles = StyleSheet.create({
   storeName: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_500Medium',
   },
-  storeDistanceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
+  storeMetaText: {
+    fontSize: 11,
+    color: '#94A3B8',
     marginTop: 2,
-  },
-  storeDistance: {
-    fontSize: 12,
   },
   storePriceCol: {
     alignItems: 'flex-end',
@@ -914,6 +935,29 @@ const styles = StyleSheet.create({
   storePrice: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
+  },
+  bestPriceBadge: {
+    backgroundColor: '#dcfce7',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  bestPriceBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#166534',
+  },
+  discountBadge: {
+    backgroundColor: '#fef3c7',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  discountBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#92400e',
   },
 
   // Fixed bottom CTA
