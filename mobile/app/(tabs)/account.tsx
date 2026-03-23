@@ -9,6 +9,7 @@ import {
   Share,
   StyleSheet,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Burnt from 'burnt';
@@ -36,8 +37,6 @@ import { useSubscription } from '@/hooks/use-subscription';
 import { useAccount } from '@/hooks/use-account';
 import { supabase } from '@/lib/supabase';
 import { Paywall } from '@/components/paywall';
-import { CouponLine } from '@/components/themed/coupon-line';
-import { SectionDivider } from '@/components/themed/section-divider';
 import type { LucideIcon } from 'lucide-react-native';
 
 // ---------------------------------------------------------------------------
@@ -89,6 +88,7 @@ interface SettingsRowProps {
   labelColor?: string;
   onPress?: () => void;
   tokens: ReturnType<typeof useTheme>['tokens'];
+  last?: boolean;
 }
 
 function SettingsRow({
@@ -99,10 +99,11 @@ function SettingsRow({
   labelColor,
   onPress,
   tokens,
+  last,
 }: SettingsRowProps) {
   return (
     <Pressable
-      style={[styles.row, { borderBottomColor: tokens.border }]}
+      style={[styles.row, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: tokens.border }]}
       onPress={onPress}
       android_ripple={{ color: tokens.mist }}
       accessibilityRole={onPress ? 'button' : undefined}
@@ -281,71 +282,36 @@ export default function AccountScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ----------------------------------------------------------------- */}
-        {/* User Header                                                       */}
+        {/* Gradient Header (matches mockup)                                  */}
         {/* ----------------------------------------------------------------- */}
-        <View style={styles.header}>
-          <View
-            style={[
-              styles.avatar,
-              { backgroundColor: isPaidPlan ? tokens.accentSoft : tokens.primaryMuted },
-            ]}
-          >
-            <Text
-              style={[
-                styles.avatarLetter,
-                { color: isPaidPlan ? tokens.warning : tokens.primary },
-              ]}
-            >
-              {initial}
+        <LinearGradient
+          colors={['#0f766e', '#0D9488']}
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 0.8, y: 1 }}
+          style={styles.gradientHeader}
+        >
+          <View style={styles.gradientAvatar}>
+            <Text style={styles.gradientAvatarLetter}>{initial}</Text>
+          </View>
+          <Text style={styles.gradientName}>{displayName || 'Usuário'}</Text>
+          <Text style={styles.gradientEmail}>{email}</Text>
+          <View style={[
+            styles.gradientPlanBadge,
+            isPaidPlan && { backgroundColor: 'rgba(245,158,11,0.25)' },
+          ]}>
+            {isPaidPlan && <Crown size={12} color="#fde68a" />}
+            <Text style={[
+              styles.gradientPlanText,
+              isPaidPlan && { color: '#fde68a' },
+            ]}>
+              {isPaidPlan ? `Poup ${planLabel}` : `Plano ${planLabel}`}
             </Text>
           </View>
-
-          <View style={styles.headerInfo}>
-            <View style={styles.nameRow}>
-              <Text
-                style={[styles.displayName, { color: tokens.textPrimary }]}
-                numberOfLines={1}
-              >
-                {displayName || 'Usuário'}
-              </Text>
-
-              {/* Plan badge */}
-              {isPaidPlan ? (
-                <View style={[styles.badge, { backgroundColor: tokens.accentSoft }]}>
-                  <Crown size={12} color={tokens.warning} />
-                  <Text style={[styles.badgeText, { color: tokens.warning }]}>
-                    {planLabel}
-                  </Text>
-                </View>
-              ) : (
-                <View
-                  style={[
-                    styles.badge,
-                    styles.badgeOutline,
-                    { borderColor: tokens.primary },
-                  ]}
-                >
-                  <Text style={[styles.badgeText, { color: tokens.primary }]}>
-                    GRÁTIS
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            <Text
-              style={[styles.email, { color: tokens.textSecondary }]}
-              numberOfLines={1}
-            >
-              {email}
-            </Text>
-          </View>
-        </View>
+        </LinearGradient>
 
         {/* ----------------------------------------------------------------- */}
         {/* Upgrade CTA / Plan management                                     */}
         {/* ----------------------------------------------------------------- */}
-        <CouponLine style={styles.couponLine} />
-
         {isPaidPlan ? (
           /* Plan management info for Plus/Family subscribers */
           <View
@@ -395,105 +361,105 @@ export default function AccountScreen() {
           </Pressable>
         )}
 
-        <SectionDivider style={{ marginVertical: 8 }} />
-
         {/* ----------------------------------------------------------------- */}
         {/* PREFERÊNCIAS                                                      */}
         {/* ----------------------------------------------------------------- */}
         <SectionHeader title="PREFERÊNCIAS" tokens={tokens} />
 
-        <SettingsRow
-          icon={Bell}
-          iconColor={tokens.primary}
-          label="Alertas de oferta"
-          value={`${alertCount} ativo${alertCount !== 1 ? 's' : ''}`}
-          onPress={handleOpenAlerts}
-          tokens={tokens}
-        />
-
-        <SettingsRow
-          icon={MapPin}
-          iconColor={tokens.primary}
-          label="Localização"
-          value={locationDisplay}
-          onPress={handleOpenLocation}
-          tokens={tokens}
-        />
-
-        <SettingsRow
-          icon={Store}
-          iconColor={tokens.primary}
-          label="Meus favoritos"
-          value={`${favoriteCount} produto${favoriteCount !== 1 ? 's' : ''}`}
-          onPress={handleOpenFavorites}
-          tokens={tokens}
-        />
-
-        <SectionDivider style={{ marginVertical: 8 }} />
+        <View style={[styles.sectionCard, { backgroundColor: tokens.surface, borderColor: tokens.border }]}>
+          <SettingsRow
+            icon={Bell}
+            iconColor={tokens.primary}
+            label="Alertas de oferta"
+            value={`${alertCount} ativo${alertCount !== 1 ? 's' : ''}`}
+            onPress={handleOpenAlerts}
+            tokens={tokens}
+          />
+          <SettingsRow
+            icon={MapPin}
+            iconColor={tokens.primary}
+            label="Localização"
+            value={locationDisplay}
+            onPress={handleOpenLocation}
+            tokens={tokens}
+          />
+          <SettingsRow
+            icon={Store}
+            iconColor={tokens.primary}
+            label="Meus favoritos"
+            value={`${favoriteCount} produto${favoriteCount !== 1 ? 's' : ''}`}
+            onPress={handleOpenFavorites}
+            tokens={tokens}
+            last
+          />
+        </View>
 
         {/* ----------------------------------------------------------------- */}
         {/* CONTA                                                             */}
         {/* ----------------------------------------------------------------- */}
         <SectionHeader title="CONTA" tokens={tokens} />
 
-        <SettingsRow
-          icon={Lock}
-          iconColor={tokens.primary}
-          label="Alterar senha"
-          onPress={handleResetPassword}
-          tokens={tokens}
-        />
-
-        <SettingsRow
-          icon={FileDown}
-          iconColor={tokens.primary}
-          label={isExporting ? 'Exportando...' : 'Exportar meus dados'}
-          onPress={handleExportData}
-          tokens={tokens}
-        />
-
-        <SettingsRow
-          icon={Trash2}
-          iconColor={tokens.danger}
-          label="Excluir conta"
-          labelColor={tokens.danger}
-          onPress={handleDeleteAccount}
-          tokens={tokens}
-        />
-
-        <SectionDivider style={{ marginVertical: 8 }} />
+        <View style={[styles.sectionCard, { backgroundColor: tokens.surface, borderColor: tokens.border }]}>
+          <SettingsRow
+            icon={Lock}
+            iconColor={tokens.primary}
+            label="Alterar senha"
+            onPress={handleResetPassword}
+            tokens={tokens}
+          />
+          <SettingsRow
+            icon={FileDown}
+            iconColor={tokens.primary}
+            label={isExporting ? 'Exportando...' : 'Exportar meus dados'}
+            onPress={handleExportData}
+            tokens={tokens}
+          />
+          <SettingsRow
+            icon={Trash2}
+            iconColor={tokens.danger}
+            label="Excluir conta"
+            labelColor={tokens.danger}
+            onPress={handleDeleteAccount}
+            tokens={tokens}
+            last
+          />
+        </View>
 
         {/* ----------------------------------------------------------------- */}
         {/* ASSINATURA                                                        */}
         {/* ----------------------------------------------------------------- */}
         <SectionHeader title="ASSINATURA" tokens={tokens} />
 
-        <SettingsRow
-          icon={CreditCard}
-          iconColor={tokens.primary}
-          label="Plano atual"
-          value={planLabel}
-          onPress={isPaidPlan ? undefined : handleOpenPaywall}
-          tokens={tokens}
-        />
+        <View style={[styles.sectionCard, { backgroundColor: tokens.surface, borderColor: tokens.border }]}>
+          <SettingsRow
+            icon={CreditCard}
+            iconColor={tokens.primary}
+            label="Plano atual"
+            value={planLabel}
+            onPress={isPaidPlan ? undefined : handleOpenPaywall}
+            tokens={tokens}
+          />
+          <SettingsRow
+            icon={FileText}
+            iconColor={tokens.primary}
+            label="Termos de uso"
+            onPress={handleOpenTerms}
+            tokens={tokens}
+            last
+          />
+        </View>
 
-        <SettingsRow
-          icon={FileText}
-          iconColor={tokens.primary}
-          label="Termos de uso"
-          onPress={handleOpenTerms}
-          tokens={tokens}
-        />
-
-        <SectionDivider style={{ marginVertical: 8 }} />
-
-        <SettingsRow
-          icon={LogOut}
-          iconColor={tokens.textSecondary}
-          label="Sair"
-          onPress={handleSignOut}
-          tokens={tokens}
-        />
+        {/* Sair */}
+        <View style={[styles.sectionCard, { backgroundColor: tokens.surface, borderColor: tokens.border, marginTop: 24 }]}>
+          <SettingsRow
+            icon={LogOut}
+            iconColor={tokens.textSecondary}
+            label="Sair"
+            onPress={handleSignOut}
+            tokens={tokens}
+            last
+          />
+        </View>
       </ScrollView>
 
       {/* Paywall modal */}
@@ -514,37 +480,59 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // -- Header ---------------------------------------------------------------
-  header: {
-    flexDirection: 'row',
+  // -- Gradient Header (mockup) ---------------------------------------------
+  gradientHeader: {
+    paddingTop: 58,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
   },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  gradientAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 10,
   },
-  avatarLetter: {
-    fontSize: 24,
+  gradientAvatarLetter: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  gradientName: {
+    fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
+    color: '#FFFFFF',
   },
-  headerInfo: {
-    flex: 1,
-    marginLeft: 14,
+  gradientEmail: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.65)',
+    marginTop: 2,
   },
-  nameRow: {
+  gradientPlanBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  gradientPlanText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   displayName: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
     flexShrink: 1,
   },
   email: {
@@ -571,11 +559,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // -- Coupon line ----------------------------------------------------------
-  couponLine: {
-    marginHorizontal: 16,
-  },
-
   // -- Upgrade card ---------------------------------------------------------
   upgradeCard: {
     marginHorizontal: 16,
@@ -591,6 +574,7 @@ const styles = StyleSheet.create({
   upgradeTitle: {
     fontSize: 17,
     fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
   },
   upgradeHighlights: {
     gap: 6,
@@ -626,6 +610,7 @@ const styles = StyleSheet.create({
   planCardTitle: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
   },
   planCardDesc: {
     fontSize: 13,
@@ -643,6 +628,14 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
 
+  // -- Section card ---------------------------------------------------------
+  sectionCard: {
+    marginHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    overflow: 'hidden',
+  },
+
   // -- Settings row ---------------------------------------------------------
   row: {
     flexDirection: 'row',
@@ -650,7 +643,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   rowLeft: {
     flexDirection: 'row',
@@ -659,8 +651,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rowLabel: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'Inter_500Medium',
   },
   rowRight: {
     flexDirection: 'row',

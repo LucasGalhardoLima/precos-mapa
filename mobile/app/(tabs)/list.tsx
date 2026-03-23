@@ -341,6 +341,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
   },
   headerCount: {
     fontSize: 13,
@@ -384,6 +385,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
     color: '#134E4A',
     textAlign: 'center',
     marginBottom: 8,

@@ -273,6 +273,9 @@ export default function HomeScreen() {
               <StoreCard
                 key={sw.store.id}
                 name={sw.store.name}
+                address={sw.store.address}
+                logoInitial={sw.store.logo_initial}
+                logoColor={sw.store.logo_color}
                 distanceKm={sw.distanceKm}
                 dealCount={sw.activePromotionCount}
                 isOpen
@@ -318,10 +321,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
   },
   sectionLink: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_500Medium',
   },
   // Category pills
   chipsScrollView: {

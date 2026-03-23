@@ -392,6 +392,7 @@ const styles = StyleSheet.create({
   screenTitle: {
     fontSize: 22,
     fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
   },
   addBtn: {
     width: 32,
@@ -419,6 +420,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 15,
     fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
   },
   redDot: {
     width: 8,

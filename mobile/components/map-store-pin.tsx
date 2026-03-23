@@ -4,13 +4,10 @@ import type { StoreWithPromotions } from '@/types';
 
 export type PinRank = 'green' | 'yellow' | 'red';
 
-const RANK_COLORS: Record<PinRank, string> = {
-  green: '#16A34A',
-  yellow: '#F59E0B',
-  red: '#EF4444',
-};
-
-const MEDAL_EMOJIS = ['🥇', '🥈', '🥉'];
+// Pin colors based on offer availability (matching mockup)
+const PIN_TEAL = '#0D9488';
+const PIN_GOLD = '#F59E0B';
+const PIN_GRAY = '#94A3B8';
 
 interface MapStorePinProps {
   storeData: StoreWithPromotions;
@@ -20,22 +17,24 @@ interface MapStorePinProps {
   onPress: () => void;
 }
 
+/**
+ * Determine pin color based on active promotion count:
+ * - teal: has offers (>= 10)
+ * - gold: few offers (1-9)
+ * - gray: no offers (0)
+ */
+function pinColorForOffers(count: number): string {
+  if (count >= 10) return PIN_TEAL;
+  if (count > 0) return PIN_GOLD;
+  return PIN_GRAY;
+}
+
 export function MapStorePin({
   storeData,
-  rank,
-  position,
   onPress,
 }: MapStorePinProps) {
-  const { store } = storeData;
-  const color = RANK_COLORS[rank];
-  const medalEmoji = position >= 1 && position <= 3 ? MEDAL_EMOJIS[position - 1] : null;
-  // Show abbreviated name: first word if short, or first word + initial of second
-  const words = store.name.split(' ');
-  const displayName = words.length === 1
-    ? words[0].substring(0, 6)
-    : words[0].length <= 5
-      ? words[0]
-      : words[0].substring(0, 5);
+  const { store, activePromotionCount } = storeData;
+  const color = pinColorForOffers(activePromotionCount);
 
   return (
     <Marker
@@ -44,16 +43,20 @@ export function MapStorePin({
       tracksViewChanges={false}
     >
       <View style={styles.container}>
-        {/* Pin bubble */}
-        <View style={[styles.pin, { backgroundColor: color }]}>
-          {medalEmoji !== null && (
-            <Text style={styles.medal}>{medalEmoji}</Text>
-          )}
-          <Text style={styles.initials}>{displayName}</Text>
+        {/* Teardrop pin with offer count */}
+        <View style={[styles.pinBody, { backgroundColor: color }]}>
+          <Text style={styles.pinCount}>{activePromotionCount}</Text>
         </View>
 
         {/* Downward triangle pointer */}
         <View style={[styles.arrow, { borderTopColor: color }]} />
+
+        {/* Store name label */}
+        <View style={styles.labelBg}>
+          <Text style={styles.labelText} numberOfLines={1}>
+            {store.name}
+          </Text>
+        </View>
       </View>
     </Marker>
   );
@@ -63,30 +66,25 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
   },
-  pin: {
-    flexDirection: 'row',
+  pinBody: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 10,
-    gap: 2,
-    minWidth: 38,
     justifyContent: 'center',
-    // Subtle shadow so pins read against the map
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  medal: {
-    fontSize: 11,
-    lineHeight: 14,
-  },
-  initials: {
+  pinCount: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
+    fontFamily: 'Inter_500Medium',
   },
   arrow: {
     width: 0,
@@ -96,5 +94,26 @@ const styles = StyleSheet.create({
     borderTopWidth: 6,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
+    marginTop: -1,
+  },
+  labelBg: {
+    marginTop: 2,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    maxWidth: 100,
+  },
+  labelText: {
+    fontSize: 9,
+    fontWeight: '700',
+    fontFamily: 'Inter_500Medium',
+    color: '#1A1A2E',
+    textAlign: 'center',
   },
 });

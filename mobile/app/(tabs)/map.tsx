@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import MapView, { type Region } from 'react-native-maps';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   MapPin,
   ListChecks,
@@ -132,11 +132,32 @@ export default function MapScreen() {
     [latitude, longitude],
   );
 
-  // Reset map to default zoom when tab gains focus
+  // Read storeId param (passed from Home when tapping a store card)
+  const { storeId } = useLocalSearchParams<{ storeId?: string }>();
+
+  // On focus: if storeId param is present, select that store and zoom to it;
+  // otherwise reset to default zoom.
   useFocusEffect(
     useCallback(() => {
+      if (storeId && stores.length > 0) {
+        const match = stores.find((s) => s.store.id === storeId);
+        if (match) {
+          setSelectedStore(match);
+          storeSheetRef.current?.snapToIndex(0);
+          mapRef.current?.animateToRegion(
+            {
+              latitude: match.store.latitude,
+              longitude: match.store.longitude,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            },
+            400,
+          );
+          return;
+        }
+      }
       mapRef.current?.animateToRegion(defaultRegion, 300);
-    }, [defaultRegion]),
+    }, [defaultRegion, storeId, stores]),
   );
 
   const [selectedStore, setSelectedStore] =
@@ -748,6 +769,7 @@ const styles = StyleSheet.create({
   listSheetTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
   },
   listSheetSubtitle: {
     fontSize: 13,
@@ -789,6 +811,7 @@ const styles = StyleSheet.create({
   storeName: {
     fontSize: 15,
     fontWeight: '700',
+    fontFamily: 'Inter_500Medium',
     flexShrink: 1,
   },
   cheapestBadge: {
@@ -814,6 +837,7 @@ const styles = StyleSheet.create({
   subtotalText: {
     fontSize: 18,
     fontWeight: '800',
+    fontFamily: 'Poppins_700Bold',
   },
   routeButton: {
     flexDirection: 'row',
