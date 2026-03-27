@@ -4,10 +4,13 @@ import type { StoreWithPromotions } from '@/types';
 
 export type PinRank = 'green' | 'yellow' | 'red';
 
-// Pin colors based on offer availability (matching mockup)
-const PIN_TEAL = '#0D9488';
-const PIN_GOLD = '#F59E0B';
-const PIN_GRAY = '#94A3B8';
+// Rank-based colors (matching mockup + legend)
+const RANK_COLORS: Record<PinRank, string> = {
+  green: '#0D9488',   // Teal — cheapest
+  yellow: '#F59E0B',  // Gold — medium
+  red: '#EF4444',     // Red — most expensive
+};
+const PIN_GRAY = '#94A3B8';  // No offers
 
 interface MapStorePinProps {
   storeData: StoreWithPromotions;
@@ -17,23 +20,25 @@ interface MapStorePinProps {
   selected?: boolean;
   /** Whether another store is selected (dim this pin) */
   dimmed?: boolean;
+  /** When defined, overrides count/color: teal if > 0, grey if 0 */
+  categoryOfferCount?: number;
   onPress: () => void;
-}
-
-function pinColorForOffers(count: number): string {
-  if (count >= 10) return PIN_TEAL;
-  if (count > 0) return PIN_GOLD;
-  return PIN_GRAY;
 }
 
 export function MapStorePin({
   storeData,
+  rank,
   selected = false,
   dimmed = false,
+  categoryOfferCount,
   onPress,
 }: MapStorePinProps) {
   const { store, activePromotionCount } = storeData;
-  const color = pinColorForOffers(activePromotionCount);
+  const isCategoryMode = categoryOfferCount !== undefined;
+  const displayCount = isCategoryMode ? categoryOfferCount : activePromotionCount;
+  const color = isCategoryMode
+    ? (displayCount === 0 ? PIN_GRAY : RANK_COLORS.green)
+    : (activePromotionCount === 0 ? PIN_GRAY : RANK_COLORS[rank]);
 
   return (
     <Marker
@@ -50,14 +55,14 @@ export function MapStorePin({
             selected && styles.pinSelected,
           ]}
         >
-          <Text style={styles.pinCount}>{activePromotionCount}</Text>
+          <Text style={styles.pinCount}>{displayCount}</Text>
         </View>
 
         {/* Downward triangle pointer */}
         <View style={[styles.arrow, { borderTopColor: color }]} />
 
-        {/* Store name label (shown always for selected, only when not dimmed otherwise) */}
-        {!dimmed && (
+        {/* Store name label (hidden when dimmed or category mode with 0 offers) */}
+        {!dimmed && !(isCategoryMode && displayCount === 0) && (
           <View style={styles.labelBg}>
             <Text style={styles.labelText} numberOfLines={1}>
               {store.name}

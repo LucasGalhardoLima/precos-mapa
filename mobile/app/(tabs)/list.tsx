@@ -5,11 +5,13 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ClipboardList, Plus, ChevronLeft, Zap } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ClipboardList, Plus, ChevronLeft, Zap, TrendingDown, Map } from 'lucide-react-native';
 
 import { useTheme } from '@/theme/use-theme';
 import { triggerHaptic } from '@/hooks/use-haptics';
@@ -24,7 +26,6 @@ import {
   ListTemplateCard,
   LIST_TEMPLATES,
 } from '@/components/list-template-card';
-import { OptimizationSummary } from '@/components/optimization-summary';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -40,6 +41,87 @@ interface OptimizationResult {
   totalCost: number;
   estimatedSavings: number;
   mapsUrl: string;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatBRL(value: number): string {
+  return `R$ ${value.toFixed(2).replace('.', ',')}`;
+}
+
+// ---------------------------------------------------------------------------
+// ListSummaryCard — teal gradient card
+// ---------------------------------------------------------------------------
+
+function ListSummaryCard({
+  totalCost,
+  estimatedSavings,
+  checkedCount,
+  totalCount,
+}: {
+  totalCost: number;
+  estimatedSavings: number;
+  checkedCount: number;
+  totalCount: number;
+}) {
+  return (
+    <LinearGradient
+      colors={['#0D9488', '#14B8A6']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.summaryCard}
+    >
+      <Text style={styles.summaryLabel}>ESTIMATIVA TOTAL (MENOR PREÇO)</Text>
+
+      <View style={styles.summaryRow}>
+        <Text style={styles.summaryPrice}>{formatBRL(totalCost)}</Text>
+        <Text style={styles.summaryChecked}>
+          {checkedCount}/{totalCount} comprados
+        </Text>
+      </View>
+
+      {estimatedSavings > 0 && (
+        <View style={styles.savingsRow}>
+          <TrendingDown size={12} color="#5EEAD4" strokeWidth={2} />
+          <Text style={styles.savingsText}>
+            Economize até {formatBRL(estimatedSavings)} comprando nos melhores
+            preços
+          </Text>
+        </View>
+      )}
+    </LinearGradient>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RouteBar — route optimization bar
+// ---------------------------------------------------------------------------
+
+function RouteBar({
+  storeCount,
+  mapsUrl,
+}: {
+  storeCount: number;
+  mapsUrl: string;
+}) {
+  return (
+    <Pressable
+      onPress={() => Linking.openURL(mapsUrl)}
+      style={styles.routeBar}
+    >
+      <View style={styles.routeIcon}>
+        <Map size={18} color="#0D9488" strokeWidth={2} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.routeTitle}>Rota otimizada disponível ›</Text>
+        <Text style={styles.routeDesc}>
+          {storeCount} {storeCount === 1 ? 'mercado' : 'mercados'}
+        </Text>
+      </View>
+    </Pressable>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -152,7 +234,7 @@ export default function ListScreen() {
           >
             {/* Icon */}
             <View style={styles.emptyIconWrap}>
-              <ClipboardList size={32} color="#0D9488" strokeWidth={1.5} />
+              <ClipboardList size={36} color="#0D9488" strokeWidth={1.5} />
             </View>
 
             {/* Copy */}
@@ -326,14 +408,22 @@ export default function ListScreen() {
             </View>
           </View>
 
-          {/* ── Optimization summary ── */}
+          {/* ── Summary card + route bar ── */}
           {optimization && optimization.stores.length > 0 && (
-            <OptimizationSummary
-              stores={optimization.stores}
-              totalCost={optimization.totalCost}
-              estimatedSavings={optimization.estimatedSavings}
-              itemCount={items.length}
-            />
+            <>
+              <ListSummaryCard
+                totalCost={optimization.totalCost}
+                estimatedSavings={optimization.estimatedSavings}
+                checkedCount={items.filter((i) => i.is_checked).length}
+                totalCount={items.length}
+              />
+              {optimization.mapsUrl ? (
+                <RouteBar
+                  storeCount={optimization.stores.length}
+                  mapsUrl={optimization.mapsUrl}
+                />
+              ) : null}
+            </>
           )}
 
           {/* ── Item list (individual cards) ── */}
@@ -377,6 +467,7 @@ export default function ListScreen() {
                       checked: item.is_checked,
                       price: cheapestPrice,
                       store_name: cheapestStoreName,
+                      isCheapest: false,
                     }}
                     onToggle={() => handleToggle(item.id, !item.is_checked)}
                     onRemove={() => handleRemove(item.id)}
@@ -452,7 +543,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
     fontFamily: 'Poppins_700Bold',
   },
@@ -473,6 +564,7 @@ const styles = StyleSheet.create({
   // ── Items list (individual cards) ────────────────────────────────────────
   itemsList: {
     paddingHorizontal: 16,
+    marginTop: 12,
   },
   itemCard: {
     borderRadius: 12,
@@ -492,16 +584,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
   },
   emptyIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(13,148,136,0.08)',
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: 'rgba(13,148,136,0.10)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 17,
+    fontSize: 20,
     fontWeight: '700',
     fontFamily: 'Poppins_700Bold',
     color: '#1A1A2E',
@@ -512,17 +604,17 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     textAlign: 'center',
     lineHeight: 20,
-    marginTop: 6,
+    marginTop: 8,
   },
   emptyButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     backgroundColor: '#0D9488',
-    borderRadius: 12,
+    borderRadius: 24,
     paddingHorizontal: 32,
-    paddingVertical: 13,
-    marginTop: 18,
+    paddingVertical: 14,
+    marginTop: 24,
   },
   emptyButtonText: {
     color: '#FFFFFF',
@@ -534,14 +626,14 @@ const styles = StyleSheet.create({
   // ── Suggested lists ────────────────────────────────────────────────────
   suggestedSection: {
     width: '100%',
-    marginTop: 28,
+    marginTop: 36,
   },
   suggestedTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     fontFamily: 'Poppins_700Bold',
     color: '#1A1A2E',
-    marginBottom: 10,
+    marginBottom: 12,
   },
 
   // ── List header bar (back + actions) ─────────────────────────────────────
@@ -699,6 +791,83 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#7C3AED',
+  },
+
+  // ── Summary card (teal gradient) ────────────────────────────────────────
+  summaryCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  summaryLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.65)',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  summaryPrice: {
+    fontSize: 22,
+    fontWeight: '800',
+    fontFamily: 'Poppins_700Bold',
+    color: '#FFFFFF',
+  },
+  summaryChecked: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.80)',
+  },
+  savingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+  },
+  savingsText: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.80)',
+  },
+
+  // ── Route optimization bar ────────────────────────────────────────────
+  routeBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 16,
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#5EEAD4',
+  },
+  routeIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(13,148,136,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  routeTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Inter_500Medium',
+    color: '#0D9488',
+  },
+  routeDesc: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 1,
   },
 
   // ── Upsell ───────────────────────────────────────────────────────────────

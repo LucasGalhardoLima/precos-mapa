@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import MapView, { type Region } from 'react-native-maps';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import {
   MapPin,
   ListChecks,
@@ -115,6 +115,7 @@ export default function MapScreen() {
   const { lists } = useShoppingList();
   const { categories } = useCategories();
   const { tokens } = useTheme();
+  const router = useRouter();
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -336,6 +337,15 @@ export default function MapScreen() {
     return map;
   }, [activeRanked]);
 
+  const categoryCountByStore = useMemo(() => {
+    if (!selectedCategory) return null;
+    const map = new Map<string, number>();
+    for (const s of stores) {
+      map.set(s.store.id, s.promotionCountByCategory?.[selectedCategory] ?? 0);
+    }
+    return map;
+  }, [stores, selectedCategory]);
+
   // (Selected store info is rendered inline in the floating card)
 
   // -------------------------------------------------------------------------
@@ -490,6 +500,9 @@ export default function MapScreen() {
           const position = info?.position ?? 0;
           const isSelected = selectedStore?.store.id === storeData.store.id;
           const isDimmed = selectedStore != null && !isSelected;
+          const categoryOfferCount = categoryCountByStore
+            ? categoryCountByStore.get(storeData.store.id)
+            : undefined;
 
           return (
             <MapStorePin
@@ -499,6 +512,7 @@ export default function MapScreen() {
               position={position}
               selected={isSelected}
               dimmed={isDimmed}
+              categoryOfferCount={categoryOfferCount}
               onPress={() => handleMarkerPress(storeData)}
             />
           );
@@ -567,7 +581,9 @@ export default function MapScreen() {
       {/* Category filter info pill */}
       {selectedCategory && !selectedStore && (() => {
         const catName = categories.find((c) => c.id === selectedCategory)?.name ?? '';
-        const storesWithOffers = stores.filter((s) => s.activePromotionCount > 0).length;
+        const storesWithOffers = categoryCountByStore
+          ? [...categoryCountByStore.values()].filter((c) => c > 0).length
+          : stores.filter((s) => s.activePromotionCount > 0).length;
         return (
           <View style={styles.filterInfoPill}>
             <Text style={styles.filterInfoCount}>{storesWithOffers}</Text>
@@ -586,16 +602,21 @@ export default function MapScreen() {
             </View>
             <View style={styles.floatingCardInfo}>
               <Text style={styles.floatingCardName} numberOfLines={1}>{selectedStore.store.name}</Text>
-              <Text style={styles.floatingCardAddr} numberOfLines={1}>{selectedStore.store.address}</Text>
+              <Text style={styles.floatingCardAddr} numberOfLines={1}>{selectedStore.store.address} — {selectedStore.store.city}</Text>
             </View>
           </View>
           <View style={styles.floatingCardTags}>
             <View style={styles.fcTagDist}><Text style={styles.fcTagDistText}>{selectedStore.distanceKm.toFixed(1)} km</Text></View>
-            <View style={styles.fcTagDeals}><Text style={styles.fcTagDealsText}>{selectedStore.activePromotionCount} ofertas</Text></View>
+            <View style={styles.fcTagDeals}><Text style={styles.fcTagDealsText}>{selectedCategory && selectedStore.promotionCountByCategory?.[selectedCategory] != null ? selectedStore.promotionCountByCategory[selectedCategory] : selectedStore.activePromotionCount} ofertas</Text></View>
             <View style={styles.fcTagOpen}><Text style={styles.fcTagOpenText}>Aberto</Text></View>
           </View>
           <View style={styles.floatingCardActions}>
-            <Pressable style={styles.fcBtnSecondary} onPress={() => {}}>
+            <Pressable style={styles.fcBtnSecondary} onPress={() => {
+              router.push({
+                pathname: '/(tabs)/search',
+                params: { storeId: selectedStore.store.id, storeName: selectedStore.store.name },
+              });
+            }}>
               <Eye size={14} color="#64748B" />
               <Text style={styles.fcBtnSecondaryText}>Ver ofertas</Text>
             </Pressable>
@@ -985,7 +1006,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   fcTagDist: {
-    backgroundColor: '#e0f2fe',
+    backgroundColor: '#CCFBF1',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -993,10 +1014,10 @@ const styles = StyleSheet.create({
   fcTagDistText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#0369a1',
+    color: '#0D9488',
   },
   fcTagDeals: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#FFE4E6',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -1004,7 +1025,7 @@ const styles = StyleSheet.create({
   fcTagDealsText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#92400e',
+    color: '#E11D48',
   },
   fcTagOpen: {
     backgroundColor: '#dcfce7',

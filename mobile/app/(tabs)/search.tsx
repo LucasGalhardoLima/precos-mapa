@@ -5,18 +5,26 @@ import {
   Text,
   Pressable,
   FlatList,
+  Alert,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search, X } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useTheme } from '@/theme/use-theme';
 import { triggerHaptic } from '@/hooks/use-haptics';
+import { triggerNotification } from '@/hooks/use-haptics';
+import { NotificationFeedbackType } from 'expo-haptics';
+import * as Burnt from 'burnt';
 import { usePromotions } from '@/hooks/use-promotions';
 import { useLocation } from '@/hooks/use-location';
 import { useRecentSearches } from '@/hooks/use-recent-searches';
+import { useCategories } from '@/hooks/use-categories';
+import { useTrending } from '@/hooks/use-trending';
+import { useShoppingList } from '@/hooks/use-shopping-list';
+import { useAuthStore } from '@poup/shared';
 import { SearchDiscovery } from '@/components/search-discovery';
 import { SearchResultCard } from '@/components/search-result-card';
 import { SearchSkeleton } from '@/components/skeleton/search-skeleton';
@@ -44,10 +52,16 @@ export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const { latitude, longitude } = useLocation();
   const { recentSearches, addSearch, clearSearches } = useRecentSearches();
+  const { categories } = useCategories();
+  const { trending, isLoading: isTrendingLoading } = useTrending();
+  const { lists, addItem, createList } = useShoppingList();
+
+  const { storeId, storeName } = useLocalSearchParams<{ storeId?: string; storeName?: string }>();
 
   // Local state
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
   const [sortMode, setSortMode] = useState<SortMode>('cheapest');
   const [paywallVisible, setPaywallVisible] = useState(false);
   const inputRef = useRef<TextInput>(null);
@@ -65,9 +79,11 @@ export default function SearchScreen() {
     };
   }, [query]);
 
-  // Fetch promotions only when we have a query
+  // Fetch promotions only when we have a query, category, or store filter
   const { promotions, isLoading, isEmpty } = usePromotions({
     productQuery: debouncedQuery || undefined,
+    categoryId,
+    storeId: storeId || undefined,
     sortMode,
     userLatitude: latitude,
     userLongitude: longitude,
@@ -88,6 +104,7 @@ export default function SearchScreen() {
   const clearQuery = useCallback(() => {
     setQuery('');
     setDebouncedQuery('');
+    setCategoryId(undefined);
   }, []);
 
   const submitSearch = useCallback((text: string) => {
@@ -100,36 +117,78 @@ export default function SearchScreen() {
   const handleSelectRecent = useCallback((recent: string) => {
     setQuery(recent);
     setDebouncedQuery(recent);
+    setCategoryId(undefined);
     triggerHaptic();
   }, []);
 
-  const handleSelectCategory = useCallback((categoryName: string) => {
-    setQuery(categoryName);
-    setDebouncedQuery(categoryName);
-    addSearch(categoryName);
+  const handleSelectCategory = useCallback((catId: string, catName: string) => {
+    setQuery(catName);
+    setDebouncedQuery(catName);
+    setCategoryId(catId);
+    addSearch(catName);
     triggerHaptic();
   }, [addSearch]);
 
-  const handleSelectTrending = useCallback((productName: string) => {
+  const handleSelectTrending = useCallback((productId: string, productName: string) => {
     setQuery(productName);
     setDebouncedQuery(productName);
+    setCategoryId(undefined);
     addSearch(productName);
     triggerHaptic();
   }, [addSearch]);
 
+  const handleAddToList = useCallback(async (promotion: EnrichedPromotion) => {
+    const session = useAuthStore.getState().session;
+    if (!session?.user) {
+      Alert.alert(
+        'Login necessário',
+        'Faça login para adicionar produtos à sua lista.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Entrar', onPress: () => router.push('/(tabs)/account') },
+        ],
+      );
+      return;
+    }
+
+    try {
+      let listId: string | null = null;
+      if (lists.length > 0) {
+        listId = lists[0].id;
+      } else {
+        listId = await createList('Minha lista');
+      }
+
+      if (!listId) {
+        Alert.alert('Erro', 'Não foi possível criar a lista.');
+        return;
+      }
+
+      await addItem(listId, promotion.product_id, 1, promotion.store_id);
+      triggerNotification(NotificationFeedbackType.Success);
+      Burnt.toast({
+        title: 'Adicionado à lista',
+        preset: 'done',
+        haptic: 'success',
+      });
+    } catch {
+      Alert.alert('Erro', 'Não foi possível adicionar à lista.');
+    }
+  }, [lists, addItem, createList, router]);
+
   // View state
-  const hasQuery = debouncedQuery.length > 0;
-  const showLoading = hasQuery && isLoading;
-  const showEmpty = hasQuery && !isLoading && isEmpty;
-  const showResults = hasQuery && !isLoading && !isEmpty;
-  const showDiscovery = !hasQuery;
+  const hasFilter = debouncedQuery.length > 0 || !!categoryId || !!storeId;
+  const showLoading = hasFilter && isLoading;
+  const showEmpty = hasFilter && !isLoading && isEmpty;
+  const showResults = hasFilter && !isLoading && !isEmpty;
+  const showDiscovery = !hasFilter;
 
   // Search bar style: focused (teal) when query is active
-  const searchBarStyle = hasQuery
+  const searchBarStyle = hasFilter
     ? [styles.searchBar, { backgroundColor: tokens.surface, borderColor: tokens.primary, borderWidth: 1.5 }]
     : [styles.searchBar, { backgroundColor: tokens.surface, borderColor: COLORS.border, borderWidth: 1 }];
 
-  const searchIconColor = hasQuery ? tokens.primary : COLORS.textMuted;
+  const searchIconColor = hasFilter ? tokens.primary : COLORS.textMuted;
 
   return (
     <View style={[styles.screen, { backgroundColor: tokens.bg }]}>
@@ -160,6 +219,18 @@ export default function SearchScreen() {
             </Pressable>
           )}
         </View>
+
+        {/* Store filter banner */}
+        {storeId && (
+          <View style={styles.storeFilterBanner}>
+            <Text style={styles.storeFilterText}>
+              Ofertas em <Text style={styles.storeFilterName}>{storeName}</Text>
+            </Text>
+            <Pressable onPress={() => router.setParams({ storeId: '', storeName: '' })} hitSlop={8}>
+              <X size={16} color="#64748B" />
+            </Pressable>
+          </View>
+        )}
 
         {/* Sort tabs — shown only when viewing results */}
         {showResults && (
@@ -209,6 +280,9 @@ export default function SearchScreen() {
             onClearRecents={clearSearches}
             onSelectCategory={handleSelectCategory}
             onSelectTrending={handleSelectTrending}
+            categories={categories}
+            trendingProducts={trending}
+            isTrendingLoading={isTrendingLoading}
           />
         )}
 
@@ -225,6 +299,7 @@ export default function SearchScreen() {
                 <SearchResultCard
                   promotion={item}
                   onPress={handlePressItem}
+                  onPressAdd={handleAddToList}
                   onPressLocked={handlePressLocked}
                   testID={`result-card-${index}`}
                 />
@@ -346,5 +421,25 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  storeFilterBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0FDFA',
+    marginHorizontal: 16,
+    marginTop: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+  },
+  storeFilterText: {
+    fontSize: 13,
+    color: '#0D9488',
+  },
+  storeFilterName: {
+    fontWeight: '700',
   },
 });

@@ -28,6 +28,7 @@ interface ListItemData {
   store_name?: string;
   store_color?: string;
   price?: number;
+  isCheapest?: boolean;
 }
 
 interface ListItemProps {
@@ -58,12 +59,18 @@ export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) 
 
   const quantityLabel =
     item.quantity != null
-      ? `${item.quantity}${item.unit ? ` ${item.unit}` : ''}`
+      ? `${item.quantity}${item.unit ? ` ${item.unit}` : 'un'}`
       : null;
 
-  const metaParts: string[] = [];
-  if (item.price != null) metaParts.push(formatBRL(item.price));
-  if (item.store_name) metaParts.push(item.store_name);
+  let metaText = '';
+  if (item.checked) {
+    metaText = item.store_name ? `${item.store_name} · Comprado` : 'Comprado';
+  } else if (item.price != null) {
+    metaText = `a partir de ${formatBRL(item.price)}`;
+    if (item.store_name) metaText += ` · ${item.store_name}`;
+  } else if (quantityLabel) {
+    metaText = quantityLabel;
+  }
 
   return (
     <MotiView
@@ -116,14 +123,17 @@ export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) 
             ]}
           >
             {item.product_name}
+            {item.isCheapest && !item.checked && (
+              <Text style={styles.cheapestBadge}>  Menor preço</Text>
+            )}
           </Text>
 
-          {(quantityLabel || metaParts.length > 0) && (
+          {metaText !== '' && (
             <Text
               numberOfLines={1}
               style={[styles.meta, { color: tokens.textHint }]}
             >
-              {[quantityLabel, ...metaParts].filter(Boolean).join(' · ')}
+              {metaText}
             </Text>
           )}
         </View>
@@ -186,6 +196,15 @@ const styles = StyleSheet.create({
   },
   strikethrough: {
     textDecorationLine: 'line-through',
+  },
+  cheapestBadge: {
+    fontSize: 8,
+    fontWeight: '700',
+    backgroundColor: '#dcfce7',
+    color: '#166534',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   meta: {
     fontSize: 12,

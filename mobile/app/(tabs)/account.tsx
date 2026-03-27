@@ -26,7 +26,7 @@ import {
   FileDown,
   LogOut,
   Check,
-  Sparkles,
+  TrendingDown,
 } from 'lucide-react-native';
 
 import { useTheme } from '@/theme/use-theme';
@@ -35,6 +35,7 @@ import { useFavorites } from '@/hooks/use-favorites';
 import { useAlerts } from '@/hooks/use-alerts';
 import { useSubscription } from '@/hooks/use-subscription';
 import { useAccount } from '@/hooks/use-account';
+import { useShoppingList } from '@/hooks/use-shopping-list';
 import { supabase } from '@/lib/supabase';
 import { Paywall } from '@/components/paywall';
 import type { LucideIcon } from 'lucide-react-native';
@@ -74,6 +75,81 @@ function getPlanLabel(plan: string): string {
     default:
       return 'FREE';
   }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatBRL(value: number): string {
+  return `R$ ${value.toFixed(2).replace('.', ',')}`;
+}
+
+function getMonthLabel(): string {
+  const months = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+  ];
+  const now = new Date();
+  return `${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+
+// ---------------------------------------------------------------------------
+// SavingsCard — "Sua economia" (matches mockup)
+// ---------------------------------------------------------------------------
+
+function SavingsCard({
+  savings,
+  isPlus,
+  tokens,
+}: {
+  savings: number;
+  isPlus: boolean;
+  tokens: ReturnType<typeof useTheme>['tokens'];
+}) {
+  return (
+    <View
+      style={[
+        acctStyles.savingsCard,
+        { backgroundColor: tokens.surface, borderColor: tokens.border },
+      ]}
+    >
+      <View style={acctStyles.savingsHeader}>
+        <Text style={[acctStyles.savingsLabel, { color: tokens.textSecondary }]}>
+          Sua economia
+        </Text>
+        <Text style={[acctStyles.savingsMonth, { color: tokens.textHint }]}>
+          {getMonthLabel()}
+        </Text>
+      </View>
+
+      <Text style={acctStyles.savingsAmount}>{formatBRL(savings)}</Text>
+
+      <View style={acctStyles.savingsSubRow}>
+        <TrendingDown size={12} color="#0D9488" strokeWidth={2} />
+        <Text style={[acctStyles.savingsSubText, { color: tokens.textSecondary }]}>
+          economizados usando o Poup
+        </Text>
+      </View>
+
+      {/* Mini bar chart placeholder */}
+      <View style={acctStyles.chartRow}>
+        {[0.3, 0.5, 0.8, 0.6, 1.0].map((h, i) => (
+          <View key={i} style={acctStyles.chartBarWrap}>
+            <View
+              style={[
+                acctStyles.chartBar,
+                {
+                  height: 28 * h,
+                  backgroundColor: i === 4 ? '#0D9488' : '#CCFBF1',
+                },
+              ]}
+            />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -162,6 +238,15 @@ export default function AccountScreen() {
   const { count: alertCount } = useAlerts();
   const { plan, isPlus } = useSubscription();
   const { exportData, deleteAccount, isExporting } = useAccount();
+  const { lists } = useShoppingList();
+
+  // Estimated savings: count checked items × average savings estimate
+  // Real savings tracking requires backend — use an approximation for now
+  const checkedItemCount = lists.reduce(
+    (sum, list) => sum + list.items.filter((i) => i.is_checked).length,
+    0,
+  );
+  const estimatedSavings = checkedItemCount * 3.5;
 
   const [paywallVisible, setPaywallVisible] = useState(false);
 
@@ -310,6 +395,11 @@ export default function AccountScreen() {
         </LinearGradient>
 
         {/* ----------------------------------------------------------------- */}
+        {/* Sua economia (savings card — matches mockup)                      */}
+        {/* ----------------------------------------------------------------- */}
+        <SavingsCard savings={estimatedSavings} isPlus={isPaidPlan} tokens={tokens} />
+
+        {/* ----------------------------------------------------------------- */}
         {/* Upgrade CTA / Plan management                                     */}
         {/* ----------------------------------------------------------------- */}
         {isPaidPlan ? (
@@ -332,33 +422,23 @@ export default function AccountScreen() {
             </Text>
           </View>
         ) : (
-          /* Upgrade CTA card for free users */
-          <Pressable
-            style={[styles.upgradeCard, { backgroundColor: tokens.accentSoft }]}
-            onPress={handleOpenPaywall}
-          >
-            <View style={styles.upgradeCardHeader}>
-              <Sparkles size={22} color={tokens.warning} />
-              <Text style={[styles.upgradeTitle, { color: tokens.warning }]}>
-                Upgrade para Plus
-              </Text>
-            </View>
-
-            <View style={styles.upgradeHighlights}>
-              {PLUS_HIGHLIGHTS.map((text) => (
-                <View key={text} style={styles.highlightRow}>
-                  <Check size={14} color={tokens.warning} />
-                  <Text style={[styles.highlightText, { color: tokens.textPrimary }]}>
-                    {text}
-                  </Text>
-                </View>
-              ))}
-            </View>
-
-            <Text style={[styles.upgradeTeaser, { color: tokens.warning }]}>
-              {'7 dias grátis \u2192'}
+          /* Upgrade CTA card for free users (matches mockup "Poup Plus" card) */
+          <View style={[styles.upgradeCard, { backgroundColor: '#7C3AED' }]}>
+            <Text style={styles.upgradePoupLabel}>Poup Plus</Text>
+            <Text style={styles.upgradeHeadline}>Economize ainda mais</Text>
+            <Text style={styles.upgradeDesc}>
+              Todos os mercados, listas ilimitadas, histórico de 30 dias, alertas
+              avançados e análise de economia.
             </Text>
-          </Pressable>
+            <Pressable
+              style={styles.upgradeCta}
+              onPress={handleOpenPaywall}
+            >
+              <Text style={styles.upgradeCtaText}>
+                {'Conhecer o Poup Plus \u2192'}
+              </Text>
+            </Pressable>
+          </View>
         )}
 
         {/* ----------------------------------------------------------------- */}
@@ -559,39 +639,45 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // -- Upgrade card ---------------------------------------------------------
+  // -- Upgrade card (purple "Poup Plus" card — matches mockup) ---------------
   upgradeCard: {
     marginHorizontal: 16,
+    marginTop: 16,
     borderRadius: 16,
-    padding: 16,
+    padding: 18,
   },
-  upgradeCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
+  upgradePoupLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.60)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  upgradeTitle: {
-    fontSize: 17,
+  upgradeHeadline: {
+    fontSize: 18,
     fontWeight: '700',
     fontFamily: 'Poppins_700Bold',
+    color: '#FFFFFF',
+    marginTop: 4,
   },
-  upgradeHighlights: {
-    gap: 6,
-    marginBottom: 12,
+  upgradeDesc: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: 6,
   },
-  highlightRow: {
-    flexDirection: 'row',
+  upgradeCta: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 12,
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    marginTop: 14,
   },
-  highlightText: {
-    fontSize: 14,
-  },
-  upgradeTeaser: {
+  upgradeCtaText: {
     fontSize: 14,
     fontWeight: '700',
-    textAlign: 'right',
+    color: '#7C3AED',
   },
 
   // -- Plan management card -------------------------------------------------
@@ -662,5 +748,62 @@ const styles = StyleSheet.create({
   },
   rowValue: {
     fontSize: 13,
+  },
+});
+
+// Savings card styles (separate to avoid StyleSheet reference issues)
+const acctStyles = StyleSheet.create({
+  savingsCard: {
+    marginHorizontal: 16,
+    marginTop: -12,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    padding: 16,
+  },
+  savingsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  savingsLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  savingsMonth: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  savingsAmount: {
+    fontSize: 28,
+    fontWeight: '800',
+    fontFamily: 'Poppins_700Bold',
+    color: '#0D9488',
+  },
+  savingsSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  savingsSubText: {
+    fontSize: 11,
+  },
+  chartRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 6,
+    marginTop: 14,
+    height: 28,
+  },
+  chartBarWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    height: 28,
+  },
+  chartBar: {
+    width: '100%',
+    borderRadius: 4,
   },
 });

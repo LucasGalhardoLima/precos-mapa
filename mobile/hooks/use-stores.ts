@@ -78,11 +78,18 @@ export function useStores(params: UseStoresParams) {
         .sort((a, b) => b.discountPercent - a.discountPercent)
         .slice(0, 5);
 
+      const countByCategory: Record<string, number> = {};
+      for (const promo of storePromos) {
+        const catId = promo.product.category_id;
+        countByCategory[catId] = (countByCategory[catId] ?? 0) + 1;
+      }
+
       return {
         store: store as Store,
         activePromotionCount: storePromos.length,
         topDeals,
         distanceKm,
+        promotionCountByCategory: countByCategory,
       };
     });
   }, [raw, userLatitude, userLongitude]);

@@ -10,6 +10,7 @@ interface UsePromotionsParams {
   query?: string;
   productQuery?: string;
   categoryId?: string;
+  storeId?: string;
   sortMode?: SortMode;
   userLatitude: number;
   userLongitude: number;
@@ -87,6 +88,7 @@ export function usePromotions(params: UsePromotionsParams) {
     query,
     productQuery,
     categoryId,
+    storeId,
     sortMode = 'cheapest',
     userLatitude,
     userLongitude,
@@ -113,11 +115,15 @@ export function usePromotions(params: UsePromotionsParams) {
       q = q.eq('product.category_id', categoryId);
     }
 
+    if (storeId) {
+      q = q.eq('store_id', storeId);
+    }
+
     const { data } = await q.order('promo_price', { ascending: true });
 
     if (data) setRaw(data as PromotionWithRelations[]);
     setIsLoading(false);
-  }, [query, productQuery, categoryId]);
+  }, [query, productQuery, categoryId, storeId]);
 
   useEffect(() => {
     fetchPromotions();
