@@ -115,6 +115,9 @@ export interface UserAlert {
   target_price: number | null;
   radius_km: number;
   is_active: boolean;
+  triggered_at: string | null;
+  triggered_price: number | null;
+  triggered_store_id: string | null;
   created_at: string;
 }
 
@@ -190,6 +193,7 @@ export interface StoreWithPromotions {
   activePromotionCount: number;
   topDeals: EnrichedPromotion[];
   distanceKm: number;
+  promotionCountByCategory?: Record<string, number>;
 }
 
 /** Favorite with joined product and active promotions */
@@ -199,9 +203,10 @@ export interface FavoriteWithProduct extends UserFavorite {
   };
 }
 
-/** Alert with joined product */
+/** Alert with joined product and optional triggered store */
 export interface AlertWithProduct extends UserAlert {
   product: Product;
+  triggered_store?: Pick<Store, 'id' | 'name'> | null;
 }
 
 // =============================================================================

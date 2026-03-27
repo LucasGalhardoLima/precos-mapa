@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
   // Also check alerts with target price
   const { data: matchingAlerts } = await supabase
     .from('user_alerts')
-    .select('user_id, target_price, profiles!inner(push_token)')
+    .select('id, user_id, target_price, profiles!inner(push_token)')
     .eq('product_id', promotion.product_id)
     .eq('is_active', true)
     .not('profiles.push_token', 'is', null);
@@ -73,14 +73,29 @@ Deno.serve(async (req) => {
     if (token) tokenMap.set(fav.user_id, token);
   }
 
+  const triggeredAlertIds: string[] = [];
+
   if (matchingAlerts) {
     for (const alert of matchingAlerts) {
       // Only notify if price meets target (or no target set)
       if (!alert.target_price || promotion.promo_price <= alert.target_price) {
         const token = (alert as unknown as { profiles?: { push_token?: string } }).profiles?.push_token;
         if (token) tokenMap.set(alert.user_id, token);
+        triggeredAlertIds.push(alert.id);
       }
     }
+  }
+
+  // Record trigger data on matched alerts
+  if (triggeredAlertIds.length > 0) {
+    await supabase
+      .from('user_alerts')
+      .update({
+        triggered_at: new Date().toISOString(),
+        triggered_price: promotion.promo_price,
+        triggered_store_id: promotion.store_id,
+      })
+      .in('id', triggeredAlertIds);
   }
 
   const discount = Math.round(
