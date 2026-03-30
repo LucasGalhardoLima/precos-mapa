@@ -5,11 +5,13 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Edit3, Plus } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ClipboardList, Plus, ChevronLeft, Zap, TrendingDown, Map } from 'lucide-react-native';
 
 import { useTheme } from '@/theme/use-theme';
 import { triggerHaptic } from '@/hooks/use-haptics';
@@ -24,7 +26,7 @@ import {
   ListTemplateCard,
   LIST_TEMPLATES,
 } from '@/components/list-template-card';
-import { OptimizationSummary } from '@/components/optimization-summary';
+import { InlineError } from '@/components/inline-error';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,6 +45,87 @@ interface OptimizationResult {
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatBRL(value: number): string {
+  return `R$ ${value.toFixed(2).replace('.', ',')}`;
+}
+
+// ---------------------------------------------------------------------------
+// ListSummaryCard — teal gradient card
+// ---------------------------------------------------------------------------
+
+function ListSummaryCard({
+  totalCost,
+  estimatedSavings,
+  checkedCount,
+  totalCount,
+}: {
+  totalCost: number;
+  estimatedSavings: number;
+  checkedCount: number;
+  totalCount: number;
+}) {
+  return (
+    <LinearGradient
+      colors={['#0D9488', '#14B8A6']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.summaryCard}
+    >
+      <Text style={styles.summaryLabel}>ESTIMATIVA TOTAL (MENOR PREÇO)</Text>
+
+      <View style={styles.summaryRow}>
+        <Text style={styles.summaryPrice}>{formatBRL(totalCost)}</Text>
+        <Text style={styles.summaryChecked}>
+          {checkedCount}/{totalCount} comprados
+        </Text>
+      </View>
+
+      {estimatedSavings > 0 && (
+        <View style={styles.savingsRow}>
+          <TrendingDown size={12} color="#5EEAD4" strokeWidth={2} />
+          <Text style={styles.savingsText}>
+            Economize até {formatBRL(estimatedSavings)} comprando nos melhores
+            preços
+          </Text>
+        </View>
+      )}
+    </LinearGradient>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RouteBar — route optimization bar
+// ---------------------------------------------------------------------------
+
+function RouteBar({
+  storeCount,
+  mapsUrl,
+}: {
+  storeCount: number;
+  mapsUrl: string;
+}) {
+  return (
+    <Pressable
+      onPress={() => Linking.openURL(mapsUrl)}
+      style={styles.routeBar}
+    >
+      <View style={styles.routeIcon}>
+        <Map size={18} color="#0D9488" strokeWidth={2} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.routeTitle}>Rota otimizada disponível ›</Text>
+        <Text style={styles.routeDesc}>
+          {storeCount} {storeCount === 1 ? 'mercado' : 'mercados'}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -56,9 +139,11 @@ export default function ListScreen() {
   const {
     lists,
     isLoading,
+    error,
     toggleItem,
     removeItem,
     optimizeList,
+    refresh,
   } = useShoppingList();
 
   // Local state
@@ -66,9 +151,12 @@ export default function ListScreen() {
     null,
   );
   const [paywallVisible, setPaywallVisible] = useState(false);
+  const [selectedListId, setSelectedListId] = useState<string | null>(null);
 
-  // First list is the default
-  const list = lists[0] ?? null;
+  // Selected list (or first list when drilling down)
+  const list = selectedListId
+    ? lists.find((l) => l.id === selectedListId) ?? null
+    : lists[0] ?? null;
   const items = list?.items ?? [];
 
   // Run optimization when list or location changes
@@ -119,6 +207,22 @@ export default function ListScreen() {
   const isFreeUser = profile?.b2c_plan === 'free';
 
   // ---------------------------------------------------------------------------
+  // Error state
+  // ---------------------------------------------------------------------------
+
+  if (error) {
+    return (
+      <View style={[styles.screen, { backgroundColor: tokens.bg }]}>
+        <SafeAreaView edges={['top']} style={styles.flex}>
+          <View style={styles.errorContainer}>
+            <InlineError onRetry={refresh} message="Não foi possível carregar listas. Tentar novamente?" />
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // Loading state
   // ---------------------------------------------------------------------------
 
@@ -149,15 +253,15 @@ export default function ListScreen() {
           >
             {/* Icon */}
             <View style={styles.emptyIconWrap}>
-              <Edit3 size={36} color="#0D9488" />
+              <ClipboardList size={36} color="#0D9488" strokeWidth={1.5} />
             </View>
 
             {/* Copy */}
             <Text style={styles.emptyTitle}>
-              Monte sua lista de compras
+              Crie sua primeira lista
             </Text>
             <Text style={styles.emptySubtitle}>
-              Adicione itens e descubra onde comprar tudo pelo menor preço.
+              Monte sua lista de compras e descubra onde encontrar tudo mais barato
             </Text>
 
             {/* CTA */}
@@ -165,21 +269,17 @@ export default function ListScreen() {
               onPress={handleAddItem}
               style={styles.emptyButton}
             >
-              <Plus size={16} color="#FFFFFF" />
-              <Text style={styles.emptyButtonText}>Adicionar itens</Text>
+              <Plus size={18} color="#FFFFFF" strokeWidth={2} />
+              <Text style={styles.emptyButtonText}>Nova lista</Text>
             </Pressable>
 
-            {/* Template cards */}
-            <Text style={styles.templatesLabel}>Começar com um modelo</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.templatesScroll}
-            >
+            {/* Suggested lists — vertical cards */}
+            <View style={styles.suggestedSection}>
+              <Text style={styles.suggestedTitle}>Listas sugeridas</Text>
               {LIST_TEMPLATES.map((template) => (
                 <ListTemplateCard key={template.id} template={template} />
               ))}
-            </ScrollView>
+            </View>
           </ScrollView>
         </SafeAreaView>
       </View>
@@ -187,7 +287,109 @@ export default function ListScreen() {
   }
 
   // ---------------------------------------------------------------------------
-  // Main list view
+  // "Minhas Listas" overview (when lists exist but none is selected)
+  // ---------------------------------------------------------------------------
+
+  if (lists.length > 0 && !selectedListId) {
+    const FREE_LIST_LIMIT = 3;
+    const remaining = FREE_LIST_LIMIT - lists.length;
+
+    return (
+      <View style={[styles.screen, { backgroundColor: tokens.bg }]}>
+        <SafeAreaView edges={['top']} style={styles.flex}>
+          <ScrollView
+            contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Title */}
+            <View style={styles.overviewHeader}>
+              <Text style={styles.overviewTitle}>Minhas Listas</Text>
+              <Text style={styles.overviewSubtitle}>
+                {lists.length} de {FREE_LIST_LIMIT} listas ·{' '}
+                <Text style={{ color: '#0D9488', fontWeight: '600' }}>
+                  {isFreeUser ? 'Plano Grátis' : 'Poup Plus'}
+                </Text>
+              </Text>
+            </View>
+
+            {/* List cards */}
+            <View style={styles.overviewCards}>
+              {lists.map((l) => {
+                const total = l.items.length;
+                const checked = l.items.filter((i) => i.is_checked).length;
+                const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
+
+                return (
+                  <Pressable
+                    key={l.id}
+                    onPress={() => setSelectedListId(l.id)}
+                    style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                  >
+                    <View style={styles.overviewCard}>
+                      <View style={styles.overviewCardTop}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.overviewCardName}>{l.name || 'Minha Lista'}</Text>
+                          <Text style={styles.overviewCardMeta}>
+                            {total} {total === 1 ? 'item' : 'itens'} · {checked} comprados
+                          </Text>
+                        </View>
+                        <Text style={styles.overviewCardPrice}>R$ 89,42</Text>
+                      </View>
+                      <View style={styles.overviewProgressBg}>
+                        <View style={[styles.overviewProgressFill, { width: `${pct}%` }]} />
+                      </View>
+                      <View style={styles.overviewCardBottom}>
+                        <Text style={styles.overviewCardPct}>{pct}% comprado</Text>
+                        <Text style={styles.overviewCardDate}>Atualizado hoje</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              })}
+
+              {/* "+ Nova lista" dashed card */}
+              {isFreeUser && (
+                <Pressable onPress={handleAddItem}>
+                  <View style={styles.newListCard}>
+                    <Text style={styles.newListText}>+ Nova lista</Text>
+                    <Text style={styles.newListSub}>
+                      {remaining > 0
+                        ? `${remaining} lista${remaining !== 1 ? 's' : ''} restante${remaining !== 1 ? 's' : ''} no plano grátis`
+                        : 'Limite atingido no plano grátis'}
+                    </Text>
+                  </View>
+                </Pressable>
+              )}
+
+              {/* Plus upsell banner */}
+              {isFreeUser && (
+                <Pressable onPress={handleOpenPaywall}>
+                  <View style={styles.plusBanner}>
+                    <View style={styles.plusBannerIcon}>
+                      <Zap size={18} color="#FFFFFF" />
+                    </View>
+                    <View style={styles.plusBannerInfo}>
+                      <Text style={styles.plusBannerTitle}>Listas ilimitadas com Poup Plus</Text>
+                      <Text style={styles.plusBannerDesc}>+ Histórico, alertas avançados e mais</Text>
+                    </View>
+                    <Text style={styles.plusBannerArrow}>›</Text>
+                  </View>
+                </Pressable>
+              )}
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+
+        <Paywall
+          visible={paywallVisible}
+          onClose={() => setPaywallVisible(false)}
+        />
+      </View>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Main list view (detail)
   // ---------------------------------------------------------------------------
 
   return (
@@ -197,42 +399,54 @@ export default function ListScreen() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Header ── */}
+          {/* ── Header bar ── */}
+          {selectedListId && (
+            <View style={styles.listHeaderBar}>
+              <Pressable
+                onPress={() => setSelectedListId(null)}
+                style={styles.listBack}
+              >
+                <ChevronLeft size={18} color="#0D9488" strokeWidth={2.5} />
+                <Text style={styles.listBackText}>Minhas Listas</Text>
+              </Pressable>
+              <Pressable onPress={handleAddItem}>
+                <Plus size={20} color="#94A3B8" />
+              </Pressable>
+            </View>
+          )}
+
+          {/* ── Title ── */}
           <View style={styles.headerRow}>
             <View>
               <Text style={[styles.headerTitle, { color: tokens.textPrimary }]}>
-                Minha Lista
+                {list?.name || 'Minha Lista'}
               </Text>
               <Text style={styles.headerCount}>
-                {items.length} {items.length === 1 ? 'item' : 'itens'}
+                {items.length} {items.length === 1 ? 'item' : 'itens'} · Atualizado hoje
               </Text>
             </View>
-
-            <Pressable
-              onPress={handleAddItem}
-              style={styles.addButton}
-            >
-              <Plus size={18} color="#FFFFFF" />
-            </Pressable>
           </View>
 
-          {/* ── Optimization summary ── */}
+          {/* ── Summary card + route bar ── */}
           {optimization && optimization.stores.length > 0 && (
-            <OptimizationSummary
-              stores={optimization.stores}
-              totalCost={optimization.totalCost}
-              estimatedSavings={optimization.estimatedSavings}
-              itemCount={items.length}
-            />
+            <>
+              <ListSummaryCard
+                totalCost={optimization.totalCost}
+                estimatedSavings={optimization.estimatedSavings}
+                checkedCount={items.filter((i) => i.is_checked).length}
+                totalCount={items.length}
+              />
+              {optimization.mapsUrl ? (
+                <RouteBar
+                  storeCount={optimization.stores.length}
+                  mapsUrl={optimization.mapsUrl}
+                />
+              ) : null}
+            </>
           )}
 
-          {/* ── Item list ── */}
-          <View
-            style={[
-              styles.itemsCard,
-              { backgroundColor: tokens.surface, borderColor: tokens.border },
-            ]}
-          >
+          {/* ── Item list (individual cards) ── */}
+          <View style={styles.itemsList}>
             {items.map((item) => {
               // Resolve cheapest price and store from optimization result
               let cheapestPrice: number | undefined;
@@ -256,20 +470,29 @@ export default function ListScreen() {
               }
 
               return (
-                <ListItem
+                <View
                   key={item.id}
-                  item={{
-                    id: item.id,
-                    product_name: item.product?.name ?? 'Produto',
-                    quantity: item.quantity,
-                    checked: item.is_checked,
-                    price: cheapestPrice,
-                    store_name: cheapestStoreName,
-                  }}
-                  onToggle={() => handleToggle(item.id, !item.is_checked)}
-                  onRemove={() => handleRemove(item.id)}
-                  isLocked={false}
-                />
+                  style={[
+                    styles.itemCard,
+                    { backgroundColor: tokens.surface },
+                    item.is_checked && styles.itemCardChecked,
+                  ]}
+                >
+                  <ListItem
+                    item={{
+                      id: item.id,
+                      product_name: item.product?.name ?? 'Produto',
+                      quantity: item.quantity,
+                      checked: item.is_checked,
+                      price: cheapestPrice,
+                      store_name: cheapestStoreName,
+                      isCheapest: false,
+                    }}
+                    onToggle={() => handleToggle(item.id, !item.is_checked)}
+                    onRemove={() => handleRemove(item.id)}
+                    isLocked={false}
+                  />
+                </View>
               );
             })}
           </View>
@@ -328,6 +551,11 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 16,
+  },
 
   // ── Header ──────────────────────────────────────────────────────────────
   headerRow: {
@@ -339,8 +567,9 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
   },
   headerCount: {
     fontSize: 13,
@@ -356,72 +585,313 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ── Items card ──────────────────────────────────────────────────────────
-  itemsCard: {
-    marginHorizontal: 16,
+  // ── Items list (individual cards) ────────────────────────────────────────
+  itemsList: {
+    paddingHorizontal: 16,
+    marginTop: 12,
+  },
+  itemCard: {
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
+    borderColor: '#e8edf2',
     paddingHorizontal: 14,
     marginBottom: 8,
-    overflow: 'hidden',
+  },
+  itemCardChecked: {
+    opacity: 0.55,
   },
 
   // ── Empty state ─────────────────────────────────────────────────────────
   emptyScroll: {
     alignItems: 'center',
-    paddingTop: 56,
-    paddingHorizontal: 32,
+    paddingTop: 40,
+    paddingHorizontal: 30,
   },
   emptyIconWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#CCFBF1',
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: 'rgba(13,148,136,0.10)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#134E4A',
+    fontFamily: 'Poppins_700Bold',
+    color: '#1A1A2E',
     textAlign: 'center',
-    marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 13,
+    color: '#94A3B8',
     textAlign: 'center',
     lineHeight: 20,
+    marginTop: 8,
   },
   emptyButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     backgroundColor: '#0D9488',
-    borderRadius: 10,
-    paddingHorizontal: 24,
-    paddingVertical: 13,
+    borderRadius: 24,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
     marginTop: 24,
   },
   emptyButtonText: {
     color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'Inter_500Medium',
   },
 
-  // ── Template cards ───────────────────────────────────────────────────────
-  templatesLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginTop: 32,
-    marginBottom: 12,
-    alignSelf: 'flex-start',
+  // ── Suggested lists ────────────────────────────────────────────────────
+  suggestedSection: {
+    width: '100%',
+    marginTop: 36,
   },
-  templatesScroll: {
-    gap: 10,
-    paddingRight: 8,
+  suggestedTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
+    color: '#1A1A2E',
+    marginBottom: 12,
+  },
+
+  // ── List header bar (back + actions) ─────────────────────────────────────
+  listHeaderBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  listBack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  listBackText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Inter_500Medium',
+    color: '#0D9488',
+  },
+
+  // ── "Minhas Listas" overview ───────────────────────────────────────────
+  overviewHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 4,
+  },
+  overviewTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
+    color: '#1A1A2E',
+  },
+  overviewSubtitle: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+  overviewCards: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  overviewCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#e8edf2',
+    padding: 16,
+    marginBottom: 10,
+  },
+  overviewCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  overviewCardName: {
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: 'Inter_500Medium',
+    color: '#1A1A2E',
+  },
+  overviewCardMeta: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  overviewCardPrice: {
+    fontSize: 16,
+    fontWeight: '800',
+    fontFamily: 'Poppins_700Bold',
+    color: '#0D9488',
+  },
+  overviewProgressBg: {
+    height: 4,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 2,
+    marginTop: 12,
+  },
+  overviewProgressFill: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#0D9488',
+  },
+  overviewCardBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  overviewCardPct: {
+    fontSize: 10,
+    color: '#94A3B8',
+  },
+  overviewCardDate: {
+    fontSize: 10,
+    color: '#94A3B8',
+  },
+  newListCard: {
+    borderRadius: 14,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: '#d1d5db',
+    padding: 18,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  newListText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
+  newListSub: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+  plusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#f5f3ff',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#ddd6fe',
+    padding: 14,
+    marginBottom: 10,
+  },
+  plusBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#7C3AED',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  plusBannerInfo: {
+    flex: 1,
+  },
+  plusBannerTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Inter_500Medium',
+    color: '#7C3AED',
+  },
+  plusBannerDesc: {
+    fontSize: 10,
+    color: '#7C3AED',
+    opacity: 0.7,
+    marginTop: 2,
+  },
+  plusBannerArrow: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#7C3AED',
+  },
+
+  // ── Summary card (teal gradient) ────────────────────────────────────────
+  summaryCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  summaryLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.65)',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  summaryPrice: {
+    fontSize: 22,
+    fontWeight: '800',
+    fontFamily: 'Poppins_700Bold',
+    color: '#FFFFFF',
+  },
+  summaryChecked: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.80)',
+  },
+  savingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+  },
+  savingsText: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.80)',
+  },
+
+  // ── Route optimization bar ────────────────────────────────────────────
+  routeBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 16,
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#5EEAD4',
+  },
+  routeIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(13,148,136,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  routeTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Inter_500Medium',
+    color: '#0D9488',
+  },
+  routeDesc: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 1,
   },
 
   // ── Upsell ───────────────────────────────────────────────────────────────

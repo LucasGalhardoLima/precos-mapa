@@ -1,4 +1,3 @@
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -25,7 +24,12 @@ interface ProductRow {
   reference_price: number | null;
 }
 
-serve(async () => {
+Deno.serve(async (req) => {
+  const authHeader = req.headers.get('authorization');
+  if (authHeader !== `Bearer ${Deno.env.get('EDGE_FUNCTION_SECRET')}`) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
   try {
     const today = new Date().toISOString().slice(0, 10);
 

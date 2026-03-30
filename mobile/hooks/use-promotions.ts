@@ -4,16 +4,51 @@ import { useRealtime } from '@/hooks/use-realtime';
 import { getGamificationMessage } from '@/constants/messages';
 import { calculateDistanceKm } from '@/hooks/use-location';
 import { useAuthStore } from '@poup/shared';
-import type { PromotionWithRelations, EnrichedPromotion, SortMode } from '@/types';
+import type {
+  PromotionWithRelations,
+  EnrichedPromotion,
+  SortMode,
+  ProductWithPrices,
+  StorePrice,
+} from '@/types';
+
+// ---------------------------------------------------------------------------
+// Params
+// ---------------------------------------------------------------------------
 
 interface UsePromotionsParams {
   query?: string;
   productQuery?: string;
   categoryId?: string;
+  storeId?: string;
   sortMode?: SortMode;
   userLatitude: number;
   userLongitude: number;
+  /** 'store' groups cheapest per store (default); 'product' returns products with nested store prices */
+  groupBy?: 'store' | 'product';
+  /** Filter results to within this distance (km) */
+  maxDistanceKm?: number;
+  /** Filter results to products at or below this price */
+  maxPrice?: number;
 }
+
+// ---------------------------------------------------------------------------
+// Return type
+// ---------------------------------------------------------------------------
+
+interface UsePromotionsReturn {
+  promotions: EnrichedPromotion[];
+  /** Available only when groupBy === 'product' */
+  productResults: ProductWithPrices[];
+  isLoading: boolean;
+  isEmpty: boolean;
+  error: Error | null;
+  retry: () => void;
+}
+
+// ---------------------------------------------------------------------------
+// Enrichment helpers (store-grouped mode)
+// ---------------------------------------------------------------------------
 
 function enrichPromotion(
   promo: PromotionWithRelations,
@@ -42,6 +77,7 @@ function enrichPromotion(
 
   const bestPrice = bestPriceMap.get(promo.product_id) ?? promo.promo_price;
   const hasDiscount = promo.promo_price < promo.original_price;
+  const isHistoricLow = hasDiscount && promo.promo_price <= bestPrice && discountPercent >= 20;
 
   return {
     ...promo,
@@ -51,6 +87,7 @@ function enrichPromotion(
     distanceKm,
     isExpiringSoon,
     isBestPrice: hasDiscount && promo.promo_price <= bestPrice,
+    isHistoricLow,
     isLocked: false,
   };
 }
@@ -80,19 +117,75 @@ function sortPromotions(
   });
 }
 
-export function usePromotions(params: UsePromotionsParams) {
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
+
+export function usePromotions(params: UsePromotionsParams): UsePromotionsReturn {
   const [raw, setRaw] = useState<PromotionWithRelations[]>([]);
+  const [productRaw, setProductRaw] = useState<ProductWithPrices[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const {
     query,
     productQuery,
     categoryId,
+    storeId,
     sortMode = 'cheapest',
     userLatitude,
     userLongitude,
+    groupBy = 'store',
+    maxDistanceKm,
+    maxPrice,
   } = params;
 
-  const fetchPromotions = useCallback(async () => {
+  // ─── Product-grouped mode (RPC) ──────────────────────────────────
+  const fetchProductGrouped = useCallback(async () => {
+    if (!productQuery) {
+      setProductRaw([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+
+    const { data, error } = await supabase.rpc('search_products_with_prices', {
+      query: productQuery,
+      user_lat: userLatitude,
+      user_lng: userLongitude,
+      radius_km: maxDistanceKm ?? 10,
+      category_id: categoryId && categoryId !== 'cat_todos' ? categoryId : null,
+    });
+
+    if (error) {
+      console.warn('[usePromotions] search_products_with_prices RPC error:', error);
+      setError(new Error(error.message));
+      setProductRaw([]);
+    } else {
+      setError(null);
+      let products = (data as ProductWithPrices[] | null) ?? [];
+      // Apply max price filter client-side
+      if (maxPrice != null) {
+        products = products.filter(
+          (p) => p.prices.length > 0 && p.prices[0].price <= maxPrice,
+        );
+      }
+      // Apply plan-based locking
+      const profile = useAuthStore.getState().profile;
+      const isFree = profile?.b2c_plan === 'free';
+      setProductRaw(
+        products.map((p, index) => ({
+          ...p,
+          isLocked: isFree && index >= 3,
+        }))
+      );
+    }
+
+    setIsLoading(false);
+  }, [productQuery, categoryId, userLatitude, userLongitude, maxDistanceKm, maxPrice]);
+
+  // ─── Store-grouped mode (existing query) ─────────────────────────
+  const fetchStoreGrouped = useCallback(async () => {
     setIsLoading(true);
 
     let q = supabase
@@ -113,26 +206,42 @@ export function usePromotions(params: UsePromotionsParams) {
       q = q.eq('product.category_id', categoryId);
     }
 
-    const { data } = await q.order('promo_price', { ascending: true });
+    if (storeId) {
+      q = q.eq('store_id', storeId);
+    }
 
-    if (data) setRaw(data as PromotionWithRelations[]);
+    const { data, error: fetchErr } = await q.order('promo_price', { ascending: true });
+
+    if (fetchErr) {
+      setError(new Error(fetchErr.message));
+    } else {
+      setError(null);
+      if (data) setRaw(data as PromotionWithRelations[]);
+    }
     setIsLoading(false);
-  }, [query, productQuery, categoryId]);
+  }, [query, productQuery, categoryId, storeId]);
 
+  // ─── Fetch dispatcher ────────────────────────────────────────────
   useEffect(() => {
-    fetchPromotions();
-  }, [fetchPromotions]);
+    if (groupBy === 'product') {
+      fetchProductGrouped();
+    } else {
+      fetchStoreGrouped();
+    }
+  }, [groupBy, fetchProductGrouped, fetchStoreGrouped]);
 
-  // Listen for realtime promotion changes
+  // Listen for realtime promotion changes (refetch whichever mode is active)
   useRealtime({
     table: 'promotions',
-    onInsert: fetchPromotions,
-    onUpdate: fetchPromotions,
-    onDelete: fetchPromotions,
+    onInsert: groupBy === 'product' ? fetchProductGrouped : fetchStoreGrouped,
+    onUpdate: groupBy === 'product' ? fetchProductGrouped : fetchStoreGrouped,
+    onDelete: groupBy === 'product' ? fetchProductGrouped : fetchStoreGrouped,
   });
 
+  // ─── Store-grouped enrichment ────────────────────────────────────
   const enriched = useMemo(() => {
-    // Build best price map per product
+    if (groupBy === 'product') return [];
+
     const bestPriceMap = new Map<string, number>();
     for (const p of raw) {
       const current = bestPriceMap.get(p.product_id);
@@ -141,17 +250,26 @@ export function usePromotions(params: UsePromotionsParams) {
       }
     }
 
-    return raw.map((p) =>
+    let items = raw.map((p) =>
       enrichPromotion(p, userLatitude, userLongitude, bestPriceMap)
     );
-  }, [raw, userLatitude, userLongitude]);
+    if (maxDistanceKm != null) {
+      items = items.filter((p) => p.distanceKm <= maxDistanceKm);
+    }
+    if (maxPrice != null) {
+      items = items.filter((p) => p.promo_price <= maxPrice);
+    }
+    return items;
+  }, [raw, userLatitude, userLongitude, groupBy, maxDistanceKm, maxPrice]);
 
   const sorted = useMemo(
-    () => sortPromotions(enriched, sortMode),
-    [enriched, sortMode]
+    () => (groupBy === 'product' ? [] : sortPromotions(enriched, sortMode)),
+    [enriched, sortMode, groupBy]
   );
 
   const final = useMemo(() => {
+    if (groupBy === 'product') return [];
+
     // Group by store: keep cheapest per store when doing product search
     let grouped: EnrichedPromotion[];
     if (productQuery) {
@@ -174,11 +292,27 @@ export function usePromotions(params: UsePromotionsParams) {
       ...promo,
       isLocked: isFree && index >= 3,
     }));
-  }, [sorted, productQuery]);
+  }, [sorted, productQuery, groupBy]);
+
+  // ─── Retry ──────────────────────────────────────────────────────
+  const retry = useCallback(() => {
+    setError(null);
+    if (groupBy === 'product') {
+      fetchProductGrouped();
+    } else {
+      fetchStoreGrouped();
+    }
+  }, [groupBy, fetchProductGrouped, fetchStoreGrouped]);
+
+  // ─── Return ──────────────────────────────────────────────────────
+  const isProductMode = groupBy === 'product';
 
   return {
     promotions: final,
+    productResults: productRaw,
     isLoading,
-    isEmpty: !isLoading && final.length === 0,
+    isEmpty: !isLoading && (isProductMode ? productRaw.length === 0 : final.length === 0),
+    error,
+    retry,
   };
 }

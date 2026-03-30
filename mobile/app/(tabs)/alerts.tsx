@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import {
   View,
@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
-import { Bell, Plus } from 'lucide-react-native';
+import { Bell, Check, ChevronRight, Zap } from 'lucide-react-native';
+import { useAnalytics } from '@/hooks/use-analytics';
 import { useAlerts } from '@/hooks/use-alerts';
 import { useAuthStore } from '@poup/shared';
 import { useTheme } from '@/theme/use-theme';
@@ -18,6 +19,7 @@ import type { PaletteTokens } from '@/theme/palettes';
 import { Paywall } from '@/components/paywall';
 import { AlertCard } from '@/components/alert-card';
 import { SuggestedProductCard, type SuggestedProduct } from '@/components/suggested-product-card';
+import { InlineError } from '@/components/inline-error';
 import type { AlertWithProduct } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -32,23 +34,39 @@ const SUGGESTED_PRODUCTS: SuggestedProduct[] = [
   { emoji: '☕', name: 'Café 500g', subtitle: 'Menor preço em 30 dias' },
 ];
 
+const HOW_IT_WORKS_STEPS = [
+  {
+    title: 'Escolha um produto',
+    desc: 'Busque e selecione o produto que deseja monitorar',
+  },
+  {
+    title: 'Nós monitoramos',
+    desc: 'Acompanhamos os preços em todos os mercados da região',
+  },
+  {
+    title: 'Você é notificado',
+    desc: 'Receba uma notificação assim que o produto entrar em promoção',
+  },
+];
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /**
  * Splits alerts into triggered (novidades) vs monitoring groups.
- * The current data model has no `triggered_at` field, so all alerts are
- * placed in "monitorando" until the backend adds that distinction.
+ * An alert is "triggered" when the backend has recorded a triggered_at timestamp.
  */
 function splitAlerts(alerts: AlertWithProduct[]) {
   const triggered: AlertWithProduct[] = [];
   const monitoring: AlertWithProduct[] = [];
 
   for (const alert of alerts) {
-    // Future: check alert.triggered_at or alert.last_triggered_price
-    // For now, all active alerts go to monitoring.
-    monitoring.push(alert);
+    if (alert.triggered_at) {
+      triggered.push(alert);
+    } else {
+      monitoring.push(alert);
+    }
   }
 
   return { triggered, monitoring };
@@ -80,10 +98,10 @@ function EmptyState({ tokens, onCreateAlert }: EmptyStateProps) {
           <Bell size={36} color={tokens.primary} />
         </View>
         <Text style={[styles.emptyTitle, { color: tokens.textDark }]}>
-          Receba quando o preço cair
+          Nunca perca uma promoção
         </Text>
         <Text style={[styles.emptySubtitle, { color: tokens.textSecondary }]}>
-          Defina um preço alvo e avisamos quando um mercado perto de você atingir esse valor.
+          Crie alertas para seus produtos favoritos e seja notificado quando entrarem em promoção
         </Text>
         <Pressable
           onPress={onCreateAlert}
@@ -114,6 +132,29 @@ function EmptyState({ tokens, onCreateAlert }: EmptyStateProps) {
             item={item}
             onCreateAlert={onCreateAlert}
           />
+        ))}
+      </MotiView>
+
+      {/* Como funciona */}
+      <MotiView
+        from={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ type: 'timing', duration: 400, delay: 300 }}
+        style={styles.howItWorksSection}
+      >
+        <Text style={[styles.howItWorksLabel, { color: tokens.textMuted }]}>
+          COMO FUNCIONA
+        </Text>
+        {HOW_IT_WORKS_STEPS.map((step, i) => (
+          <View key={step.title} style={styles.stepRow}>
+            <View style={[styles.numberCircle, { backgroundColor: tokens.bgLight }]}>
+              <Text style={[styles.numberText, { color: tokens.primary }]}>{i + 1}</Text>
+            </View>
+            <View style={styles.stepTextCol}>
+              <Text style={[styles.stepTitle, { color: tokens.textDark }]}>{step.title}</Text>
+              <Text style={[styles.stepDesc, { color: tokens.textSecondary }]}>{step.desc}</Text>
+            </View>
+          </View>
         ))}
       </MotiView>
     </ScrollView>
@@ -148,43 +189,85 @@ function SectionHeader({ label, count, variant, tokens }: SectionHeaderProps) {
 }
 
 // ---------------------------------------------------------------------------
+// Triggered Banner
+// ---------------------------------------------------------------------------
+
+interface TriggeredBannerProps {
+  alert: AlertWithProduct;
+  triggeredPrice: number;
+  storeName: string;
+  discount?: number;
+  tokens: PaletteTokens;
+  onPress: () => void;
+}
+
+function TriggeredBanner({
+  alert,
+  triggeredPrice,
+  storeName,
+  discount,
+  tokens,
+  onPress,
+}: TriggeredBannerProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.triggeredBanner,
+        pressed && styles.pressedOpacity,
+      ]}
+    >
+      <View style={styles.triggeredBannerIcon}>
+        <Check size={18} color="#FFFFFF" strokeWidth={2.5} />
+      </View>
+      <View style={styles.triggeredBannerContent}>
+        <Text style={styles.triggeredBannerTitle} numberOfLines={1}>
+          {alert.product.name} em promoção!
+        </Text>
+        <Text style={styles.triggeredBannerDesc} numberOfLines={1}>
+          R$ {triggeredPrice.toFixed(2).replace('.', ',')} no {storeName}
+          {discount ? ` · -${discount}%` : ''}
+          {' · Menor em 30 dias'}
+        </Text>
+      </View>
+      <Text style={[styles.triggeredBannerAction, { color: tokens.success }]}>
+        Ver oferta →
+      </Text>
+    </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Upsell Card
 // ---------------------------------------------------------------------------
 
 interface UpsellCardProps {
-  count: number;
-  limit: number;
   tokens: PaletteTokens;
   onUpgrade: () => void;
 }
 
-function UpsellCard({ count, limit, tokens, onUpgrade }: UpsellCardProps) {
+function UpsellCard({ tokens, onUpgrade }: UpsellCardProps) {
   return (
-    <View
-      style={[
+    <Pressable
+      onPress={onUpgrade}
+      style={({ pressed }) => [
         styles.upsellCard,
-        { borderColor: tokens.primary, backgroundColor: tokens.mist },
+        pressed && styles.pressedOpacity,
       ]}
     >
-      <Text style={[styles.upsellTitle, { color: tokens.textDark }]}>
-        Você está usando {count} de {limit} alertas
-      </Text>
-      <Text style={[styles.upsellSubtitle, { color: tokens.textSecondary }]}>
-        Assine o Poup Plus para alertas ilimitados
-      </Text>
-      <Pressable
-        onPress={onUpgrade}
-        accessibilityLabel="Ver planos"
-        accessibilityRole="button"
-        style={({ pressed }) => [
-          styles.upsellBtn,
-          { backgroundColor: tokens.primary },
-          pressed && styles.pressedOpacity,
-        ]}
-      >
-        <Text style={styles.upsellBtnText}>Ver planos</Text>
-      </Pressable>
-    </View>
+      <View style={[styles.upsellIcon, { backgroundColor: tokens.purple }]}>
+        <Zap size={16} color="#FFFFFF" strokeWidth={2} />
+      </View>
+      <View style={styles.upsellTextCol}>
+        <Text style={[styles.upsellTitle, { color: tokens.purple }]}>
+          Alertas avançados com Plus
+        </Text>
+        <Text style={styles.upsellSubtitle}>
+          Me avise quando desconto {'>'} 45%
+        </Text>
+      </View>
+      <ChevronRight size={16} color={tokens.purple} />
+    </Pressable>
   );
 }
 
@@ -222,13 +305,15 @@ function SkeletonLoader({ tokens }: { tokens: PaletteTokens }) {
 export default function AlertsScreen() {
   const { tokens } = useTheme();
   const router = useRouter();
-  const { alerts, isLoading, disable, count, refresh } = useAlerts();
+  const { trackScreen } = useAnalytics();
+  const { alerts, isLoading, error, toggle, count, refresh } = useAlerts();
   const profile = useAuthStore((s) => s.profile);
   const isFree = profile?.b2c_plan === 'free';
   const [showPaywall, setShowPaywall] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const nearLimit = isFree && count >= FREE_ALERT_LIMIT - 1;
+  useEffect(() => { trackScreen('alerts'); }, [trackScreen]);
+
   const atLimit = isFree && count >= FREE_ALERT_LIMIT;
 
   const handleRefresh = useCallback(async () => {
@@ -241,7 +326,6 @@ export default function AlertsScreen() {
     if (atLimit) {
       setShowPaywall(true);
     } else {
-      // Navigate to search so user can find a product and create an alert from the product page
       router.push('/(tabs)/search' as any);
     }
   }, [atLimit, router]);
@@ -250,8 +334,13 @@ export default function AlertsScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: tokens.bg }]} edges={['top']}>
-      {/* ---- Loading ---- */}
-      {isLoading ? (
+      {/* ---- Error ---- */}
+      {error ? (
+        <View style={styles.errorContainer}>
+          <InlineError onRetry={refresh} message="Não foi possível carregar alertas. Tentar novamente?" />
+        </View>
+      ) : /* ---- Loading ---- */
+      isLoading ? (
         <SkeletonLoader tokens={tokens} />
       ) : alerts.length === 0 ? (
         /* ---- Empty State ---- */
@@ -266,13 +355,9 @@ export default function AlertsScreen() {
               onPress={handleCreateAlert}
               accessibilityLabel="Criar novo alerta"
               accessibilityRole="button"
-              style={({ pressed }) => [
-                styles.addBtn,
-                { backgroundColor: tokens.primary },
-                pressed && styles.pressedOpacity,
-              ]}
+              style={({ pressed }) => [pressed && styles.pressedOpacity]}
             >
-              <Plus size={18} color="#FFFFFF" />
+              <Text style={[styles.addBtnText, { color: tokens.primary }]}>+ Novo</Text>
             </Pressable>
           </View>
 
@@ -287,15 +372,23 @@ export default function AlertsScreen() {
               />
             }
           >
-            {/* Upsell card (near limit) */}
-            {nearLimit && (
-              <UpsellCard
-                count={count}
-                limit={FREE_ALERT_LIMIT}
-                tokens={tokens}
-                onUpgrade={() => setShowPaywall(true)}
-              />
-            )}
+            {/* Triggered banners */}
+            {triggered.map((alert) => {
+              const discount = alert.triggered_price && alert.product.reference_price
+                ? Math.round((1 - alert.triggered_price / alert.product.reference_price) * 100)
+                : undefined;
+              return (
+                <TriggeredBanner
+                  key={alert.id}
+                  alert={alert}
+                  triggeredPrice={alert.triggered_price ?? 0}
+                  storeName={alert.triggered_store?.name ?? ''}
+                  discount={discount}
+                  tokens={tokens}
+                  onPress={() => router.push(`/product/${alert.product_id}` as any)}
+                />
+              );
+            })}
 
             {/* Novidades section */}
             {triggered.length > 0 && (
@@ -311,21 +404,28 @@ export default function AlertsScreen() {
                   tokens={tokens}
                 />
                 <View style={styles.sectionCards}>
-                  {triggered.map((alert, index) => (
-                    <MotiView
-                      key={alert.id}
-                      from={{ opacity: 0, translateY: 12 }}
-                      animate={{ opacity: 1, translateY: 0 }}
-                      transition={{ type: 'timing', duration: 300, delay: index * 50 }}
-                    >
-                      <AlertCard
-                        alert={alert}
-                        variant="triggered"
-                        emoji="🛒"
-                        onDisable={disable}
-                      />
-                    </MotiView>
-                  ))}
+                  {triggered.map((alert, index) => {
+                    const discount = alert.triggered_price && alert.product.reference_price
+                      ? Math.round((1 - alert.triggered_price / alert.product.reference_price) * 100)
+                      : undefined;
+                    return (
+                      <MotiView
+                        key={alert.id}
+                        from={{ opacity: 0, translateY: 12 }}
+                        animate={{ opacity: 1, translateY: 0 }}
+                        transition={{ type: 'timing', duration: 300, delay: index * 50 }}
+                      >
+                        <AlertCard
+                          alert={alert}
+                          variant="triggered"
+                          triggeredPrice={alert.triggered_price ?? undefined}
+                          storeName={alert.triggered_store?.name ?? undefined}
+                          badgeLabel={discount ? `-${discount}%` : undefined}
+                          onToggle={toggle}
+                        />
+                      </MotiView>
+                    );
+                  })}
                 </View>
               </MotiView>
             )}
@@ -354,13 +454,20 @@ export default function AlertsScreen() {
                       <AlertCard
                         alert={alert}
                         variant="monitoring"
-                        emoji="🛒"
-                        onDisable={disable}
+                        onToggle={toggle}
                       />
                     </MotiView>
                   ))}
                 </View>
               </MotiView>
+            )}
+
+            {/* Upsell banner for free users */}
+            {isFree && (
+              <UpsellCard
+                tokens={tokens}
+                onUpgrade={() => setShowPaywall(true)}
+              />
             )}
           </ScrollView>
         </>
@@ -379,6 +486,10 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
   },
+  errorContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
 
   // Header (populated state)
   header: {
@@ -392,13 +503,11 @@ const styles = StyleSheet.create({
   screenTitle: {
     fontSize: 22,
     fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
   },
-  addBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+  addBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 
   // Content list
@@ -419,6 +528,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 15,
     fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
   },
   redDot: {
     width: 8,
@@ -438,33 +548,75 @@ const styles = StyleSheet.create({
     gap: 10,
   },
 
-  // Upsell card
+  // Triggered banner
+  triggeredBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#DCFCE7',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 4,
+  },
+  triggeredBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#16A34A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  triggeredBannerContent: {
+    flex: 1,
+  },
+  triggeredBannerTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#166534',
+  },
+  triggeredBannerDesc: {
+    fontSize: 10,
+    color: '#15803d',
+    marginTop: 1,
+  },
+  triggeredBannerAction: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  // Upsell card (purple Plus banner)
   upsellCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#F5F3FF',
     borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 12,
-    gap: 4,
+    borderColor: '#DDD6FE',
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 16,
+  },
+  upsellIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  upsellTextCol: {
+    flex: 1,
   },
   upsellTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
   },
   upsellSubtitle: {
-    fontSize: 12,
-  },
-  upsellBtn: {
-    marginTop: 10,
-    alignSelf: 'flex-start',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  upsellBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 10,
+    color: '#7C3AED',
+    opacity: 0.7,
+    marginTop: 1,
   },
 
   // Empty state
@@ -506,6 +658,47 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
+  },
+
+  // How it works
+  howItWorksSection: {
+    marginTop: 32,
+  },
+  howItWorksLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 16,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 16,
+  },
+  numberCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  numberText: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  stepTextCol: {
+    flex: 1,
+    paddingTop: 2,
+  },
+  stepTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  stepDesc: {
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
   },
 
   // Skeleton

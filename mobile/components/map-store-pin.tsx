@@ -4,38 +4,41 @@ import type { StoreWithPromotions } from '@/types';
 
 export type PinRank = 'green' | 'yellow' | 'red';
 
+// Rank-based colors (matching mockup + legend)
 const RANK_COLORS: Record<PinRank, string> = {
-  green: '#16A34A',
-  yellow: '#F59E0B',
-  red: '#EF4444',
+  green: '#0D9488',   // Teal — cheapest
+  yellow: '#F59E0B',  // Gold — medium
+  red: '#EF4444',     // Red — most expensive
 };
-
-const MEDAL_EMOJIS = ['🥇', '🥈', '🥉'];
+const PIN_GRAY = '#94A3B8';  // No offers
 
 interface MapStorePinProps {
   storeData: StoreWithPromotions;
   rank: PinRank;
-  /** 1-based position in sorted list (1 = cheapest). 0 means unranked. */
   position: number;
+  /** Whether this pin is the currently selected store */
+  selected?: boolean;
+  /** Whether another store is selected (dim this pin) */
+  dimmed?: boolean;
+  /** When defined, overrides count/color: teal if > 0, grey if 0 */
+  categoryOfferCount?: number;
   onPress: () => void;
 }
 
 export function MapStorePin({
   storeData,
   rank,
-  position,
+  selected = false,
+  dimmed = false,
+  categoryOfferCount,
   onPress,
 }: MapStorePinProps) {
-  const { store } = storeData;
-  const color = RANK_COLORS[rank];
-  const medalEmoji = position >= 1 && position <= 3 ? MEDAL_EMOJIS[position - 1] : null;
-  // Show abbreviated name: first word if short, or first word + initial of second
-  const words = store.name.split(' ');
-  const displayName = words.length === 1
-    ? words[0].substring(0, 6)
-    : words[0].length <= 5
-      ? words[0]
-      : words[0].substring(0, 5);
+  const { store, activePromotionCount } = storeData;
+  const isCategoryMode = categoryOfferCount !== undefined;
+  const displayCount = isCategoryMode ? categoryOfferCount : activePromotionCount;
+  const color = isCategoryMode
+    ? (displayCount === 0 ? PIN_GRAY : RANK_COLORS.green)
+    : (activePromotionCount === 0 ? PIN_GRAY : RANK_COLORS[rank]);
 
   return (
     <Marker
@@ -43,17 +46,29 @@ export function MapStorePin({
       onPress={onPress}
       tracksViewChanges={false}
     >
-      <View style={styles.container}>
-        {/* Pin bubble */}
-        <View style={[styles.pin, { backgroundColor: color }]}>
-          {medalEmoji !== null && (
-            <Text style={styles.medal}>{medalEmoji}</Text>
-          )}
-          <Text style={styles.initials}>{displayName}</Text>
+      <View style={[styles.container, dimmed && styles.dimmed]}>
+        {/* Pin circle with offer count */}
+        <View
+          style={[
+            styles.pinBody,
+            { backgroundColor: color },
+            selected && styles.pinSelected,
+          ]}
+        >
+          <Text style={styles.pinCount}>{displayCount}</Text>
         </View>
 
         {/* Downward triangle pointer */}
         <View style={[styles.arrow, { borderTopColor: color }]} />
+
+        {/* Store name label (hidden when dimmed or category mode with 0 offers) */}
+        {!dimmed && !(isCategoryMode && displayCount === 0) && (
+          <View style={styles.labelBg}>
+            <Text style={styles.labelText} numberOfLines={1}>
+              {store.name}
+            </Text>
+          </View>
+        )}
       </View>
     </Marker>
   );
@@ -63,30 +78,36 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
   },
-  pin: {
-    flexDirection: 'row',
+  dimmed: {
+    opacity: 0.4,
+  },
+  pinBody: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 10,
-    gap: 2,
-    minWidth: 38,
     justifyContent: 'center',
-    // Subtle shadow so pins read against the map
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  medal: {
-    fontSize: 11,
-    lineHeight: 14,
+  pinSelected: {
+    borderWidth: 3,
+    borderColor: '#5EEAD4',
+    shadowColor: '#0D9488',
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  initials: {
+  pinCount: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
+    fontFamily: 'Inter_500Medium',
   },
   arrow: {
     width: 0,
@@ -96,5 +117,26 @@ const styles = StyleSheet.create({
     borderTopWidth: 6,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
+    marginTop: -1,
+  },
+  labelBg: {
+    marginTop: 2,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    maxWidth: 100,
+  },
+  labelText: {
+    fontSize: 9,
+    fontWeight: '700',
+    fontFamily: 'Inter_500Medium',
+    color: '#1A1A2E',
+    textAlign: 'center',
   },
 });

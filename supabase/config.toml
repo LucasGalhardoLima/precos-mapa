@@ -381,6 +381,25 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Edge Functions — disable JWT verification for cron/webhook-invoked functions
+[functions.expire-promotions]
+verify_jwt = false
+
+[functions.daily-price-snapshot]
+verify_jwt = false
+
+[functions.monthly-price-index]
+verify_jwt = false
+
+[functions.trial-reminders]
+verify_jwt = false
+
+[functions.daily-digest]
+verify_jwt = false
+
+[functions.notify-favorite-match]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

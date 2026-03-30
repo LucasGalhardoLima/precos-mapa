@@ -12,6 +12,7 @@ export interface ListTemplate {
   name: string;
   itemCount: number;
   itemLabel: string;
+  bgColor: string;
 }
 
 interface ListTemplateCardProps {
@@ -19,35 +20,46 @@ interface ListTemplateCardProps {
 }
 
 // ---------------------------------------------------------------------------
-// Data
+// Data (matching mockup)
 // ---------------------------------------------------------------------------
 
 export const LIST_TEMPLATES: ListTemplate[] = [
   {
     id: 'cesta-basica',
     emoji: '🛒',
-    name: 'Cesta Básica',
+    name: 'Cesta básica essencial',
     itemCount: 15,
-    itemLabel: 'itens essenciais',
-  },
-  {
-    id: 'churrasco',
-    emoji: '🥩',
-    name: 'Churrasco',
-    itemCount: 12,
-    itemLabel: 'itens',
+    itemLabel: 'Arroz, feijão, óleo, açúcar...',
+    bgColor: '#dcfce7',
   },
   {
     id: 'cafe-da-manha',
-    emoji: '☕',
-    name: 'Café da Manhã',
+    emoji: '🍳',
+    name: 'Café da manhã',
     itemCount: 8,
-    itemLabel: 'itens',
+    itemLabel: 'Pão, leite, café, manteiga...',
+    bgColor: '#fef3c7',
+  },
+  {
+    id: 'limpeza',
+    emoji: '🧹',
+    name: 'Limpeza do mês',
+    itemCount: 12,
+    itemLabel: 'Detergente, sabão, amaciante...',
+    bgColor: '#e0f2fe',
+  },
+  {
+    id: 'higiene',
+    emoji: '🧴',
+    name: 'Higiene pessoal',
+    itemCount: 10,
+    itemLabel: 'Shampoo, sabonete, pasta...',
+    bgColor: '#ede9fe',
   },
 ];
 
 // ---------------------------------------------------------------------------
-// Component
+// Component — vertical row card (matches mockup)
 // ---------------------------------------------------------------------------
 
 export function ListTemplateCard({ template }: ListTemplateCardProps) {
@@ -58,15 +70,20 @@ export function ListTemplateCard({ template }: ListTemplateCardProps) {
   return (
     <Pressable
       onPress={handlePress}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      style={({ pressed }) => [pressed && { opacity: 0.7 }]}
     >
-      <Text style={styles.emoji}>{template.emoji}</Text>
-      <Text style={styles.name} numberOfLines={1}>
-        {template.name}
-      </Text>
-      <Text style={styles.count} numberOfLines={1}>
-        {template.itemCount} {template.itemLabel}
-      </Text>
+      <View style={styles.card}>
+        <View style={[styles.iconWrap, { backgroundColor: template.bgColor }]}>
+          <Text style={styles.emoji}>{template.emoji}</Text>
+        </View>
+        <View style={styles.info}>
+          <Text style={styles.name} numberOfLines={1}>{template.name}</Text>
+          <Text style={styles.desc} numberOfLines={1}>
+            {template.itemCount} itens · {template.itemLabel}
+          </Text>
+        </View>
+        <Text style={styles.arrow}>›</Text>
+      </View>
     </Pressable>
   );
 }
@@ -77,32 +94,42 @@ export function ListTemplateCard({ template }: ListTemplateCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    width: 120,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    gap: 4,
+    borderColor: '#e8edf2',
+    padding: 14,
+    marginBottom: 8,
   },
-  cardPressed: {
-    opacity: 0.7,
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emoji: {
-    fontSize: 28,
-    marginBottom: 4,
+    fontSize: 18,
+  },
+  info: {
+    flex: 1,
   },
   name: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#134E4A',
-    textAlign: 'center',
+    fontFamily: 'Inter_500Medium',
+    color: '#1A1A2E',
   },
-  count: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    textAlign: 'center',
+  desc: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  arrow: {
+    fontSize: 14,
+    color: '#94A3B8',
   },
 });

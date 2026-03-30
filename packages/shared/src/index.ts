@@ -35,6 +35,7 @@ export { useAuth } from './hooks/use-auth';
 export { useLocation, calculateDistanceKm } from './hooks/use-location';
 export { useRealtime } from './hooks/use-realtime';
 export { usePushNotifications } from './hooks/use-push-notifications';
+export type { NotificationData } from './hooks/use-push-notifications';
 
 // Components
 export { AuthButtons } from './components/auth-buttons';

@@ -39,6 +39,7 @@ export function useShoppingList() {
   const session = useAuthStore((s) => s.session);
   const [lists, setLists] = useState<ShoppingList[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const fetchLists = useCallback(async () => {
     if (!session?.user) {
@@ -46,13 +47,18 @@ export function useShoppingList() {
       return;
     }
 
-    const { data } = await supabase
+    setError(null);
+    const { data, error: fetchErr } = await supabase
       .from('shopping_lists')
       .select('id, name, is_template, created_at, items:shopping_list_items(id, product_id, store_id, quantity, is_checked, product:products(name, brand), store:stores(id, name, latitude, longitude, logo_initial, logo_color))')
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false });
 
-    if (data) setLists(data as unknown as ShoppingList[]);
+    if (fetchErr) {
+      setError(new Error(fetchErr.message));
+    } else if (data) {
+      setLists(data as unknown as ShoppingList[]);
+    }
     setIsLoading(false);
   }, [session]);
 
@@ -275,6 +281,7 @@ export function useShoppingList() {
   return {
     lists,
     isLoading,
+    error,
     createList,
     addItem,
     toggleItem,

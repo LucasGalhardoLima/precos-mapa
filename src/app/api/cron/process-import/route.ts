@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
-import { discoverAndDownloadAllPdfs } from "@/lib/crawler/service";
+import { discoverAndDownloadAllPdfs, discoverAndDownloadImages, RenderConfig } from "@/lib/crawler/service";
 import { getSupabaseAdmin } from "@/lib/supabase-server";
 
 interface PdfSource {
@@ -9,11 +9,21 @@ interface PdfSource {
   url: string;
   label: string | null;
   last_hash: string | null;
+  source_type: "pdf" | "image";
+  render_config: RenderConfig | null;
 }
 
 function validateCronSecret(request: NextRequest): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || secret.length < 32) {
+    console.error(
+      "[CRON] CRON_SECRET is missing or too weak (must be 32+ chars). " +
+      "Generate one with: openssl rand -base64 32",
+    );
+    return false;
+  }
   const authHeader = request.headers.get("authorization");
-  return authHeader === `Bearer ${process.env.CRON_SECRET}`;
+  return authHeader === `Bearer ${secret}`;
 }
 
 function getAppUrl(): string {
@@ -84,7 +94,7 @@ export async function GET(request: NextRequest) {
 
   const { data: sources } = await getSupabaseAdmin()
     .from("store_pdf_sources")
-    .select("id, store_id, url, label, last_hash")
+    .select("id, store_id, url, label, last_hash, source_type, render_config")
     .eq("is_active", true);
 
   const activeSources = (sources ?? []) as PdfSource[];
@@ -141,7 +151,7 @@ export async function POST(request: NextRequest) {
 
   const { data: source, error: fetchError } = await getSupabaseAdmin()
     .from("store_pdf_sources")
-    .select("id, store_id, url, label, last_hash")
+    .select("id, store_id, url, label, last_hash, source_type, render_config")
     .eq("id", sourceId)
     .single();
 
@@ -177,20 +187,34 @@ async function discoverAndPrepare(source: PdfSource): Promise<{
   dispatched: { sourceId: string; importId: string; filename: string }[];
   skipped: { sourceId: string; filename: string; reason: string }[];
 }> {
-  const pdfs = await discoverAndDownloadAllPdfs(source.url);
-  console.log(`[CRON] Source ${source.id}: discovered ${pdfs.length} PDF(s)`);
+  const isImage = source.source_type === "image";
+
+  // Discover files based on source type
+  const files = isImage
+    ? (await discoverAndDownloadImages(source.url, source.render_config ?? undefined)).map((f) => ({
+        buffer: f.imageBuffer,
+        filename: f.filename,
+      }))
+    : (await discoverAndDownloadAllPdfs(source.url)).map((f) => ({
+        buffer: f.pdfBuffer,
+        filename: f.filename,
+      }));
+
+  const typeLabel = isImage ? "image" : "PDF";
+  console.log(`[CRON] Source ${source.id}: discovered ${files.length} ${typeLabel}(s)`);
 
   const dispatched: { sourceId: string; importId: string; filename: string }[] = [];
   const skipped: { sourceId: string; filename: string; reason: string }[] = [];
 
-  for (let i = 0; i < pdfs.length; i++) {
-    const { pdfBuffer, filename: discoveredFilename } = pdfs[i];
-    const hash = createHash("sha256").update(pdfBuffer).digest("hex");
+  for (let i = 0; i < files.length; i++) {
+    const { buffer, filename: discoveredFilename } = files[i];
+    const hash = createHash("sha256").update(buffer).digest("hex");
+    const ext = isImage ? discoveredFilename.split(".").pop() ?? "png" : "pdf";
     const filename = source.label
-      ? `${source.label.replace(/[^a-zA-Z0-9_-]/g, "_")}_${i + 1}.pdf`
+      ? `${source.label.replace(/[^a-zA-Z0-9_-]/g, "_")}_${i + 1}.${ext}`
       : discoveredFilename;
 
-    console.log(`[CRON] PDF ${i + 1}/${pdfs.length}: ${filename} (hash: ${hash.slice(0, 8)}, ${pdfBuffer.byteLength} bytes)`);
+    console.log(`[CRON] ${typeLabel} ${i + 1}/${files.length}: ${filename} (hash: ${hash.slice(0, 8)}, ${buffer.byteLength} bytes)`);
 
     // DB dedup
     const { data: existing } = await getSupabaseAdmin()
@@ -203,22 +227,24 @@ async function discoverAndPrepare(source: PdfSource): Promise<{
     const existingRecord = existing as { id: string; status: string } | null;
 
     if (existingRecord?.status === "done") {
-      console.log(`[CRON] PDF ${i + 1}/${pdfs.length}: skipped (already done)`);
+      console.log(`[CRON] ${typeLabel} ${i + 1}/${files.length}: skipped (already done)`);
       skipped.push({ sourceId: source.id, filename, reason: "already_done" });
       continue;
     }
 
-    // Upload to storage
-    const storagePath = `${source.store_id}/${hash}.pdf`;
+    // Upload to storage (images go to image-imports bucket, PDFs to pdf-imports)
+    const bucket = isImage ? "image-imports" : "pdf-imports";
+    const storagePath = `${source.store_id}/${hash}.${ext}`;
+    const contentType = isImage
+      ? (ext === "jpg" ? "image/jpeg" : ext === "webp" ? "image/webp" : "image/png")
+      : "application/pdf";
+
     const { error: uploadError } = await getSupabaseAdmin().storage
-      .from("pdf-imports")
-      .upload(storagePath, pdfBuffer, {
-        contentType: "application/pdf",
-        upsert: true,
-      });
+      .from(bucket)
+      .upload(storagePath, buffer, { contentType, upsert: true });
 
     if (uploadError) {
-      console.error(`[CRON] PDF ${i + 1}/${pdfs.length}: upload failed — ${JSON.stringify(uploadError)}`);
+      console.error(`[CRON] ${typeLabel} ${i + 1}/${files.length}: upload failed — ${JSON.stringify(uploadError)}`);
       continue;
     }
 
@@ -252,7 +278,7 @@ async function discoverAndPrepare(source: PdfSource): Promise<{
         .single();
 
       if (insertError || !inserted) {
-        console.error(`[CRON] PDF ${i + 1}/${pdfs.length}: failed to create record: ${insertError?.message}`);
+        console.error(`[CRON] ${typeLabel} ${i + 1}/${files.length}: failed to create record: ${insertError?.message}`);
         continue;
       }
       importId = (inserted as { id: string }).id;

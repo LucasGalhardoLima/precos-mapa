@@ -57,6 +57,7 @@ const superNavItems: NavItem[] = [
   { href: "/painel/super/indice", label: "Indice de Precos", icon: TrendingUp },
   { href: "/painel/super/qualidade", label: "Qualidade Dados", icon: AlertTriangle },
   { href: "/painel/super/pdf-sources", label: "Fontes PDF", icon: FileText },
+  { href: "/painel/super/engajamento", label: "Engajamento B2B", icon: BarChart3 },
 ];
 
 function isActiveRoute(pathname: string, href: string): boolean {

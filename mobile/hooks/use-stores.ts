@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { calculateDistanceKm } from '@/hooks/use-location';
 import { getGamificationMessage } from '@/constants/messages';
@@ -13,28 +13,36 @@ export function useStores(params: UseStoresParams) {
   const { userLatitude, userLongitude } = params;
   const [raw, setRaw] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchStores = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    const { data, error: fetchErr } = await supabase
+      .from('stores')
+      .select(`
+        *,
+        promotions:promotions(
+          *,
+          product:products(*)
+        )
+      `)
+      .eq('is_active', true)
+      .eq('promotions.status', 'active')
+      .gt('promotions.end_date', new Date().toISOString());
+
+    if (fetchErr) {
+      setError(new Error(fetchErr.message));
+    } else if (data) {
+      setRaw(data);
+    }
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
-    async function fetch() {
-      const { data } = await supabase
-        .from('stores')
-        .select(`
-          *,
-          promotions:promotions(
-            *,
-            product:products(*)
-          )
-        `)
-        .eq('is_active', true)
-        .eq('promotions.status', 'active')
-        .gt('promotions.end_date', new Date().toISOString());
-
-      if (data) setRaw(data);
-      setIsLoading(false);
-    }
-
-    fetch();
-  }, []);
+    fetchStores();
+  }, [fetchStores]);
 
   const stores = useMemo((): StoreWithPromotions[] => {
     return raw.map((store) => {
@@ -71,6 +79,8 @@ export function useStores(params: UseStoresParams) {
             distanceKm,
             isExpiringSoon,
             isBestPrice: false,
+            isHistoricLow: false,
+            isLocked: false,
           } as EnrichedPromotion;
         });
 
@@ -78,14 +88,21 @@ export function useStores(params: UseStoresParams) {
         .sort((a, b) => b.discountPercent - a.discountPercent)
         .slice(0, 5);
 
+      const countByCategory: Record<string, number> = {};
+      for (const promo of storePromos) {
+        const catId = promo.product.category_id;
+        countByCategory[catId] = (countByCategory[catId] ?? 0) + 1;
+      }
+
       return {
         store: store as Store,
         activePromotionCount: storePromos.length,
         topDeals,
         distanceKm,
+        promotionCountByCategory: countByCategory,
       };
     });
   }, [raw, userLatitude, userLongitude]);
 
-  return { stores, isLoading };
+  return { stores, isLoading, error, retry: fetchStores };
 }

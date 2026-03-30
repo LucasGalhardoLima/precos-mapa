@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MotiView } from 'moti';
-import { Check, X } from 'lucide-react-native';
+import { Check } from 'lucide-react-native';
 
 import { useTheme } from '../../theme/use-theme';
 import { triggerHaptic } from '@/hooks/use-haptics';
@@ -28,6 +28,7 @@ interface ListItemData {
   store_name?: string;
   store_color?: string;
   price?: number;
+  isCheapest?: boolean;
 }
 
 interface ListItemProps {
@@ -58,12 +59,18 @@ export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) 
 
   const quantityLabel =
     item.quantity != null
-      ? `${item.quantity}${item.unit ? ` ${item.unit}` : ''}`
+      ? `${item.quantity}${item.unit ? ` ${item.unit}` : 'un'}`
       : null;
 
-  const metaParts: string[] = [];
-  if (item.price != null) metaParts.push(formatBRL(item.price));
-  if (item.store_name) metaParts.push(item.store_name);
+  let metaText = '';
+  if (item.checked) {
+    metaText = item.store_name ? `${item.store_name} · Comprado` : 'Comprado';
+  } else if (item.price != null) {
+    metaText = `a partir de ${formatBRL(item.price)}`;
+    if (item.store_name) metaText += ` · ${item.store_name}`;
+  } else if (quantityLabel) {
+    metaText = quantityLabel;
+  }
 
   return (
     <MotiView
@@ -84,8 +91,8 @@ export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) 
         >
           <MotiView
             animate={{
-              backgroundColor: item.checked ? '#0D9488' : '#FFFFFF',
-              borderColor: item.checked ? '#0D9488' : '#D1D5DB',
+              backgroundColor: item.checked ? '#16A34A' : '#FFFFFF',
+              borderColor: item.checked ? '#16A34A' : '#D1D5DB',
             }}
             transition={{ type: 'timing', duration: 150 }}
             style={styles.checkbox}
@@ -116,14 +123,17 @@ export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) 
             ]}
           >
             {item.product_name}
+            {item.isCheapest && !item.checked && (
+              <Text style={styles.cheapestBadge}>  Menor preço</Text>
+            )}
           </Text>
 
-          {(quantityLabel || metaParts.length > 0) && (
+          {metaText !== '' && (
             <Text
               numberOfLines={1}
               style={[styles.meta, { color: tokens.textHint }]}
             >
-              {[quantityLabel, ...metaParts].filter(Boolean).join(' · ')}
+              {metaText}
             </Text>
           )}
         </View>
@@ -133,27 +143,13 @@ export function ListItem({ item, onToggle, onRemove, isLocked }: ListItemProps) 
           <Text
             style={[
               styles.price,
-              { color: tokens.textPrimary },
-              item.checked && styles.strikethrough,
+              { color: '#0D9488' },
             ]}
           >
             {formatBRL(item.price)}
           </Text>
         )}
-
-        {/* ── Remove button ── */}
-        <Pressable
-          onPress={onRemove}
-          disabled={isLocked}
-          hitSlop={8}
-          style={styles.removeHit}
-        >
-          <X size={16} color={tokens.textHint} />
-        </Pressable>
       </View>
-
-      {/* Divider */}
-      <View style={[styles.divider, { backgroundColor: tokens.border }]} />
     </MotiView>
   );
 }
@@ -181,9 +177,9 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -194,11 +190,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   productName: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'Inter_500Medium',
   },
   strikethrough: {
     textDecorationLine: 'line-through',
+  },
+  cheapestBadge: {
+    fontSize: 8,
+    fontWeight: '700',
+    backgroundColor: '#dcfce7',
+    color: '#166534',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   meta: {
     fontSize: 12,
@@ -207,19 +213,8 @@ const styles = StyleSheet.create({
 
   // Price
   price: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
     textAlign: 'right',
-  },
-
-  // Remove
-  removeHit: {
-    padding: 2,
-  },
-
-  // Divider
-  divider: {
-    height: 1,
-    marginLeft: 36,
   },
 });

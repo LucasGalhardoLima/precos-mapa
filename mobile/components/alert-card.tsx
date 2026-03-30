@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Bell } from 'lucide-react-native';
 import { useTheme } from '@/theme/use-theme';
 import type { AlertWithProduct } from '@/types';
 
@@ -24,23 +25,13 @@ interface AlertCardProps {
   timestamp?: string;
   /** Distance string (e.g. "1.2 km") */
   distance?: string;
-  /** Emoji to represent the product */
-  emoji?: string;
-  /** Icon background color */
-  iconBg?: string;
-  onDisable?: (id: string) => void;
+  onToggle?: (id: string, active: boolean) => void;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-/**
- * Alert card used in both "Novidades" (triggered) and "Monitorando" sections.
- *
- * - triggered: has a green left border, shows triggered price + store, optional badge.
- * - monitoring: no border accent, shows last price info and a gray dot.
- */
 export function AlertCard({
   alert,
   variant,
@@ -50,32 +41,33 @@ export function AlertCard({
   badgeVariant = 'green',
   timestamp,
   distance,
-  emoji = '🛒',
-  iconBg,
-  onDisable,
+  onToggle,
 }: AlertCardProps) {
   const { tokens } = useTheme();
   const isTriggered = variant === 'triggered';
-
-  const resolvedIconBg = iconBg ?? tokens.bgLight;
+  const isOn = alert.is_active !== false;
+  const isPriceAlert = alert.target_price != null;
 
   const badgeBg = badgeVariant === 'purple' ? tokens.purpleLight : tokens.successLight;
   const badgeColor = badgeVariant === 'purple' ? tokens.purple : tokens.success;
+
+  const iconBg = isPriceAlert ? 'rgba(13,148,136,0.08)' : '#fef3c7';
+  const iconColor = isPriceAlert ? '#0D9488' : '#F59E0B';
 
   return (
     <View
       style={[
         styles.card,
-        { backgroundColor: tokens.surface, borderColor: tokens.border },
+        { backgroundColor: tokens.surface, borderColor: '#e8edf2' },
         isTriggered && styles.cardTriggered,
       ]}
     >
       {/* Green left border indicator for triggered alerts */}
       {isTriggered && <View style={styles.triggeredBorder} />}
 
-      {/* Emoji icon */}
-      <View style={[styles.iconBox, { backgroundColor: resolvedIconBg }]}>
-        <Text style={styles.emoji}>{emoji}</Text>
+      {/* Bell icon — teal for price alerts, amber for promo alerts */}
+      <View style={[styles.iconBox, { backgroundColor: iconBg }]}>
+        <Bell size={18} color={iconColor} strokeWidth={2} />
       </View>
 
       {/* Text content */}
@@ -84,16 +76,29 @@ export function AlertCard({
           {alert.product.name}
         </Text>
 
-        {isTriggered && triggeredPrice !== undefined && storeName ? (
-          <Text style={[styles.triggeredPrice, { color: tokens.success }]}>
-            R$ {triggeredPrice.toFixed(2)} no {storeName}
-          </Text>
+        {isTriggered ? (
+          <>
+            {triggeredPrice !== undefined && storeName && (
+              <Text style={[styles.triggeredPrice, { color: tokens.success }]}>
+                R$ {triggeredPrice.toFixed(2).replace('.', ',')} no {storeName}
+              </Text>
+            )}
+            <View style={styles.statusRow}>
+              <View style={[styles.statusDot, { backgroundColor: tokens.success }]} />
+              <Text style={[styles.statusText, { color: tokens.success }]}>
+                Em promoção agora!
+              </Text>
+            </View>
+          </>
         ) : (
-          <Text style={[styles.monitoringInfo, { color: tokens.textSecondary }]}>
-            {alert.target_price
-              ? `Alvo: R$ ${alert.target_price.toFixed(2)} · sem variação`
-              : 'Monitorando preços · sem variação'}
-          </Text>
+          <View style={styles.statusRow}>
+            <View style={[styles.statusDot, { backgroundColor: tokens.primary }]} />
+            <Text style={[styles.statusText, { color: tokens.primary }]}>
+              {alert.target_price
+                ? `Monitorando · R$ ${alert.target_price.toFixed(2).replace('.', ',')} alvo`
+                : 'Monitorando · sem alvo definido'}
+            </Text>
+          </View>
         )}
 
         {/* Meta row: badge + timestamp + distance */}
@@ -114,20 +119,17 @@ export function AlertCard({
         )}
       </View>
 
-      {/* Right indicator */}
-      {isTriggered ? null : (
-        <View style={[styles.monitoringDot, { backgroundColor: tokens.border }]} />
-      )}
-
-      {/* Disable button for triggered alerts (optional) */}
-      {isTriggered && onDisable && (
+      {/* Toggle switch */}
+      {onToggle && (
         <Pressable
-          onPress={() => onDisable(alert.id)}
-          accessibilityLabel={`Desativar alerta para ${alert.product.name}`}
-          accessibilityRole="button"
-          style={styles.disableBtn}
+          onPress={() => onToggle(alert.id, !isOn)}
+          accessibilityLabel={`${isOn ? 'Desativar' : 'Ativar'} alerta para ${alert.product.name}`}
+          accessibilityRole="switch"
+          style={styles.toggleHitArea}
         >
-          <Text style={[styles.disableBtnText, { color: tokens.textHint }]}>✕</Text>
+          <View style={[styles.toggleTrack, isOn && { backgroundColor: tokens.primary }]}>
+            <View style={[styles.toggleKnob, isOn && styles.toggleKnobOn]} />
+          </View>
         </Pressable>
       )}
     </View>
@@ -143,8 +145,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 1.5,
     padding: 14,
     overflow: 'hidden',
   },
@@ -158,8 +160,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: 4,
     backgroundColor: '#16A34A',
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 16,
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
   },
   iconBox: {
     width: 40,
@@ -167,9 +169,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  emoji: {
-    fontSize: 20,
   },
   content: {
     flex: 1,
@@ -183,9 +182,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 2,
   },
-  monitoringInfo: {
-    fontSize: 12,
-    marginTop: 2,
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 3,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
   metaRow: {
     flexDirection: 'row',
@@ -206,16 +216,24 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 11,
   },
-  monitoringDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  disableBtn: {
+  toggleHitArea: {
     padding: 4,
   },
-  disableBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
+  toggleTrack: {
+    width: 42,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#D1D5DB',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleKnob: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+  },
+  toggleKnobOn: {
+    alignSelf: 'flex-end',
   },
 });

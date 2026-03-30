@@ -4,53 +4,45 @@ import {
   Text,
   Pressable,
   ScrollView,
+  ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import { Clock, TrendingUp } from 'lucide-react-native';
+import { Clock, TrendingUp, ChevronRight } from 'lucide-react-native';
 
 import { useTheme } from '@/theme/use-theme';
+import type { Category } from '@/types';
+import type { TrendingProduct } from '@/hooks/use-trending';
 
 // ---------------------------------------------------------------------------
-// Static data
+// Emoji mapping for categories (match by normalized name)
 // ---------------------------------------------------------------------------
 
-const CATEGORY_GRID = [
-  { emoji: '🥛', name: 'Laticínios' },
-  { emoji: '🥩', name: 'Carnes' },
-  { emoji: '🥬', name: 'Hortifrúti' },
-  { emoji: '🍞', name: 'Padaria' },
-  { emoji: '🧹', name: 'Limpeza' },
-  { emoji: '🧴', name: 'Higiene' },
-  { emoji: '🍺', name: 'Bebidas' },
-  { emoji: '🐶', name: 'Pet' },
-];
+const CATEGORY_EMOJI: Record<string, string> = {
+  laticinios: '🥛',
+  carnes: '🥩',
+  hortifruti: '🥬',
+  padaria: '🍞',
+  limpeza: '🧹',
+  higiene: '🧴',
+  bebidas: '🍺',
+  pet: '🐶',
+  alimentos: '🍚',
+};
 
-const TRENDING = [
-  {
-    rank: 1,
-    name: 'Óleo de Soja 900ml',
-    priceRange: 'R$ 5,49 – R$ 8,99',
-    stores: 6,
-    badge: '-15%',
-    badgeColor: '#16A34A',
-  },
-  {
-    rank: 2,
-    name: 'Sabão em Pó Omo 1,6kg',
-    priceRange: 'R$ 16,90 – R$ 24,99',
-    stores: 5,
-    badge: '-10%',
-    badgeColor: '#D97706',
-  },
-  {
-    rank: 3,
-    name: 'Frango Inteiro Resfriado',
-    priceRange: 'R$ 8,99/kg – R$ 14,90/kg',
-    stores: 4,
-    badge: undefined,
-    badgeColor: undefined,
-  },
-];
+function normalize(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function getCategoryEmoji(name: string): string {
+  return CATEGORY_EMOJI[normalize(name)] ?? '🛒';
+}
+
+function formatPrice(price: number): string {
+  return 'R$ ' + price.toFixed(2).replace('.', ',');
+}
 
 // ---------------------------------------------------------------------------
 // Props
@@ -60,8 +52,12 @@ interface SearchDiscoveryProps {
   recentSearches: string[];
   onSelectRecent: (query: string) => void;
   onClearRecents: () => void;
-  onSelectCategory: (categoryName: string) => void;
-  onSelectTrending: (name: string) => void;
+  onSelectCategory: (categoryId: string, categoryName: string) => void;
+  onSelectTrending: (productId: string, name: string) => void;
+  categories: Category[];
+  trendingProducts: TrendingProduct[];
+  isTrendingLoading?: boolean;
+  city?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -74,8 +70,17 @@ export function SearchDiscovery({
   onClearRecents,
   onSelectCategory,
   onSelectTrending,
+  categories,
+  trendingProducts,
+  isTrendingLoading,
+  city,
 }: SearchDiscoveryProps) {
   const { tokens } = useTheme();
+
+  // Filter out "Todos" category
+  const filteredCategories = categories.filter(
+    (cat) => normalize(cat.name) !== 'todos',
+  );
 
   return (
     <ScrollView
@@ -97,16 +102,52 @@ export function SearchDiscovery({
               </Text>
             </Pressable>
           </View>
-          <View style={styles.recentPills}>
-            {recentSearches.map((query) => (
+          <View style={[styles.recentList, { backgroundColor: tokens.surface }]}>
+            {recentSearches.map((query, idx) => (
+              <React.Fragment key={query}>
+                <Pressable
+                  onPress={() => onSelectRecent(query)}
+                  style={styles.recentRow}
+                >
+                  <Clock size={14} color={COLORS.textSecondary} />
+                  <Text
+                    style={[styles.recentRowText, { color: COLORS.textDark }]}
+                    numberOfLines={1}
+                  >
+                    {query}
+                  </Text>
+                  <ChevronRight size={14} color={COLORS.textSecondary} />
+                </Pressable>
+                {idx < recentSearches.length - 1 && (
+                  <View style={[styles.divider, { backgroundColor: COLORS.border }]} />
+                )}
+              </React.Fragment>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Categorias */}
+      {filteredCategories.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: tokens.textPrimary }]}>
+              Categorias
+            </Text>
+          </View>
+          <View style={styles.categoryGrid}>
+            {filteredCategories.map((cat) => (
               <Pressable
-                key={query}
-                onPress={() => onSelectRecent(query)}
-                style={[styles.recentPill, { borderColor: COLORS.border }]}
+                key={cat.id}
+                onPress={() => onSelectCategory(cat.id, cat.name)}
+                style={[styles.categoryCell, { backgroundColor: tokens.surface }]}
               >
-                <Clock size={13} color={COLORS.textSecondary} />
-                <Text style={[styles.recentPillText, { color: COLORS.textSecondary }]}>
-                  {query}
+                <Text style={styles.categoryEmoji}>{getCategoryEmoji(cat.name)}</Text>
+                <Text
+                  style={[styles.categoryName, { color: COLORS.textDark }]}
+                  numberOfLines={1}
+                >
+                  {cat.name}
                 </Text>
               </Pressable>
             ))}
@@ -114,31 +155,29 @@ export function SearchDiscovery({
         </View>
       )}
 
-      {/* Categorias */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: tokens.textPrimary }]}>
-            Categorias
-          </Text>
-        </View>
-        <View style={styles.categoryGrid}>
-          {CATEGORY_GRID.map((cat) => (
-            <Pressable
-              key={cat.name}
-              onPress={() => onSelectCategory(cat.name)}
-              style={[styles.categoryCell, { backgroundColor: tokens.surface }]}
-            >
-              <Text style={styles.categoryEmoji}>{cat.emoji}</Text>
-              <Text
-                style={[styles.categoryName, { color: COLORS.textDark }]}
-                numberOfLines={1}
+      {/* Populares em [Cidade] */}
+      {city && trendingProducts.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: tokens.textPrimary }]}>
+              Populares em {city}
+            </Text>
+          </View>
+          <View style={styles.popularChips}>
+            {trendingProducts.slice(0, 8).map((item) => (
+              <Pressable
+                key={item.id}
+                onPress={() => onSelectTrending(item.id, item.name)}
+                style={[styles.popularChip, { backgroundColor: tokens.primaryMuted }]}
               >
-                {cat.name}
-              </Text>
-            </Pressable>
-          ))}
+                <Text style={[styles.popularChipText, { color: tokens.primary }]}>
+                  {item.name}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Em alta perto de você */}
       <View style={styles.section}>
@@ -148,48 +187,65 @@ export function SearchDiscovery({
           </Text>
           <TrendingUp size={16} color={tokens.primary} />
         </View>
-        <View style={[styles.trendingList, { backgroundColor: tokens.surface }]}>
-          {TRENDING.map((item, index) => (
-            <React.Fragment key={item.name}>
-              <Pressable
-                onPress={() => onSelectTrending(item.name)}
-                style={styles.trendingRow}
-              >
-                <Text style={[styles.trendingRank, { color: tokens.primary }]}>
-                  {item.rank}
-                </Text>
-                <View style={styles.trendingInfo}>
-                  <Text
-                    style={[styles.trendingName, { color: COLORS.textDark }]}
-                    numberOfLines={1}
+        {isTrendingLoading ? (
+          <View style={styles.trendingLoading}>
+            <ActivityIndicator size="small" color={tokens.primary} />
+          </View>
+        ) : trendingProducts.length === 0 ? (
+          <View style={[styles.trendingList, { backgroundColor: tokens.surface }]}>
+            <View style={styles.trendingRow}>
+              <Text style={[styles.trendingMeta, { color: COLORS.textSecondary }]}>
+                Nenhum produto em alta no momento
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <View style={[styles.trendingList, { backgroundColor: tokens.surface }]}>
+            {trendingProducts.map((item, index) => {
+              const badgeColor = item.discountPercent >= 15 ? '#16A34A' : item.discountPercent >= 10 ? '#D97706' : undefined;
+              return (
+                <React.Fragment key={item.id}>
+                  <Pressable
+                    onPress={() => onSelectTrending(item.id, item.name)}
+                    style={styles.trendingRow}
                   >
-                    {item.name}
-                  </Text>
-                  <Text style={[styles.trendingMeta, { color: COLORS.textSecondary }]}>
-                    {item.priceRange} · {item.stores} lojas
-                  </Text>
-                </View>
-                {item.badge && item.badgeColor && (
-                  <View
-                    style={[
-                      styles.trendingBadge,
-                      { backgroundColor: item.badgeColor + '20' },
-                    ]}
-                  >
-                    <Text
-                      style={[styles.trendingBadgeText, { color: item.badgeColor }]}
-                    >
-                      {item.badge}
+                    <Text style={[styles.trendingRank, { color: tokens.primary }]}>
+                      {index + 1}
                     </Text>
-                  </View>
-                )}
-              </Pressable>
-              {index < TRENDING.length - 1 && (
-                <View style={[styles.divider, { backgroundColor: COLORS.border }]} />
-              )}
-            </React.Fragment>
-          ))}
-        </View>
+                    <View style={styles.trendingInfo}>
+                      <Text
+                        style={[styles.trendingName, { color: COLORS.textDark }]}
+                        numberOfLines={1}
+                      >
+                        {item.name}
+                      </Text>
+                      <Text style={[styles.trendingMeta, { color: COLORS.textSecondary }]}>
+                        {formatPrice(item.minPrice)} – {formatPrice(item.maxPrice)} · {item.storeCount} {item.storeCount === 1 ? 'loja' : 'lojas'}
+                      </Text>
+                    </View>
+                    {badgeColor && (
+                      <View
+                        style={[
+                          styles.trendingBadge,
+                          { backgroundColor: badgeColor + '20' },
+                        ]}
+                      >
+                        <Text
+                          style={[styles.trendingBadgeText, { color: badgeColor }]}
+                        >
+                          -{item.discountPercent}%
+                        </Text>
+                      </View>
+                    )}
+                  </Pressable>
+                  {index < trendingProducts.length - 1 && (
+                    <View style={[styles.divider, { backgroundColor: COLORS.border }]} />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -234,24 +290,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  // Recent searches
-  recentPills: {
+  // Recent searches (vertical list)
+  recentList: {
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+    overflow: 'hidden',
+  },
+  recentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  recentRowText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  // Populares chips
+  popularChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  recentPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
+  popularChip: {
     borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingVertical: 7,
   },
-  recentPillText: {
+  popularChipText: {
     fontSize: 13,
+    fontWeight: '600',
   },
   // Category grid: 4 columns
   categoryGrid: {
@@ -329,5 +403,9 @@ const styles = StyleSheet.create({
   divider: {
     height: StyleSheet.hairlineWidth,
     marginHorizontal: 16,
+  },
+  trendingLoading: {
+    alignItems: 'center',
+    paddingVertical: 24,
   },
 });

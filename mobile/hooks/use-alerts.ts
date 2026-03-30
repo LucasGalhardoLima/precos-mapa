@@ -8,6 +8,7 @@ import type { AlertWithProduct } from '@/types';
 export function useAlerts() {
   const [alerts, setAlerts] = useState<AlertWithProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const session = useAuthStore((s) => s.session);
   const userId = session?.user?.id;
 
@@ -18,13 +19,18 @@ export function useAlerts() {
       return;
     }
 
-    const { data } = await supabase
+    setError(null);
+    const { data, error: fetchErr } = await supabase
       .from('user_alerts')
-      .select('*, product:products(*)')
+      .select('*, product:products(*), triggered_store:stores!user_alerts_triggered_store_id_fkey(id, name)')
       .eq('user_id', userId)
       .eq('is_active', true);
 
-    if (data) setAlerts(data as AlertWithProduct[]);
+    if (fetchErr) {
+      setError(new Error(fetchErr.message));
+    } else if (data) {
+      setAlerts(data as AlertWithProduct[]);
+    }
     setIsLoading(false);
   }, [userId]);
 
@@ -62,12 +68,38 @@ export function useAlerts() {
 
       setAlerts((prev) => [...prev, tempAlert]);
 
-      const { error } = await supabase.from('user_alerts').insert({
-        user_id: userId,
-        product_id: productId,
-        target_price: targetPrice ?? null,
-        radius_km: radiusKm ?? 5,
-      });
+      // Check if a disabled alert already exists for this product (unique constraint)
+      const { data: existing } = await supabase
+        .from('user_alerts')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('product_id', productId)
+        .eq('is_active', false)
+        .maybeSingle();
+
+      let error: { message: string } | null = null;
+
+      if (existing) {
+        // Re-enable the existing alert and clear any stale trigger data
+        ({ error } = await supabase
+          .from('user_alerts')
+          .update({
+            is_active: true,
+            target_price: targetPrice ?? null,
+            radius_km: radiusKm ?? 5,
+            triggered_at: null,
+            triggered_price: null,
+            triggered_store_id: null,
+          })
+          .eq('id', existing.id));
+      } else {
+        ({ error } = await supabase.from('user_alerts').insert({
+          user_id: userId,
+          product_id: productId,
+          target_price: targetPrice ?? null,
+          radius_km: radiusKm ?? 5,
+        }));
+      }
 
       if (error) {
         setAlerts(snapshot);
@@ -76,7 +108,7 @@ export function useAlerts() {
             'Limite de alertas atingido. Faca upgrade para criar mais.'
           );
         }
-        Alert.alert('Erro', 'Não foi possível atualizar o alerta.');
+        Alert.alert('Erro', 'Não foi possível criar o alerta.');
         return;
       }
 
@@ -110,11 +142,44 @@ export function useAlerts() {
     [userId, alerts, fetchAlerts]
   );
 
+  const toggleAlert = useCallback(
+    async (alertId: string, active: boolean) => {
+      if (!userId) return;
+
+      const snapshot = [...alerts];
+
+      if (!active) {
+        setAlerts((prev) => prev.filter((a) => a.id !== alertId));
+      } else {
+        setAlerts((prev) =>
+          prev.map((a) => (a.id === alertId ? { ...a, is_active: true } : a))
+        );
+      }
+
+      const { error } = await supabase
+        .from('user_alerts')
+        .update({ is_active: active })
+        .eq('id', alertId)
+        .eq('user_id', userId);
+
+      if (error) {
+        setAlerts(snapshot);
+        Alert.alert('Erro', 'Não foi possível atualizar o alerta.');
+        return;
+      }
+
+      fetchAlerts();
+    },
+    [userId, alerts, fetchAlerts]
+  );
+
   return {
     alerts,
     isLoading,
+    error,
     create: createAlert,
     disable: disableAlert,
+    toggle: toggleAlert,
     count: alerts.length,
     refresh: fetchAlerts,
   };

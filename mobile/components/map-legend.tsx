@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   dotGreen: {
-    backgroundColor: '#16A34A',
+    backgroundColor: '#0D9488',
   },
   dotYellow: {
     backgroundColor: '#F59E0B',

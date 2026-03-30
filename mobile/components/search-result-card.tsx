@@ -66,6 +66,7 @@ function formatPrice(price: number): string {
 interface SearchResultCardProps {
   promotion: EnrichedPromotion;
   onPress: (promotion: EnrichedPromotion) => void;
+  onPressAdd?: (promotion: EnrichedPromotion) => void;
   onPressLocked: () => void;
   testID?: string;
 }
@@ -77,6 +78,7 @@ interface SearchResultCardProps {
 export function SearchResultCard({
   promotion,
   onPress,
+  onPressAdd,
   onPressLocked,
   testID,
 }: SearchResultCardProps) {
@@ -129,7 +131,7 @@ export function SearchResultCard({
       {/* Right: add button */}
       <Pressable
         style={[styles.addButton, { borderColor: tokens.primary }]}
-        onPress={() => onPress(promotion)}
+        onPress={() => (onPressAdd ?? onPress)(promotion)}
         hitSlop={8}
       >
         <Plus size={16} color={tokens.primary} strokeWidth={2.5} />

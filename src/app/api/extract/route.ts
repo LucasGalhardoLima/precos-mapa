@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { normalizeEncartePayload } from "@/lib/schemas";
+import { requireApiAuth } from "@/lib/api-auth";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 function resolveErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -11,6 +13,17 @@ function resolveErrorMessage(error: unknown): string {
 
 export async function POST(request: Request) {
   try {
+    const { user, error: authError } = await requireApiAuth(request);
+    if (authError) return authError;
+
+    const ip = getClientIp(request);
+    if (!checkRateLimit(`extract:${ip}:${user.id}`, 5, 60_000)) {
+      return NextResponse.json(
+        { error: "Muitas requisições. Tente novamente em instantes." },
+        { status: 429 },
+      );
+    }
+
     const body = (await request.json()) as { url?: string };
 
     if (!body.url) {

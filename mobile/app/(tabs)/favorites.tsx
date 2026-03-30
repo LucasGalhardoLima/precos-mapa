@@ -15,13 +15,14 @@ import { useFavorites } from '@/hooks/use-favorites';
 import { useAuthStore } from '@poup/shared';
 import { useTheme } from '@/theme/use-theme';
 import { Paywall } from '@/components/paywall';
+import { InlineError } from '@/components/inline-error';
 import type { FavoriteWithProduct } from '@/types';
 
 const FREE_FAVORITE_LIMIT = 10;
 
 export default function FavoritesScreen() {
   const { tokens } = useTheme();
-  const { favorites, isLoading, remove, count, refresh } = useFavorites();
+  const { favorites, isLoading, error, remove, count, refresh } = useFavorites();
   const profile = useAuthStore((s) => s.profile);
   const isFree = profile?.b2c_plan === 'free';
   const [showPaywall, setShowPaywall] = useState(false);
@@ -152,7 +153,11 @@ export default function FavoritesScreen() {
         )}
       </View>
 
-      {isLoading ? (
+      {error ? (
+        <View style={styles.errorContainer}>
+          <InlineError onRetry={refresh} message="Não foi possível carregar favoritos. Tentar novamente?" />
+        </View>
+      ) : isLoading ? (
         <View style={styles.skeletonList}>
           {[0, 1, 2].map((i) => (
             <MotiView
@@ -200,6 +205,7 @@ export default function FavoritesScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
+  errorContainer: { paddingHorizontal: 16, paddingTop: 16 },
   header: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 12 },
   title: { fontSize: 24, fontWeight: '700' },
   subtitle: { fontSize: 14, marginTop: 4 },

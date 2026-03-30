@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CheckCircle, ChevronDown, FileText, FileUp, Globe2, Loader2, Plus, RotateCcw, ScanLine, Sparkles, Store, Trash2, X } from "lucide-react";
+import { ArrowRight, CheckCircle, ChevronDown, FileText, FileUp, Globe2, ImageIcon, Loader2, Plus, RotateCcw, ScanLine, Sparkles, Store, Trash2, X } from "lucide-react";
 import { useImporterDraftStore } from "@/features/market-importer/importer-draft-store";
 import { formatCurrency } from "@/features/shared/format";
 import { EncarteResponse, normalizeEncartePayload, normalizeCategory } from "@/lib/schemas";
@@ -69,6 +69,8 @@ interface ImporterWorkbenchProps {
 
 const SUPERMARKET_PICKS = [
   { label: "Savegnago Matão", url: "https://www.savegnago.com.br/jornal-de-ofertas/matao" },
+  { label: "Savegnago Araraquara", url: "https://www.savegnago.com.br/jornal-de-ofertas/araraquara" },
+  { label: "Savegnago São Carlos", url: "https://www.savegnago.com.br/jornal-de-ofertas/sao-carlos" },
   { label: "Jaú Serve Matão", url: "https://jauservesupermercados.com.br/tabloides/cidades/matao/" },
 ] as const;
 
@@ -163,6 +165,7 @@ export function ImporterWorkbench({ markets, defaultMarketId }: ImporterWorkbenc
 
   const [step, setStep] = useState<ImporterStep>("input");
   const [url, setUrl] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [logs, setLogs] = useState<string[]>([]);
   const [rawPayload, setRawPayload] = useState<ImporterPayload | null>(null);
   const [products, setProducts] = useState<EditableProduct[]>([]);
@@ -456,6 +459,68 @@ export function ImporterWorkbench({ markets, defaultMarketId }: ImporterWorkbenc
     }
   }
 
+  async function runImageUrlImport() {
+    if (!imageUrl.trim()) {
+      setFeedback("Informe uma URL de imagem para extrair.");
+      return;
+    }
+    setFeedback(null);
+    setStep("processing");
+    setLogs([logWithTimestamp(`Extraindo ofertas da imagem: ${imageUrl}`)]);
+
+    try {
+      appendLog("Enviando imagem para GPT-4o Vision...");
+      const response = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: imageUrl }),
+      });
+
+      if (!response.ok) {
+        const err = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(err.error ?? `Falha na extração (HTTP ${response.status})`);
+      }
+
+      const data = (await response.json()) as EncarteResponse;
+      appendLog(`Extração concluída: ${data.products.length} itens encontrados.`);
+
+      const payload: ImporterPayload = {
+        products: data.products,
+        meta: { source: "image_url", imageUrl: imageUrl },
+      };
+
+      setRawPayload(payload);
+      const editableProducts = toEditableProducts(data);
+      setProducts(editableProducts);
+      setOriginalProducts(editableProducts);
+
+      // Reset queue state (single image, no queue)
+      setPdfQueue([]);
+      setCurrentPdfIndex(1);
+      setTotalPdfs(1);
+      setCurrentPdfName(null);
+
+      saveDraft({
+        products: editableProducts,
+        originalProducts: editableProducts,
+        rawPayload: payload,
+        selectedMarketId,
+        savedAt: Date.now(),
+        pdfQueue: [],
+        currentPdfIndex: 1,
+        totalPdfs: 1,
+      });
+
+      appendLog("Pronto para revisão.");
+      setStep("review");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Falha inesperada na extração de imagem.";
+      setFeedback(message);
+      appendLog(`Erro: ${message}`);
+      setStep("input");
+    }
+  }
+
   function makeDraft(overrides: Partial<{ products: EditableProduct[]; selectedMarketId: string }> = {}) {
     return {
       products: overrides.products ?? products,
@@ -701,26 +766,55 @@ export function ImporterWorkbench({ markets, defaultMarketId }: ImporterWorkbenc
             </div>
           </article>
 
-          <article className="rounded-xl border border-dashed border-[var(--color-line)] bg-[var(--color-surface)] p-4">
-            <h3 className="text-sm font-semibold text-[var(--color-ink)]">Upload de PDF</h3>
-            <p className="mt-1 text-xs text-[var(--color-muted)]">Ideal para encartes em lote com várias páginas.</p>
-            <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm font-medium text-[var(--color-muted)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-deep)]">
-              <FileUp className="h-4 w-4" />
-              Selecionar PDF
-              <input
-                type="file"
-                accept="application/pdf"
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) {
-                    void runPdfImport(file);
-                  }
-                  event.target.value = "";
-                }}
-              />
-            </label>
-          </article>
+          <div className="space-y-4">
+            <article className="rounded-xl border border-dashed border-[var(--color-line)] bg-[var(--color-surface)] p-4">
+              <h3 className="text-sm font-semibold text-[var(--color-ink)]">Upload de PDF</h3>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">Ideal para encartes em lote com várias páginas.</p>
+              <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm font-medium text-[var(--color-muted)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary-deep)]">
+                <FileUp className="h-4 w-4" />
+                Selecionar PDF
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) {
+                      void runPdfImport(file);
+                    }
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+            </article>
+
+            <article className="rounded-xl border border-dashed border-amber-300 bg-amber-50/50 p-4">
+              <h3 className="text-sm font-semibold text-[var(--color-ink)]">Importar de imagem</h3>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">
+                Cole a URL de uma imagem de encarte (Facebook, Instagram, etc).
+              </p>
+              <div className="mt-3 flex flex-col gap-2">
+                <div className="relative">
+                  <ImageIcon className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-[var(--color-muted)]" />
+                  <input
+                    type="url"
+                    placeholder="https://scontent.fbau1-1.fna.fbcdn.net/..."
+                    value={imageUrl}
+                    onChange={(event) => setImageUrl(event.target.value)}
+                    className="w-full rounded-lg border border-[var(--color-line)] bg-white px-10 py-2.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void runImageUrlImport()}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-300 bg-white px-3 py-2.5 text-sm font-medium text-amber-700 transition hover:bg-amber-100"
+                >
+                  <ScanLine className="h-4 w-4" />
+                  Extrair ofertas da imagem
+                </button>
+              </div>
+            </article>
+          </div>
         </section>
       ) : null}
 

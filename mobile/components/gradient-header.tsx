@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ShoppingCart } from 'lucide-react-native';
 import { useAuthStore } from '@poup/shared';
 
 // ---------------------------------------------------------------------------
@@ -39,13 +40,14 @@ export function GradientHeader() {
     >
       <View style={styles.row}>
         {/* Left: greeting + subtitle */}
-        <View style={styles.textContainer}>
-          <Text style={styles.greeting}>
-            {greeting}, {firstName}
-          </Text>
-          <Text style={styles.subtitle}>
-            Veja as melhores ofertas perto de você
-          </Text>
+        <View style={styles.headerLeft}>
+          <View style={styles.logoWrap}>
+            <ShoppingCart size={18} color="#FDE68A" strokeWidth={2.4} />
+          </View>
+          <View style={styles.textContainer}>
+            <Text style={styles.greeting}>{greeting},</Text>
+            <Text style={styles.name}>{firstName}</Text>
+          </View>
         </View>
 
         {/* Right: avatar */}
@@ -78,19 +80,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  textContainer: {
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     flex: 1,
     marginRight: 12,
   },
+  logoWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textContainer: {
+    flexShrink: 1,
+  },
   greeting: {
-    fontSize: 20,
+    fontSize: 12,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.75)',
+  },
+  name: {
+    marginTop: 1,
+    fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
-  },
-  subtitle: {
-    marginTop: 2,
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.7)',
   },
   avatar: {
     width: 40,

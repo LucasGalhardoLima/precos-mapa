@@ -39,6 +39,7 @@ export const DealCard = React.memo(function DealCard({ deal, onPress, compact = 
 
   const discountLabel = `-${Math.round(deal.discountPercent)}%`;
   const distanceText = `${deal.distanceKm.toFixed(1)} km`;
+  const savingsAmount = Math.max(0, deal.original_price - deal.promo_price);
 
   const CardComponent = CleanCard;
 
@@ -73,12 +74,18 @@ export const DealCard = React.memo(function DealCard({ deal, onPress, compact = 
           {formatBRL(deal.original_price)}
         </Text>
       </View>
+      <Text style={styles.savingsText}>Economize {formatBRL(savingsAmount)}</Text>
 
       {/* Badges row — always show both slots for consistent card height */}
       <View style={styles.badgeRow}>
         <PillBadge label={discountLabel} variant="discount" />
         {deal.isBestPrice ? (
           <PillBadge label="Melhor preço" variant="highlight" />
+        ) : (
+          <View style={styles.badgePlaceholder} />
+        )}
+        {deal.isHistoricLow ? (
+          <PillBadge label="Menor em 30d" variant="historic" />
         ) : (
           <View style={styles.badgePlaceholder} />
         )}
@@ -116,7 +123,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   promoPrice: {
     fontSize: 22,
@@ -125,6 +132,12 @@ const styles = StyleSheet.create({
   originalPrice: {
     fontSize: 13,
     textDecorationLine: 'line-through',
+  },
+  savingsText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#16A34A',
+    marginBottom: 8,
   },
   badgeRow: {
     flexDirection: 'row',

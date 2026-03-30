@@ -7,6 +7,7 @@ import type { FavoriteWithProduct } from '@/types';
 export function useFavorites() {
   const [favorites, setFavorites] = useState<FavoriteWithProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const session = useAuthStore((s) => s.session);
   const userId = session?.user?.id;
 
@@ -17,12 +18,17 @@ export function useFavorites() {
       return;
     }
 
-    const { data } = await supabase
+    setError(null);
+    const { data, error: fetchErr } = await supabase
       .from('user_favorites')
       .select('*, product:products(*, promotions(*, store:stores(*)))')
       .eq('user_id', userId);
 
-    if (data) setFavorites(data as FavoriteWithProduct[]);
+    if (fetchErr) {
+      setError(new Error(fetchErr.message));
+    } else if (data) {
+      setFavorites(data as FavoriteWithProduct[]);
+    }
     setIsLoading(false);
   }, [userId]);
 
@@ -101,6 +107,7 @@ export function useFavorites() {
   return {
     favorites,
     isLoading,
+    error,
     add: addFavorite,
     remove: removeFavorite,
     isFavorited,

@@ -10,6 +10,12 @@ import { useTheme } from '@/theme/use-theme';
 export interface StoreCardProps {
   /** Store name */
   name: string;
+  /** Street address */
+  address?: string;
+  /** First letter for logo avatar */
+  logoInitial?: string;
+  /** Background color for logo avatar */
+  logoColor?: string;
   /** Distance in km */
   distanceKm: number;
   /** Number of active deals */
@@ -51,59 +57,71 @@ function avatarColorForName(name: string): string {
  */
 export function StoreCard({
   name,
+  address,
+  logoInitial,
+  logoColor,
   distanceKm,
   dealCount,
   isOpen = true,
   onPress,
 }: StoreCardProps) {
   const { tokens } = useTheme();
-  const initial = name.charAt(0).toUpperCase();
-  const avatarBg = avatarColorForName(name);
+  const initial = logoInitial ?? name.charAt(0).toUpperCase();
+  const avatarBg = logoColor ?? avatarColorForName(name);
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityLabel={name}
       accessibilityRole="button"
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: tokens.surface },
-        pressed && styles.cardPressed,
-      ]}
+      style={({ pressed }) => [pressed && styles.cardPressed]}
     >
-      {/* Store initial avatar */}
-      <View style={[styles.avatar, { backgroundColor: avatarBg }]}>
-        <Text style={styles.avatarText}>{initial}</Text>
-      </View>
-
-      {/* Text content */}
-      <View style={styles.info}>
-        <Text
-          numberOfLines={1}
-          style={[styles.storeName, { color: tokens.textDark }]}
-        >
-          {name}
-        </Text>
-
-        {/* Tags row */}
-        <View style={styles.tagsRow}>
-          <Text style={[styles.tag, { color: tokens.textSecondary }]}>
-            {distanceKm.toFixed(1)} km
-          </Text>
-          <Text style={[styles.tagSep, { color: tokens.textSecondary }]}>·</Text>
-          <Text style={[styles.tag, { color: tokens.textSecondary }]}>
-            {dealCount} {dealCount === 1 ? 'oferta' : 'ofertas'}
-          </Text>
-          <Text style={[styles.tagSep, { color: tokens.textSecondary }]}>·</Text>
-          <Text
-            style={[
-              styles.tag,
-              { color: isOpen ? tokens.success : tokens.danger, fontWeight: '600' },
-            ]}
-          >
-            {isOpen ? 'Aberto' : 'Fechado'}
-          </Text>
+      <View style={[styles.card, { backgroundColor: tokens.surface }]}>
+        {/* Store initial avatar */}
+        <View style={[styles.avatar, { backgroundColor: avatarBg }]}>
+          <Text style={styles.avatarText}>{initial}</Text>
         </View>
+
+        {/* Text content */}
+        <View style={styles.info}>
+          <Text
+            numberOfLines={1}
+            style={[styles.storeName, { color: tokens.textDark }]}
+          >
+            {name}
+          </Text>
+
+          {address ? (
+            <Text
+              numberOfLines={1}
+              style={styles.address}
+            >
+              {address}
+            </Text>
+          ) : null}
+
+          {/* Tags row */}
+          <View style={styles.tagsRow}>
+            <View style={styles.badgeDistance}>
+              <Text style={styles.badgeDistanceText}>
+                {distanceKm.toFixed(1)} km
+              </Text>
+            </View>
+            <View style={styles.badgeDeals}>
+              <Text style={styles.badgeDealsText}>
+                {dealCount} {dealCount === 1 ? 'oferta' : 'ofertas'}
+              </Text>
+            </View>
+            <View style={[styles.badgeStatus, isOpen ? styles.badgeOpen : styles.badgeClosed]}>
+              <Text style={[styles.badgeStatusText, isOpen ? styles.badgeOpenText : styles.badgeClosedText]}>
+                {isOpen ? 'Aberto' : 'Fechado'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Right chevron */}
+        <Text style={styles.chevron}>›</Text>
       </View>
     </Pressable>
   );
@@ -117,28 +135,25 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 14,
+    padding: 14,
     marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1.5,
+    borderColor: '#e8edf2',
   },
   cardPressed: {
     opacity: 0.85,
   },
   avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 42,
+    height: 42,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   avatarText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -148,17 +163,65 @@ const styles = StyleSheet.create({
   storeName: {
     fontSize: 14,
     fontWeight: '700',
-    marginBottom: 2,
+    fontFamily: 'Inter_500Medium',
+    marginBottom: 1,
+  },
+  address: {
+    fontSize: 10,
+    color: '#9ca3af',
+    marginBottom: 4,
   },
   tagsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
-  tag: {
-    fontSize: 12,
+  badgeDistance: {
+    backgroundColor: '#e0f2fe',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
-  tagSep: {
-    fontSize: 12,
+  badgeDistanceText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#0369a1',
+  },
+  badgeDeals: {
+    backgroundColor: '#fef3c7',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  badgeDealsText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#92400e',
+  },
+  badgeStatus: {
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  badgeOpen: {
+    backgroundColor: '#dcfce7',
+  },
+  badgeClosed: {
+    backgroundColor: '#fee2e2',
+  },
+  badgeStatusText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  badgeOpenText: {
+    color: '#166534',
+  },
+  badgeClosedText: {
+    color: '#991b1b',
+  },
+  chevron: {
+    fontSize: 16,
+    color: '#9ca3af',
+    marginLeft: 8,
   },
 });

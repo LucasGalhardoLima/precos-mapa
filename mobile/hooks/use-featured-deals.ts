@@ -48,6 +48,7 @@ export function useFeaturedDeals() {
           distanceKm: 0,
           isExpiringSoon,
           isBestPrice: false,
+          isHistoricLow: false,
           isLocked: false,
         };
       })

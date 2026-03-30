@@ -96,6 +96,9 @@ export function useAuth() {
 
   const setRole = useCallback(async (role: UserRole) => {
     if (!session?.user) throw new Error('Nao autenticado');
+    if (role !== 'consumer' && role !== 'business') {
+      throw new Error('Papel invalido');
+    }
 
     const { error } = await supabase
       .from('profiles')
