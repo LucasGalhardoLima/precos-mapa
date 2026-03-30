@@ -5,7 +5,7 @@ import { useTheme } from '../../theme/use-theme';
 
 type PillBadgeProps = {
   label: string;
-  variant: 'discount' | 'highlight';
+  variant: 'discount' | 'highlight' | 'historic';
 };
 
 /**
@@ -16,9 +16,14 @@ export function PillBadge({ label, variant }: PillBadgeProps) {
   const { tokens } = useTheme();
 
   const isDiscount = variant === 'discount';
+  const isHistoric = variant === 'historic';
 
-  const pillBg = isDiscount ? tokens.accentSoft : tokens.primaryMuted;
-  const pillText = isDiscount ? tokens.accent : tokens.primary;
+  const pillBg = isHistoric
+    ? '#ede9fe'
+    : (isDiscount ? tokens.accentSoft : tokens.primaryMuted);
+  const pillText = isHistoric
+    ? '#5b21b6'
+    : (isDiscount ? tokens.accent : tokens.primary);
 
   return (
     <View style={[styles.pill, { backgroundColor: pillBg }]}>

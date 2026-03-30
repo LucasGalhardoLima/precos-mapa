@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { findOrCreateProduct } from "@/lib/product-match";
+import { extractBrand, normalizeCategory } from "@/lib/schemas";
+import { requireApiAuth } from "@/lib/api-auth";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 interface ProductInput {
   name: string;
@@ -8,21 +11,29 @@ interface ProductInput {
   original_price?: number;
   unit: string;
   validity: string | null;
+  category?: string;
+  brand?: string;
 }
 
 interface PublishBody {
   storeId: string;
   products: ProductInput[];
-  accessToken: string;
 }
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as PublishBody;
+    const { user, error: authError } = await requireApiAuth(request);
+    if (authError) return authError;
 
-    if (!body.accessToken) {
-      return NextResponse.json({ error: "Token de acesso obrigatório." }, { status: 401 });
+    const ip = getClientIp(request);
+    if (!checkRateLimit(`publish:${ip}:${user.id}`, 10, 60_000)) {
+      return NextResponse.json(
+        { error: "Muitas requisições. Tente novamente em instantes." },
+        { status: 429 },
+      );
     }
+
+    const body = (await request.json()) as PublishBody;
 
     if (!body.storeId) {
       return NextResponse.json({ error: "ID do mercado obrigatório." }, { status: 400 });
@@ -30,16 +41,6 @@ export async function POST(request: Request) {
 
     if (!Array.isArray(body.products) || body.products.length === 0) {
       return NextResponse.json({ error: "Nenhum produto para publicar." }, { status: 400 });
-    }
-
-    // Validate JWT and get user
-    const {
-      data: { user },
-      error: authError,
-    } = await getSupabaseAdmin().auth.getUser(body.accessToken);
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Token inválido ou expirado." }, { status: 401 });
     }
 
     // Verify user is a member of the store
@@ -82,8 +83,14 @@ export async function POST(request: Request) {
       let productId: string;
 
       try {
+        const brand = product.brand ?? extractBrand(product.name) ?? undefined;
+        const categoryId = product.category
+          ? normalizeCategory(product.category)
+          : undefined;
         const { id } = await findOrCreateProduct(getSupabaseAdmin(), {
           name: product.name,
+          categoryId,
+          brand,
           referencePrice: product.original_price ?? product.price,
         });
         productId = id;

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runMultiPassExtraction } from "@/lib/import-pipeline";
+import { runMultiPassExtraction, runMultiPassImageExtraction } from "@/lib/import-pipeline";
 import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { findOrCreateProduct } from "@/lib/product-match";
-import { normalizeCategory, EncarteProduct } from "@/lib/schemas";
+import { normalizeCategory, extractBrand, EncarteProduct } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
+
+const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "webp"]);
 
 const CATEGORY_DEFAULTS: Record<string, { name: string; icon: string; sort_order: number }> = {
   cat_alimentos: { name: "Alimentos", icon: "wheat", sort_order: 0 },
@@ -52,20 +54,27 @@ export async function POST(request: NextRequest) {
     .eq("id", importId);
 
   try {
-    // 3. Download PDF from storage
+    // 3. Determine file type and download from correct bucket
+    const fileExt = record.storage_path.split(".").pop()?.toLowerCase() ?? "";
+    const isImage = IMAGE_EXTENSIONS.has(fileExt);
+    const bucket = isImage ? "image-imports" : "pdf-imports";
+
     const { data: fileData, error: downloadError } = await getSupabaseAdmin()
-      .storage.from("pdf-imports")
+      .storage.from(bucket)
       .download(record.storage_path);
 
     if (downloadError || !fileData) {
-      throw new Error(`Failed to download ${record.storage_path} from storage: ${JSON.stringify(downloadError)}`);
+      throw new Error(`Failed to download ${record.storage_path} from ${bucket}: ${JSON.stringify(downloadError)}`);
     }
 
-    const pdfBuffer = Buffer.from(await fileData.arrayBuffer());
-    console.log(`[WORKER] Processing import ${importId} (${record.filename}, ${pdfBuffer.byteLength} bytes)`);
+    const fileBuffer = Buffer.from(await fileData.arrayBuffer());
+    const typeLabel = isImage ? "image" : "PDF";
+    console.log(`[WORKER] Processing ${typeLabel} import ${importId} (${record.filename}, ${fileBuffer.byteLength} bytes)`);
 
-    // 4. Run 3-pass extraction
-    const consensus = await runMultiPassExtraction(pdfBuffer, record.filename, 3);
+    // 4. Run 3-pass extraction (PDF via Claude Sonnet, images via GPT-4o vision)
+    const consensus = isImage
+      ? await runMultiPassImageExtraction(fileBuffer, record.filename, 3)
+      : await runMultiPassExtraction(fileBuffer, record.filename, 3);
     console.log(`[WORKER] Import ${importId}: consensus=${consensus.type}, confidence=${consensus.confidenceScore}, products=${consensus.consensusProducts?.length ?? 0}`);
 
     // 5. Save extraction passes
@@ -168,14 +177,26 @@ async function publishProducts(
 
   const now = new Date().toISOString();
   let published = 0;
+  const lowConfidenceProducts: string[] = [];
 
   for (const product of products) {
     try {
-      const { id: productId } = await findOrCreateProduct(getSupabaseAdmin(), {
+      const categoryId = normalizeCategory(product.category);
+      const brand = product.brand ?? extractBrand(product.name);
+
+      const result = await findOrCreateProduct(getSupabaseAdmin(), {
         name: product.name,
-        categoryId: normalizeCategory(product.category),
+        categoryId,
+        brand: brand ?? undefined,
         referencePrice: product.original_price ?? product.price,
       });
+
+      // Track low-confidence matches for review flagging
+      if (result.matched && result.confidence < 0.7) {
+        lowConfidenceProducts.push(
+          `${product.name} (confidence: ${(result.confidence * 100).toFixed(0)}%)`,
+        );
+      }
 
       let endDate: string;
       if (product.validity) {
@@ -190,7 +211,7 @@ async function publishProducts(
 
       const { error: promoError } = await getSupabaseAdmin().from("promotions").insert({
         store_id: storeId,
-        product_id: productId,
+        product_id: result.id,
         original_price: originalPrice,
         promo_price: product.price,
         start_date: now,
@@ -207,6 +228,16 @@ async function publishProducts(
     } catch {
       continue;
     }
+  }
+
+  // Flag import for review if any products had low-confidence matches
+  if (lowConfidenceProducts.length > 0) {
+    await getSupabaseAdmin()
+      .from("pdf_imports")
+      .update({
+        needs_review_reason: `${lowConfidenceProducts.length} produto(s) com baixa confiança: ${lowConfidenceProducts.slice(0, 5).join("; ")}`,
+      })
+      .eq("id", importId);
   }
 
   return published;

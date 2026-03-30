@@ -1,5 +1,5 @@
 import '../global.css';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
@@ -13,12 +13,23 @@ import {
   Inter_500Medium,
 } from '@expo-google-fonts/inter';
 import { useAuth } from '@/hooks/use-auth';
-import { useAuthStore } from '@poup/shared';
+import { useAuthStore, usePushNotifications } from '@poup/shared';
+import type { NotificationData } from '@poup/shared';
+import { useCallback } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function RootLayout() {
   const { isLoading } = useAuth();
   const hasSeenOnboarding = useAuthStore((s) => s.hasSeenOnboarding);
+  const router = useRouter();
+
+  const handleNotificationTap = useCallback((data: NotificationData) => {
+    if (data.productId) {
+      router.push(`/product/${data.productId}`);
+    }
+  }, [router]);
+
+  usePushNotifications({ onNotificationTap: handleNotificationTap });
 
   const [fontsLoaded] = useFonts({
     Poppins_700Bold,

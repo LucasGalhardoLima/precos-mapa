@@ -18,9 +18,12 @@ import {
   Navigation2,
   ShoppingCart,
   Eye,
+  Settings,
+  MapPinOff,
 } from 'lucide-react-native';
 import { MapStorePin, type PinRank } from '@/components/map-store-pin';
 
+import { useAnalytics } from '@/hooks/use-analytics';
 import { useStores } from '@/hooks/use-stores';
 import { useLocation } from '@/hooks/use-location';
 import { useShoppingList } from '@/hooks/use-shopping-list';
@@ -108,7 +111,7 @@ function rankStores(stores: StoreWithPromotions[]): RankedStore[] {
 
 export default function MapScreen() {
   const { latitude, longitude, permissionGranted } = useLocation();
-  const { stores } = useStores({
+  const { stores, isLoading } = useStores({
     userLatitude: latitude,
     userLongitude: longitude,
   });
@@ -116,6 +119,7 @@ export default function MapScreen() {
   const { categories } = useCategories();
   const { tokens } = useTheme();
   const router = useRouter();
+  const { trackMapPinTap } = useAnalytics();
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -354,7 +358,8 @@ export default function MapScreen() {
 
   const handleMarkerPress = useCallback((storeData: StoreWithPromotions) => {
     setSelectedStore(storeData);
-  }, []);
+    trackMapPinTap(storeData.store.id);
+  }, [trackMapPinTap]);
 
   const handleCloseStoreSheet = useCallback(() => {
     setSelectedStore(null);
@@ -474,13 +479,41 @@ export default function MapScreen() {
         >
           <View style={styles.locationBannerRow}>
             <MapPin size={18} color={Colors.semantic.warning} />
-            <Text
-              style={[
-                styles.locationBannerText,
-                { color: tokens.textSecondary },
-              ]}
-            >
-              Permita acesso à localização para ver lojas perto de você
+            <View style={styles.locationBannerContent}>
+              <Text
+                style={[
+                  styles.locationBannerText,
+                  { color: tokens.textSecondary },
+                ]}
+              >
+                Permita acesso à localização para ver lojas perto de você
+              </Text>
+              <Pressable
+                onPress={() => Linking.openSettings()}
+                style={[styles.locationSettingsBtn, { backgroundColor: tokens.primaryMuted }]}
+                accessibilityLabel="Abrir configurações de localização"
+                accessibilityRole="button"
+              >
+                <Settings size={12} color={tokens.primary} />
+                <Text style={[styles.locationSettingsText, { color: tokens.primary }]}>
+                  Abrir Configurações
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* No stores found */}
+      {!isLoading && stores.length === 0 && permissionGranted !== false && (
+        <View style={styles.noStoresOverlay}>
+          <View style={[styles.noStoresCard, { backgroundColor: tokens.surface }]}>
+            <MapPinOff size={28} color={tokens.textHint} />
+            <Text style={[styles.noStoresTitle, { color: tokens.textPrimary }]}>
+              Nenhum mercado encontrado
+            </Text>
+            <Text style={[styles.noStoresSubtitle, { color: tokens.textHint }]}>
+              Não há mercados com ofertas ativas perto de você no momento
             </Text>
           </View>
         </View>
@@ -737,9 +770,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  locationBannerContent: {
+    flex: 1,
+    gap: 8,
+  },
   locationBannerText: {
     fontSize: 13,
-    flex: 1,
+  },
+  locationSettingsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  locationSettingsText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 
   // Category filter bar (floating over map)
@@ -1006,7 +1055,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   fcTagDist: {
-    backgroundColor: '#CCFBF1',
+    backgroundColor: '#e0f2fe',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -1014,10 +1063,10 @@ const styles = StyleSheet.create({
   fcTagDistText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#0D9488',
+    color: '#0369a1',
   },
   fcTagDeals: {
-    backgroundColor: '#FFE4E6',
+    backgroundColor: '#fef3c7',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -1025,7 +1074,7 @@ const styles = StyleSheet.create({
   fcTagDealsText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#E11D48',
+    color: '#92400e',
   },
   fcTagOpen: {
     backgroundColor: '#dcfce7',
@@ -1074,6 +1123,42 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Inter_500Medium',
     color: '#FFFFFF',
+  },
+
+  // No stores overlay
+  noStoresOverlay: {
+    position: 'absolute',
+    top: '35%',
+    left: 24,
+    right: 24,
+    zIndex: 15,
+    alignItems: 'center',
+  },
+  noStoresCard: {
+    alignItems: 'center',
+    borderRadius: 16,
+    padding: 24,
+    gap: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  noStoresTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Poppins_700Bold',
+    textAlign: 'center',
+  },
+  noStoresSubtitle: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 
   // Empty state inside list panel

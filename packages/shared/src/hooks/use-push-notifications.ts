@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
@@ -14,20 +14,32 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export function usePushNotifications() {
+export interface NotificationData {
+  promotionId?: string;
+  productId?: string;
+}
+
+interface UsePushNotificationsOptions {
+  onNotificationTap?: (data: NotificationData) => void;
+}
+
+export function usePushNotifications(options?: UsePushNotificationsOptions) {
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   const [notification, setNotification] = useState<Notifications.Notification | null>(null);
   const notificationListener = useRef<Notifications.EventSubscription>(null);
   const responseListener = useRef<Notifications.EventSubscription>(null);
+  const onTapRef = useRef(options?.onNotificationTap);
   const session = useAuthStore((s) => s.session);
 
+  // Keep callback ref up to date without re-subscribing
+  onTapRef.current = options?.onNotificationTap;
+
   useEffect(() => {
-    registerForPushNotifications().then((token) => {
+    registerForPushNotifications().then(async (token) => {
       if (token) {
         setExpoPushToken(token);
-        // Store token in profile
         if (session?.user?.id) {
-          supabase
+          await supabase
             .from('profiles')
             .update({ push_token: token })
             .eq('id', session.user.id);
@@ -41,8 +53,11 @@ export function usePushNotifications() {
       });
 
     responseListener.current =
-      Notifications.addNotificationResponseReceivedListener((_response) => {
-        // Handle notification tap — deep link to promotion
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        const data = response.notification.request.content.data as NotificationData | undefined;
+        if (data && onTapRef.current) {
+          onTapRef.current(data);
+        }
       });
 
     return () => {

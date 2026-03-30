@@ -8,6 +8,7 @@ import type { AlertWithProduct } from '@/types';
 export function useAlerts() {
   const [alerts, setAlerts] = useState<AlertWithProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const session = useAuthStore((s) => s.session);
   const userId = session?.user?.id;
 
@@ -18,13 +19,18 @@ export function useAlerts() {
       return;
     }
 
-    const { data } = await supabase
+    setError(null);
+    const { data, error: fetchErr } = await supabase
       .from('user_alerts')
       .select('*, product:products(*), triggered_store:stores!user_alerts_triggered_store_id_fkey(id, name)')
       .eq('user_id', userId)
       .eq('is_active', true);
 
-    if (data) setAlerts(data as AlertWithProduct[]);
+    if (fetchErr) {
+      setError(new Error(fetchErr.message));
+    } else if (data) {
+      setAlerts(data as AlertWithProduct[]);
+    }
     setIsLoading(false);
   }, [userId]);
 
@@ -170,6 +176,7 @@ export function useAlerts() {
   return {
     alerts,
     isLoading,
+    error,
     create: createAlert,
     disable: disableAlert,
     toggle: toggleAlert,

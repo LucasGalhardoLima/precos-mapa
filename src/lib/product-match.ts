@@ -1,9 +1,9 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 
-const SIZE_REGEX = /(\d+(?:[.,]\d+)?)\s*(ml|l|g|kg|un|pct|pack)\b/i;
+const SIZE_REGEX = /(\d+(?:[.,]\d+)?)\s*(ml|l|g|kg|un|pct|pack|dz|cx|bd)\b/i;
 
 /** Extract normalized size token: "350ml", "2l", "5kg", etc. */
-function extractSize(name: string): string | null {
+export function extractSize(name: string): string | null {
   const m = name.match(SIZE_REGEX);
   if (!m) return null;
   return (m[1] + m[2]).toLowerCase();
@@ -16,27 +16,40 @@ interface FindOrCreateInput {
   referencePrice: number;
 }
 
+export interface FindOrCreateResult {
+  id: string;
+  matched: boolean;
+  confidence: number;
+}
+
 export async function findOrCreateProduct(
   supabase: SupabaseClient,
   input: FindOrCreateInput,
-): Promise<{ id: string; matched: boolean }> {
+): Promise<FindOrCreateResult> {
   const normalizedName = input.name.trim().replace(/\s+/g, " ");
   const inputSize = extractSize(normalizedName);
 
-  // 1. Query candidates: exact synonym + fuzzy name matches
+  // 1. Query candidates with brand/category/size scoring
   const { data: candidates } = await supabase.rpc("match_product_for_upsert", {
     query: normalizedName,
+    query_brand: input.brand ?? null,
+    query_category_id: input.categoryId ?? null,
+    query_size_token: inputSize,
   });
 
   // 2. Pick first size-compatible match
   for (const match of candidates ?? []) {
     if (match.match_type === "synonym") {
-      return { id: match.id, matched: true };
+      return { id: match.id, matched: true, confidence: 1.0 };
     }
     const matchSize = extractSize(match.name);
     const sizesCompatible = !inputSize || !matchSize || inputSize === matchSize;
     if (sizesCompatible) {
-      return { id: match.id, matched: true };
+      return {
+        id: match.id,
+        matched: true,
+        confidence: match.confidence ?? match.match_score,
+      };
     }
   }
 
@@ -58,5 +71,5 @@ export async function findOrCreateProduct(
     );
   }
 
-  return { id: data.id, matched: false };
+  return { id: data.id, matched: false, confidence: 1.0 };
 }

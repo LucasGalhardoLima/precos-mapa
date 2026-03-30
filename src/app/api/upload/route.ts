@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { processPdfBuffer } from "@/lib/crawler/service";
+import { requireApiAuth } from "@/lib/api-auth";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 interface ProgressEvent {
   type: "progress";
@@ -27,6 +29,17 @@ function resolveErrorMessage(error: unknown): string {
 
 export async function POST(request: Request) {
   try {
+    const { user, error: authError } = await requireApiAuth(request);
+    if (authError) return authError;
+
+    const ip = getClientIp(request);
+    if (!checkRateLimit(`upload:${ip}:${user.id}`, 10, 60_000)) {
+      return NextResponse.json(
+        { error: "Muitas requisições. Tente novamente em instantes." },
+        { status: 429 },
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get("file");
 

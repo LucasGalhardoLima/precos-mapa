@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,11 @@ import {
   Pressable,
   StatusBar,
   StyleSheet,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { ChevronDown, MapPin } from 'lucide-react-native';
 
 import { GradientHeader } from '@/components/gradient-header';
 import { useTheme } from '@/theme/use-theme';
@@ -27,6 +29,12 @@ import { InlineError } from '@/components/inline-error';
 import type { EnrichedPromotion } from '@/types';
 
 const keyExtractor = (item: EnrichedPromotion) => item.id;
+const CITY_OPTIONS = [
+  { city: 'Matao', state: 'SP' },
+  { city: 'Araraquara', state: 'SP' },
+  { city: 'Ribeirao Preto', state: 'SP' },
+  { city: 'Sao Carlos', state: 'SP' },
+];
 
 // ---------------------------------------------------------------------------
 // Home Screen
@@ -35,12 +43,13 @@ const keyExtractor = (item: EnrichedPromotion) => item.id;
 export default function HomeScreen() {
   const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
-  const { latitude, longitude } = useLocation();
+  const { latitude, longitude, city, state, locationLabel, setPreferredCity } = useLocation();
 
   // ---------------------------------------------------------------------------
   // Category filter state
   // ---------------------------------------------------------------------------
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [cityPickerVisible, setCityPickerVisible] = useState(false);
 
   // ---------------------------------------------------------------------------
   // Data hooks
@@ -53,6 +62,8 @@ export default function HomeScreen() {
   const {
     promotions,
     isLoading: promotionsLoading,
+    error: promotionsError,
+    retry: retryPromotions,
   } = usePromotions({
     sortMode: 'nearest',
     userLatitude: latitude,
@@ -68,6 +79,8 @@ export default function HomeScreen() {
   const {
     stores,
     isLoading: storesLoading,
+    error: storesError,
+    retry: retryStores,
   } = useStores({
     userLatitude: latitude,
     userLongitude: longitude,
@@ -76,11 +89,12 @@ export default function HomeScreen() {
   // ---------------------------------------------------------------------------
   // Error state
   // ---------------------------------------------------------------------------
-  const [hasError, setHasError] = useState(false);
+  const hasError = !!(promotionsError || storesError);
 
   const handleRetry = useCallback(() => {
-    setHasError(false);
-  }, []);
+    if (promotionsError) retryPromotions();
+    if (storesError) retryStores();
+  }, [promotionsError, storesError, retryPromotions, retryStores]);
 
   // ---------------------------------------------------------------------------
   // Render helpers
@@ -94,6 +108,13 @@ export default function HomeScreen() {
       />
     ),
     [],
+  );
+  const handleSelectCity = useCallback(
+    async (nextCity: string, nextState: string) => {
+      await setPreferredCity(nextCity, nextState);
+      setCityPickerVisible(false);
+    },
+    [setPreferredCity],
   );
 
   const isLoading = promotionsLoading || categoriesLoading || storesLoading;
@@ -132,6 +153,19 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 16 }]}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.locationSection}>
+          <Pressable
+            onPress={() => setCityPickerVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Selecionar cidade"
+            style={styles.locationPill}
+          >
+            <MapPin size={14} color="#E2E8F0" />
+            <Text style={styles.locationLabel}>{locationLabel}</Text>
+            <ChevronDown size={14} color="#E2E8F0" />
+          </Pressable>
+        </View>
+
         {/* ------------------------------------------------------------------ */}
         {/* 1. Ranking em Destaque                                              */}
         {/* ------------------------------------------------------------------ */}
@@ -267,6 +301,15 @@ export default function HomeScreen() {
               <Text style={[styles.sectionTitle, { color: tokens.textDark }]}>
                 Mercados perto de você
               </Text>
+              <Pressable
+                onPress={() => router.push('/(tabs)/map')}
+                accessibilityLabel="Abrir mapa"
+                accessibilityRole="link"
+              >
+                <Text style={[styles.sectionLink, { color: tokens.primary }]}>
+                  Mapa
+                </Text>
+              </Pressable>
             </View>
 
             {stores.slice(0, 6).map((sw) => (
@@ -285,6 +328,39 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Modal
+        visible={cityPickerVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCityPickerVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setCityPickerVisible(false)} />
+          <View style={[styles.modalSheet, { paddingBottom: insets.bottom + 12 }]}>
+            <Text style={styles.modalTitle}>Selecionar cidade</Text>
+            {CITY_OPTIONS.map((option) => {
+              const isActive = option.city === city && option.state === state;
+              return (
+                <Pressable
+                  key={`${option.city}-${option.state}`}
+                  onPress={() => handleSelectCity(option.city, option.state)}
+                  style={[
+                    styles.cityOption,
+                    isActive
+                      ? { backgroundColor: tokens.primaryMuted, borderColor: tokens.primary }
+                      : { backgroundColor: tokens.surface, borderColor: tokens.border },
+                  ]}
+                >
+                  <Text style={[styles.cityOptionText, { color: tokens.textPrimary }]}>
+                    {option.city}, {option.state}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -303,7 +379,28 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   scrollContent: {
-    paddingTop: 16,
+    paddingTop: 12,
+  },
+  locationSection: {
+    paddingHorizontal: 16,
+    marginBottom: 14,
+  },
+  locationPill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#115E59',
+    borderWidth: 1,
+    borderColor: '#0F766E',
+  },
+  locationLabel: {
+    color: '#F8FAFC',
+    fontSize: 12,
+    fontWeight: '500',
   },
   section: {
     paddingHorizontal: 16,
@@ -353,5 +450,34 @@ const styles = StyleSheet.create({
     gap: 12,
     // the section has horizontal padding but the FlatList needs to break out for full bleed
     paddingHorizontal: 0,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(2, 6, 23, 0.4)',
+  },
+  modalSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    backgroundColor: '#FFFFFF',
+    gap: 10,
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  cityOption: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  cityOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

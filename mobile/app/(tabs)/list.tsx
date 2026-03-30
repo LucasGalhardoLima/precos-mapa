@@ -26,6 +26,7 @@ import {
   ListTemplateCard,
   LIST_TEMPLATES,
 } from '@/components/list-template-card';
+import { InlineError } from '@/components/inline-error';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -138,9 +139,11 @@ export default function ListScreen() {
   const {
     lists,
     isLoading,
+    error,
     toggleItem,
     removeItem,
     optimizeList,
+    refresh,
   } = useShoppingList();
 
   // Local state
@@ -202,6 +205,22 @@ export default function ListScreen() {
 
   // Derived values
   const isFreeUser = profile?.b2c_plan === 'free';
+
+  // ---------------------------------------------------------------------------
+  // Error state
+  // ---------------------------------------------------------------------------
+
+  if (error) {
+    return (
+      <View style={[styles.screen, { backgroundColor: tokens.bg }]}>
+        <SafeAreaView edges={['top']} style={styles.flex}>
+          <View style={styles.errorContainer}>
+            <InlineError onRetry={refresh} message="Não foi possível carregar listas. Tentar novamente?" />
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // Loading state
@@ -532,6 +551,11 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 16,
+  },
 
   // ── Header ──────────────────────────────────────────────────────────────
   headerRow: {
@@ -853,7 +877,7 @@ const styles = StyleSheet.create({
   routeIcon: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 10,
     backgroundColor: 'rgba(13,148,136,0.08)',
     alignItems: 'center',
     justifyContent: 'center',

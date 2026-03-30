@@ -25,7 +25,6 @@ import {
   FileText,
   FileDown,
   LogOut,
-  Check,
   TrendingDown,
 } from 'lucide-react-native';
 
@@ -45,12 +44,6 @@ import type { LucideIcon } from 'lucide-react-native';
 // ---------------------------------------------------------------------------
 
 const TERMS_URL = 'https://poup.com.br/termos';
-
-const PLUS_HIGHLIGHTS = [
-  'Favoritos e alertas ilimitados',
-  'Listas de compras inteligentes',
-  'Sem anúncios',
-];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -94,6 +87,35 @@ function getMonthLabel(): string {
   return `${months[now.getMonth()]} ${now.getFullYear()}`;
 }
 
+type PurchaseProfileItem = {
+  label: 'Alimentos' | 'Bebidas' | 'Limpeza' | 'Higiene';
+  percent: number;
+  color: string;
+};
+
+type PlusSummary = {
+  savings90d: number;
+  purchases: number;
+  avgSavingsPercent: number;
+  markets: number;
+};
+
+function inferCategory(productName: string | undefined): PurchaseProfileItem['label'] {
+  const name = (productName ?? '').toLowerCase();
+
+  if (name.includes('deterg') || name.includes('sabao') || name.includes('amaciante') || name.includes('limpeza')) {
+    return 'Limpeza';
+  }
+  if (name.includes('shampoo') || name.includes('sabonete') || name.includes('pasta') || name.includes('higien')) {
+    return 'Higiene';
+  }
+  if (name.includes('suco') || name.includes('refrigerante') || name.includes('cerveja') || name.includes('agua') || name.includes('bebida')) {
+    return 'Bebidas';
+  }
+
+  return 'Alimentos';
+}
+
 // ---------------------------------------------------------------------------
 // SavingsCard — "Sua economia" (matches mockup)
 // ---------------------------------------------------------------------------
@@ -101,10 +123,12 @@ function getMonthLabel(): string {
 function SavingsCard({
   savings,
   isPlus,
+  plusSummary,
   tokens,
 }: {
   savings: number;
   isPlus: boolean;
+  plusSummary?: PlusSummary;
   tokens: ReturnType<typeof useTheme>['tokens'];
 }) {
   return (
@@ -118,36 +142,96 @@ function SavingsCard({
         <Text style={[acctStyles.savingsLabel, { color: tokens.textSecondary }]}>
           Sua economia
         </Text>
-        <Text style={[acctStyles.savingsMonth, { color: tokens.textHint }]}>
-          {getMonthLabel()}
-        </Text>
+        {isPlus ? (
+          <Text style={acctStyles.detailsLink}>Ver detalhes {'\u2192'}</Text>
+        ) : (
+          <Text style={[acctStyles.savingsMonth, { color: tokens.textHint }]}>
+            {getMonthLabel()}
+          </Text>
+        )}
       </View>
 
-      <Text style={acctStyles.savingsAmount}>{formatBRL(savings)}</Text>
+      <Text style={acctStyles.savingsAmount}>
+        {formatBRL(isPlus ? (plusSummary?.savings90d ?? savings) : savings)}
+      </Text>
 
       <View style={acctStyles.savingsSubRow}>
         <TrendingDown size={12} color="#0D9488" strokeWidth={2} />
         <Text style={[acctStyles.savingsSubText, { color: tokens.textSecondary }]}>
-          economizados usando o Poup
+          {isPlus ? 'economizados nos ultimos 90 dias' : 'economizados usando o Poup'}
         </Text>
       </View>
 
-      {/* Mini bar chart placeholder */}
-      <View style={acctStyles.chartRow}>
-        {[0.3, 0.5, 0.8, 0.6, 1.0].map((h, i) => (
-          <View key={i} style={acctStyles.chartBarWrap}>
+      {isPlus && plusSummary ? (
+        <View style={acctStyles.plusStatsRow}>
+          <View style={[acctStyles.plusStatBox, { backgroundColor: '#F0FDFA' }]}>
+            <Text style={[acctStyles.plusStatValue, { color: '#0D9488' }]}>{plusSummary.purchases}</Text>
+            <Text style={acctStyles.plusStatLabel}>compras</Text>
+          </View>
+          <View style={[acctStyles.plusStatBox, { backgroundColor: '#FEFCE8' }]}>
+            <Text style={[acctStyles.plusStatValue, { color: '#B45309' }]}>{plusSummary.avgSavingsPercent}%</Text>
+            <Text style={acctStyles.plusStatLabel}>media economia</Text>
+          </View>
+          <View style={[acctStyles.plusStatBox, { backgroundColor: '#F0FDF4' }]}>
+            <Text style={[acctStyles.plusStatValue, { color: '#16A34A' }]}>{plusSummary.markets}</Text>
+            <Text style={acctStyles.plusStatLabel}>mercados</Text>
+          </View>
+        </View>
+      ) : (
+        <View style={acctStyles.chartRow}>
+          {[0.3, 0.5, 0.8, 0.6, 1.0].map((h, i) => (
+            <View key={i} style={acctStyles.chartBarWrap}>
+              <View
+                style={[
+                  acctStyles.chartBar,
+                  {
+                    height: 28 * h,
+                    backgroundColor: i === 4 ? '#0D9488' : '#CCFBF1',
+                  },
+                ]}
+              />
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function PurchaseProfileCard({
+  items,
+  tokens,
+}: {
+  items: PurchaseProfileItem[];
+  tokens: ReturnType<typeof useTheme>['tokens'];
+}) {
+  return (
+    <View style={[acctStyles.profileCard, { backgroundColor: tokens.surface, borderColor: tokens.border }]}>
+      <View style={acctStyles.profileHeader}>
+        <Text style={[acctStyles.profileTitle, { color: tokens.textSecondary }]}>
+          Perfil de compras
+        </Text>
+        <Text style={[acctStyles.profileSub, { color: tokens.textHint }]}>Ultimos 90 dias</Text>
+      </View>
+      {items.map((item) => (
+        <View key={item.label} style={acctStyles.profileRow}>
+          <View style={acctStyles.profileLabelRow}>
+            <Text style={[acctStyles.profileLabel, { color: tokens.textPrimary }]}>{item.label}</Text>
+            <Text style={[acctStyles.profilePercent, { color: tokens.textHint }]}>{item.percent}%</Text>
+          </View>
+          <View style={acctStyles.profileBarTrack}>
             <View
               style={[
-                acctStyles.chartBar,
+                acctStyles.profileBarFill,
                 {
-                  height: 28 * h,
-                  backgroundColor: i === 4 ? '#0D9488' : '#CCFBF1',
+                  width: `${item.percent}%`,
+                  backgroundColor: item.color,
                 },
               ]}
             />
           </View>
-        ))}
-      </View>
+        </View>
+      ))}
     </View>
   );
 }
@@ -247,6 +331,53 @@ export default function AccountScreen() {
     0,
   );
   const estimatedSavings = checkedItemCount * 3.5;
+  const checkedItems = lists.flatMap((list) => list.items.filter((item) => item.is_checked));
+  const purchasesCount = checkedItems.length;
+  const marketsVisited = Math.max(
+    1,
+    new Set(checkedItems.map((item) => item.store?.id).filter(Boolean)).size,
+  );
+  const avgSavingsPercent = Math.max(
+    8,
+    Math.min(
+      25,
+      Math.round((estimatedSavings / Math.max(1, purchasesCount * 22)) * 100),
+    ),
+  );
+  const plusSummary: PlusSummary = {
+    savings90d: estimatedSavings * 3,
+    purchases: purchasesCount,
+    avgSavingsPercent,
+    markets: marketsVisited,
+  };
+  const defaultProfile: PurchaseProfileItem[] = [
+    { label: 'Alimentos', percent: 62, color: '#0D9488' },
+    { label: 'Bebidas', percent: 18, color: '#F59E0B' },
+    { label: 'Limpeza', percent: 12, color: '#8B5CF6' },
+    { label: 'Higiene', percent: 8, color: '#94A3B8' },
+  ];
+  const purchaseProfile = (() => {
+    if (checkedItems.length === 0) {
+      return defaultProfile;
+    }
+
+    const counts = {
+      Alimentos: 0,
+      Bebidas: 0,
+      Limpeza: 0,
+      Higiene: 0,
+    };
+
+    for (const item of checkedItems) {
+      counts[inferCategory(item.product?.name)] += 1;
+    }
+
+    const total = Math.max(1, checkedItems.length);
+    return defaultProfile.map((entry) => ({
+      ...entry,
+      percent: Math.max(5, Math.round((counts[entry.label] / total) * 100)),
+    }));
+  })();
 
   const [paywallVisible, setPaywallVisible] = useState(false);
 
@@ -397,7 +528,12 @@ export default function AccountScreen() {
         {/* ----------------------------------------------------------------- */}
         {/* Sua economia (savings card — matches mockup)                      */}
         {/* ----------------------------------------------------------------- */}
-        <SavingsCard savings={estimatedSavings} isPlus={isPaidPlan} tokens={tokens} />
+        <SavingsCard
+          savings={estimatedSavings}
+          isPlus={isPaidPlan}
+          plusSummary={plusSummary}
+          tokens={tokens}
+        />
 
         {/* ----------------------------------------------------------------- */}
         {/* Upgrade CTA / Plan management                                     */}
@@ -427,7 +563,7 @@ export default function AccountScreen() {
             <Text style={styles.upgradePoupLabel}>Poup Plus</Text>
             <Text style={styles.upgradeHeadline}>Economize ainda mais</Text>
             <Text style={styles.upgradeDesc}>
-              Todos os mercados, listas ilimitadas, histórico de 30 dias, alertas
+              Todos os mercados, listas ilimitadas, histórico de 90 dias, alertas
               avançados e análise de economia.
             </Text>
             <Pressable
@@ -439,6 +575,10 @@ export default function AccountScreen() {
               </Text>
             </Pressable>
           </View>
+        )}
+
+        {isPaidPlan && (
+          <PurchaseProfileCard items={purchaseProfile} tokens={tokens} />
         )}
 
         {/* ----------------------------------------------------------------- */}
@@ -774,6 +914,11 @@ const acctStyles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
   },
+  detailsLink: {
+    fontSize: 10,
+    color: '#0D9488',
+    fontWeight: '600',
+  },
   savingsAmount: {
     fontSize: 28,
     fontWeight: '800',
@@ -805,5 +950,71 @@ const acctStyles = StyleSheet.create({
   chartBar: {
     width: '100%',
     borderRadius: 4,
+  },
+  plusStatsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+  plusStatBox: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+  },
+  plusStatValue: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  plusStatLabel: {
+    fontSize: 9,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  profileCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  profileTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  profileSub: {
+    fontSize: 10,
+  },
+  profileRow: {
+    marginBottom: 10,
+  },
+  profileLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  profileLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  profilePercent: {
+    fontSize: 11,
+  },
+  profileBarTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#F1F5F9',
+    overflow: 'hidden',
+  },
+  profileBarFill: {
+    height: 6,
+    borderRadius: 3,
   },
 });

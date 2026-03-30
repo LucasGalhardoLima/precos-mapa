@@ -84,6 +84,26 @@ export async function createCheckoutWithLaunchOffer(
 export async function redirectToPortal(
   stripeCustomerId: string,
 ): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Não autenticado");
+  }
+
+  // Verify the calling user belongs to a store that owns this stripe_customer_id
+  const { data: store } = await supabase
+    .from("stores")
+    .select("id")
+    .eq("stripe_customer_id", stripeCustomerId)
+    .single();
+
+  if (!store) {
+    throw new Error("Acesso negado ao portal de cobrança");
+  }
+
   const session = await getStripe().billingPortal.sessions.create({
     customer: stripeCustomerId,
     return_url: `${process.env.NEXT_PUBLIC_APP_URL}/painel/plano`,

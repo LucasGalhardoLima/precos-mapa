@@ -6,17 +6,23 @@ import {
   StyleSheet,
   Dimensions,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
 import { Store, MapPin, TrendingDown } from 'lucide-react-native';
+import * as Location from 'expo-location';
+import * as SecureStore from 'expo-secure-store';
 import Svg, { Circle, Rect, Path, G, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { AuthButtons } from '@/components/auth-buttons';
 import { StoreSetup } from '@/components/store-setup';
 import { useAuthStore } from '@poup/shared';
 import { useTheme } from '@/theme/use-theme';
 import { supabase } from '@/lib/supabase';
+import { useAnalytics } from '@/hooks/use-analytics';
+import { useFilterStore } from '@/store/app-store';
+import { useCategories } from '@/hooks/use-categories';
 import type { UserRole, Profile } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -25,9 +31,44 @@ import type { UserRole, Profile } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAROUSEL_PAGES = 1; // Single page for now; easily extendable
+const ONBOARDING_CATEGORY_PREFS_KEY = 'onboardingPreferredCategories';
+const HIGH_DENSITY_CITIES = new Set([
+  'sao paulo',
+  'rio de janeiro',
+  'belo horizonte',
+  'brasilia',
+  'salvador',
+  'fortaleza',
+  'recife',
+  'curitiba',
+  'porto alegre',
+  'belem',
+  'manaus',
+  'goiania',
+  'campinas',
+  'guarulhos',
+]);
 
-type Step = 'role-select' | 'auth' | 'store-setup';
+type Step = 'role-select' | 'auth' | 'consumer-preferences' | 'store-setup';
 type AuthMode = 'sign-up' | 'sign-in';
+type PermissionStatus = 'idle' | 'granted' | 'denied' | 'error';
+
+function normalizeText(value: string | null | undefined): string {
+  return (value ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+function inferSearchRadius(city: string | null): number {
+  const normalizedCity = normalizeText(city);
+  if (!normalizedCity) return 12;
+
+  if (HIGH_DENSITY_CITIES.has(normalizedCity)) return 5;
+  if (normalizedCity.length >= 9) return 8;
+  return 12;
+}
 
 // ---------------------------------------------------------------------------
 // Hero Illustration — Price tags on a stylized map
@@ -178,10 +219,22 @@ export default function OnboardingScreen() {
   const { tokens } = useTheme();
   const setHasSeenOnboarding = useAuthStore((s) => s.setHasSeenOnboarding);
   const session = useAuthStore((s) => s.session);
+  const { categories, isLoading: categoriesLoading } = useCategories();
+  const setSelectedCategoryId = useFilterStore((s) => s.setSelectedCategoryId);
+  const { track } = useAnalytics();
 
   const [step, setStep] = useState<Step>('role-select');
   const [selectedRole, setSelectedRole] = useState<UserRole>('consumer');
   const [authMode, setAuthMode] = useState<AuthMode>('sign-up');
+  const [consumerUserId, setConsumerUserId] = useState<string | null>(null);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>('idle');
+  const [permissionSummary, setPermissionSummary] = useState('Vamos usar sua localização para mostrar mercados perto de você.');
+  const [recommendedRadiusKm, setRecommendedRadiusKm] = useState(10);
+  const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
+
+  const isConsumerPreferencesReady = selectedCategoryIds.length > 0;
 
   // -----------------------------------------------------------------------
   // Auth success handler — preserves ALL existing logic
@@ -200,24 +253,29 @@ export default function OnboardingScreen() {
         useAuthStore.getState().setProfile(freshProfile as Profile);
       }
 
-      setHasSeenOnboarding(true);
-
       // Super admin: skip role update and store setup
       if (freshProfile?.role === 'super_admin') {
+        setHasSeenOnboarding(true);
         router.replace('/(business)');
         return;
       }
 
       // Set role directly via Supabase (avoids stale session closure in useAuth.setRole)
+      // Only allow consumer/business — super_admin is set server-side only
+      const safeRole = selectedRole === 'consumer' || selectedRole === 'business'
+        ? selectedRole
+        : 'consumer';
       await supabase
         .from('profiles')
-        .update({ role: selectedRole })
+        .update({ role: safeRole })
         .eq('id', userId);
 
       if (selectedRole === 'business') {
+        setHasSeenOnboarding(true);
         setStep('store-setup');
       } else {
-        router.replace('/(tabs)');
+        setConsumerUserId(userId);
+        setStep('consumer-preferences');
       }
     } catch (error) {
       console.warn('[handleAuthSuccess] failed:', error);
@@ -228,6 +286,7 @@ export default function OnboardingScreen() {
   // Store setup for business users
   // -----------------------------------------------------------------------
   const handleStoreSetupComplete = () => {
+    setHasSeenOnboarding(true);
     router.replace('/(business)');
   };
 
@@ -258,6 +317,110 @@ export default function OnboardingScreen() {
     setSelectedRole('consumer');
     setAuthMode('sign-in');
     setStep('auth');
+  };
+
+  const toggleCategory = (categoryId: string) => {
+    setSelectedCategoryIds((current) => {
+      if (current.includes(categoryId)) {
+        return current.filter((id) => id !== categoryId);
+      }
+      if (current.length >= 3) {
+        return [...current.slice(1), categoryId];
+      }
+      return [...current, categoryId];
+    });
+  };
+
+  const requestLocationPermissions = async () => {
+    if (!consumerUserId) return;
+
+    setIsRequestingLocation(true);
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status !== 'granted') {
+        setPermissionStatus('denied');
+        setPermissionSummary('Permissão negada. Você ainda pode usar o app e alterar isso depois nas configurações.');
+        setRecommendedRadiusKm(12);
+        return;
+      }
+
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const geocoded = await Location.reverseGeocodeAsync({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+      const firstResult = geocoded[0];
+      const detectedCity = firstResult?.city ?? firstResult?.subregion ?? null;
+      const detectedState = firstResult?.region ?? null;
+      const radius = inferSearchRadius(detectedCity);
+
+      setPermissionStatus('granted');
+      setRecommendedRadiusKm(radius);
+
+      if (detectedCity || detectedState) {
+        setPermissionSummary(
+          `Localização ativa em ${detectedCity ?? 'sua cidade'}${detectedState ? `, ${detectedState}` : ''}.`,
+        );
+      } else {
+        setPermissionSummary('Localização ativa. Vamos ajustar os resultados automaticamente.');
+      }
+
+      const { data: updatedProfile } = await supabase
+        .from('profiles')
+        .update({
+          city: detectedCity,
+          state: detectedState,
+          search_radius_km: radius,
+        })
+        .eq('id', consumerUserId)
+        .select('*')
+        .single();
+
+      if (updatedProfile) {
+        useAuthStore.getState().setProfile(updatedProfile as Profile);
+      }
+    } catch {
+      setPermissionStatus('error');
+      setPermissionSummary('Não foi possível obter sua localização agora. Você pode continuar e tentar novamente depois.');
+      setRecommendedRadiusKm(12);
+    } finally {
+      setIsRequestingLocation(false);
+    }
+  };
+
+  const finishConsumerOnboarding = async () => {
+    if (!consumerUserId || !isConsumerPreferencesReady) return;
+
+    setIsFinishing(true);
+    try {
+      if (permissionStatus !== 'granted') {
+        await supabase
+          .from('profiles')
+          .update({ search_radius_km: recommendedRadiusKm })
+          .eq('id', consumerUserId);
+      }
+
+      await SecureStore.setItemAsync(
+        ONBOARDING_CATEGORY_PREFS_KEY,
+        JSON.stringify(selectedCategoryIds),
+      );
+      setSelectedCategoryId(selectedCategoryIds[0] ?? null);
+      setHasSeenOnboarding(true);
+      track('onboarding_completed', {
+        metadata: {
+          role: 'consumer',
+          categories_selected: selectedCategoryIds.length,
+          location_granted: permissionStatus === 'granted',
+        },
+      });
+      router.replace('/(tabs)');
+    } catch (error) {
+      console.warn('[finishConsumerOnboarding] failed:', error);
+      setIsFinishing(false);
+    }
   };
 
   // Dev-only: skip auth and go straight to the app with a mock profile
@@ -363,6 +526,135 @@ export default function OnboardingScreen() {
             )}
 
             <Pressable onPress={() => setStep('role-select')} hitSlop={12}>
+              <Text style={styles.backLink}>Voltar</Text>
+            </Pressable>
+          </MotiView>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (step === 'consumer-preferences') {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: darkBg }]}>
+        <ScrollView contentContainerStyle={styles.preferencesScrollContent} showsVerticalScrollIndicator={false}>
+          <MotiView
+            from={{ opacity: 0, translateY: 6 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: 'spring', damping: 16, stiffness: 130 }}
+            style={styles.preferencesHeader}
+          >
+            <Text style={styles.preferencesTitle}>Quase pronto</Text>
+            <Text style={styles.preferencesSubtitle}>
+              Configure sua experiência inicial para encontrar ofertas mais relevantes.
+            </Text>
+          </MotiView>
+
+          <MotiView
+            from={{ opacity: 0, translateY: 10 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: 'spring', damping: 16, stiffness: 130, delay: 80 }}
+            style={styles.preferenceCard}
+          >
+            <Text style={styles.preferenceCardTitle}>1. Localização</Text>
+            <Text style={styles.preferenceCardDescription}>
+              Usamos sua localização para destacar mercados próximos e ajustar o raio de busca automaticamente.
+            </Text>
+
+            <View style={styles.permissionStatusRow}>
+              <View style={styles.permissionStatusPill}>
+                <Text style={styles.permissionStatusText}>
+                  {permissionStatus === 'granted'
+                    ? 'Ativa'
+                    : permissionStatus === 'denied'
+                      ? 'Negada'
+                      : permissionStatus === 'error'
+                        ? 'Indisponível'
+                        : 'Pendente'}
+                </Text>
+              </View>
+              <Text style={styles.radiusHint}>Raio sugerido: {recommendedRadiusKm} km</Text>
+            </View>
+
+            <Text style={styles.permissionSummary}>{permissionSummary}</Text>
+
+            <Pressable
+              onPress={requestLocationPermissions}
+              disabled={isRequestingLocation}
+              style={[
+                styles.permissionButton,
+                { borderColor: primaryColor },
+                isRequestingLocation && styles.disabledButton,
+              ]}
+            >
+              {isRequestingLocation ? (
+                <ActivityIndicator size="small" color={primaryColor} />
+              ) : (
+                <Text style={[styles.permissionButtonText, { color: primaryColor }]}>
+                  {permissionStatus === 'granted' ? 'Atualizar localização' : 'Permitir localização'}
+                </Text>
+              )}
+            </Pressable>
+          </MotiView>
+
+          <MotiView
+            from={{ opacity: 0, translateY: 10 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: 'spring', damping: 16, stiffness: 130, delay: 140 }}
+            style={styles.preferenceCard}
+          >
+            <Text style={styles.preferenceCardTitle}>2. Categorias prioritárias</Text>
+            <Text style={styles.preferenceCardDescription}>
+              Selecione até 3 categorias que mais importam para você.
+            </Text>
+
+            <View style={styles.categoryGrid}>
+              {categoriesLoading ? (
+                <ActivityIndicator size="small" color={primaryColor} />
+              ) : (
+                categories.map((category) => {
+                  const isSelected = selectedCategoryIds.includes(category.id);
+                  return (
+                    <Pressable
+                      key={category.id}
+                      onPress={() => toggleCategory(category.id)}
+                      style={[
+                        styles.categoryChip,
+                        isSelected && { borderColor: primaryColor, backgroundColor: `${primaryColor}22` },
+                      ]}
+                    >
+                      <Text style={styles.categoryEmoji}>{category.icon ?? '🛒'}</Text>
+                      <Text style={styles.categoryLabel}>{category.name}</Text>
+                    </Pressable>
+                  );
+                })
+              )}
+            </View>
+          </MotiView>
+
+          <MotiView
+            from={{ opacity: 0, translateY: 14 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: 'spring', damping: 16, stiffness: 130, delay: 200 }}
+            style={styles.preferencesCtaContainer}
+          >
+            <Pressable
+              onPress={finishConsumerOnboarding}
+              disabled={!isConsumerPreferencesReady || isFinishing}
+              style={[
+                styles.ctaButton,
+                { backgroundColor: primaryColor },
+                (!isConsumerPreferencesReady || isFinishing) && styles.disabledButton,
+              ]}
+            >
+              {isFinishing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.ctaText}>Entrar no app</Text>
+              )}
+            </Pressable>
+
+            <Pressable onPress={() => setStep('auth')} hitSlop={12}>
               <Text style={styles.backLink}>Voltar</Text>
             </Pressable>
           </MotiView>
@@ -645,6 +937,121 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: 'rgba(255,255,255,0.4)',
+  },
+  preferencesScrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 36,
+    gap: 16,
+  },
+  preferencesHeader: {
+    marginBottom: 4,
+  },
+  preferencesTitle: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.4,
+  },
+  preferencesSubtitle: {
+    marginTop: 8,
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.72)',
+    lineHeight: 22,
+  },
+  preferenceCard: {
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    padding: 16,
+    gap: 10,
+  },
+  preferenceCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  preferenceCardDescription: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.74)',
+    lineHeight: 20,
+  },
+  permissionStatusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  permissionStatusPill: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  permissionStatusText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  radiusHint: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+  },
+  permissionSummary: {
+    color: 'rgba(255,255,255,0.74)',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  permissionButton: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 45,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  permissionButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 2,
+  },
+  categoryChip: {
+    minWidth: '47%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  categoryEmoji: {
+    fontSize: 15,
+  },
+  categoryLabel: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 14,
+    fontWeight: '500',
+    flexShrink: 1,
+  },
+  preferencesCtaContainer: {
+    marginTop: 2,
+    gap: 14,
+    alignItems: 'center',
+  },
+  disabledButton: {
+    opacity: 0.55,
   },
 
   // Dev toggle

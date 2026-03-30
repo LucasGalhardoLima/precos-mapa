@@ -46,9 +46,13 @@ export function AlertCard({
   const { tokens } = useTheme();
   const isTriggered = variant === 'triggered';
   const isOn = alert.is_active !== false;
+  const isPriceAlert = alert.target_price != null;
 
   const badgeBg = badgeVariant === 'purple' ? tokens.purpleLight : tokens.successLight;
   const badgeColor = badgeVariant === 'purple' ? tokens.purple : tokens.success;
+
+  const iconBg = isPriceAlert ? 'rgba(13,148,136,0.08)' : '#fef3c7';
+  const iconColor = isPriceAlert ? '#0D9488' : '#F59E0B';
 
   return (
     <View
@@ -61,9 +65,9 @@ export function AlertCard({
       {/* Green left border indicator for triggered alerts */}
       {isTriggered && <View style={styles.triggeredBorder} />}
 
-      {/* Bell icon */}
-      <View style={[styles.iconBox, { backgroundColor: tokens.accentSoft }]}>
-        <Bell size={18} color={tokens.accent} strokeWidth={2} />
+      {/* Bell icon — teal for price alerts, amber for promo alerts */}
+      <View style={[styles.iconBox, { backgroundColor: iconBg }]}>
+        <Bell size={18} color={iconColor} strokeWidth={2} />
       </View>
 
       {/* Text content */}
@@ -76,7 +80,7 @@ export function AlertCard({
           <>
             {triggeredPrice !== undefined && storeName && (
               <Text style={[styles.triggeredPrice, { color: tokens.success }]}>
-                R$ {triggeredPrice.toFixed(2)} no {storeName}
+                R$ {triggeredPrice.toFixed(2).replace('.', ',')} no {storeName}
               </Text>
             )}
             <View style={styles.statusRow}>
@@ -91,7 +95,7 @@ export function AlertCard({
             <View style={[styles.statusDot, { backgroundColor: tokens.primary }]} />
             <Text style={[styles.statusText, { color: tokens.primary }]}>
               {alert.target_price
-                ? `Monitorando · R$ ${alert.target_price.toFixed(2)} alvo`
+                ? `Monitorando · R$ ${alert.target_price.toFixed(2).replace('.', ',')} alvo`
                 : 'Monitorando · sem alvo definido'}
             </Text>
           </View>

@@ -5,7 +5,7 @@
 export type UserRole = 'consumer' | 'business' | 'super_admin';
 export type B2BPlan = 'free' | 'premium' | 'premium_plus' | 'enterprise';
 export type B2CPlan = 'free' | 'plus' | 'family';
-export type PromotionStatus = 'active' | 'expired' | 'pending_review';
+export type PromotionStatus = 'active' | 'expired' | 'pending_review' | 'last_price';
 export type PromotionSource = 'manual' | 'importador_ia' | 'crawler';
 export type StoreMemberRole = 'owner' | 'admin' | 'staff';
 export type SortMode = 'cheapest' | 'nearest' | 'expiring' | 'discount';
@@ -184,6 +184,7 @@ export interface EnrichedPromotion extends PromotionWithRelations {
   distanceKm: number;
   isExpiringSoon: boolean;
   isBestPrice: boolean;
+  isHistoricLow?: boolean;
   isLocked: boolean;
 }
 
@@ -217,4 +218,79 @@ export interface SocialProofStats {
   userCount: string;
   cityName: string;
   avgMonthlySavings: string;
+}
+
+// =============================================================================
+// Analytics Events
+// =============================================================================
+
+export type AnalyticsEventType =
+  | 'search_result_viewed'
+  | 'product_detail_viewed'
+  | 'list_item_added'
+  | 'alert_created'
+  | 'map_pin_tapped'
+  | 'onboarding_completed'
+  | 'search_performed'
+  | 'screen_viewed';
+
+export interface AnalyticsEvent {
+  id: string;
+  event_type: AnalyticsEventType;
+  user_id: string;
+  store_id: string | null;
+  product_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface StoreEngagementSummary {
+  store_id: string;
+  store_name: string;
+  city: string;
+  chain: string | null;
+  search_impressions: number;
+  search_unique_users: number;
+  detail_views: number;
+  detail_unique_users: number;
+  list_adds: number;
+  list_unique_users: number;
+  alerts_created: number;
+  alert_unique_users: number;
+  map_taps: number;
+  map_unique_users: number;
+  total_events: number;
+  total_unique_users: number;
+  first_event_at: string;
+  last_event_at: string;
+}
+
+// =============================================================================
+// Product-grouped search (multi-store comparison)
+// =============================================================================
+
+/** A single store's price entry within a product group */
+export interface StorePrice {
+  store_id: string;
+  store_name: string;
+  price: number;
+  original_price: number | null;
+  price_type: 'active' | 'last_price';
+  distance_km: number;
+  end_date: string | null;
+  last_price_date: string | null;
+  store_logo_initial: string;
+  store_logo_color: string;
+  search_priority: number;
+}
+
+/** Product with nested prices from multiple stores (returned by search_products_with_prices RPC) */
+export interface ProductWithPrices {
+  product_id: string;
+  product_name: string;
+  brand: string | null;
+  category: string | null;
+  image_url: string | null;
+  prices: StorePrice[];
+  isLocked: boolean;
 }

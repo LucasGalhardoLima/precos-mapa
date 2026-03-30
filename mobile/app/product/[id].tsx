@@ -35,6 +35,7 @@ import { useSubscription } from '@/hooks/use-subscription';
 import { useAuthStore } from '@poup/shared';
 import { useLocation, calculateDistanceKm } from '@/hooks/use-location';
 import { supabase } from '@/lib/supabase';
+import { useAnalytics } from '@/hooks/use-analytics';
 import { PriceChart } from '@/components/price-chart';
 import { DiscountBadge } from '@/components/themed/discount-badge';
 import type { Product, Store } from '@/types';
@@ -85,6 +86,8 @@ export default function ProductDetailScreen() {
   const isInList = lists.some((list) =>
     list.items.some((item) => item.product_id === id),
   );
+
+  const { trackProductView, trackListAdd, trackAlertCreated } = useAnalytics();
 
   // Find existing alert for this product
   const existingAlert = alerts.find(
@@ -163,6 +166,13 @@ export default function ProductDetailScreen() {
     fetchPromotions();
   }, [id]);
 
+  // Analytics: track product detail view with store IDs
+  useEffect(() => {
+    if (!id || isLoadingPromotions || promotions.length === 0) return;
+    const storeIds = promotions.map((p) => p.store_id);
+    trackProductView(id, storeIds);
+  }, [id, isLoadingPromotions, promotions, trackProductView]);
+
   // ---------------------------------------------------------------------------
   // Handlers
   // ---------------------------------------------------------------------------
@@ -183,6 +193,7 @@ export default function ProductDetailScreen() {
       }
 
       await createAlert(id, targetPrice);
+      trackAlertCreated(id, promotions[0]?.store_id);
       triggerNotification(NotificationFeedbackType.Success);
       setTargetPriceInput('');
       Burnt.toast({
@@ -251,6 +262,7 @@ export default function ProductDetailScreen() {
 
       const cheapestStoreId = promotions.length > 0 ? promotions[0].store_id : undefined;
       await addItem(listId, id, 1, cheapestStoreId);
+      trackListAdd(id, cheapestStoreId);
       triggerNotification(NotificationFeedbackType.Success);
       Burnt.toast({
         title: 'Adicionado à lista',
@@ -262,7 +274,7 @@ export default function ProductDetailScreen() {
     } finally {
       setIsAddingToList(false);
     }
-  }, [id, lists, addItem, createList, promotions, router]);
+  }, [id, lists, addItem, createList, promotions, router, trackListAdd]);
 
   const handleShare = useCallback(async () => {
     if (!product) return;

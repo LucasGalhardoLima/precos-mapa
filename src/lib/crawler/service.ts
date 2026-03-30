@@ -5,6 +5,7 @@ import sharp from "sharp";
 import { generateObject, createGateway } from "ai";
 import { z } from "zod";
 import { EncarteProduct, EncarteSchema, normalizeEncartePayload } from "@/lib/schemas";
+import puppeteer from "puppeteer-core";
 
 // Vercel AI Gateway — routes through Vercel's gateway where provider API keys
 // are configured. On Vercel, authenticates via OIDC automatically.
@@ -348,6 +349,216 @@ export async function discoverAndDownloadAllPdfs(url: string): Promise<
   }
 
   return results;
+}
+
+// ---------------------------------------------------------------------------
+// Image-based discovery (headless browser)
+// ---------------------------------------------------------------------------
+
+export interface RenderStep {
+  action: "waitForSelector" | "click" | "waitForNetworkIdle" | "type";
+  selector?: string;
+  value?: string;
+  timeout?: number;
+}
+
+export interface RenderConfig {
+  steps?: RenderStep[];
+  imageSelector?: string;
+  minImageWidth?: number;
+  timeout?: number;
+}
+
+async function getChromiumBrowser() {
+  // In production (Vercel), use @sparticuz/chromium; locally, use system Chrome
+  if (process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.VERCEL) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const chromium = require("@sparticuz/chromium");
+    return puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    });
+  }
+  // Local dev — use system Chrome
+  const possiblePaths = [
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium-browser",
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  ];
+  const { execSync } = await import("child_process");
+  let execPath: string | undefined;
+  for (const p of possiblePaths) {
+    try {
+      execSync(`test -f "${p}"`, { stdio: "ignore" });
+      execPath = p;
+      break;
+    } catch {
+      continue;
+    }
+  }
+  if (!execPath) {
+    throw new Error("Chrome/Chromium not found. Install Google Chrome or set CHROME_PATH.");
+  }
+  return puppeteer.launch({
+    executablePath: execPath,
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+}
+
+export async function discoverAndDownloadImages(
+  url: string,
+  renderConfig?: RenderConfig,
+): Promise<{ imageBuffer: Buffer; filename: string; resolvedImageUrl: string }[]> {
+  const timeout = renderConfig?.timeout ?? 30000;
+  const minWidth = renderConfig?.minImageWidth ?? 300;
+  const imageSelector =
+    renderConfig?.imageSelector ??
+    'img[src*="oferta"], img[src*="encarte"], img[src*="promo"], main img';
+
+  const browser = await getChromiumBrowser();
+
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1920, height: 1080 });
+    await page.goto(url, { waitUntil: "networkidle2", timeout });
+
+    // Execute render steps (store selection, waits, etc.)
+    if (renderConfig?.steps) {
+      for (const step of renderConfig.steps) {
+        const stepTimeout = step.timeout ?? 10000;
+        switch (step.action) {
+          case "waitForSelector":
+            if (step.selector) {
+              await page.waitForSelector(step.selector, { timeout: stepTimeout });
+            }
+            break;
+          case "click":
+            if (step.selector) {
+              // Support text= pseudo-selector for clicking by text content
+              if (step.selector.startsWith("text=")) {
+                const text = step.selector.slice(5);
+                const elements = await page.$$("a, button, span, div, li, p, td");
+                for (const el of elements) {
+                  const elText = await el.evaluate((node) => node.textContent?.trim() ?? "");
+                  if (elText.toLowerCase().includes(text.toLowerCase())) {
+                    await el.click();
+                    break;
+                  }
+                }
+              } else {
+                await page.click(step.selector);
+              }
+            }
+            break;
+          case "waitForNetworkIdle":
+            await page.waitForNetworkIdle({ idleTime: 1000, timeout: stepTimeout });
+            break;
+          case "type":
+            if (step.selector && step.value) {
+              await page.type(step.selector, step.value);
+            }
+            break;
+        }
+      }
+    }
+
+    // Wait briefly for images to load after interactions
+    await page.waitForNetworkIdle({ idleTime: 1500, timeout: 15000 }).catch(() => {});
+
+    // Extract image URLs from rendered DOM
+    const imageUrls = await page.evaluate(
+      (sel: string, minW: number) => {
+        const imgs = document.querySelectorAll(sel);
+        const urls: string[] = [];
+        const seen = new Set<string>();
+
+        imgs.forEach((img) => {
+          const el = img as HTMLImageElement;
+          const src = el.src || el.dataset.src || el.getAttribute("data-lazy-src") || "";
+          if (!src || seen.has(src)) return;
+          // Filter by natural width if available, or accept all
+          if (el.naturalWidth > 0 && el.naturalWidth < minW) return;
+          // Skip tiny icons, logos, spacers
+          if (src.includes("logo") || src.includes("icon") || src.includes("spacer")) return;
+          seen.add(src);
+          urls.push(src);
+        });
+
+        return urls;
+      },
+      imageSelector,
+      minWidth,
+    );
+
+    console.log(`[CRAWLER] Found ${imageUrls.length} offer image(s) at ${url}`);
+
+    if (imageUrls.length === 0) {
+      // Fallback: grab all large images on the page
+      const fallbackUrls = await page.evaluate((minW: number) => {
+        const imgs = document.querySelectorAll("img");
+        const urls: string[] = [];
+        imgs.forEach((img) => {
+          if (img.naturalWidth >= minW && img.naturalHeight >= minW) {
+            const src = img.src || img.dataset.src || "";
+            if (src && !src.includes("logo") && !src.includes("icon")) {
+              urls.push(src);
+            }
+          }
+        });
+        return urls;
+      }, minWidth);
+
+      if (fallbackUrls.length === 0) {
+        throw new Error(`Nenhuma imagem de oferta encontrada na página: ${url}`);
+      }
+      imageUrls.push(...fallbackUrls);
+      console.log(`[CRAWLER] Fallback found ${fallbackUrls.length} large image(s)`);
+    }
+
+    await browser.close();
+
+    // Download all discovered images
+    const results: { imageBuffer: Buffer; filename: string; resolvedImageUrl: string }[] = [];
+
+    for (let i = 0; i < imageUrls.length; i++) {
+      const imageUrl = imageUrls[i];
+      try {
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+          console.error(`[CRAWLER] Failed to download image (HTTP ${response.status}): ${imageUrl}`);
+          continue;
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Determine extension from content-type
+        const contentType = response.headers.get("content-type") ?? "image/png";
+        const ext = contentType.includes("jpeg") || contentType.includes("jpg")
+          ? "jpg"
+          : contentType.includes("webp")
+            ? "webp"
+            : "png";
+
+        const filename = `oferta_${i + 1}.${ext}`;
+        results.push({ imageBuffer: buffer, filename, resolvedImageUrl: imageUrl });
+      } catch (err) {
+        console.error(`[CRAWLER] Error downloading image ${imageUrl}: ${extractErrorMessage(err)}`);
+      }
+    }
+
+    if (results.length === 0) {
+      throw new Error(`Falha ao baixar todas as imagens da página: ${url}`);
+    }
+
+    return results;
+  } catch (err) {
+    await browser.close().catch(() => {});
+    throw err;
+  }
 }
 
 export async function crawlUrl(url: string, onProgress?: (message: string) => void): Promise<CrawlerResult> {

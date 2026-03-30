@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import {
   View,
@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
 import { Bell, Check, ChevronRight, Zap } from 'lucide-react-native';
+import { useAnalytics } from '@/hooks/use-analytics';
 import { useAlerts } from '@/hooks/use-alerts';
 import { useAuthStore } from '@poup/shared';
 import { useTheme } from '@/theme/use-theme';
@@ -18,6 +19,7 @@ import type { PaletteTokens } from '@/theme/palettes';
 import { Paywall } from '@/components/paywall';
 import { AlertCard } from '@/components/alert-card';
 import { SuggestedProductCard, type SuggestedProduct } from '@/components/suggested-product-card';
+import { InlineError } from '@/components/inline-error';
 import type { AlertWithProduct } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -223,7 +225,7 @@ function TriggeredBanner({
           {alert.product.name} em promoção!
         </Text>
         <Text style={styles.triggeredBannerDesc} numberOfLines={1}>
-          R$ {triggeredPrice.toFixed(2)} no {storeName}
+          R$ {triggeredPrice.toFixed(2).replace('.', ',')} no {storeName}
           {discount ? ` · -${discount}%` : ''}
           {' · Menor em 30 dias'}
         </Text>
@@ -303,11 +305,14 @@ function SkeletonLoader({ tokens }: { tokens: PaletteTokens }) {
 export default function AlertsScreen() {
   const { tokens } = useTheme();
   const router = useRouter();
-  const { alerts, isLoading, toggle, count, refresh } = useAlerts();
+  const { trackScreen } = useAnalytics();
+  const { alerts, isLoading, error, toggle, count, refresh } = useAlerts();
   const profile = useAuthStore((s) => s.profile);
   const isFree = profile?.b2c_plan === 'free';
   const [showPaywall, setShowPaywall] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => { trackScreen('alerts'); }, [trackScreen]);
 
   const atLimit = isFree && count >= FREE_ALERT_LIMIT;
 
@@ -329,8 +334,13 @@ export default function AlertsScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: tokens.bg }]} edges={['top']}>
-      {/* ---- Loading ---- */}
-      {isLoading ? (
+      {/* ---- Error ---- */}
+      {error ? (
+        <View style={styles.errorContainer}>
+          <InlineError onRetry={refresh} message="Não foi possível carregar alertas. Tentar novamente?" />
+        </View>
+      ) : /* ---- Loading ---- */
+      isLoading ? (
         <SkeletonLoader tokens={tokens} />
       ) : alerts.length === 0 ? (
         /* ---- Empty State ---- */
@@ -475,6 +485,10 @@ export default function AlertsScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
+  },
+  errorContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
 
   // Header (populated state)

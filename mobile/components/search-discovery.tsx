@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import { Clock, TrendingUp } from 'lucide-react-native';
+import { Clock, TrendingUp, ChevronRight } from 'lucide-react-native';
 
 import { useTheme } from '@/theme/use-theme';
 import type { Category } from '@/types';
@@ -57,6 +57,7 @@ interface SearchDiscoveryProps {
   categories: Category[];
   trendingProducts: TrendingProduct[];
   isTrendingLoading?: boolean;
+  city?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,6 +73,7 @@ export function SearchDiscovery({
   categories,
   trendingProducts,
   isTrendingLoading,
+  city,
 }: SearchDiscoveryProps) {
   const { tokens } = useTheme();
 
@@ -100,18 +102,26 @@ export function SearchDiscovery({
               </Text>
             </Pressable>
           </View>
-          <View style={styles.recentPills}>
-            {recentSearches.map((query) => (
-              <Pressable
-                key={query}
-                onPress={() => onSelectRecent(query)}
-                style={[styles.recentPill, { borderColor: COLORS.border }]}
-              >
-                <Clock size={13} color={COLORS.textSecondary} />
-                <Text style={[styles.recentPillText, { color: COLORS.textSecondary }]}>
-                  {query}
-                </Text>
-              </Pressable>
+          <View style={[styles.recentList, { backgroundColor: tokens.surface }]}>
+            {recentSearches.map((query, idx) => (
+              <React.Fragment key={query}>
+                <Pressable
+                  onPress={() => onSelectRecent(query)}
+                  style={styles.recentRow}
+                >
+                  <Clock size={14} color={COLORS.textSecondary} />
+                  <Text
+                    style={[styles.recentRowText, { color: COLORS.textDark }]}
+                    numberOfLines={1}
+                  >
+                    {query}
+                  </Text>
+                  <ChevronRight size={14} color={COLORS.textSecondary} />
+                </Pressable>
+                {idx < recentSearches.length - 1 && (
+                  <View style={[styles.divider, { backgroundColor: COLORS.border }]} />
+                )}
+              </React.Fragment>
             ))}
           </View>
         </View>
@@ -138,6 +148,30 @@ export function SearchDiscovery({
                   numberOfLines={1}
                 >
                   {cat.name}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Populares em [Cidade] */}
+      {city && trendingProducts.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: tokens.textPrimary }]}>
+              Populares em {city}
+            </Text>
+          </View>
+          <View style={styles.popularChips}>
+            {trendingProducts.slice(0, 8).map((item) => (
+              <Pressable
+                key={item.id}
+                onPress={() => onSelectTrending(item.id, item.name)}
+                style={[styles.popularChip, { backgroundColor: tokens.primaryMuted }]}
+              >
+                <Text style={[styles.popularChipText, { color: tokens.primary }]}>
+                  {item.name}
                 </Text>
               </Pressable>
             ))}
@@ -256,24 +290,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  // Recent searches
-  recentPills: {
+  // Recent searches (vertical list)
+  recentList: {
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+    overflow: 'hidden',
+  },
+  recentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  recentRowText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  // Populares chips
+  popularChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  recentPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
+  popularChip: {
     borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingVertical: 7,
   },
-  recentPillText: {
+  popularChipText: {
     fontSize: 13,
+    fontWeight: '600',
   },
   // Category grid: 4 columns
   categoryGrid: {
