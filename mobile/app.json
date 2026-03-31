@@ -2,6 +2,7 @@
   "expo": {
     "name": "Poup",
     "slug": "poup",
+    "owner": "lucasgalhardo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -37,8 +38,8 @@
         }
       },
       "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {
@@ -78,6 +79,12 @@
       ],
       "expo-font",
       "expo-localization"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4ec2af93-55e6-420f-b35b-89c7d8ea3021"
+      }
+    }
   }
 }
