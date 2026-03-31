@@ -40,34 +40,20 @@ export function useAccount() {
   }, [session]);
 
   const deleteAccount = useCallback(async (): Promise<boolean> => {
-    const userId = session?.user?.id;
-    if (!userId) return false;
+    if (!session?.access_token) return false;
 
     setIsDeleting(true);
     try {
-      // Delete user data in order (respecting foreign keys)
-      await supabase.from('shopping_list_items')
-        .delete()
-        .in('list_id',
-          (await supabase.from('shopping_lists').select('id').eq('user_id', userId)).data?.map(l => l.id) ?? []
-        );
-      await supabase.from('shopping_lists').delete().eq('user_id', userId);
-      await supabase.from('user_alerts').delete().eq('user_id', userId);
-      await supabase.from('user_favorites').delete().eq('user_id', userId);
-      await supabase.from('push_tokens').delete().eq('user_id', userId);
-      await supabase.from('store_members').delete().eq('user_id', userId);
+      // Call Edge Function which deletes auth.users via admin API.
+      // Cascade FKs automatically remove profiles and all related data.
+      const { error } = await supabase.functions.invoke('delete-account');
 
-      // Record consent withdrawal
-      await supabase.from('consent_log').insert({
-        user_id: userId,
-        action: 'account_deletion',
-        version: '1.0',
-      });
+      if (error) {
+        console.warn('[useAccount] Account deletion failed:', error);
+        return false;
+      }
 
-      // Delete profile (RLS should allow own profile deletion)
-      await supabase.from('profiles').delete().eq('id', userId);
-
-      // Sign out
+      // Sign out locally
       await supabase.auth.signOut();
       setSession(null);
 
