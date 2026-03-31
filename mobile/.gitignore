@@ -34,9 +34,7 @@ yarn-error.*
 .env
 .env*.local
 
-# Firebase / Google service credentials
-google-services.json
-GoogleService-Info.plist
+# Google Play service account (contains private key — do NOT commit)
 google-service-account.json
 
 # typescript

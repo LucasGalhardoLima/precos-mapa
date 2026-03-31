@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "452901808238",
+    "project_id": "poup-f63d3",
+    "storage_bucket": "poup-f63d3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:452901808238:android:c5302270ce4b67b2ee5e7f",
+        "android_client_info": {
+          "package_name": "com.poup.consumer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMxm16Mp8Io-sBPwMmVz8t1Hw1n_JqfUg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

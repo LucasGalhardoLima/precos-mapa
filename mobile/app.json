@@ -21,7 +21,8 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Precisamos da sua localizacao para mostrar lojas e ofertas perto de voce.",
-        "NSLocationAlwaysUsageDescription": "Usamos sua localizacao para enviar alertas quando uma oferta aparece perto de voce."
+        "NSLocationAlwaysUsageDescription": "Usamos sua localizacao para enviar alertas quando uma oferta aparece perto de voce.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
