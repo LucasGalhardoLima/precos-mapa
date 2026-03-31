@@ -43,18 +43,21 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://zyhhcfkbzfbarnxlkfri.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_i2bNlmNLCTiFhlO0yk0U_A_VGND0g4j",
-        "EXPO_PUBLIC_RC_APPLE_KEY": "test_rQqEOinbplOicfFxfpnkPoJZEPe",
-        "EXPO_PUBLIC_RC_GOOGLE_KEY": "test_rQqEOinbplOicfFxfpnkPoJZEPe",
-        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "your-google-maps-key"
+        "EXPO_PUBLIC_RC_APPLE_KEY": "appl_XtpJsGVtjuSQlrrpWqnQBOvGtRi",
+        "EXPO_PUBLIC_RC_GOOGLE_KEY": "goog_tViWEogKyutFZzDlSZlGzuvXGDn",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyDBnPZFEfcNAu9XgCKkvuOaJpGo3ZiRml8",
+        "EXPO_PUBLIC_POSTHOG_KEY": "phc_a1gRHqzJsBe2VS1j9qjAtlsHu15hVzttCopAtShBHCO",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com",
+        "EXPO_PUBLIC_API_URL": "https://precos-mapa.vercel.app"
       }
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "appleId": "your-apple-id@email.com",
-        "ascAppId": "your-app-store-connect-id",
-        "appleTeamId": "your-team-id"
+        "appleId": "lima.galhardo@gmail.com",
+        "ascAppId": "6761384621",
+        "appleTeamId": "V59J57D8PA"
       },
       "android": {
         "serviceAccountKeyPath": "./google-service-account.json",

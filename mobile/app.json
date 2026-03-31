@@ -14,8 +14,9 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.poup.app",
+      "supportsTablet": false,
+      "bundleIdentifier": "com.poup.consumer",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Precisamos da sua localizacao para mostrar lojas e ofertas perto de voce.",
@@ -28,10 +29,11 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.poup.app",
+      "googleServicesFile": "./google-services.json",
+      "package": "com.poup.consumer",
       "config": {
         "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+          "apiKey": "AIzaSyDBnPZFEfcNAu9XgCKkvuOaJpGo3ZiRml8"
         }
       },
       "permissions": [
@@ -71,10 +73,11 @@
       [
         "@react-native-google-signin/google-signin",
         {
-          "iosUrlScheme": "com.googleusercontent.apps.YOUR_IOS_CLIENT_ID"
+          "iosUrlScheme": "com.googleusercontent.apps.824881461560-qqgqu622abjoh6tk6iaui36ru6mhmp12"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-localization"
     ]
   }
 }

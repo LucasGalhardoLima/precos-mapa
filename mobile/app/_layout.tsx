@@ -3,6 +3,7 @@ import { Stack, useRouter } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { PostHogProvider } from 'posthog-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import {
@@ -15,6 +16,7 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthStore, usePushNotifications } from '@poup/shared';
 import type { NotificationData } from '@poup/shared';
+import { posthogClient } from '@/lib/posthog';
 import { useCallback } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
@@ -45,7 +47,7 @@ export default function RootLayout() {
     );
   }
 
-  return (
+  const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <BottomSheetModalProvider>
@@ -70,4 +72,14 @@ export default function RootLayout() {
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
+
+  if (posthogClient) {
+    return (
+      <PostHogProvider client={posthogClient} autocapture>
+        {content}
+      </PostHogProvider>
+    );
+  }
+
+  return content;
 }

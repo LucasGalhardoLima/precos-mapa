@@ -1,7 +1,7 @@
 # E2E: Fresh app launch, onboarding flow, navigate to auth and back
 # Note: This flow tests the onboarding experience for new users.
 # If user is already signed in, the flow verifies the home screen instead.
-appId: com.poup.app
+appId: com.poup.consumer
 ---
 - launchApp
 
