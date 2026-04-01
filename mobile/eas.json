@@ -46,7 +46,7 @@
         "EXPO_PUBLIC_RC_APPLE_KEY": "appl_XtpJsGVtjuSQlrrpWqnQBOvGtRi",
         "EXPO_PUBLIC_RC_GOOGLE_KEY": "goog_tViWEogKyutFZzDlSZlGzuvXGDn",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyDBnPZFEfcNAu9XgCKkvuOaJpGo3ZiRml8",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "824881461560-qf4v6to4fc2vmpt0iqplisl102so5047.apps.googleusercontent.com",
         "EXPO_PUBLIC_POSTHOG_KEY": "phc_a1gRHqzJsBe2VS1j9qjAtlsHu15hVzttCopAtShBHCO",
         "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com",
         "EXPO_PUBLIC_API_URL": "https://precos-mapa.vercel.app"
