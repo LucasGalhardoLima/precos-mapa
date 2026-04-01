@@ -1,9 +1,15 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/auth-store';
 import type { UserRole, Profile } from '../types';
+
+// Configure Google Sign-In once at module level.
+// webClientId is required for signInWithIdToken flow to return an idToken.
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+});
 
 export function useAuth() {
   const { session, profile, isLoading, setSession, setProfile, clearAuth } = useAuthStore();
@@ -45,6 +51,9 @@ export function useAuth() {
   }, [setProfile]);
 
   const signInWithGoogle = useCallback(async () => {
+    if (!process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID) {
+      throw new Error('Google Sign-In não configurado: EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ausente');
+    }
     await GoogleSignin.hasPlayServices();
     const result = await GoogleSignin.signIn();
     const idToken = result.data?.idToken;
