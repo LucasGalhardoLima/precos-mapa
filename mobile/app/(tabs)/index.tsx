@@ -20,6 +20,7 @@ import { usePromotions } from '@/hooks/use-promotions';
 import { useCategories } from '@/hooks/use-categories';
 import { useLocation } from '@/hooks/use-location';
 import { useStores } from '@/hooks/use-stores';
+import { useCities } from '@/hooks/use-cities';
 import { StoreRanking as StoreRankingComponent } from '@/components/store-ranking';
 import { StoreCard } from '@/components/store-card';
 import { DealCard } from '@/components/themed/deal-card';
@@ -29,12 +30,6 @@ import { InlineError } from '@/components/inline-error';
 import type { EnrichedPromotion } from '@/types';
 
 const keyExtractor = (item: EnrichedPromotion) => item.id;
-const CITY_OPTIONS = [
-  { city: 'Matao', state: 'SP' },
-  { city: 'Araraquara', state: 'SP' },
-  { city: 'Ribeirao Preto', state: 'SP' },
-  { city: 'Sao Carlos', state: 'SP' },
-];
 
 // ---------------------------------------------------------------------------
 // Home Screen
@@ -75,6 +70,8 @@ export default function HomeScreen() {
     categories,
     isLoading: categoriesLoading,
   } = useCategories();
+
+  const { cities: cityOptions, isLoading: citiesLoading } = useCities();
 
   const {
     stores,
@@ -117,7 +114,7 @@ export default function HomeScreen() {
     [setPreferredCity],
   );
 
-  const isLoading = promotionsLoading || categoriesLoading || storesLoading;
+  const isLoading = promotionsLoading || categoriesLoading || storesLoading || citiesLoading;
 
   if (hasError) {
     return (
@@ -339,7 +336,7 @@ export default function HomeScreen() {
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setCityPickerVisible(false)} />
           <View style={[styles.modalSheet, { paddingBottom: insets.bottom + 12 }]}>
             <Text style={styles.modalTitle}>Selecionar cidade</Text>
-            {CITY_OPTIONS.map((option) => {
+            {cityOptions.map((option) => {
               const isActive = option.city === city && option.state === state;
               return (
                 <Pressable

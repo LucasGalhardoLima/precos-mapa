@@ -398,7 +398,7 @@ export default function AccountScreen() {
   }, []);
 
   const handleOpenFavorites = useCallback(() => {
-    router.push('/(tabs)/favorites');
+    router.push('/favorites');
   }, [router]);
 
   const handleResetPassword = useCallback(async () => {

@@ -29,7 +29,6 @@ export default function TabLayout() {
         <Tabs.Screen name="alerts" />
 
         {/* ---- Hidden screens — kept to avoid breaking deep links ---- */}
-        <Tabs.Screen name="favorites" options={{ href: null }} />
         <Tabs.Screen name="account" options={{ href: null }} />
       </Tabs>
     </ThemeProvider>
