@@ -17,7 +17,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { useAuthStore, usePushNotifications } from '@poup/shared';
 import type { NotificationData } from '@poup/shared';
 import { posthogClient } from '@/lib/posthog';
-import { useCallback } from 'react';
+import { initRevenueCat, loginRevenueCat, logoutRevenueCat } from '@/lib/revenue-cat';
+import { useCallback, useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function RootLayout() {
@@ -32,6 +33,22 @@ export default function RootLayout() {
   }, [router]);
 
   usePushNotifications({ onNotificationTap: handleNotificationTap });
+
+  // RevenueCat: init on mount, login/logout on auth state changes
+  const prevUserIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    initRevenueCat();
+    return useAuthStore.subscribe((state) => {
+      const userId = state.session?.user?.id ?? null;
+      if (userId === prevUserIdRef.current) return;
+      prevUserIdRef.current = userId;
+      if (userId) {
+        loginRevenueCat(userId);
+      } else {
+        logoutRevenueCat();
+      }
+    });
+  }, []);
 
   const [fontsLoaded] = useFonts({
     Poppins_700Bold,
