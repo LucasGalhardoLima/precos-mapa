@@ -1,22 +1,32 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { calculateDistanceKm } from '@/hooks/use-location';
 import { getGamificationMessage } from '@/constants/messages';
 import type { Store, StoreWithPromotions, EnrichedPromotion, PromotionWithRelations } from '@/types';
 
+const DEFAULT_PAGE_SIZE = 20;
+
 interface UseStoresParams {
   userLatitude: number;
   userLongitude: number;
+  pageSize?: number;
 }
 
 export function useStores(params: UseStoresParams) {
-  const { userLatitude, userLongitude } = params;
+  const { userLatitude, userLongitude, pageSize = DEFAULT_PAGE_SIZE } = params;
   const [raw, setRaw] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const offsetRef = useRef(0);
 
-  const fetchStores = useCallback(async () => {
-    setIsLoading(true);
+  const fetchPage = useCallback(async (offset: number, append: boolean) => {
+    if (append) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
+    }
     setError(null);
 
     const { data, error: fetchErr } = await supabase
@@ -30,19 +40,42 @@ export function useStores(params: UseStoresParams) {
       `)
       .eq('is_active', true)
       .eq('promotions.status', 'active')
-      .gt('promotions.end_date', new Date().toISOString());
+      .gt('promotions.end_date', new Date().toISOString())
+      .range(offset, offset + pageSize - 1);
 
     if (fetchErr) {
       setError(new Error(fetchErr.message));
     } else if (data) {
-      setRaw(data);
+      setRaw((prev) => (append ? [...prev, ...data] : data));
+      setHasMore(data.length >= pageSize);
+      offsetRef.current = offset + data.length;
     }
-    setIsLoading(false);
-  }, []);
+
+    if (append) {
+      setIsLoadingMore(false);
+    } else {
+      setIsLoading(false);
+    }
+  }, [pageSize]);
 
   useEffect(() => {
-    fetchStores();
-  }, [fetchStores]);
+    offsetRef.current = 0;
+    setRaw([]);
+    setHasMore(true);
+    fetchPage(0, false);
+  }, [fetchPage]);
+
+  const loadMore = useCallback(() => {
+    if (!hasMore || isLoadingMore) return;
+    fetchPage(offsetRef.current, true);
+  }, [hasMore, isLoadingMore, fetchPage]);
+
+  const retry = useCallback(() => {
+    offsetRef.current = 0;
+    setRaw([]);
+    setHasMore(true);
+    fetchPage(0, false);
+  }, [fetchPage]);
 
   const stores = useMemo((): StoreWithPromotions[] => {
     return raw.map((store) => {
@@ -104,5 +137,5 @@ export function useStores(params: UseStoresParams) {
     });
   }, [raw, userLatitude, userLongitude]);
 
-  return { stores, isLoading, error, retry: fetchStores };
+  return { stores, isLoading, isLoadingMore, hasMore, loadMore, error, retry };
 }

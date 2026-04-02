@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@poup/shared';
+import { calculateDistanceKm } from '@/hooks/use-location';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,7 +50,7 @@ const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 // ---------------------------------------------------------------------------
 
 export function useStoreRanking(params: UseStoreRankingParams) {
-  const { userLatitude, userLongitude, radiusKm: _radiusKm = 15 } = params;
+  const { userLatitude, userLongitude, radiusKm = 15 } = params;
   const profile = useAuthStore((s) => s.profile);
   const [ranking, setRanking] = useState<StoreRanking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,7 +72,7 @@ export function useStoreRanking(params: UseStoreRankingParams) {
       // Fetch active promotions with product and store data
       const { data: promoRows } = await supabase
         .from('promotions')
-        .select('product_id, promo_price, store_id, product:products(name), store:stores(id, name)')
+        .select('product_id, promo_price, store_id, product:products(name), store:stores(id, name, latitude, longitude)')
         .eq('status', 'active')
         .gt('end_date', new Date().toISOString());
 
@@ -107,6 +108,14 @@ export function useStoreRanking(params: UseStoreRankingParams) {
         const storeId: string = store?.id ?? promo.store_id;
         const storeName: string = store?.name ?? 'Loja';
         const productName: string = (promo.product as any)?.name ?? '';
+
+        // M1 fix: skip stores outside the radius
+        const storeLat: number | undefined = store?.latitude;
+        const storeLng: number | undefined = store?.longitude;
+        if (storeLat != null && storeLng != null) {
+          const dist = calculateDistanceKm(userLatitude, userLongitude, storeLat, storeLng);
+          if (dist > radiusKm) continue;
+        }
 
         // Determine which basket item this product matches
         const matchedItem = REFERENCE_BASKET.find((item) =>
@@ -181,7 +190,7 @@ export function useStoreRanking(params: UseStoreRankingParams) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [userLatitude, userLongitude, radiusKm, profile?.city]);
 
   useEffect(() => {
     fetchRanking();

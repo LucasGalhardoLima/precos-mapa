@@ -114,6 +114,7 @@ export default function MapScreen() {
   const { stores, isLoading } = useStores({
     userLatitude: latitude,
     userLongitude: longitude,
+    pageSize: 200,
   });
   const { lists } = useShoppingList();
   const { categories } = useCategories();
