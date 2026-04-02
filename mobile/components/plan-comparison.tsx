@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Modal, Pressable } from 'react-native';
+import { View, Text, ScrollView, Modal, Pressable, Linking } from 'react-native';
 import { useState } from 'react';
 import { X, Check, Minus } from 'lucide-react-native';
 import { StyledButton } from '@/components/ui/button';
@@ -225,7 +225,7 @@ export function PlanComparisonModal({
                     title="Falar com vendas"
                     variant="secondary"
                     className="mt-4"
-                    onPress={() => {}}
+                    onPress={() => Linking.openURL('mailto:vendas@poup.com.br?subject=Interesse%20no%20plano%20Enterprise')}
                   />
                 )}
               </View>

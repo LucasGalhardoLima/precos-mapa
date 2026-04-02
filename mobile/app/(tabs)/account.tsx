@@ -369,6 +369,8 @@ export default function AccountScreen() {
   const [paywallVisible, setPaywallVisible] = useState(false);
 
   const email = session?.user?.email ?? '';
+  const authProvider = session?.user?.app_metadata?.provider ?? 'email';
+  const isEmailAuth = authProvider === 'email';
   const displayName = profile?.display_name ?? '';
   const city = profile?.city ?? 'Não definida';
   const state = profile?.state ?? '';
@@ -607,13 +609,15 @@ export default function AccountScreen() {
         <SectionHeader title="CONTA" tokens={tokens} />
 
         <View style={[styles.sectionCard, { backgroundColor: tokens.surface, borderColor: tokens.border }]}>
-          <SettingsRow
-            icon={Lock}
-            iconColor={tokens.primary}
-            label="Alterar senha"
-            onPress={handleResetPassword}
-            tokens={tokens}
-          />
+          {isEmailAuth && (
+            <SettingsRow
+              icon={Lock}
+              iconColor={tokens.primary}
+              label="Alterar senha"
+              onPress={handleResetPassword}
+              tokens={tokens}
+            />
+          )}
           <SettingsRow
             icon={FileDown}
             iconColor={tokens.primary}
