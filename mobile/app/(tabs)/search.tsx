@@ -142,9 +142,10 @@ export default function SearchScreen() {
 
   const handlePressStore = useCallback(
     (pressedStoreId: string) => {
-      router.push(`/store/${pressedStoreId}`);
+      const match = storeData.find((s) => s.store.id === pressedStoreId);
+      router.setParams({ storeId: pressedStoreId, storeName: match?.store.name ?? '' });
     },
-    [router],
+    [router, storeData],
   );
 
   const handlePressLocked = useCallback(() => {
