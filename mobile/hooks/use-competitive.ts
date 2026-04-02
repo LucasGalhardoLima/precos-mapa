@@ -26,6 +26,7 @@ interface CompetitiveData {
   competitivenessScore: number;
   isLoading: boolean;
   isPremium: boolean;
+  error: string | null;
   refresh: () => void;
 }
 
@@ -38,6 +39,7 @@ export function useCompetitive(
   const [storeRankings, setStoreRankings] = useState<StoreRanking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!storeId || !session?.user) {
@@ -46,6 +48,7 @@ export function useCompetitive(
     }
 
     setIsLoading(true);
+    setError(null);
 
     // Check plan
     const { data: store } = await supabase
@@ -77,8 +80,19 @@ export function useCompetitive(
       }),
     ]);
 
-    if (pricesRes.data) setCompetitorPrices(pricesRes.data);
-    if (rankingsRes.data) setStoreRankings(rankingsRes.data);
+    if (pricesRes.error) {
+      console.warn('[useCompetitive] get_competitor_prices failed:', pricesRes.error.message);
+      setError(pricesRes.error.message);
+    } else if (pricesRes.data) {
+      setCompetitorPrices(pricesRes.data);
+    }
+
+    if (rankingsRes.error) {
+      console.warn('[useCompetitive] get_store_rankings failed:', rankingsRes.error.message);
+      setError((prev) => prev ? `${prev}; ${rankingsRes.error!.message}` : rankingsRes.error!.message);
+    } else if (rankingsRes.data) {
+      setStoreRankings(rankingsRes.data);
+    }
 
     setIsLoading(false);
   }, [storeId, session, radiusKm]);
@@ -120,6 +134,7 @@ export function useCompetitive(
     competitivenessScore,
     isLoading,
     isPremium,
+    error,
     refresh: fetchData,
   };
 }

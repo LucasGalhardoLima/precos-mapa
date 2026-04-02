@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@poup/shared';
 import { useCompetitive } from '@/hooks/use-competitive';
 import { StyledButton } from '@/components/ui/button';
+import { PlanComparisonModal } from '@/components/plan-comparison';
 import { Colors } from '@/constants/colors';
 
 const PLAN_LIMITS: Record<string, { promotions: number; label: string }> = {
@@ -23,8 +24,12 @@ export default function BusinessDashboard() {
   const [activeCount, setActiveCount] = useState(0);
   const [monthlyCount, setMonthlyCount] = useState(0);
   const [storeCount, setStoreCount] = useState(0);
+  const [viewsCount, setViewsCount] = useState(0);
+  const [clicksCount, setClicksCount] = useState(0);
+  const [userCount, setUserCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [showPlans, setShowPlans] = useState(false);
   const competitive = useCompetitive(storeId);
 
   useEffect(() => {
@@ -43,7 +48,7 @@ export default function BusinessDashboard() {
         if (profile?.role === 'super_admin') {
           setIsSuperAdmin(true);
 
-          const [activeRes, monthlyRes, storesRes] = await Promise.all([
+          const [activeRes, monthlyRes, storesRes, usersRes] = await Promise.all([
             supabase
               .from('promotions')
               .select('*', { count: 'exact', head: true })
@@ -56,11 +61,15 @@ export default function BusinessDashboard() {
               .from('stores')
               .select('*', { count: 'exact', head: true })
               .eq('is_active', true),
+            supabase
+              .from('profiles')
+              .select('*', { count: 'exact', head: true }),
           ]);
 
           setActiveCount(activeRes.count ?? 0);
           setMonthlyCount(monthlyRes.count ?? 0);
           setStoreCount(storesRes.count ?? 0);
+          setUserCount(usersRes.count ?? 0);
         }
         setIsLoading(false);
         return;
@@ -69,7 +78,7 @@ export default function BusinessDashboard() {
       const sid = member.store_id;
       setStoreId(sid);
 
-      const [storeRes, activeRes, monthlyRes] = await Promise.all([
+      const [storeRes, activeRes, monthlyRes, viewsRes, clicksRes] = await Promise.all([
         supabase.from('stores').select('*').eq('id', sid).single(),
         supabase
           .from('promotions')
@@ -81,11 +90,25 @@ export default function BusinessDashboard() {
           .select('*', { count: 'exact', head: true })
           .eq('store_id', sid)
           .gte('created_at', getMonthStart()),
+        supabase
+          .from('analytics_events')
+          .select('*', { count: 'exact', head: true })
+          .eq('store_id', sid)
+          .in('event_type', ['search_result_viewed', 'product_detail_viewed'])
+          .gte('created_at', getMonthStart()),
+        supabase
+          .from('analytics_events')
+          .select('*', { count: 'exact', head: true })
+          .eq('store_id', sid)
+          .in('event_type', ['map_pin_tapped', 'list_item_added'])
+          .gte('created_at', getMonthStart()),
       ]);
 
       if (storeRes.data) setStore(storeRes.data);
       setActiveCount(activeRes.count ?? 0);
       setMonthlyCount(monthlyRes.count ?? 0);
+      setViewsCount(viewsRes.count ?? 0);
+      setClicksCount(clicksRes.count ?? 0);
       setIsLoading(false);
     }
 
@@ -137,7 +160,7 @@ export default function BusinessDashboard() {
             />
             <KPICard
               icon={<TrendingUp size={20} color={Colors.semantic.success} />}
-              value="--"
+              value={String(userCount)}
               label="Usuários"
             />
           </View>
@@ -186,12 +209,12 @@ export default function BusinessDashboard() {
         <View className="flex-row gap-3 mt-3">
           <KPICard
             icon={<Eye size={20} color={Colors.semantic.info} />}
-            value="--"
+            value={String(viewsCount)}
             label="Visualizações"
           />
           <KPICard
             icon={<TrendingUp size={20} color={Colors.semantic.success} />}
-            value="--"
+            value={String(clicksCount)}
             label="Cliques"
           />
         </View>
@@ -209,7 +232,7 @@ export default function BusinessDashboard() {
               title="Conhecer planos Premium"
               variant="primary"
               className="mt-4"
-              onPress={() => {}}
+              onPress={() => setShowPlans(true)}
             />
           </View>
         )}
@@ -231,6 +254,12 @@ export default function BusinessDashboard() {
             </View>
           ) : competitive.isLoading ? (
             <ActivityIndicator size="small" color={Colors.brand.green} />
+          ) : competitive.error ? (
+            <View className="bg-semantic-error/10 rounded-2xl p-4">
+              <Text className="text-sm text-semantic-error">
+                Erro ao carregar dados competitivos. Tente novamente mais tarde.
+              </Text>
+            </View>
           ) : (
             <View className="gap-3">
               <View className="bg-surface-tertiary rounded-2xl p-4 flex-row items-center gap-3">
@@ -277,6 +306,12 @@ export default function BusinessDashboard() {
           )}
         </View>
       </ScrollView>
+
+      <PlanComparisonModal
+        visible={showPlans}
+        onClose={() => setShowPlans(false)}
+        currentPlan={store?.b2b_plan ?? 'free'}
+      />
     </SafeAreaView>
   );
 }
