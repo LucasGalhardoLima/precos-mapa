@@ -94,7 +94,15 @@ export function SmartList({ listId }: SmartListProps) {
           disabled={optimizing || list.items.length === 0}
         />
 
-        {result && (
+        {result && result.stores.length === 0 && (
+          <View className="bg-surface-tertiary rounded-2xl p-4 items-center">
+            <Text className="text-sm text-text-tertiary text-center">
+              Nenhuma promoção encontrada para os itens da sua lista.
+            </Text>
+          </View>
+        )}
+
+        {result && result.stores.length > 0 && (
           <View className="bg-surface-tertiary rounded-2xl p-4 gap-3">
             <View className="flex-row items-center gap-2">
               <ShoppingCart size={20} color={Colors.brand.green} />

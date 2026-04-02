@@ -427,6 +427,15 @@ export default function ListScreen() {
             </View>
           </View>
 
+          {/* ── Empty optimization state ── */}
+          {optimization && optimization.stores.length === 0 && (
+            <View style={styles.emptyOptimization}>
+              <Text style={styles.emptyOptimizationText}>
+                Nenhuma promoção encontrada para os itens da sua lista.
+              </Text>
+            </View>
+          )}
+
           {/* ── Summary card + route bar ── */}
           {optimization && optimization.stores.length > 0 && (
             <>
@@ -583,6 +592,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#0D9488',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // ── Empty optimization state ─────────────────────────────────────────────
+  emptyOptimization: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+  },
+  emptyOptimizationText: {
+    fontSize: 13,
+    color: '#94A3B8',
+    textAlign: 'center',
   },
 
   // ── Items list (individual cards) ────────────────────────────────────────
