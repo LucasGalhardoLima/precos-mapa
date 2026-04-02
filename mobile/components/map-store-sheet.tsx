@@ -213,9 +213,6 @@ export const MapStoreSheet = forwardRef<BottomSheet, MapStoreSheetProps>(
                 {storeData.activePromotionCount} {storeData.activePromotionCount === 1 ? 'oferta' : 'ofertas'}
               </Text>
             </View>
-            <View style={styles.tagOpen}>
-              <Text style={styles.tagOpenText}>Aberto</Text>
-            </View>
           </View>
 
           {/* ── Action Buttons ── */}
@@ -359,17 +356,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: '#92400e',
-  },
-  tagOpen: {
-    backgroundColor: '#dcfce7',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  tagOpenText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#166534',
   },
 
   // Action buttons

@@ -35,6 +35,8 @@ import { useAlerts } from '@/hooks/use-alerts';
 import { useSubscription } from '@/hooks/use-subscription';
 import { useAccount } from '@/hooks/use-account';
 import { useShoppingList } from '@/hooks/use-shopping-list';
+import { useEconomySummary } from '@/hooks/use-economy-summary';
+import { useLocation } from '@/hooks/use-location';
 import { supabase } from '@/lib/supabase';
 import { Paywall } from '@/components/paywall';
 import type { LucideIcon } from 'lucide-react-native';
@@ -177,23 +179,7 @@ function SavingsCard({
             <Text style={acctStyles.plusStatLabel}>mercados</Text>
           </View>
         </View>
-      ) : (
-        <View style={acctStyles.chartRow}>
-          {[0.3, 0.5, 0.8, 0.6, 1.0].map((h, i) => (
-            <View key={i} style={acctStyles.chartBarWrap}>
-              <View
-                style={[
-                  acctStyles.chartBar,
-                  {
-                    height: 28 * h,
-                    backgroundColor: i === 4 ? '#0D9488' : '#CCFBF1',
-                  },
-                ]}
-              />
-            </View>
-          ))}
-        </View>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -323,29 +309,30 @@ export default function AccountScreen() {
   const { plan, isPlus } = useSubscription();
   const { exportData, deleteAccount, isExporting } = useAccount();
   const { lists } = useShoppingList();
+  const { latitude, longitude } = useLocation();
+  const { summary: economySummary } = useEconomySummary({
+    userLatitude: latitude,
+    userLongitude: longitude,
+  });
 
-  // Estimated savings: count checked items × average savings estimate
-  // Real savings tracking requires backend — use an approximation for now
-  const checkedItemCount = lists.reduce(
-    (sum, list) => sum + list.items.filter((i) => i.is_checked).length,
-    0,
-  );
-  const estimatedSavings = checkedItemCount * 3.5;
+  const savings = economySummary.totalSavings;
   const checkedItems = lists.flatMap((list) => list.items.filter((item) => item.is_checked));
   const purchasesCount = checkedItems.length;
   const marketsVisited = Math.max(
     1,
     new Set(checkedItems.map((item) => item.store?.id).filter(Boolean)).size,
   );
-  const avgSavingsPercent = Math.max(
-    8,
-    Math.min(
-      25,
-      Math.round((estimatedSavings / Math.max(1, purchasesCount * 22)) * 100),
-    ),
-  );
+  const avgSavingsPercent = savings > 0
+    ? Math.max(
+        8,
+        Math.min(
+          25,
+          Math.round((savings / Math.max(1, purchasesCount * 22)) * 100),
+        ),
+      )
+    : 0;
   const plusSummary: PlusSummary = {
-    savings90d: estimatedSavings * 3,
+    savings90d: savings,
     purchases: purchasesCount,
     avgSavingsPercent,
     markets: marketsVisited,
@@ -529,7 +516,7 @@ export default function AccountScreen() {
         {/* Sua economia (savings card — matches mockup)                      */}
         {/* ----------------------------------------------------------------- */}
         <SavingsCard
-          savings={estimatedSavings}
+          savings={savings}
           isPlus={isPaidPlan}
           plusSummary={plusSummary}
           tokens={tokens}
@@ -933,23 +920,6 @@ const acctStyles = StyleSheet.create({
   },
   savingsSubText: {
     fontSize: 11,
-  },
-  chartRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 6,
-    marginTop: 14,
-    height: 28,
-  },
-  chartBarWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    height: 28,
-  },
-  chartBar: {
-    width: '100%',
-    borderRadius: 4,
   },
   plusStatsRow: {
     flexDirection: 'row',
