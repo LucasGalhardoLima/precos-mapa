@@ -39,7 +39,8 @@ export function useTrending() {
           .from('promotions')
           .select('product_id, promo_price, product:products!inner(id, name, reference_price)')
           .eq('status', 'active')
-          .gt('end_date', new Date().toISOString());
+          .gt('end_date', new Date().toISOString())
+          .limit(100);
 
         if (fallback && fallback.length > 0) {
           // Group by product
