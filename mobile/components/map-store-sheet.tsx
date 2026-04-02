@@ -137,6 +137,7 @@ export const MapStoreSheet = forwardRef<BottomSheet, MapStoreSheetProps>(
     { storeData, rank = 'yellow', position = 0, listSummary, onClose },
     ref,
   ) {
+    const router = useRouter();
     const snapPoints = useMemo(() => ['45%', '85%'], []);
 
     const handleSheetChange = useCallback(
@@ -221,7 +222,7 @@ export const MapStoreSheet = forwardRef<BottomSheet, MapStoreSheetProps>(
           <View style={styles.actionsRow}>
             <Pressable
               style={({ pressed }) => [styles.btnSecondary, pressed && { opacity: 0.7 }]}
-              onPress={() => {}}
+              onPress={() => router.push({ pathname: '/(tabs)/search', params: { storeId: store.id, storeName: store.name } })}
             >
               <Eye size={14} color="#64748B" />
               <Text style={styles.btnSecondaryText}>Ver ofertas</Text>
