@@ -22,6 +22,7 @@ import {
   MapPinOff,
 } from 'lucide-react-native';
 import { MapStorePin, type PinRank } from '@/components/map-store-pin';
+import { InlineError } from '@/components/inline-error';
 
 import { useAnalytics } from '@/hooks/use-analytics';
 import { useStores } from '@/hooks/use-stores';
@@ -111,7 +112,7 @@ function rankStores(stores: StoreWithPromotions[]): RankedStore[] {
 
 export default function MapScreen() {
   const { latitude, longitude, permissionGranted } = useLocation();
-  const { stores, isLoading } = useStores({
+  const { stores, isLoading, error, retry } = useStores({
     userLatitude: latitude,
     userLongitude: longitude,
     pageSize: 200,
@@ -505,8 +506,20 @@ export default function MapScreen() {
         </View>
       )}
 
+      {/* Error state */}
+      {error && !isLoading && (
+        <View style={styles.noStoresOverlay}>
+          <View style={[styles.noStoresCard, { backgroundColor: tokens.surface }]}>
+            <InlineError
+              onRetry={retry}
+              message="Não foi possível carregar os mercados. Tentar novamente?"
+            />
+          </View>
+        </View>
+      )}
+
       {/* No stores found */}
-      {!isLoading && stores.length === 0 && permissionGranted !== false && (
+      {!isLoading && !error && stores.length === 0 && permissionGranted !== false && (
         <View style={styles.noStoresOverlay}>
           <View style={[styles.noStoresCard, { backgroundColor: tokens.surface }]}>
             <MapPinOff size={28} color={tokens.textHint} />

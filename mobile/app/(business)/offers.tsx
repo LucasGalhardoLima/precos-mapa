@@ -115,10 +115,10 @@ export default function BusinessOffers() {
             </Text>
           </View>
           <Pressable
-            className="w-12 h-12 bg-brand-green rounded-full items-center justify-center"
-            onPress={() => Alert.alert('Nova Oferta', 'Formulário de criação será implementado')}
+            className="w-12 h-12 bg-border rounded-full items-center justify-center opacity-50"
+            disabled
           >
-            <Plus size={24} color="white" />
+            <Plus size={24} color="#94A3B8" />
           </Pressable>
         </View>
 

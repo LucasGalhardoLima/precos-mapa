@@ -465,7 +465,11 @@ export default function AccountScreen() {
   }, [deleteAccount]);
 
   const handleSignOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Remote sign-out failed — clear local session anyway so user isn't stuck
+    }
     setSession(null);
   }, [setSession]);
 
