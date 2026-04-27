@@ -5,6 +5,7 @@ import {
   Text,
   Pressable,
   FlatList,
+  SectionList,
   Alert,
   StyleSheet,
 } from 'react-native';
@@ -256,6 +257,16 @@ export default function SearchScreen() {
 
   const resultCount = useProductMode ? productResults.length : promotions.length;
 
+  const productSections = useMemo(() => {
+    if (!showResults || !useProductMode) return [];
+    const priced  = productResults.filter((p) => p.has_active_price);
+    const noPrice = productResults.filter((p) => !p.has_active_price);
+    const sections: { title: string | null; data: typeof productResults }[] = [];
+    if (priced.length > 0)   sections.push({ title: null,                    data: priced });
+    if (noPrice.length > 0)  sections.push({ title: 'Sem oferta no momento', data: noPrice });
+    return sections;
+  }, [productResults, showResults, useProductMode]);
+
   // Search bar style: focused (teal) when query is active
   const searchBarStyle = hasFilter
     ? [styles.searchBar, { backgroundColor: tokens.surface, borderColor: tokens.primary, borderWidth: 1.5 }]
@@ -387,18 +398,26 @@ export default function SearchScreen() {
             <Text style={[styles.resultCount, { color: COLORS.textSecondary }]}>
               {resultCount} produto{resultCount !== 1 ? 's' : ''} encontrado{resultCount !== 1 ? 's' : ''} perto de você
             </Text>
-            <FlatList
-              data={productResults}
+            <SectionList
+              sections={productSections}
               keyExtractor={(item) => item.product_id}
               renderItem={({ item, index }) => (
                 <ProductPriceCard
                   product={item}
+                  index={index}
                   onPressProduct={handlePressProduct}
                   onPressStore={handlePressStore}
                   onPressLocked={handlePressLocked}
                   testID={`product-card-${index}`}
                 />
               )}
+              renderSectionHeader={({ section: { title } }) =>
+                title ? (
+                  <Text style={[styles.sectionHeader, { color: COLORS.textSecondary, backgroundColor: tokens.bg }]}>
+                    {title}
+                  </Text>
+                ) : null
+              }
               contentContainerStyle={[
                 styles.resultsList,
                 { paddingBottom: insets.bottom + 16 },
@@ -584,6 +603,14 @@ const styles = StyleSheet.create({
   },
   resultsList: {
     paddingHorizontal: 16,
+  },
+  sectionHeader: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingVertical: 8,
+    paddingHorizontal: 2,
   },
   errorContainer: {
     paddingHorizontal: 16,

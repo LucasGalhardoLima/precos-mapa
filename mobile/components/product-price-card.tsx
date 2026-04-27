@@ -154,7 +154,7 @@ export function ProductPriceCard({
         ) : (
           // State 2: catalog-only, no price history
           <View style={styles.priceGroup}>
-            <Text style={[styles.priceFrom, { color: COLORS.textMuted }]}>ref.</Text>
+            <Text style={[styles.priceFrom, { color: COLORS.textMuted }]}>preço sugerido</Text>
             <Text style={[styles.priceValue, { color: COLORS.textSecondary }]}>
               {product.reference_price != null && product.reference_price > 0
                 ? formatPrice(product.reference_price)
