@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make any Brazilian grocery product searchable in Poup — not just products with active offers — by adding EAN as a canonical product key, introducing an ERP-ready `store_prices` table, and integrating the Cosmos by Bluesoft product catalog as the search fallback.
+**Goal:** Make any Brazilian grocery product searchable in Poup — not just products with active offers — by adding EAN as a canonical product key, introducing an ERP-ready `store_prices` table, bulk-seeding the product catalog from Cosmos, and aligning the PDF import pipeline with the new schema.
 
-**Architecture:** Phase 1 adds `ean` + `cosmos_synced_at` to `products` and creates the `store_prices` table (no external deps, pure schema work). Phase 2 adds a Supabase Edge Function that proxies Cosmos API calls server-side, caches per-query results for 24h, and upserts catalog products into the DB so they appear in search even with no store prices.
+**Architecture:** Phase 1 adds `ean` + `cosmos_synced_at` to `products` and creates the `store_prices` table (no external deps, pure schema work). Phase 2 runs a one-time seed script to bulk-populate the catalog from Cosmos (organized by category, two tokens in rotation), updates the PDF import pipeline to Cosmos-enrich new products and dual-write prices to `store_prices`, and adds a daily delta sync to keep reference prices fresh. The mobile search screen shows seeded products in a "Sem oferta no momento" section using the existing RPC — no additional mobile API calls needed.
 
 **Tech Stack:** PostgreSQL (Supabase migrations), Deno/TypeScript (Edge Functions), React Native/Expo, NativeWind v4, Cosmos by Bluesoft REST API (`api.cosmos.bluesoft.com.br`), Supabase JS SDK v2
 
@@ -13,17 +13,17 @@
 ## File Map
 
 **Created:**
-- `supabase/migrations/030_product_catalog_foundation.sql` — EAN column, store_prices table
-- `supabase/migrations/031_search_rpc_catalog.sql` — updated search RPC
-- `supabase/migrations/032_cosmos_catalog_tables.sql` — cache + GPC map tables
-- `supabase/functions/catalog-search/index.ts` — Cosmos proxy Edge Function
+- `supabase/migrations/030_product_catalog_foundation.sql` — EAN column, store_prices table ✅
+- `supabase/migrations/031_search_rpc_catalog.sql` — updated search RPC ✅
+- `supabase/migrations/032_cosmos_catalog_tables.sql` — GPC→category map table
 - `supabase/functions/cosmos-daily-sync/index.ts` — daily delta sync Edge Function
-- `mobile/hooks/use-catalog-search.ts` — hook wrapping catalog-search function
+- `scripts/seed-cosmos-catalog.ts` — one-time bulk catalog seed (two tokens, per_page=90)
 
 **Modified:**
 - `packages/shared/src/types/index.ts:70-79,288-296` — add `ean`, `cosmos_synced_at`, `has_active_price`, `reference_price`
 - `mobile/components/product-price-card.tsx` — render reference price when `has_active_price: false`
-- `mobile/app/(tabs)/search.tsx` — SectionList split + catalog merge
+- `mobile/app/(tabs)/search.tsx` — SectionList split (no catalog merge — seeded products come from RPC)
+- `src/lib/import-pipeline.ts` — Cosmos fallback on no-match + dual-write to store_prices + EAN enrichment
 
 ---
 
@@ -514,7 +514,7 @@ git commit -m "feat: split search results into active-price / sem-oferta section
 
 ## Phase 2 — Cosmos Integration
 
-### Task 6: Migrations — catalog_search_cache + cosmos_gpc_map
+### Task 6: Migration 032 — cosmos_gpc_map
 
 **Files:**
 - Create: `supabase/migrations/032_cosmos_catalog_tables.sql`
@@ -524,13 +524,7 @@ git commit -m "feat: split search results into active-price / sem-oferta section
 ```sql
 -- supabase/migrations/032_cosmos_catalog_tables.sql
 
--- 1. Per-query search cache — prevents calling Cosmos more than once per term per 24h
-CREATE TABLE IF NOT EXISTS public.catalog_search_cache (
-  query       text        PRIMARY KEY,
-  searched_at timestamptz NOT NULL DEFAULT now()
-);
-
--- 2. GPC code → Poup category_id mapping
+-- GPC code → Poup category_id mapping
 --    Populated by observing Cosmos API responses; unmapped GPCs fall back to cat_alimentos.
 CREATE TABLE IF NOT EXISTS public.cosmos_gpc_map (
   gpc_code    text PRIMARY KEY,
@@ -574,12 +568,15 @@ git commit -m "feat: add catalog_search_cache + cosmos_gpc_map tables (Phase 2)"
 
 ---
 
-### Task 7: catalog-search Edge Function
+### Task 7: PDF import — Cosmos fallback + dual-write + EAN enrichment
 
 **Files:**
-- Create: `supabase/functions/catalog-search/index.ts`
+- Modify: `src/lib/import-pipeline.ts` (or wherever `match_product_for_upsert` is called at application level)
 
-This function is the server-side Cosmos proxy. It checks a 24h per-term cache, calls `/products?query=` on Cosmos, upserts new products into `products`, and returns them as `ProductWithPrices`-compatible objects with `has_active_price: false`.
+Three changes to the existing PDF import pipeline:
+1. **Cosmos fallback on no-match** — when `match_product_for_upsert()` returns a new product (confidence below threshold), call Cosmos `/products?query={name}&per_page=5` and update the created product with EAN, image_url, reference_price, cosmos_synced_at if a match is found
+2. **Dual-write to store_prices** — after creating/updating a promotion, also upsert into `store_prices` (product_id, store_id, price=promo_price, is_promo=true, source='pdf_import')
+3. **EAN enrichment on existing products** — when Cosmos returns a match for a product that already exists but has no EAN, update products.ean
 
 - [ ] **Step 1: Create the function file**
 
