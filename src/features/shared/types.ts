@@ -63,7 +63,7 @@ export interface Offer {
   productName: string;
   brand: string;
   category: string;
-  unit: "kg" | "un" | "l" | "g" | "ml" | "pack";
+  unit: "kg" | "un" | "l" | "g" | "ml" | "pack" | "dz";
   price: number;
   listPrice: number;
   discountPercent: number;
@@ -79,7 +79,7 @@ export interface PromotionDraft {
   productName: string;
   brand: string;
   category: string;
-  unit: "kg" | "un" | "l" | "g" | "ml" | "pack";
+  unit: "kg" | "un" | "l" | "g" | "ml" | "pack" | "dz";
   price: number;
   listPrice: number;
   validUntil: string;

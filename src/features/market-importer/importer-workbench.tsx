@@ -48,7 +48,7 @@ export interface EditableProduct {
   name: string;
   price: number;
   original_price?: number;
-  unit: "kg" | "un" | "l" | "g" | "ml" | "pack";
+  unit: "kg" | "un" | "l" | "g" | "ml" | "pack" | "dz";
   validity: string | null;
   market_origin?: string;
   category_id?: string;
