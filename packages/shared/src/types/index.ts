@@ -74,6 +74,8 @@ export interface Product {
   brand: string | null;
   reference_price: number;
   image_url: string | null;
+  ean: string | null;              // EAN-13 barcode, null until Cosmos-enriched
+  cosmos_synced_at: string | null; // ISO timestamp of last Cosmos sync
   created_at: string;
   updated_at: string;
 }
@@ -291,6 +293,8 @@ export interface ProductWithPrices {
   brand: string | null;
   category: string | null;
   image_url: string | null;
+  reference_price: number | null; // from products.reference_price; null for legacy rows
+  has_active_price: boolean;       // true = at least one active store price within radius
   prices: StorePrice[];
   isLocked: boolean;
 }

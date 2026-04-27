@@ -94,7 +94,11 @@ export function ProductPriceCard({
   const description = buildDescription(product);
   const badge = getBadge(product, index);
   const discountInfo = getDiscountInfo(product);
-  const cheapestPrice = product.prices[0]?.price;
+  const activePrices = product.prices.filter((p) => p.price_type === 'active');
+  const pricePool = activePrices.length > 0 ? activePrices : product.prices;
+  const cheapestPrice = pricePool.length > 0
+    ? Math.min(...pricePool.map((p) => p.price))
+    : undefined;
   const storeCount = product.prices.length;
 
   const cardContent = (
@@ -123,27 +127,52 @@ export function ProductPriceCard({
 
       {/* Bottom row: price + store count */}
       <View style={[styles.bottomRow, { borderTopColor: COLORS.divider }]}>
-        <View style={styles.priceGroup}>
-          <Text style={[styles.priceFrom, { color: COLORS.textMuted }]}>a partir de</Text>
-          <Text style={[styles.priceValue, { color: tokens.primary }]}>
-            {cheapestPrice != null ? formatPrice(cheapestPrice) : '—'}
-          </Text>
-          {discountInfo && (
-            <View style={styles.discountGroup}>
-              <Text style={styles.originalPrice}>
-                {formatPrice(discountInfo.originalPrice)}
-              </Text>
-              <Text style={styles.discountPercent}>-{discountInfo.discountPercent}%</Text>
-            </View>
-          )}
-        </View>
+        {product.has_active_price ? (
+          // State 1a: live active offer
+          <View style={styles.priceGroup}>
+            <Text style={[styles.priceFrom, { color: COLORS.textMuted }]}>a partir de</Text>
+            <Text style={[styles.priceValue, { color: tokens.primary }]}>
+              {cheapestPrice != null ? formatPrice(cheapestPrice) : '—'}
+            </Text>
+            {discountInfo && (
+              <View style={styles.discountGroup}>
+                <Text style={styles.originalPrice}>
+                  {formatPrice(discountInfo.originalPrice)}
+                </Text>
+                <Text style={styles.discountPercent}>-{discountInfo.discountPercent}%</Text>
+              </View>
+            )}
+          </View>
+        ) : product.prices.length > 0 ? (
+          // State 1b: historical last_price only — no active deal
+          <View style={styles.priceGroup}>
+            <Text style={[styles.priceFrom, { color: COLORS.textMuted }]}>último preço</Text>
+            <Text style={[styles.priceValue, { color: COLORS.textSecondary }]}>
+              {cheapestPrice != null ? formatPrice(cheapestPrice) : '—'}
+            </Text>
+          </View>
+        ) : (
+          // State 2: catalog-only, no price history
+          <View style={styles.priceGroup}>
+            <Text style={[styles.priceFrom, { color: COLORS.textMuted }]}>preço sugerido</Text>
+            <Text style={[styles.priceValue, { color: COLORS.textSecondary }]}>
+              {product.reference_price != null && product.reference_price > 0
+                ? formatPrice(product.reference_price)
+                : '—'}
+            </Text>
+          </View>
+        )}
         <Pressable
           onPress={() => onPressProduct(product.product_id)}
           style={[styles.storeCountButton, { backgroundColor: 'rgba(13,148,136,0.08)' }]}
           hitSlop={4}
         >
-          <Text style={[styles.storeCountText, { color: tokens.primary }]}>
-            {storeCount} mercado{storeCount !== 1 ? 's' : ''} ›
+          <Text style={[styles.storeCountText, { color: product.has_active_price ? tokens.primary : COLORS.textSecondary }]}>
+            {product.has_active_price
+              ? `${storeCount} mercado${storeCount !== 1 ? 's' : ''} ›`
+              : product.prices.length > 0
+              ? `${storeCount} mercado${storeCount !== 1 ? 's' : ''}`
+              : 'Ver produto ›'}
           </Text>
         </Pressable>
       </View>

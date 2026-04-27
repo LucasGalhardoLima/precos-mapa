@@ -20,6 +20,7 @@ export interface FindOrCreateResult {
   id: string;
   matched: boolean;
   confidence: number;
+  isNew: boolean;
 }
 
 export async function findOrCreateProduct(
@@ -40,7 +41,7 @@ export async function findOrCreateProduct(
   // 2. Pick first size-compatible match
   for (const match of candidates ?? []) {
     if (match.match_type === "synonym") {
-      return { id: match.id, matched: true, confidence: 1.0 };
+      return { id: match.id, matched: true, confidence: 1.0, isNew: false };
     }
     const matchSize = extractSize(match.name);
     const sizesCompatible = !inputSize || !matchSize || inputSize === matchSize;
@@ -49,6 +50,7 @@ export async function findOrCreateProduct(
         id: match.id,
         matched: true,
         confidence: match.confidence ?? match.match_score,
+        isNew: false,
       };
     }
   }
@@ -71,5 +73,106 @@ export async function findOrCreateProduct(
     );
   }
 
-  return { id: data.id, matched: false, confidence: 1.0 };
+  // Fire-and-forget Cosmos enrichment for new products
+  enrichProductFromCosmos(supabase, data.id, input.name, input.brand ?? null).catch(() => {});
+
+  return { id: data.id, matched: false, confidence: 1.0, isNew: true };
+}
+
+interface CosmosProduct {
+  gtin:        string | number;
+  description: string;
+  brand?:      { name: string };
+  thumbnail?:  string;
+  avg_price?:  number;
+}
+
+function pickBestCosmosMatch(
+  results: CosmosProduct[],
+  productName: string,
+  brand: string | null,
+): CosmosProduct | null {
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, ' ').trim();
+  const nameLower = normalize(productName);
+
+  let best: CosmosProduct | null = null;
+  let bestScore = 0;
+
+  for (const r of results) {
+    // Disqualify if size tokens are present and differ — avoids matching wrong volume variant
+    const inputSize = extractSize(productName);
+    const rSize = extractSize(r.description);
+    if (inputSize && rSize && inputSize !== rSize) continue;
+
+    const rName = normalize(r.description);
+    // Simple overlap score: count shared words
+    const nameWords = new Set(nameLower.split(' ').filter(Boolean));
+    const rWords = rName.split(' ').filter(Boolean);
+    const overlap = rWords.filter(w => nameWords.has(w)).length;
+    const score = overlap / Math.max(nameWords.size, rWords.length, 1);
+
+    // Brand bonus
+    const brandBonus = brand && r.brand?.name &&
+      normalize(r.brand.name).includes(normalize(brand)) ? 0.2 : 0;
+
+    const total = score + brandBonus;
+    if (total > bestScore && total > 0.3) {
+      best = r;
+      bestScore = total;
+    }
+  }
+
+  return best;
+}
+
+export async function enrichProductFromCosmos(
+  supabase: SupabaseClient,
+  productId: string,
+  productName: string,
+  brand: string | null,
+): Promise<void> {
+  const cosmosToken = process.env.COSMOS_API_TOKEN;
+  if (!cosmosToken) return;
+
+  try {
+    const res = await fetch(
+      `https://api.cosmos.bluesoft.com.br/products?query=${encodeURIComponent(productName)}&per_page=5`,
+      {
+        headers: {
+          'X-Cosmos-Token': cosmosToken,
+          'User-Agent': 'Cosmos-API-Request',
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!res.ok) return;
+
+    const data = await res.json();
+    const results: CosmosProduct[] = Array.isArray(data) ? data : (data.products ?? []);
+    if (results.length === 0) return;
+
+    // Pick the best match: highest name similarity, filter by brand if provided
+    const match = pickBestCosmosMatch(results, productName, brand);
+    if (!match) return;
+
+    if (!match.gtin || match.gtin === 0) return;
+
+    const updates: Record<string, unknown> = {
+      ean:              String(match.gtin),
+      image_url:        match.thumbnail ?? null,
+      cosmos_synced_at: new Date().toISOString(),
+    };
+    if (match.avg_price && match.avg_price > 0) {
+      updates.reference_price = match.avg_price;
+    }
+
+    await supabase
+      .from('products')
+      .update(updates)
+      .eq('id', productId)
+      .is('ean', null); // only update if EAN not already set
+  } catch {
+    // Cosmos enrichment is best-effort — never fail the import
+  }
 }
