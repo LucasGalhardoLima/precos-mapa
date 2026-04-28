@@ -26,9 +26,14 @@ export function SmartList({ listId }: SmartListProps) {
     }
 
     setOptimizing(true);
-    const optimization = await optimizeList(listId, location.latitude, location.longitude);
-    setResult(optimization);
-    setOptimizing(false);
+    try {
+      const optimization = await optimizeList(listId, location.latitude, location.longitude);
+      setResult(optimization);
+    } catch {
+      Alert.alert('Erro', 'Não foi possível otimizar a rota. Tente novamente.');
+    } finally {
+      setOptimizing(false);
+    }
   };
 
   const handleNavigate = () => {

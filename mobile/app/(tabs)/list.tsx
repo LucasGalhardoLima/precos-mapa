@@ -172,6 +172,8 @@ export default function ListScreen() {
       if (!cancelled) {
         setOptimization(result);
       }
+    }).catch(() => {
+      // Optimization is best-effort; silently fail so the list stays usable
     });
 
     return () => {
