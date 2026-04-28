@@ -202,11 +202,19 @@ describe("runMultiPassExtraction (mocked AI)", () => {
   });
 
   it("normalizes products from each pass independently", async () => {
-    // Pass raw-like data that normalizeProducts would clean up
+    // Use a date 30 days from now so normalizeValidity's future-only check always passes
+    const future = new Date();
+    future.setDate(future.getDate() + 30);
+    const dd = String(future.getDate()).padStart(2, "0");
+    const mm = String(future.getMonth() + 1).padStart(2, "0");
+    const yyyy = future.getFullYear();
+    const inputValidity = `${dd}/${mm}/${yyyy}`;
+    const expectedValidity = `${yyyy}-${mm}-${dd}`;
+
     mockProcessPdfBuffer.mockResolvedValue({
       products: [
         { name: "  Arroz   5kg  ", price: 24.9, unit: "un", validity: null },
-        { name: "Leite 1L", price: 5.99, unit: "litro", validity: "15/03/2026" },
+        { name: "Leite 1L", price: 5.99, unit: "litro", validity: inputValidity },
       ],
       meta: { source: "test" },
     });
@@ -216,7 +224,7 @@ describe("runMultiPassExtraction (mocked AI)", () => {
     // normalizeProducts should have cleaned names and units
     expect(result.passes[0].products[0].name).toBe("Arroz 5kg");
     expect(result.passes[0].products[1].unit).toBe("l");
-    expect(result.passes[0].products[1].validity).toBe("2026-03-15");
+    expect(result.passes[0].products[1].validity).toBe(expectedValidity);
   });
 
   it("runs all passes in parallel (not sequential)", async () => {

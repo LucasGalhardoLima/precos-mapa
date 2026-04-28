@@ -27,6 +27,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@poup/shared';
 import { StyledButton } from '@/components/ui/button';
+import { PlanComparisonModal } from '@/components/plan-comparison';
 import { Colors } from '@/constants/colors';
 import { useImagePicker } from '@/hooks/use-image-picker';
 import { useExtraction, type ExtractedProduct } from '@/hooks/use-extraction';
@@ -172,6 +173,8 @@ export default function BusinessImporter() {
     }
   }, [updateProduct]);
 
+  const [showPlans, setShowPlans] = useState(false);
+
   // Plan gate — Premium+ check
   if (!isPremium) {
     return (
@@ -189,9 +192,15 @@ export default function BusinessImporter() {
             title="Conhecer planos"
             variant="primary"
             className="mt-6"
-            onPress={() => {}}
+            onPress={() => setShowPlans(true)}
           />
         </View>
+
+        <PlanComparisonModal
+          visible={showPlans}
+          onClose={() => setShowPlans(false)}
+          currentPlan={store?.b2b_plan ?? 'free'}
+        />
       </SafeAreaView>
     );
   }

@@ -14,7 +14,8 @@
         "EXPO_PUBLIC_SUPABASE_URL": "https://zyhhcfkbzfbarnxlkfri.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_i2bNlmNLCTiFhlO0yk0U_A_VGND0g4j",
         "EXPO_PUBLIC_RC_APPLE_KEY": "test_rQqEOinbplOicfFxfpnkPoJZEPe",
-        "EXPO_PUBLIC_RC_GOOGLE_KEY": "test_rQqEOinbplOicfFxfpnkPoJZEPe"
+        "EXPO_PUBLIC_RC_GOOGLE_KEY": "test_rQqEOinbplOicfFxfpnkPoJZEPe",
+        "EXPO_PUBLIC_ENABLE_DEV_TOOLS": "true"
       }
     },
     "preview": {

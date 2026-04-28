@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { ComponentType } from 'react';
 import {
   View,
   Text,
@@ -11,9 +12,22 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
-import { Store, MapPin, TrendingDown } from 'lucide-react-native';
+import {
+  Store,
+  MapPin,
+  TrendingDown,
+  Package,
+  Coffee,
+  Sparkles,
+  Wheat,
+  Apple,
+  Croissant,
+  Heart,
+  ShoppingCart,
+} from 'lucide-react-native';
 import * as Location from 'expo-location';
 import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
 import Svg, { Circle, Rect, Path, G, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { AuthButtons } from '@/components/auth-buttons';
 import { StoreSetup } from '@/components/store-setup';
@@ -28,6 +42,20 @@ import type { UserRole, Profile } from '@/types';
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
+
+const ENABLE_DEV_TOOLS =
+  __DEV__ &&
+  process.env.EXPO_PUBLIC_ENABLE_DEV_TOOLS === 'true';
+
+const CATEGORY_ICON_MAP: Record<string, ComponentType<{ size: number; color: string }>> = {
+  package: Package,
+  coffee: Coffee,
+  sparkles: Sparkles,
+  wheat: Wheat,
+  apple: Apple,
+  croissant: Croissant,
+  heart: Heart,
+};
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAROUSEL_PAGES = 1; // Single page for now; easily extendable
@@ -614,6 +642,7 @@ export default function OnboardingScreen() {
               ) : (
                 categories.map((category) => {
                   const isSelected = selectedCategoryIds.includes(category.id);
+                  const IconComponent = category.icon ? CATEGORY_ICON_MAP[category.icon] : null;
                   return (
                     <Pressable
                       key={category.id}
@@ -623,7 +652,11 @@ export default function OnboardingScreen() {
                         isSelected && { borderColor: primaryColor, backgroundColor: `${primaryColor}22` },
                       ]}
                     >
-                      <Text style={styles.categoryEmoji}>{category.icon ?? '🛒'}</Text>
+                      {IconComponent ? (
+                        <IconComponent size={15} color={isSelected ? primaryColor : '#888'} />
+                      ) : (
+                        <ShoppingCart size={15} color={isSelected ? primaryColor : '#888'} />
+                      )}
                       <Text style={styles.categoryLabel}>{category.name}</Text>
                     </Pressable>
                   );
@@ -751,7 +784,7 @@ export default function OnboardingScreen() {
         </MotiView>
 
         {/* Dev-only role toggle — skips auth entirely */}
-        {__DEV__ && (
+        {ENABLE_DEV_TOOLS && (
           <MotiView
             from={{ opacity: 0 }}
             animate={{ opacity: 1 }}

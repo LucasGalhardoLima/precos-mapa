@@ -87,7 +87,11 @@ describe("inferCategoryFromName", () => {
     expect(inferCategoryFromName("Shampoo Dove 400ml")).toBe("cat_higiene");
     expect(inferCategoryFromName("Papel Higiênico Neve 12un")).toBe("cat_higiene");
     expect(inferCategoryFromName("Creme Dental Colgate 90g")).toBe("cat_higiene");
-    expect(inferCategoryFromName("Fralda Pampers M 40un")).toBe("cat_higiene");
+  });
+
+  it("classifies baby products", () => {
+    expect(inferCategoryFromName("Fralda Pampers M 40un")).toBe("cat_bebes");
+    expect(inferCategoryFromName("Mamadeira 150ml")).toBe("cat_bebes");
   });
 
   it("classifies food staples", () => {

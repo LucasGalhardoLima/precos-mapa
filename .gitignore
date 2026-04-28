@@ -50,3 +50,4 @@ mobile/android/
 # supabase
 supabase/.temp/
 supabase/.branches/
+.worktrees/
