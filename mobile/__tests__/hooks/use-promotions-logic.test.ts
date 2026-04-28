@@ -129,6 +129,8 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     brand: 'Tio Joao',
     reference_price: 25.0,
     image_url: null,
+    ean: null,
+    cosmos_synced_at: null,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
     ...overrides,

@@ -103,7 +103,7 @@ describe('FeaturedDealsCarousel', () => {
     mockDeals.push(
       makeDeal({
         id: 'd1',
-        product: { id: 'p1', name: 'Café Pilão', category_id: 'c1', brand: 'Pilão', reference_price: 12, image_url: null, created_at: '', updated_at: '' },
+        product: { id: 'p1', name: 'Café Pilão', category_id: 'c1', brand: 'Pilão', reference_price: 12, image_url: null, ean: null, cosmos_synced_at: null, created_at: '', updated_at: '' },
         store: { id: 's1', name: 'Extra', chain: '', address: '', city: '', state: '', latitude: 0, longitude: 0, phone: null, logo_url: null, logo_initial: 'E', logo_color: '#000000', b2b_plan: 'free', stripe_customer_id: null, stripe_subscription_id: null, trial_ends_at: null, search_priority: 0, is_active: true, created_at: '', updated_at: '' },
       }),
     );
@@ -132,8 +132,8 @@ describe('FeaturedDealsCarousel', () => {
 
   it('renders multiple deals', () => {
     mockDeals.push(
-      makeDeal({ id: 'd1', product: { id: 'p1', name: 'Arroz', category_id: 'c1', brand: '', reference_price: 9, image_url: null, created_at: '', updated_at: '' } }),
-      makeDeal({ id: 'd2', product: { id: 'p2', name: 'Feijão', category_id: 'c1', brand: '', reference_price: 7, image_url: null, created_at: '', updated_at: '' } }),
+      makeDeal({ id: 'd1', product: { id: 'p1', name: 'Arroz', category_id: 'c1', brand: '', reference_price: 9, image_url: null, ean: null, cosmos_synced_at: null, created_at: '', updated_at: '' } }),
+      makeDeal({ id: 'd2', product: { id: 'p2', name: 'Feijão', category_id: 'c1', brand: '', reference_price: 7, image_url: null, ean: null, cosmos_synced_at: null, created_at: '', updated_at: '' } }),
     );
     const { getByText } = render(<FeaturedDealsCarousel />);
     expect(getByText('Arroz')).toBeTruthy();

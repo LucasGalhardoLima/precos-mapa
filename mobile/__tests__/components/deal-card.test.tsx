@@ -39,6 +39,8 @@ const makeProduct = (overrides: Partial<Product> = {}): Product => ({
   brand: 'Parmalat',
   reference_price: 10.0,
   image_url: null,
+  ean: null,
+  cosmos_synced_at: null,
   created_at: '2026-01-01',
   updated_at: '2026-01-01',
   ...overrides,
