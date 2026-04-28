@@ -23,8 +23,9 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL          = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const COSMOS_TOKENS         = [
-  process.env.COSMOS_API_TOKEN  ?? '',
+  process.env.COSMOS_API_TOKEN   ?? '',
   process.env.COSMOS_API_TOKEN_2 ?? '',
+  process.env.COSMOS_API_TOKEN_3 ?? '',
 ].filter(Boolean);
 
 const COSMOS_BASE           = 'https://api.cosmos.bluesoft.com.br';
@@ -164,8 +165,51 @@ interface CosmosProduct {
   description: string;
   brand?:      { name: string };
   thumbnail?:  string;
-  avg_price?:  number;
+  avg_price?:  number | null;
   gpc?:        { code: string; description: string };
+  category?:   { id: number; description: string; parent_id: number | null };
+}
+
+// Cosmos category id → Poup category_id
+// Built from live API responses. When category is absent, falls back to search term category.
+// Description-based matching is the secondary signal for unmapped IDs.
+function resolveCategory(
+  cosmos: CosmosProduct['category'],
+  fallback: string,
+): string {
+  if (!cosmos) return fallback;
+
+  // Map by Cosmos category ID (most stable)
+  const BY_ID: Record<number, string> = {
+    // Alimentos
+    1: 'cat_alimentos',   // parent: Alimentos/Cereais/Grãos
+    3: 'cat_alimentos',   // Arroz
+    7: 'cat_alimentos',   // Café
+    60: 'cat_alimentos',  // Iogurte
+    156: 'cat_alimentos', // Biscoito Salgado
+    157: 'cat_higiene',   // Shampoo
+    198: 'cat_alimentos', // Doces
+    // Bebidas
+    65: 'cat_bebidas',    // parent: Bebidas
+    205: 'cat_bebidas',   // Refrigerantes
+    // Higiene
+    507: 'cat_higiene',   // parent: Higiene/Beleza
+    // Limpeza
+    259: 'cat_limpeza',   // parent: Limpeza
+  };
+
+  if (BY_ID[cosmos.id]) return BY_ID[cosmos.id];
+  if (cosmos.parent_id && BY_ID[cosmos.parent_id]) return BY_ID[cosmos.parent_id];
+
+  // Secondary: keyword match on description
+  const desc = cosmos.description.toLowerCase();
+  if (/bebida|refrigerante|suco|cerveja|vinho|água|energético|isotônico/.test(desc)) return 'cat_bebidas';
+  if (/higiene|shampoo|sabonete|creme|desodorante|fralda|absorvente|dental|cabelo/.test(desc)) return 'cat_higiene';
+  if (/limpeza|detergente|sabão|desinfetante|amaciante|alvejante/.test(desc)) return 'cat_limpeza';
+  if (/fruta|verdura|legume|hortali|tubérculo/.test(desc)) return 'cat_hortifruti';
+  if (/pão|bolo|panificação|torrada|biscoito de polvilho/.test(desc)) return 'cat_padaria';
+
+  return fallback;
 }
 
 interface CosmosResponse {
@@ -274,9 +318,9 @@ async function main() {
         continue;
       }
 
-      // Filter out unusable records
+      // Filter out records with no GTIN or description — price is optional
       const valid = cosmosProducts.filter(
-        (cp) => cp.gtin && cp.gtin !== 0 && cp.description && cp.avg_price && cp.avg_price > 0
+        (cp) => cp.gtin && cp.gtin !== 0 && cp.description
       );
 
       if (valid.length === 0) {
@@ -291,8 +335,9 @@ async function main() {
         name:             toTitleCase(cp.description),
         brand:            cp.brand?.name ?? null,
         image_url:        cp.thumbnail ?? null,
-        reference_price:  cp.avg_price!,
-        category_id:      gpcMap.get(cp.gpc?.code ?? '') ?? categoryId,
+        reference_price:  cp.avg_price && cp.avg_price > 0 ? cp.avg_price : null,
+        // Priority: GPC DB map → Cosmos category → search term category
+        category_id:      gpcMap.get(cp.gpc?.code ?? '') ?? resolveCategory(cp.category, categoryId),
         cosmos_synced_at: new Date().toISOString(),
       }));
 
@@ -313,12 +358,102 @@ async function main() {
   }
 
   console.log('\n════════════════════════════════════');
-  console.log(`Seed complete`);
-  console.log(`  Cosmos queries:  ${queryCount}`);
+  console.log(`Phase 1 complete`);
+  console.log(`  Cosmos queries:    ${queryCount}`);
   console.log(`  Products upserted: ${totalUpserted}`);
-  console.log(`  Terms skipped:   ${totalSkipped}`);
-  console.log(`  Errors:          ${totalErrors}`);
+  console.log(`  Terms skipped:     ${totalSkipped}`);
+  console.log(`  Errors:            ${totalErrors}`);
   console.log('════════════════════════════════════');
+
+  // ---------------------------------------------------------------------------
+  // Phase 2: GTIN enrichment — fetch price/image/brand for products missing them
+  // ---------------------------------------------------------------------------
+
+  console.log('\n── Phase 2: GTIN enrichment ──');
+
+  const { data: toEnrich } = await supabase
+    .from('products')
+    .select('id, ean, name')
+    .not('ean', 'is', null)
+    .is('reference_price', null)
+    .limit(20); // stay within remaining daily quota
+
+  if (!toEnrich || toEnrich.length === 0) {
+    console.log('  Nothing to enrich (all products already have price data).');
+  } else {
+    console.log(`  ${toEnrich.length} products to enrich via /gtins/{ean}`);
+    let enriched = 0;
+    let enrichErrors = 0;
+    consecutiveRateLimit = 0;
+
+    for (const product of toEnrich) {
+      const { token, number: tokenNum } = nextToken();
+
+      try {
+        const res = await fetch(
+          `${COSMOS_BASE}/gtins/${product.ean}`,
+          {
+            headers: {
+              'X-Cosmos-Token': token,
+              'User-Agent':     'Cosmos-API-Request',
+              'Content-Type':   'application/json',
+            },
+          }
+        );
+
+        if (!res.ok) {
+          if (res.status === 429) {
+            consecutiveRateLimit++;
+            if (consecutiveRateLimit >= 3) {
+              console.error('  3 consecutive 429s — quota exhausted. Stopping enrichment.');
+              break;
+            }
+            console.warn(`  [${product.ean}] Rate limited — pausing 60s (${consecutiveRateLimit}/3)`);
+            await sleep(60_000);
+            continue;
+          }
+          enrichErrors++;
+          continue;
+        }
+
+        consecutiveRateLimit = 0;
+        const cp: CosmosProduct & { price?: string } = await res.json();
+
+        // Parse price — /gtins returns avg_price as number and price as "R$ X,XX" string
+        const avgPrice = cp.avg_price && cp.avg_price > 0 ? cp.avg_price : null;
+
+        const updates: Record<string, unknown> = { cosmos_synced_at: new Date().toISOString() };
+        if (avgPrice)        updates.reference_price = avgPrice;
+        if (cp.thumbnail)    updates.image_url = cp.thumbnail;
+        if (cp.brand?.name)  updates.brand = cp.brand.name;
+
+        const { error } = await supabase
+          .from('products')
+          .update(updates)
+          .eq('id', product.id);
+
+        if (error) {
+          console.error(`  [${product.ean}] Update error:`, error.message);
+          enrichErrors++;
+        } else {
+          const got = [avgPrice && `price: R$${avgPrice}`, cp.thumbnail && 'image', cp.brand?.name && `brand: ${cp.brand.name}`].filter(Boolean).join(', ');
+          console.log(`  [${product.name}] ✓ ${got || 'no new data'} (token ${tokenNum})`);
+          enriched++;
+        }
+      } catch (err) {
+        console.warn(`  [${product.ean}] Fetch failed:`, err);
+        enrichErrors++;
+      }
+
+      await sleep(DELAY_MS);
+    }
+
+    console.log('\n════════════════════════════════════');
+    console.log(`Phase 2 complete`);
+    console.log(`  Products enriched: ${enriched}`);
+    console.log(`  Errors:            ${enrichErrors}`);
+    console.log('════════════════════════════════════');
+  }
 }
 
 main().catch((err) => {
