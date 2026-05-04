@@ -9,6 +9,19 @@ export function extractSize(name: string): string | null {
   return (m[1] + m[2]).toLowerCase();
 }
 
+/**
+ * Reject a match only when both brands are non-null and clearly differ.
+ * Returns true (compatible) when either side is missing — the matcher's
+ * composite confidence already de-weights null/null and null/non-null cases.
+ */
+export function isBrandCompatible(
+  queryBrand: string | null | undefined,
+  candidateBrand: string | null | undefined,
+): boolean {
+  if (!queryBrand || !candidateBrand) return true;
+  return queryBrand.trim().toLowerCase() === candidateBrand.trim().toLowerCase();
+}
+
 interface FindOrCreateInput {
   name: string;
   categoryId?: string;
@@ -38,10 +51,13 @@ export async function findOrCreateProduct(
     query_size_token: inputSize,
   });
 
-  // 2. Pick first size-compatible match
+  // 2. Pick first size-compatible, brand-compatible match
   for (const match of candidates ?? []) {
     if (match.match_type === "synonym") {
       return { id: match.id, matched: true, confidence: 1.0, isNew: false };
+    }
+    if (!isBrandCompatible(input.brand, match.brand)) {
+      continue;
     }
     const matchSize = extractSize(match.name);
     const sizesCompatible = !inputSize || !matchSize || inputSize === matchSize;
