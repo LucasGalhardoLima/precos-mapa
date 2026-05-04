@@ -98,27 +98,36 @@ export async function POST(request: NextRequest) {
     if (consensus.type !== "none" && consensus.consensusProducts) {
       // 6. Auto-publish
       const published = await publishProducts(record.store_id, importId, consensus.consensusProducts);
+      const totalProducts = consensus.consensusProducts.length;
+      const allFailed = totalProducts > 0 && published === 0;
 
       await getSupabaseAdmin()
         .from("pdf_imports")
         .update({
           ...passData,
-          status: "done",
+          status: allFailed ? "needs_review" : "done",
           ofertas_count: published,
           processed_at: new Date().toISOString(),
+          ...(allFailed
+            ? { needs_review_reason: `all ${totalProducts} products failed to publish` }
+            : {}),
         })
         .eq("id", importId);
 
       await getSupabaseAdmin().from("ai_import_logs").insert({
         store_id: record.store_id,
         accuracy_percent: consensus.confidenceScore,
-        total_ai_products: consensus.consensusProducts.length,
-        total_manual_products: consensus.consensusProducts.length,
+        total_ai_products: totalProducts,
+        total_manual_products: totalProducts,
         total_deleted_products: 0,
       });
 
       revalidatePath("/painel/ofertas");
-      console.log(`[WORKER] Import ${importId}: published ${published} promotions`);
+      if (allFailed) {
+        console.error(`[WORKER] Import ${importId}: needs_review — all ${totalProducts} products failed to publish`);
+        return NextResponse.json({ status: "needs_review", published: 0, total: totalProducts });
+      }
+      console.log(`[WORKER] Import ${importId}: published ${published}/${totalProducts} promotions`);
       return NextResponse.json({ status: "done", published });
     } else {
       // 7. No consensus
@@ -222,10 +231,16 @@ async function publishProducts(
         pdf_import_id: importId,
       });
 
-      if (!promoError) {
+      if (promoError) {
+        console.error(
+          `[WORKER] ${importId} promo insert failed for "${product.name}" (product_id=${result.id}): ${promoError.code ?? ""} ${promoError.message}`,
+        );
+      } else {
         published++;
       }
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      console.error(`[WORKER] ${importId} product "${product.name}" threw: ${msg}`);
       continue;
     }
   }
