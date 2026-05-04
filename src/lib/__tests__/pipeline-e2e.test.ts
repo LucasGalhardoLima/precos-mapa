@@ -214,7 +214,9 @@ describe("runMultiPassExtraction (mocked AI)", () => {
     mockProcessPdfBuffer.mockResolvedValue({
       products: [
         { name: "  Arroz   5kg  ", price: 24.9, unit: "un", validity: null },
-        { name: "Leite 1L", price: 5.99, unit: "litro", validity: inputValidity },
+        // "litro" is intentionally pre-normalization input — the test below
+        // asserts normalizeProducts maps it to "l".
+        { name: "Leite 1L", price: 5.99, unit: "litro" as EncarteProduct["unit"], validity: inputValidity },
       ],
       meta: { source: "test" },
     });

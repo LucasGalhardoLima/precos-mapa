@@ -97,19 +97,40 @@ export async function POST(request: NextRequest) {
 
     if (consensus.type !== "none" && consensus.consensusProducts) {
       // 6. Auto-publish
-      const published = await publishProducts(record.store_id, importId, consensus.consensusProducts);
+      const { published, duplicateMatches, lowConfidenceProducts } = await publishProducts(
+        record.store_id,
+        importId,
+        consensus.consensusProducts,
+      );
       const totalProducts = consensus.consensusProducts.length;
       const allFailed = totalProducts > 0 && published === 0;
+      const hasDuplicates = duplicateMatches.length > 0;
+      const needsReview = allFailed || hasDuplicates;
+
+      const reviewReasons: string[] = [];
+      if (allFailed) {
+        reviewReasons.push(`all ${totalProducts} products failed to publish`);
+      }
+      if (hasDuplicates) {
+        reviewReasons.push(
+          `${duplicateMatches.length} duplicate match(es): ${duplicateMatches.slice(0, 3).join("; ")}`,
+        );
+      }
+      if (lowConfidenceProducts.length > 0) {
+        reviewReasons.push(
+          `${lowConfidenceProducts.length} produto(s) com baixa confiança: ${lowConfidenceProducts.slice(0, 5).join("; ")}`,
+        );
+      }
 
       await getSupabaseAdmin()
         .from("pdf_imports")
         .update({
           ...passData,
-          status: allFailed ? "needs_review" : "done",
+          status: needsReview ? "needs_review" : "done",
           ofertas_count: published,
           processed_at: new Date().toISOString(),
-          ...(allFailed
-            ? { needs_review_reason: `all ${totalProducts} products failed to publish` }
+          ...(reviewReasons.length > 0
+            ? { needs_review_reason: reviewReasons.join(" | ") }
             : {}),
         })
         .eq("id", importId);
@@ -123,9 +144,16 @@ export async function POST(request: NextRequest) {
       });
 
       revalidatePath("/painel/ofertas");
-      if (allFailed) {
-        console.error(`[WORKER] Import ${importId}: needs_review — all ${totalProducts} products failed to publish`);
-        return NextResponse.json({ status: "needs_review", published: 0, total: totalProducts });
+      if (needsReview) {
+        console.error(
+          `[WORKER] Import ${importId}: needs_review — ${reviewReasons.join(" | ")}`,
+        );
+        return NextResponse.json({
+          status: "needs_review",
+          published,
+          total: totalProducts,
+          duplicates: duplicateMatches.length,
+        });
       }
       console.log(`[WORKER] Import ${importId}: published ${published}/${totalProducts} promotions`);
       return NextResponse.json({ status: "done", published });
@@ -160,11 +188,17 @@ export async function POST(request: NextRequest) {
 // Publish products + promotions
 // ---------------------------------------------------------------------------
 
+interface PublishResult {
+  published: number;
+  duplicateMatches: string[];
+  lowConfidenceProducts: string[];
+}
+
 async function publishProducts(
   storeId: string,
   importId: string,
   products: EncarteProduct[],
-): Promise<number> {
+): Promise<PublishResult> {
   const usedCategoryIds = new Set(
     products.map((p) => normalizeCategory(p.category)),
   );
@@ -187,6 +221,8 @@ async function publishProducts(
   const now = new Date().toISOString();
   let published = 0;
   const lowConfidenceProducts: string[] = [];
+  const duplicateMatches: string[] = [];
+  const seenProductIds = new Map<string, string>();
 
   for (const product of products) {
     try {
@@ -205,6 +241,19 @@ async function publishProducts(
         lowConfidenceProducts.push(
           `${product.name} (confidence: ${(result.confidence * 100).toFixed(0)}%)`,
         );
+      }
+
+      // Track intra-import duplicates: two extracted products mapping to the
+      // same catalog entry almost always means the matcher conflated distinct
+      // SKUs. The promotion is still inserted (we never want to silently drop
+      // data) but the import is flagged for review by the caller.
+      const previousName = seenProductIds.get(result.id);
+      if (previousName) {
+        duplicateMatches.push(
+          `"${product.name}" → already published as "${previousName}" (product_id=${result.id})`,
+        );
+      } else {
+        seenProductIds.set(result.id, product.name);
       }
 
       let endDate: string;
@@ -245,15 +294,5 @@ async function publishProducts(
     }
   }
 
-  // Flag import for review if any products had low-confidence matches
-  if (lowConfidenceProducts.length > 0) {
-    await getSupabaseAdmin()
-      .from("pdf_imports")
-      .update({
-        needs_review_reason: `${lowConfidenceProducts.length} produto(s) com baixa confiança: ${lowConfidenceProducts.slice(0, 5).join("; ")}`,
-      })
-      .eq("id", importId);
-  }
-
-  return published;
+  return { published, duplicateMatches, lowConfidenceProducts };
 }
