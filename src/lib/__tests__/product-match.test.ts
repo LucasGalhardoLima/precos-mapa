@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractSize } from "../product-match";
+import { extractSize, isBrandCompatible } from "../product-match";
 
 // ---------------------------------------------------------------------------
 // extractSize
@@ -54,5 +54,28 @@ describe("extractSize", () => {
     // regex matches first occurrence
     const result = extractSize("Pack 6un Cerveja 350ml");
     expect(result).toBe("6un");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isBrandCompatible
+// ---------------------------------------------------------------------------
+
+describe("isBrandCompatible", () => {
+  it("rejects clearly different brands", () => {
+    expect(isBrandCompatible("Phenix", "Premium")).toBe(false);
+    expect(isBrandCompatible("Ypê", "Omo")).toBe(false);
+  });
+
+  it("accepts matching brands ignoring case and surrounding whitespace", () => {
+    expect(isBrandCompatible("ypê", "Ypê")).toBe(true);
+    expect(isBrandCompatible(" Omo ", "OMO")).toBe(true);
+  });
+
+  it("treats either side missing as compatible", () => {
+    expect(isBrandCompatible(null, "Premium")).toBe(true);
+    expect(isBrandCompatible("Phenix", null)).toBe(true);
+    expect(isBrandCompatible(undefined, undefined)).toBe(true);
+    expect(isBrandCompatible("", "Premium")).toBe(true);
   });
 });
