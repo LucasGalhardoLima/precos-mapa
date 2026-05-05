@@ -51,3 +51,4 @@ mobile/android/
 supabase/.temp/
 supabase/.branches/
 .worktrees/
+scripts/.seed-cosmos-checkpoint.json

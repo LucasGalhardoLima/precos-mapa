@@ -15,6 +15,8 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 // ---------------------------------------------------------------------------
 // Config
@@ -31,6 +33,30 @@ const COSMOS_TOKENS         = [
 const COSMOS_BASE           = 'https://api.cosmos.bluesoft.com.br';
 const PER_PAGE              = 90;
 const DELAY_MS              = 400; // polite delay between Cosmos calls
+const CHECKPOINT_FILE       = resolve(process.cwd(), 'scripts/.seed-cosmos-checkpoint.json');
+
+// ---------------------------------------------------------------------------
+// Checkpoint helpers — skip terms already processed in prior runs
+// ---------------------------------------------------------------------------
+
+interface Checkpoint {
+  processedTerms: string[]; // terms that completed (success or 0-results)
+}
+
+function loadCheckpoint(): Set<string> {
+  if (!existsSync(CHECKPOINT_FILE)) return new Set();
+  try {
+    const data = JSON.parse(readFileSync(CHECKPOINT_FILE, 'utf-8')) as Checkpoint;
+    return new Set(data.processedTerms ?? []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveCheckpoint(processed: Set<string>): void {
+  const data: Checkpoint = { processedTerms: [...processed].sort() };
+  writeFileSync(CHECKPOINT_FILE, JSON.stringify(data, null, 2));
+}
 
 // ---------------------------------------------------------------------------
 // Search terms organized by Poup category
@@ -171,14 +197,13 @@ interface CosmosProduct {
 }
 
 // Cosmos category id → Poup category_id
-// Built from live API responses. When category is absent, falls back to search term category.
-// Description-based matching is the secondary signal for unmapped IDs.
+// Built from live API responses. Priority: (1) Cosmos ID/parent_id map,
+// (2) keyword match on the product description, (3) search-term fallback.
 function resolveCategory(
   cosmos: CosmosProduct['category'],
+  description: string,
   fallback: string,
 ): string {
-  if (!cosmos) return fallback;
-
   // Map by Cosmos category ID (most stable)
   const BY_ID: Record<number, string> = {
     // Alimentos
@@ -198,16 +223,19 @@ function resolveCategory(
     259: 'cat_limpeza',   // parent: Limpeza
   };
 
-  if (BY_ID[cosmos.id]) return BY_ID[cosmos.id];
-  if (cosmos.parent_id && BY_ID[cosmos.parent_id]) return BY_ID[cosmos.parent_id];
+  if (cosmos) {
+    if (BY_ID[cosmos.id]) return BY_ID[cosmos.id];
+    if (cosmos.parent_id && BY_ID[cosmos.parent_id]) return BY_ID[cosmos.parent_id];
+  }
 
-  // Secondary: keyword match on description
-  const desc = cosmos.description.toLowerCase();
-  if (/bebida|refrigerante|suco|cerveja|vinho|água|energético|isotônico/.test(desc)) return 'cat_bebidas';
-  if (/higiene|shampoo|sabonete|creme|desodorante|fralda|absorvente|dental|cabelo/.test(desc)) return 'cat_higiene';
-  if (/limpeza|detergente|sabão|desinfetante|amaciante|alvejante/.test(desc)) return 'cat_limpeza';
-  if (/fruta|verdura|legume|hortali|tubérculo/.test(desc)) return 'cat_hortifruti';
-  if (/pão|bolo|panificação|torrada|biscoito de polvilho/.test(desc)) return 'cat_padaria';
+  // Keyword match on description. Order matters: limpeza checked before bebidas
+  // so "água sanitária" doesn't get caught by the `água` rule for water drinks.
+  const desc = description.toLowerCase();
+  if (/\b(detergente|desinfetante|amaciante|alvejante|desincrostante|rodo|vassoura|flanela|limpador|inseticida|raticida|veja|sanit[áa]ria)\b|sab[ãa]o em (barra|p[óo])|sab[ãa]o l[íi]quido|lava[\s-]*roupa|lava[\s-]*lou[çc]|tira[\s-]*mancha|cera (para|de) piso|rolo adesivo|saco de lixo|papel toalha|toalha de papel|guardanapo de papel|papel higi[êe]nico|len[çc]o de papel|[áa]lcool (gel|l[íi]quido|et[íi]lico|70|46)|esponja de (a[çc]o|lou[çc]a)/.test(desc)) return 'cat_limpeza';
+  if (/\b(shampoo|sabonete|hidratante|desodorante|antitranspirante|absorvente|talco|condicionador|esfoliante)\b|\bfralda(?!\s+(bovina|su[íi]na|de\s+(boi|porco|vaca)))\b|protetor solar|protetor di[áa]rio|len[çc]o umedecido|creme dental|fio dental|enxaguante bucal|escova de dentes|aparelho de barbear|creme de barbear|gel p[óo]s[\s-]*barba|leave[\s-]*in|m[áa]scara capilar|gel de banho|creme de pentear/.test(desc)) return 'cat_higiene';
+  if (/bebida|refrigerante|suco|cerveja|vinho|espumante|energ[ée]tico|isot[ôo]nico|[áa]gua mineral|[áa]gua de coco|gatorade|powerade|red bull|monster|leite uht|bebida l[áa]ctea|yakult/.test(desc)) return 'cat_bebidas';
+  if (/(?:^|\s)(banana|ma[çc][ãa]|laranja|uva|mam[ãa]o|abacaxi|pera|manga|melancia|lim[ãa]o|morango|kiwi|mel[ãa]o|goiaba|tomate|alface|r[úu]cula|cenoura|cebola|batata|alho|chuchu|abobrinha|br[óo]colis|couve|espinafre|pepino|piment[ãa]o|beterraba|mandioca|inhame|jil[óo]|quiabo|berinjela|salsa|cebolinha|coentro|fruta|verdura|legume|hortali|tub[ée]rculo)(?:$|\s)/.test(desc)) return 'cat_hortifruti';
+  if (/p[ãa]o|bolo|panifica[çc][ãa]o|torrada|biscoito de polvilho|brioche|brownie|nhoque|massa de lasanha fresca/.test(desc)) return 'cat_padaria';
 
   return fallback;
 }
@@ -232,8 +260,16 @@ function nextToken(): { token: string; number: number } {
 // Helpers
 // ---------------------------------------------------------------------------
 
+const GROCERY_ACRONYMS = new Set(['UHT', 'PC', 'UN', 'CX', 'LT', 'SC', 'PT']);
+
 function toTitleCase(str: string): string {
-  return str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  return str
+    .split(/\s+/)
+    .map((word) => {
+      if (GROCERY_ACRONYMS.has(word.toUpperCase())) return word.toUpperCase();
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
 }
 
 function sleep(ms: number): Promise<void> {
@@ -263,6 +299,10 @@ async function main() {
   if (gpcError) console.warn('cosmos_gpc_map load failed — using search-term category for all products:', gpcError.message);
   const gpcMap = new Map<string, string>((gpcRows ?? []).map((r) => [r.gpc_code, r.category_id]));
 
+  const processed = loadCheckpoint();
+  const totalTerms = Object.values(SEED_TERMS).reduce((n, t) => n + t.length, 0);
+  console.log(`Checkpoint: ${processed.size}/${totalTerms} terms already processed — skipping those.`);
+
   let totalUpserted      = 0;
   let totalSkipped       = 0;
   let totalErrors        = 0;
@@ -273,9 +313,14 @@ async function main() {
 
   outer:
   for (const [categoryId, terms] of categoryEntries) {
-    console.log(`\n── Category: ${categoryId} (${terms.length} terms) ──`);
+    const remaining = terms.filter((t) => !processed.has(t));
+    if (remaining.length === 0) {
+      console.log(`\n── Category: ${categoryId} — all ${terms.length} terms already processed, skipping. ──`);
+      continue;
+    }
+    console.log(`\n── Category: ${categoryId} (${remaining.length}/${terms.length} terms remaining) ──`);
 
-    for (const term of terms) {
+    for (const term of remaining) {
       queryCount++;
       const { token, number: tokenNum } = nextToken();
 
@@ -326,18 +371,22 @@ async function main() {
       if (valid.length === 0) {
         console.log(`  [${term}] 0 usable results`);
         totalSkipped++;
+        processed.add(term);
+        saveCheckpoint(processed);
         await sleep(DELAY_MS);
         continue;
       }
 
+      // Phase 1 does NOT write reference_price. /products?query= returns avg_price
+      // sporadically, so including it here either overwrites richer prices already
+      // in the DB (PDF imports, manual entries) or leaves a null behind on conflict.
+      // Phase 2 (/gtins/{ean}) is the single source of truth for reference_price.
       const rows = valid.map((cp) => ({
         ean:              String(cp.gtin),
         name:             toTitleCase(cp.description),
         brand:            cp.brand?.name ?? null,
         image_url:        cp.thumbnail ?? null,
-        reference_price:  cp.avg_price && cp.avg_price > 0 ? cp.avg_price : null,
-        // Priority: GPC DB map → Cosmos category → search term category
-        category_id:      gpcMap.get(cp.gpc?.code ?? '') ?? resolveCategory(cp.category, categoryId),
+        category_id:      gpcMap.get(cp.gpc?.code ?? '') ?? resolveCategory(cp.category, cp.description, categoryId),
         cosmos_synced_at: new Date().toISOString(),
       }));
 
@@ -351,6 +400,8 @@ async function main() {
       } else {
         console.log(`  [${term}] ✓ ${valid.length} products (token ${tokenNum})`);
         totalUpserted += valid.length;
+        processed.add(term);
+        saveCheckpoint(processed);
       }
 
       await sleep(DELAY_MS);
@@ -376,7 +427,7 @@ async function main() {
     .select('id, ean, name')
     .not('ean', 'is', null)
     .is('reference_price', null)
-    .limit(20); // stay within remaining daily quota
+    .limit(500); // enrich up to 500 per run; re-run if more remain
 
   if (!toEnrich || toEnrich.length === 0) {
     console.log('  Nothing to enrich (all products already have price data).');
