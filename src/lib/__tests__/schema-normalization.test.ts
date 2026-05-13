@@ -166,10 +166,10 @@ describe("normalizeProducts validity handling", () => {
 
   it("pads single-digit day and month", () => {
     const result = normalizeProducts([
-      { name: "Produto", price: 10, unit: "un", validity: "1/5/2026" },
+      { name: "Produto", price: 10, unit: "un", validity: "1/8/2026" },
     ]);
     expect(result).toHaveLength(1);
-    expect(result[0].validity).toBe("2026-05-01");
+    expect(result[0].validity).toBe("2026-08-01");
   });
 
   it("handles null validity", () => {

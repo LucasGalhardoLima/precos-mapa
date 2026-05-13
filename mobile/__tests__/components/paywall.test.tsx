@@ -3,10 +3,20 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { Paywall } from '../../components/paywall';
 
-// Mock safe-area
-jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
-}));
+// Mock safe-area — include all component exports that react-native-css-interop accesses
+jest.mock('react-native-safe-area-context', () => {
+  const { View } = require('react-native');
+  const SafeAreaView = ({ children }: { children: React.ReactNode }) => <View>{children}</View>;
+  SafeAreaView.displayName = 'SafeAreaView';
+  return {
+    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+    SafeAreaView,
+    SafeAreaProvider: ({ children }: { children: React.ReactNode }) => <View>{children}</View>,
+    SafeAreaConsumer: ({ children }: { children: (insets: object) => React.ReactNode }) =>
+      children({ top: 0, bottom: 0, left: 0, right: 0 }),
+    initialWindowMetrics: { insets: { top: 0, bottom: 0, left: 0, right: 0 }, frame: { x: 0, y: 0, width: 390, height: 844 } },
+  };
+});
 
 // Mock useTheme
 jest.mock('../../theme/use-theme', () => ({
@@ -21,24 +31,16 @@ jest.mock('../../theme/use-theme', () => ({
   }),
 }));
 
-// Mock lucide icons
+// Mock lucide icons — use require() pattern so mocks work after hoisting
 jest.mock('lucide-react-native', () => ({
-  X: () => {
-    const { Text } = require('react-native');
-    return <Text>X</Text>;
-  },
-  Check: () => {
-    const { Text } = require('react-native');
-    return <Text>Check</Text>;
-  },
-  Minus: () => {
-    const { Text } = require('react-native');
-    return <Text>Minus</Text>;
-  },
-  Sparkles: () => {
-    const { Text } = require('react-native');
-    return <Text>Sparkles</Text>;
-  },
+  X: () => { const { Text } = require('react-native'); return <Text>X</Text>; },
+  Check: () => { const { Text } = require('react-native'); return <Text>Check</Text>; },
+  Minus: () => { const { Text } = require('react-native'); return <Text>Minus</Text>; },
+  Sparkles: () => { const { Text } = require('react-native'); return <Text>Sparkles</Text>; },
+  TrendingDown: () => { const { Text } = require('react-native'); return <Text>TrendingDown</Text>; },
+  Star: () => { const { Text } = require('react-native'); return <Text>Star</Text>; },
+  ShieldCheck: () => { const { Text } = require('react-native'); return <Text>ShieldCheck</Text>; },
+  Crown: () => { const { Text } = require('react-native'); return <Text>Crown</Text>; },
 }));
 
 // Mock DiscountBadge
@@ -72,7 +74,7 @@ describe('Paywall', () => {
 
   it('renders hero savings amount', () => {
     const { getByText } = render(<Paywall visible onClose={onClose} />);
-    expect(getByText('R$ 120')).toBeTruthy();
+    expect(getByText('Economize até R$ 120/mês')).toBeTruthy();
   });
 
   it('renders branding text', () => {
@@ -90,9 +92,10 @@ describe('Paywall', () => {
   });
 
   it('renders comparison table headers', () => {
-    const { getByText } = render(<Paywall visible onClose={onClose} />);
+    const { getByText, getAllByText } = render(<Paywall visible onClose={onClose} />);
     expect(getByText('Grátis')).toBeTruthy();
-    expect(getByText('Plus')).toBeTruthy();
+    // 'Plus' appears in both the hero title and the comparison header
+    expect(getAllByText('Plus').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders free column values', () => {
@@ -117,8 +120,8 @@ describe('Paywall', () => {
   it('shows fallback prices when offerings are null', () => {
     const { getByText } = render(<Paywall visible onClose={onClose} />);
     expect(getByText('R$ 9,90')).toBeTruthy();
-    expect(getByText('R$ 6,90')).toBeTruthy();
-    expect(getByText('R$ 82,80/ano')).toBeTruthy();
+    expect(getByText('R$ 7,90')).toBeTruthy();
+    expect(getByText('R$ 94,90/ano')).toBeTruthy();
   });
 
   it('renders CTA button text', () => {
@@ -133,7 +136,7 @@ describe('Paywall', () => {
 
   it('renders discount badge on annual card', () => {
     const { getByText } = render(<Paywall visible onClose={onClose} />);
-    expect(getByText('-30%')).toBeTruthy();
+    expect(getByText('-20%')).toBeTruthy();
   });
 
   it('switches to monthly cycle when pressed', () => {
