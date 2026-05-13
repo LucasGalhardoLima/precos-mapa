@@ -28,6 +28,7 @@ const COSMOS_TOKENS         = [
   process.env.COSMOS_API_TOKEN   ?? '',
   process.env.COSMOS_API_TOKEN_2 ?? '',
   process.env.COSMOS_API_TOKEN_3 ?? '',
+  process.env.COSMOS_API_TOKEN_4 ?? '',
 ].filter(Boolean);
 
 const COSMOS_BASE           = 'https://api.cosmos.bluesoft.com.br';
@@ -249,11 +250,14 @@ interface CosmosResponse {
 // ---------------------------------------------------------------------------
 
 let tokenIndex = 0;
+const exhaustedTokens = new Set<string>();
 
-function nextToken(): { token: string; number: number } {
-  const idx = tokenIndex % COSMOS_TOKENS.length;
+function nextToken(): { token: string; number: number } | null {
+  const available = COSMOS_TOKENS.filter(t => !exhaustedTokens.has(t));
+  if (available.length === 0) return null;
+  const idx = tokenIndex % available.length;
   tokenIndex++;
-  return { token: COSMOS_TOKENS[idx], number: idx + 1 };
+  return { token: available[idx], number: COSMOS_TOKENS.indexOf(available[idx]) + 1 };
 }
 
 // ---------------------------------------------------------------------------
@@ -307,7 +311,6 @@ async function main() {
   let totalSkipped       = 0;
   let totalErrors        = 0;
   let queryCount         = 0;
-  let consecutiveRateLimit = 0;
 
   const categoryEntries = Object.entries(SEED_TERMS);
 
@@ -322,46 +325,56 @@ async function main() {
 
     for (const term of remaining) {
       queryCount++;
-      const { token, number: tokenNum } = nextToken();
-
       let cosmosProducts: CosmosProduct[] = [];
+      let tokenNum = 0;
+      let termFailed = false;
 
-      try {
-        const res = await fetch(
-          `${COSMOS_BASE}/products?query=${encodeURIComponent(term)}&per_page=${PER_PAGE}`,
-          {
-            headers: {
-              'X-Cosmos-Token': token,
-              'User-Agent':     'Cosmos-API-Request',
-              'Content-Type':   'application/json',
-            },
-          }
-        );
+      retry1: while (true) {
+        const next = nextToken();
+        if (!next) { console.error('\n  All tokens exhausted. Stopping Phase 1.'); break outer; }
+        tokenNum = next.number;
+        const token = next.token;
 
-        if (!res.ok) {
-          if (res.status === 429) {
-            consecutiveRateLimit++;
-            if (consecutiveRateLimit >= 3) {
-              console.error('\n3 consecutive 429s — quota likely exhausted for both tokens. Stopping early.');
-              break outer;
+        try {
+          const res = await fetch(
+            `${COSMOS_BASE}/products?query=${encodeURIComponent(term)}&per_page=${PER_PAGE}`,
+            {
+              headers: {
+                'X-Cosmos-Token': token,
+                'User-Agent':     'Cosmos-API-Request',
+                'Content-Type':   'application/json',
+              },
             }
-            console.warn(`  [${term}] Rate limited (429) — pausing 60s (${consecutiveRateLimit}/3)`);
-            await sleep(60_000);
-            continue;
-          }
-          console.warn(`  [${term}] Cosmos error ${res.status}`);
-          totalErrors++;
-          continue;
-        }
+          );
 
-        consecutiveRateLimit = 0;
-        const data: CosmosProduct[] | CosmosResponse = await res.json();
-        cosmosProducts = Array.isArray(data) ? data : (data.products ?? []);
-      } catch (err) {
-        console.warn(`  [${term}] Fetch failed:`, err);
-        totalErrors++;
-        continue;
+          if (!res.ok) {
+            if (res.status === 429) {
+              exhaustedTokens.add(token);
+              console.warn(`  [${term}] Token ${tokenNum} exhausted (429) — ${COSMOS_TOKENS.length - exhaustedTokens.size} token(s) remaining`);
+              if (exhaustedTokens.size >= COSMOS_TOKENS.length) {
+                console.error('\n  All tokens exhausted. Stopping Phase 1.');
+                break outer;
+              }
+              continue retry1;
+            }
+            console.warn(`  [${term}] Cosmos error ${res.status}`);
+            totalErrors++;
+            termFailed = true;
+            break retry1;
+          }
+
+          const data: CosmosProduct[] | CosmosResponse = await res.json();
+          cosmosProducts = Array.isArray(data) ? data : (data.products ?? []);
+          break retry1;
+        } catch (err) {
+          console.warn(`  [${term}] Fetch failed:`, err);
+          totalErrors++;
+          termFailed = true;
+          break retry1;
+        }
       }
+
+      if (termFailed) { await sleep(DELAY_MS); continue; }
 
       // Filter out records with no GTIN or description — price is optional
       const valid = cosmosProducts.filter(
@@ -377,15 +390,13 @@ async function main() {
         continue;
       }
 
-      // Phase 1 does NOT write reference_price. /products?query= returns avg_price
-      // sporadically, so including it here either overwrites richer prices already
-      // in the DB (PDF imports, manual entries) or leaves a null behind on conflict.
-      // Phase 2 (/gtins/{ean}) is the single source of truth for reference_price.
+      // Phase 1 does NOT write reference_price, brand, or image_url. The /products
+      // search endpoint returns these sporadically; upserting nulls would overwrite
+      // richer values already set by Phase 2 or OFF enrichment. Phase 2 (/gtins/{ean})
+      // is the single source of truth for those fields.
       const rows = valid.map((cp) => ({
         ean:              String(cp.gtin),
         name:             toTitleCase(cp.description),
-        brand:            cp.brand?.name ?? null,
-        image_url:        cp.thumbnail ?? null,
         category_id:      gpcMap.get(cp.gpc?.code ?? '') ?? resolveCategory(cp.category, cp.description, categoryId),
         cosmos_synced_at: new Date().toISOString(),
       }));
@@ -422,78 +433,106 @@ async function main() {
 
   console.log('\n── Phase 2: GTIN enrichment ──');
 
-  const { data: toEnrich } = await supabase
+  // Priority 1: products already visible in the app (have at least one store_prices entry)
+  const BATCH = 500;
+  const { data: withStorePrices } = await supabase
     .from('products')
-    .select('id, ean, name')
+    .select('id, ean, name, store_prices!inner(id)')
     .not('ean', 'is', null)
-    .is('reference_price', null)
-    .limit(500); // enrich up to 500 per run; re-run if more remain
+    .or('reference_price.is.null,image_url.is.null,brand.is.null')
+    .limit(BATCH);
 
-  if (!toEnrich || toEnrich.length === 0) {
-    console.log('  Nothing to enrich (all products already have price data).');
+  const priorityProducts = (withStorePrices ?? []).map(({ store_prices: _sp, ...p }) => p) as { id: string; ean: string; name: string }[];
+  const toEnrich: { id: string; ean: string; name: string }[] = [...priorityProducts];
+
+  // Fill remaining slots with any other products missing enrichment data
+  if (toEnrich.length < BATCH) {
+    const seenIds = priorityProducts.map(p => p.id);
+    let restQuery = supabase
+      .from('products')
+      .select('id, ean, name')
+      .not('ean', 'is', null)
+      .or('reference_price.is.null,image_url.is.null,brand.is.null')
+      .limit(BATCH - toEnrich.length);
+    if (seenIds.length > 0) {
+      restQuery = restQuery.not('id', 'in', `(${seenIds.join(',')})`);
+    }
+    const { data: rest } = await restQuery;
+    toEnrich.push(...(rest ?? []));
+  }
+
+  if (toEnrich.length === 0) {
+    console.log('  Nothing to enrich (all products already have price, image, and brand).');
   } else {
-    console.log(`  ${toEnrich.length} products to enrich via /gtins/{ean}`);
+    console.log(`  ${toEnrich.length} products to enrich via /gtins/{ean} (${priorityProducts.length} with store prices first)`);
     let enriched = 0;
     let enrichErrors = 0;
-    consecutiveRateLimit = 0;
 
+    phase2:
     for (const product of toEnrich) {
-      const { token, number: tokenNum } = nextToken();
+      let tokenNum = 0;
 
-      try {
-        const res = await fetch(
-          `${COSMOS_BASE}/gtins/${product.ean}`,
-          {
-            headers: {
-              'X-Cosmos-Token': token,
-              'User-Agent':     'Cosmos-API-Request',
-              'Content-Type':   'application/json',
-            },
-          }
-        );
+      retry2: while (true) {
+        const next = nextToken();
+        if (!next) { console.error('  All tokens exhausted. Stopping enrichment.'); break phase2; }
+        tokenNum = next.number;
+        const token = next.token;
 
-        if (!res.ok) {
-          if (res.status === 429) {
-            consecutiveRateLimit++;
-            if (consecutiveRateLimit >= 3) {
-              console.error('  3 consecutive 429s — quota exhausted. Stopping enrichment.');
-              break;
+        try {
+          const res = await fetch(
+            `${COSMOS_BASE}/gtins/${product.ean}`,
+            {
+              headers: {
+                'X-Cosmos-Token': token,
+                'User-Agent':     'Cosmos-API-Request',
+                'Content-Type':   'application/json',
+              },
             }
-            console.warn(`  [${product.ean}] Rate limited — pausing 60s (${consecutiveRateLimit}/3)`);
-            await sleep(60_000);
-            continue;
+          );
+
+          if (!res.ok) {
+            if (res.status === 429) {
+              exhaustedTokens.add(token);
+              console.warn(`  [${product.name}] Token ${tokenNum} exhausted — ${COSMOS_TOKENS.length - exhaustedTokens.size} token(s) remaining`);
+              if (exhaustedTokens.size >= COSMOS_TOKENS.length) {
+                console.error('  All tokens exhausted. Stopping enrichment.');
+                break phase2;
+              }
+              continue retry2;
+            }
+            enrichErrors++;
+            break retry2;
           }
+
+          const cp: CosmosProduct & { price?: string } = await res.json();
+
+          // Parse price — /gtins returns avg_price as number and price as "R$ X,XX" string
+          const avgPrice = cp.avg_price && cp.avg_price > 0 ? cp.avg_price : null;
+
+          const updates: Record<string, unknown> = { cosmos_synced_at: new Date().toISOString() };
+          if (avgPrice)        updates.reference_price = avgPrice;
+          if (cp.thumbnail)    updates.image_url = cp.thumbnail;
+          if (cp.brand?.name)  updates.brand = cp.brand.name;
+
+          const { error } = await supabase
+            .from('products')
+            .update(updates)
+            .eq('id', product.id);
+
+          if (error) {
+            console.error(`  [${product.ean}] Update error:`, error.message);
+            enrichErrors++;
+          } else {
+            const got = [avgPrice && `price: R$${avgPrice}`, cp.thumbnail && 'image', cp.brand?.name && `brand: ${cp.brand.name}`].filter(Boolean).join(', ');
+            console.log(`  [${product.name}] ✓ ${got || 'no new data'} (token ${tokenNum})`);
+            enriched++;
+          }
+          break retry2;
+        } catch (err) {
+          console.warn(`  [${product.ean}] Fetch failed:`, err);
           enrichErrors++;
-          continue;
+          break retry2;
         }
-
-        consecutiveRateLimit = 0;
-        const cp: CosmosProduct & { price?: string } = await res.json();
-
-        // Parse price — /gtins returns avg_price as number and price as "R$ X,XX" string
-        const avgPrice = cp.avg_price && cp.avg_price > 0 ? cp.avg_price : null;
-
-        const updates: Record<string, unknown> = { cosmos_synced_at: new Date().toISOString() };
-        if (avgPrice)        updates.reference_price = avgPrice;
-        if (cp.thumbnail)    updates.image_url = cp.thumbnail;
-        if (cp.brand?.name)  updates.brand = cp.brand.name;
-
-        const { error } = await supabase
-          .from('products')
-          .update(updates)
-          .eq('id', product.id);
-
-        if (error) {
-          console.error(`  [${product.ean}] Update error:`, error.message);
-          enrichErrors++;
-        } else {
-          const got = [avgPrice && `price: R$${avgPrice}`, cp.thumbnail && 'image', cp.brand?.name && `brand: ${cp.brand.name}`].filter(Boolean).join(', ');
-          console.log(`  [${product.name}] ✓ ${got || 'no new data'} (token ${tokenNum})`);
-          enriched++;
-        }
-      } catch (err) {
-        console.warn(`  [${product.ean}] Fetch failed:`, err);
-        enrichErrors++;
       }
 
       await sleep(DELAY_MS);
@@ -505,6 +544,23 @@ async function main() {
     console.log(`  Errors:            ${enrichErrors}`);
     console.log('════════════════════════════════════');
   }
+
+  // ---------------------------------------------------------------------------
+  // Coverage summary
+  // ---------------------------------------------------------------------------
+  const { count: total }      = await supabase.from('products').select('*', { count: 'exact', head: true });
+  const { count: withPrice }  = await supabase.from('products').select('*', { count: 'exact', head: true }).not('reference_price', 'is', null);
+  const { count: withImage }  = await supabase.from('products').select('*', { count: 'exact', head: true }).not('image_url', 'is', null);
+  const { count: withBrand }  = await supabase.from('products').select('*', { count: 'exact', head: true }).not('brand', 'is', null);
+  const pct = (n: number | null) => total ? `${Math.round((n ?? 0) / total * 100)}%` : '—';
+
+  console.log('\n════════════════════════════════════');
+  console.log('Coverage summary');
+  console.log(`  Total products: ${total}`);
+  console.log(`  Price:  ${withPrice} / ${total} (${pct(withPrice)})`);
+  console.log(`  Image:  ${withImage} / ${total} (${pct(withImage)})`);
+  console.log(`  Brand:  ${withBrand} / ${total} (${pct(withBrand)})`);
+  console.log('════════════════════════════════════');
 }
 
 main().catch((err) => {
