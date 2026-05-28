@@ -28,6 +28,29 @@ interface CosmosProduct {
   brand?: { name: string };
   thumbnail?: string;
   avg_price?: number;
+  category?: { id: number; description: string; parent_id: number | null };
+}
+
+const CATEGORY_BY_ID: Record<number, string> = {
+  1: "cat_alimentos", 3: "cat_alimentos", 7: "cat_alimentos",
+  60: "cat_alimentos", 156: "cat_alimentos", 198: "cat_alimentos",
+  157: "cat_higiene", 507: "cat_higiene",
+  65: "cat_bebidas", 205: "cat_bebidas",
+  259: "cat_limpeza",
+};
+
+function resolveCategory(cosmos: CosmosProduct["category"], description: string): string {
+  if (cosmos?.id && CATEGORY_BY_ID[cosmos.id]) return CATEGORY_BY_ID[cosmos.id];
+  if (cosmos?.parent_id && CATEGORY_BY_ID[cosmos.parent_id]) return CATEGORY_BY_ID[cosmos.parent_id];
+
+  const d = description.toLowerCase();
+  if (/detergente|desinfetante|água sanitária|alvejante|amaciante|sabão em pó|multiuso|limpa/.test(d)) return "cat_limpeza";
+  if (/shampoo|condicionador|sabonete|desodorante|absorvente|fralda|creme dental|escova/.test(d)) return "cat_higiene";
+  if (/suco|refrigerante|cerveja|vinho|água mineral|energético|iogurte para beber|bebida/.test(d)) return "cat_bebidas";
+  if (/banana|maçã|laranja|tomate|cenoura|batata|alface|cebola|alho|fruta|legume|verdura/.test(d)) return "cat_hortifruti";
+  if (/pão|bolo|biscoito polvilho|torrada|croissant|brioche|nhoque/.test(d)) return "cat_padaria";
+
+  return "cat_alimentos";
 }
 
 async function fetchFromCosmos(dateStr: string, tokens: string[]): Promise<Response> {
@@ -95,6 +118,7 @@ export async function GET(request: NextRequest) {
         name: toTitleCase(cp.description),
         brand: cp.brand?.name ?? null,
         image_url: cp.thumbnail ?? null,
+        category_id: resolveCategory(cp.category, cp.description),
         ...(cp.avg_price && cp.avg_price > 0 ? { reference_price: cp.avg_price } : {}),
         cosmos_synced_at: new Date().toISOString(),
       },
