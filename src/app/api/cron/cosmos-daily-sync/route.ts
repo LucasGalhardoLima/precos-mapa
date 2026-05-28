@@ -87,7 +87,6 @@ export async function GET(request: NextRequest) {
 
   for (const cp of products) {
     if (!cp.gtin || cp.gtin === 0) { skipped++; continue; }
-    if (!cp.avg_price || cp.avg_price <= 0) { skipped++; continue; }
     if (!cp.description) { skipped++; continue; }
 
     const { error } = await supabase.from("products").upsert(
@@ -96,7 +95,7 @@ export async function GET(request: NextRequest) {
         name: toTitleCase(cp.description),
         brand: cp.brand?.name ?? null,
         image_url: cp.thumbnail ?? null,
-        reference_price: cp.avg_price,
+        ...(cp.avg_price && cp.avg_price > 0 ? { reference_price: cp.avg_price } : {}),
         cosmos_synced_at: new Date().toISOString(),
       },
       { onConflict: "ean", ignoreDuplicates: false },
