@@ -151,8 +151,8 @@ export function usePromotions(params: UsePromotionsParams): UsePromotionsReturn 
 
     const { data, error } = await supabase.rpc('search_products_with_prices', {
       query: productQuery,
-      user_lat: userLatitude,
-      user_lng: userLongitude,
+      user_lat: userLatitude ?? null,
+      user_lng: userLongitude ?? null,
       radius_km: maxDistanceKm ?? 10,
       category_id: categoryId && categoryId !== 'cat_todos' ? categoryId : null,
     });

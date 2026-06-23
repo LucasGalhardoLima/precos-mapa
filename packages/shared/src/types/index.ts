@@ -48,6 +48,7 @@ export interface Store {
   trial_ends_at: string | null;
   search_priority: number;
   is_active: boolean;
+  opening_hours: Record<string, { open: string; close: string } | null> | null;
   created_at: string;
   updated_at: string;
 }
@@ -197,6 +198,8 @@ export interface StoreWithPromotions {
   topDeals: EnrichedPromotion[];
   distanceKm: number;
   promotionCountByCategory?: Record<string, number>;
+  /** null = opening_hours not set yet (hide badge); true/false = open/closed now */
+  isOpen: boolean | null;
 }
 
 /** Favorite with joined product and active promotions */

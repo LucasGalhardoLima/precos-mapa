@@ -28,6 +28,7 @@ import {
   TrendingDown,
 } from 'lucide-react-native';
 
+import Purchases from 'react-native-purchases';
 import { useTheme } from '@/theme/use-theme';
 import { useAuthStore } from '@poup/shared';
 import { useFavorites } from '@/hooks/use-favorites';
@@ -434,35 +435,60 @@ export default function AccountScreen() {
     });
   }, [exportData]);
 
-  const handleDeleteAccount = useCallback(() => {
-    Alert.alert(
-      'Excluir conta',
-      'Tem certeza que deseja excluir sua conta? Esta ação é irreversível e todos os seus dados serão apagados permanentemente.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            const success = await deleteAccount();
-            if (success) {
-              Burnt.toast({
-                title: 'Conta excluída',
-                message: 'Sua conta foi excluída com sucesso.',
-                preset: 'done',
-                haptic: 'success',
-              });
-            } else {
-              Alert.alert(
-                'Erro',
-                'Não foi possível excluir sua conta. Tente novamente mais tarde.',
-              );
-            }
-          },
-        },
-      ],
-    );
+  const handleManageSubscription = useCallback(async () => {
+    try {
+      await Purchases.showManageSubscriptions();
+    } catch {
+      Linking.openURL('https://apps.apple.com/account/subscriptions');
+    }
+  }, []);
+
+  const confirmDeleteAccount = useCallback(async () => {
+    const success = await deleteAccount();
+    if (success) {
+      Burnt.toast({
+        title: 'Conta excluída',
+        message: 'Sua conta foi excluída com sucesso.',
+        preset: 'done',
+        haptic: 'success',
+      });
+    } else {
+      Alert.alert(
+        'Erro',
+        'Não foi possível excluir sua conta. Tente novamente mais tarde.',
+      );
+    }
   }, [deleteAccount]);
+
+  const handleDeleteAccount = useCallback(() => {
+    if (isPaidPlan) {
+      Alert.alert(
+        'Excluir conta',
+        'Você possui uma assinatura ativa. Cancele-a antes de excluir sua conta para evitar cobranças futuras.',
+        [
+          { text: 'Voltar', style: 'cancel' },
+          {
+            text: 'Cancelar assinatura',
+            onPress: handleManageSubscription,
+          },
+          {
+            text: 'Excluir mesmo assim',
+            style: 'destructive',
+            onPress: confirmDeleteAccount,
+          },
+        ],
+      );
+    } else {
+      Alert.alert(
+        'Excluir conta',
+        'Tem certeza que deseja excluir sua conta? Esta ação é irreversível e todos os seus dados serão apagados permanentemente.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Excluir', style: 'destructive', onPress: confirmDeleteAccount },
+        ],
+      );
+    }
+  }, [confirmDeleteAccount, isPaidPlan, handleManageSubscription]);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -654,6 +680,15 @@ export default function AccountScreen() {
             onPress={isPaidPlan ? undefined : handleOpenPaywall}
             tokens={tokens}
           />
+          {isPaidPlan && (
+            <SettingsRow
+              icon={Crown}
+              iconColor={tokens.warning}
+              label="Gerenciar assinatura"
+              onPress={handleManageSubscription}
+              tokens={tokens}
+            />
+          )}
           <SettingsRow
             icon={FileText}
             iconColor={tokens.primary}

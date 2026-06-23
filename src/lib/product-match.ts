@@ -83,11 +83,19 @@ export async function findOrCreateProduct(
     .select("id")
     .single();
 
-  if (error || !data) {
-    throw new Error(
-      `Erro ao criar produto: ${error?.message ?? "desconhecido"}`,
-    );
+  if (error) {
+    if (error.code === "23505") {
+      // Concurrent worker created the same product — re-fetch the winner
+      const { data: existing } = await supabase
+        .from("products")
+        .select("id")
+        .eq("name", normalizedName)
+        .maybeSingle();
+      if (existing) return { id: existing.id, matched: true, confidence: 0.95, isNew: false };
+    }
+    throw new Error(`Erro ao criar produto: ${error.message}`);
   }
+  if (!data) throw new Error("Erro ao criar produto: desconhecido");
 
   // Fire-and-forget Cosmos enrichment for new products
   enrichProductFromCosmos(supabase, data.id, input.name, input.brand ?? null).catch(() => {});

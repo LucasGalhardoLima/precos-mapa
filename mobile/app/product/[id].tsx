@@ -159,7 +159,16 @@ export default function ProductDetailScreen() {
         .gt('end_date', new Date().toISOString())
         .order('promo_price', { ascending: true });
 
-      if (data) setPromotions(data as unknown as PromotionWithStore[]);
+      if (data) {
+        const storeMap = new Map<string, typeof data[0]>();
+        for (const promo of data) {
+          const existing = storeMap.get(promo.store_id);
+          if (!existing || promo.promo_price < existing.promo_price) {
+            storeMap.set(promo.store_id, promo);
+          }
+        }
+        setPromotions([...storeMap.values()] as unknown as PromotionWithStore[]);
+      }
       setIsLoadingPromotions(false);
     }
 

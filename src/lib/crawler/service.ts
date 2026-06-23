@@ -360,6 +360,7 @@ export interface RenderStep {
   selector?: string;
   value?: string;
   timeout?: number;
+  optional?: boolean; // if true, a waitForSelector timeout is logged but not thrown
 }
 
 export interface RenderConfig {
@@ -433,7 +434,15 @@ export async function discoverAndDownloadImages(
         switch (step.action) {
           case "waitForSelector":
             if (step.selector) {
-              await page.waitForSelector(step.selector, { timeout: stepTimeout });
+              try {
+                await page.waitForSelector(step.selector, { timeout: stepTimeout });
+              } catch (err) {
+                if (step.optional) {
+                  console.warn(`[CRAWLER] optional waitForSelector "${step.selector}" not found — continuing`);
+                } else {
+                  throw err;
+                }
+              }
             }
             break;
           case "click":

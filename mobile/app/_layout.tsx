@@ -13,17 +13,20 @@ import {
   Inter_400Regular,
   Inter_500Medium,
 } from '@expo-google-fonts/inter';
-import { useAuth } from '@/hooks/use-auth';
-import { useAuthStore, usePushNotifications } from '@poup/shared';
+import { usePushNotifications } from '@poup/shared';
 import type { NotificationData } from '@poup/shared';
 import { posthogClient } from '@/lib/posthog';
-import { initRevenueCat, loginRevenueCat, logoutRevenueCat } from '@/lib/revenue-cat';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
+/* AUTH_STASHED
+import { useAuth } from '@/hooks/use-auth';
+import { useAuthStore } from '@poup/shared';
+import { initRevenueCat, loginRevenueCat, logoutRevenueCat } from '@/lib/revenue-cat';
+import { useEffect, useRef } from 'react';
+AUTH_STASHED */
+
 export default function RootLayout() {
-  const { isLoading } = useAuth();
-  const hasSeenOnboarding = useAuthStore((s) => s.hasSeenOnboarding);
   const router = useRouter();
 
   const handleNotificationTap = useCallback((data: NotificationData) => {
@@ -34,7 +37,8 @@ export default function RootLayout() {
 
   usePushNotifications({ onNotificationTap: handleNotificationTap });
 
-  // RevenueCat: init on mount, login/logout on auth state changes
+  /* AUTH_STASHED — RevenueCat init + auth subscription
+  const { isLoading } = useAuth();
   const prevUserIdRef = useRef<string | null>(null);
   useEffect(() => {
     initRevenueCat();
@@ -49,6 +53,7 @@ export default function RootLayout() {
       }
     });
   }, []);
+  AUTH_STASHED */
 
   const [fontsLoaded] = useFonts({
     Poppins_700Bold,
@@ -56,7 +61,7 @@ export default function RootLayout() {
     Inter_500Medium,
   });
 
-  if (isLoading || !fontsLoaded) {
+  if (!fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
         <ActivityIndicator size="large" color="#22C55E" />

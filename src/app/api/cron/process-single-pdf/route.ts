@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runMultiPassExtraction, runMultiPassImageExtraction } from "@/lib/import-pipeline";
+import { runIncrementalExtraction, runIncrementalImageExtraction } from "@/lib/import-pipeline";
 import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { findOrCreateProduct } from "@/lib/product-match";
 import { normalizeCategory, extractBrand, EncarteProduct } from "@/lib/schemas";
@@ -71,11 +71,11 @@ export async function POST(request: NextRequest) {
     const typeLabel = isImage ? "image" : "PDF";
     console.log(`[WORKER] Processing ${typeLabel} import ${importId} (${record.filename}, ${fileBuffer.byteLength} bytes)`);
 
-    // 4. Run 3-pass extraction (PDF via Claude Sonnet, images via GPT-4o vision)
+    // 4. Incremental extraction: pass 1, then pass 2 if needed, then pass 3
     const consensus = isImage
-      ? await runMultiPassImageExtraction(fileBuffer, record.filename, 3)
-      : await runMultiPassExtraction(fileBuffer, record.filename, 3);
-    console.log(`[WORKER] Import ${importId}: consensus=${consensus.type}, confidence=${consensus.confidenceScore}, products=${consensus.consensusProducts?.length ?? 0}`);
+      ? await runIncrementalImageExtraction(fileBuffer, record.filename)
+      : await runIncrementalExtraction(fileBuffer, record.filename);
+    console.log(`[WORKER] Import ${importId}: consensus=${consensus.type}, confidence=${consensus.confidenceScore}, products=${consensus.consensusProducts?.length ?? 0}, passes=${consensus.passes.length}`);
 
     // 5. Save extraction passes
     const passData: Record<string, unknown> = {
@@ -224,73 +224,104 @@ async function publishProducts(
   const duplicateMatches: string[] = [];
   const seenProductIds = new Map<string, string>();
 
-  for (const product of products) {
-    try {
+  // Step 1: resolve all products in parallel — findOrCreateProduct is the
+  // expensive step (fuzzy text matching + DB round-trips)
+  const resolvedResults = await Promise.allSettled(
+    products.map(async (product) => {
       const categoryId = normalizeCategory(product.category);
       const brand = product.brand ?? extractBrand(product.name);
-
       const result = await findOrCreateProduct(getSupabaseAdmin(), {
         name: product.name,
         categoryId,
         brand: brand ?? undefined,
         referencePrice: product.original_price ?? product.price,
       });
+      return { product, result };
+    }),
+  );
 
-      // Track low-confidence matches for review flagging
-      if (result.matched && result.confidence < 0.7) {
-        lowConfidenceProducts.push(
-          `${product.name} (confidence: ${(result.confidence * 100).toFixed(0)}%)`,
-        );
-      }
+  // Step 2: expire + insert sequentially to satisfy the partial unique index
+  // on (store_id, product_id) WHERE status = 'active'
+  for (const settled of resolvedResults) {
+    if (settled.status === "rejected") {
+      const msg =
+        settled.reason instanceof Error
+          ? `${settled.reason.name}: ${settled.reason.message}`
+          : String(settled.reason);
+      console.error(`[WORKER] ${importId} product resolution threw: ${msg}`);
+      continue;
+    }
 
-      // Track intra-import duplicates: two extracted products mapping to the
-      // same catalog entry almost always means the matcher conflated distinct
-      // SKUs. The promotion is still inserted (we never want to silently drop
-      // data) but the import is flagged for review by the caller.
-      const previousName = seenProductIds.get(result.id);
-      if (previousName) {
-        duplicateMatches.push(
-          `"${product.name}" → already published as "${previousName}" (product_id=${result.id})`,
-        );
+    const { product, result } = settled.value;
+
+    if (result.matched && result.confidence < 0.7) {
+      lowConfidenceProducts.push(
+        `${product.name} (confidence: ${(result.confidence * 100).toFixed(0)}%)`,
+      );
+    }
+
+    const previousName = seenProductIds.get(result.id);
+    if (previousName) {
+      duplicateMatches.push(
+        `"${product.name}" → already published as "${previousName}" (product_id=${result.id})`,
+      );
+    } else {
+      seenProductIds.set(result.id, product.name);
+    }
+
+    let endDate: string;
+    if (product.validity) {
+      endDate = new Date(product.validity + "T23:59:59Z").toISOString();
+    } else {
+      const future = new Date();
+      future.setDate(future.getDate() + 7);
+      endDate = future.toISOString();
+    }
+
+    const originalPrice = product.original_price ?? product.price;
+
+    // Expire any existing active promotion for this product+store before inserting
+    await getSupabaseAdmin()
+      .from("promotions")
+      .update({ status: "expired", updated_at: now })
+      .eq("store_id", storeId)
+      .eq("product_id", result.id)
+      .eq("status", "active");
+
+    const { error: promoError } = await getSupabaseAdmin().from("promotions").insert({
+      store_id: storeId,
+      product_id: result.id,
+      original_price: originalPrice,
+      promo_price: product.price,
+      start_date: now,
+      end_date: endDate,
+      source: "cron",
+      status: "active",
+      created_by: null,
+      pdf_import_id: importId,
+    });
+
+    if (promoError) {
+      if (promoError.code === "23505") {
+        // Another concurrent worker won the race and inserted first — update that row
+        const { error: updateError } = await getSupabaseAdmin()
+          .from("promotions")
+          .update({ promo_price: product.price, original_price: originalPrice, end_date: endDate, updated_at: now, pdf_import_id: importId })
+          .eq("store_id", storeId)
+          .eq("product_id", result.id)
+          .eq("status", "active");
+        if (!updateError) {
+          published++;
+        } else {
+          console.error(`[WORKER] ${importId} upsert fallback failed for "${product.name}": ${updateError.message}`);
+        }
       } else {
-        seenProductIds.set(result.id, product.name);
-      }
-
-      let endDate: string;
-      if (product.validity) {
-        endDate = new Date(product.validity + "T23:59:59Z").toISOString();
-      } else {
-        const future = new Date();
-        future.setDate(future.getDate() + 7);
-        endDate = future.toISOString();
-      }
-
-      const originalPrice = product.original_price ?? product.price;
-
-      const { error: promoError } = await getSupabaseAdmin().from("promotions").insert({
-        store_id: storeId,
-        product_id: result.id,
-        original_price: originalPrice,
-        promo_price: product.price,
-        start_date: now,
-        end_date: endDate,
-        source: "cron",
-        status: "active",
-        created_by: null,
-        pdf_import_id: importId,
-      });
-
-      if (promoError) {
         console.error(
           `[WORKER] ${importId} promo insert failed for "${product.name}" (product_id=${result.id}): ${promoError.code ?? ""} ${promoError.message}`,
         );
-      } else {
-        published++;
       }
-    } catch (err) {
-      const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-      console.error(`[WORKER] ${importId} product "${product.name}" threw: ${msg}`);
-      continue;
+    } else {
+      published++;
     }
   }
 

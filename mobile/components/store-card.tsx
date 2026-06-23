@@ -62,7 +62,7 @@ export function StoreCard({
   logoColor,
   distanceKm,
   dealCount,
-  isOpen = true,
+  isOpen,
   onPress,
 }: StoreCardProps) {
   const { tokens } = useTheme();
@@ -112,11 +112,13 @@ export function StoreCard({
                 {dealCount} {dealCount === 1 ? 'oferta' : 'ofertas'}
               </Text>
             </View>
-            <View style={[styles.badgeStatus, isOpen ? styles.badgeOpen : styles.badgeClosed]}>
-              <Text style={[styles.badgeStatusText, isOpen ? styles.badgeOpenText : styles.badgeClosedText]}>
-                {isOpen ? 'Aberto' : 'Fechado'}
-              </Text>
-            </View>
+            {isOpen != null && (
+              <View style={[styles.badgeStatus, isOpen ? styles.badgeOpen : styles.badgeClosed]}>
+                <Text style={[styles.badgeStatusText, isOpen ? styles.badgeOpenText : styles.badgeClosedText]}>
+                  {isOpen ? 'Aberto' : 'Fechado'}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 

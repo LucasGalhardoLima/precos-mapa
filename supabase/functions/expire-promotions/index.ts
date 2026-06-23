@@ -85,8 +85,18 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Purge last_price rows older than 30 days — they are stale reference prices
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: purged } = await supabase
+    .from('promotions')
+    .update({ status: 'expired', updated_at: now })
+    .eq('status', 'last_price')
+    .lt('last_price_date', thirtyDaysAgo)
+    .select('id');
+  const purgedCount = purged?.length ?? 0;
+
   console.log(
-    `Processed ${expiring.length} promotions at ${now}: ${lastPriceCount} → last_price, ${expiredCount} old last_price → expired`
+    `Processed ${expiring.length} promotions at ${now}: ${lastPriceCount} → last_price, ${expiredCount} old last_price → expired, ${purgedCount ?? 0} stale last_price purged`
   );
 
   return new Response(

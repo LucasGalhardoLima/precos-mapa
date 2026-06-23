@@ -433,38 +433,53 @@ async function main() {
 
   console.log('\n── Phase 2: GTIN enrichment ──');
 
-  // Priority 1: products already visible in the app (have at least one store_prices entry)
+  // Priority 1: products with store_prices entries (app-visible) missing reference_price
+  // Priority 2: any product missing reference_price
+  // Priority 3: any product missing brand
+  // Priority 4: any product missing image_url
   const BATCH = 500;
-  const { data: withStorePrices } = await supabase
-    .from('products')
-    .select('id, ean, name, store_prices!inner(id)')
-    .not('ean', 'is', null)
-    .or('reference_price.is.null,image_url.is.null,brand.is.null')
-    .limit(BATCH);
+  const toEnrich: { id: string; ean: string; name: string }[] = [];
 
-  const priorityProducts = (withStorePrices ?? []).map(({ store_prices: _sp, ...p }) => p) as { id: string; ean: string; name: string }[];
-  const toEnrich: { id: string; ean: string; name: string }[] = [...priorityProducts];
-
-  // Fill remaining slots with any other products missing enrichment data
-  if (toEnrich.length < BATCH) {
-    const seenIds = priorityProducts.map(p => p.id);
-    let restQuery = supabase
+  const addSlot = async (filter: Record<string, string>, exclude: string[]) => {
+    if (toEnrich.length >= BATCH) return;
+    let q = supabase
       .from('products')
       .select('id, ean, name')
       .not('ean', 'is', null)
-      .or('reference_price.is.null,image_url.is.null,brand.is.null')
       .limit(BATCH - toEnrich.length);
-    if (seenIds.length > 0) {
-      restQuery = restQuery.not('id', 'in', `(${seenIds.join(',')})`);
-    }
-    const { data: rest } = await restQuery;
-    toEnrich.push(...(rest ?? []));
-  }
+    for (const [col, val] of Object.entries(filter)) q = (q as any).is(col, val);
+    if (exclude.length > 0) q = q.not('id', 'in', `(${exclude.join(',')})`);
+    const { data } = await q;
+    toEnrich.push(...(data ?? []));
+  };
+
+  const addSlotWithJoin = async (joinTable: string, filter: Record<string, string>, exclude: string[]) => {
+    if (toEnrich.length >= BATCH) return;
+    let q = supabase
+      .from('products')
+      .select(`id, ean, name, ${joinTable}!inner(id)`)
+      .not('ean', 'is', null)
+      .limit(BATCH - toEnrich.length);
+    for (const [col, val] of Object.entries(filter)) q = (q as any).is(col, val);
+    if (exclude.length > 0) q = q.not('id', 'in', `(${exclude.join(',')})`);
+    const { data } = await q;
+    toEnrich.push(...((data ?? []).map(({ [joinTable]: _j, ...p }: any) => p)));
+  };
+
+  await addSlotWithJoin('store_prices', { reference_price: null }, []);
+  const seenAfterP1 = toEnrich.map(p => p.id);
+  await addSlot({ reference_price: null }, seenAfterP1);
+  const seenAfterP2 = toEnrich.map(p => p.id);
+  await addSlot({ brand: null }, seenAfterP2);
+  const seenAfterP3 = toEnrich.map(p => p.id);
+  await addSlot({ image_url: null }, seenAfterP3);
+
+  const withStorePricesCount = seenAfterP1.length;
 
   if (toEnrich.length === 0) {
     console.log('  Nothing to enrich (all products already have price, image, and brand).');
   } else {
-    console.log(`  ${toEnrich.length} products to enrich via /gtins/{ean} (${priorityProducts.length} with store prices first)`);
+    console.log(`  ${toEnrich.length} products to enrich via /gtins/{ean} (${withStorePricesCount} with store prices first)`);
     let enriched = 0;
     let enrichErrors = 0;
 

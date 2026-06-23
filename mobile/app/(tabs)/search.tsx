@@ -181,8 +181,8 @@ export default function SearchScreen() {
   }, []);
 
   const handleSelectCategory = useCallback((catId: string, catName: string) => {
-    setQuery(catName);
-    setDebouncedQuery(catName);
+    setQuery('');
+    setDebouncedQuery('');
     setCategoryId(catId);
     addSearch(catName);
     triggerHaptic();

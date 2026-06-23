@@ -109,7 +109,7 @@ function EmptyState({ tokens, onCreateAlert }: EmptyStateProps) {
           accessibilityRole="button"
           style={({ pressed }) => [
             styles.emptyCtaBtn,
-            { backgroundColor: tokens.primary },
+            { backgroundColor: tokens.headerGradientStart },
             pressed && styles.pressedOpacity,
           ]}
         >

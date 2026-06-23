@@ -540,6 +540,7 @@ export default function MapScreen() {
         initialRegion={defaultRegion}
         showsUserLocation={permissionGranted === true}
         showsMyLocationButton={permissionGranted === true}
+        onPress={handleCloseStoreSheet}
       >
         {stores.map((storeData) => {
           const info = rankByStoreId.get(storeData.store.id);
@@ -655,7 +656,13 @@ export default function MapScreen() {
           <View style={styles.floatingCardTags}>
             <View style={styles.fcTagDist}><Text style={styles.fcTagDistText}>{selectedStore.distanceKm.toFixed(1)} km</Text></View>
             <View style={styles.fcTagDeals}><Text style={styles.fcTagDealsText}>{selectedCategory && selectedStore.promotionCountByCategory?.[selectedCategory] != null ? selectedStore.promotionCountByCategory[selectedCategory] : selectedStore.activePromotionCount} ofertas</Text></View>
-            <View style={styles.fcTagOpen}><Text style={styles.fcTagOpenText}>Aberto</Text></View>
+            {selectedStore.isOpen != null && (
+              <View style={[styles.fcTagOpen, selectedStore.isOpen ? styles.fcTagOpenGreen : styles.fcTagOpenRed]}>
+                <Text style={[styles.fcTagOpenText, { color: selectedStore.isOpen ? '#166534' : '#991b1b' }]}>
+                  {selectedStore.isOpen ? 'Aberto' : 'Fechado'}
+                </Text>
+              </View>
+            )}
           </View>
           <View style={styles.floatingCardActions}>
             <Pressable style={styles.fcBtnSecondary} onPress={() => {
@@ -1091,15 +1098,19 @@ const styles = StyleSheet.create({
     color: '#92400e',
   },
   fcTagOpen: {
-    backgroundColor: '#dcfce7',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
+  fcTagOpenGreen: {
+    backgroundColor: '#dcfce7',
+  },
+  fcTagOpenRed: {
+    backgroundColor: '#fee2e2',
+  },
   fcTagOpenText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#166534',
   },
   floatingCardActions: {
     flexDirection: 'row',
