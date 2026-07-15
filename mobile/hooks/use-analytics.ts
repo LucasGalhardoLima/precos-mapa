@@ -1,12 +1,22 @@
 import { useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@poup/shared';
+import { useAuthStore, useLocation } from '@poup/shared';
 import type { AnalyticsEventType } from '@poup/shared';
 
 interface TrackOptions {
   storeId?: string;
   productId?: string;
   metadata?: Record<string, unknown>;
+}
+
+/**
+ * Never persist use-location's hardcoded fallback city as if it were a real,
+ * permission-granted location — hasResolvedLocation is false until a manual
+ * city choice or an actual successful geocode happens. Exported as a pure
+ * function so this guard is unit-testable without rendering the hook.
+ */
+export function resolveTrackedRegion(hasResolvedLocation: boolean, locationLabel: string): string | null {
+  return hasResolvedLocation ? locationLabel : null;
 }
 
 /**
@@ -17,6 +27,7 @@ interface TrackOptions {
 export function useAnalytics() {
   const session = useAuthStore((s) => s.session);
   const userId = session?.user?.id;
+  const { locationLabel, hasResolvedLocation } = useLocation();
 
   // Deduplicate rapid-fire events (e.g., search results appearing)
   const recentEvents = useRef<Set<string>>(new Set());
@@ -33,6 +44,8 @@ export function useAnalytics() {
       recentEvents.current.add(dedupKey);
       setTimeout(() => recentEvents.current.delete(dedupKey), 2000);
 
+      const region = resolveTrackedRegion(hasResolvedLocation, locationLabel);
+
       supabase
         .from('analytics_events')
         .insert({
@@ -41,12 +54,13 @@ export function useAnalytics() {
           store_id: options.storeId ?? null,
           product_id: options.productId ?? null,
           metadata: options.metadata ?? {},
+          region,
         })
         .then(() => {
           // fire-and-forget
         });
     },
-    [userId],
+    [userId, locationLabel, hasResolvedLocation],
   );
 
   const trackSearch = useCallback(
