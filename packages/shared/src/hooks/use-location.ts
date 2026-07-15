@@ -80,6 +80,12 @@ export function useLocation() {
     state: FALLBACK_LOCATION.state,
   });
   const [selectedCity, setSelectedCity] = useState<CitySelection | null>(null);
+  // True only once reverse geocoding actually succeeds — distinct from
+  // `detectedCity` being *set*, since detectedCity starts at the hardcoded
+  // fallback and permission-denied/failed-geocode users never move off it.
+  // Consumers (e.g. analytics tracking) that must never persist the fallback
+  // as if it were a real location need this signal, not detectedCity alone.
+  const [deviceLocationResolved, setDeviceLocationResolved] = useState(false);
 
   useEffect(() => {
     async function getLocation() {
@@ -113,6 +119,7 @@ export function useLocation() {
 
           if (geocode.length > 0) {
             setDetectedCity(getCityStateFromGeocode(geocode[0]));
+            setDeviceLocationResolved(true);
           }
         }
       } catch {
@@ -141,6 +148,11 @@ export function useLocation() {
   }, []);
 
   const activeCity = selectedCity ?? detectedCity;
+  // A manually-chosen city is a genuine, intentional value regardless of GPS
+  // permission; a device-detected city is genuine only once geocoding has
+  // actually resolved it — otherwise activeCity is still the hardcoded
+  // fallback wearing a "detected" label.
+  const hasResolvedLocation = selectedCity !== null || deviceLocationResolved;
 
   return {
     latitude: location.latitude,
@@ -150,6 +162,7 @@ export function useLocation() {
     locationLabel: `${activeCity.city}, ${activeCity.state}`,
     permissionGranted,
     isLoading,
+    hasResolvedLocation,
     setPreferredCity,
     clearPreferredCity,
   };

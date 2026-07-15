@@ -4,27 +4,18 @@ import { SectionHeader } from "@/features/panel/components/section-header";
 import { KpiCard } from "@/features/panel/components/kpi-card";
 import { StoreEngagementTable } from "./store-engagement-table";
 import { DailyTrendChart } from "./daily-trend-chart";
-
-interface StoreEngagement {
-  store_id: string;
-  store_name: string;
-  city: string;
-  chain: string | null;
-  search_impressions: number;
-  search_unique_users: number;
-  detail_views: number;
-  detail_unique_users: number;
-  list_adds: number;
-  list_unique_users: number;
-  alerts_created: number;
-  alert_unique_users: number;
-  map_taps: number;
-  map_unique_users: number;
-  total_events: number;
-  total_unique_users: number;
-  first_event_at: string;
-  last_event_at: string;
-}
+import { ProductEngagementTable } from "./product-engagement-table";
+import { GeoHotzoneTable } from "./geo-hotzone-table";
+import { UserEngagementTable } from "./user-engagement-table";
+import { DateRangeSelector } from "./date-range-selector";
+import {
+  getProductEngagement,
+  getGeoHotZones,
+  getUserEngagement,
+  mapStoreRows,
+  resolveDateRange,
+  type StoreEngagementRow,
+} from "./engajamento-queries";
 
 interface DailyAggregate {
   event_date: string;
@@ -33,14 +24,24 @@ interface DailyAggregate {
   unique_users: number;
 }
 
-export default async function EngagementDashboardPage() {
+interface PageProps {
+  searchParams: Promise<{ range?: string }>;
+}
+
+export default async function EngagementDashboardPage({ searchParams }: PageProps) {
   await requirePermission("dashboard:global:view");
   const supabase = getSupabaseAdmin();
+  const params = await searchParams;
+  const { startDate, endDate } = resolveDateRange(params.range);
+  const trendWindowStart = new Date(Date.parse(endDate) - 30 * 86400000).toISOString().split("T")[0];
 
   const [
     { data: storeEngagement },
     { data: dailyAggregates },
     { count: totalEvents },
+    productRanking,
+    geoRanking,
+    userRanking,
   ] = await Promise.all([
     supabase
       .from("store_engagement_summary")
@@ -49,23 +50,25 @@ export default async function EngagementDashboardPage() {
     supabase
       .from("analytics_aggregate_summary")
       .select("*")
-      .gte("event_date", new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0])
+      .gte("event_date", trendWindowStart)
       .order("event_date", { ascending: true }),
     supabase
       .from("analytics_events")
       .select("id", { count: "exact", head: true }),
+    getProductEngagement(supabase, startDate, endDate),
+    getGeoHotZones(supabase, startDate, endDate),
+    getUserEngagement(supabase, startDate, endDate),
   ]);
 
-  const stores = (storeEngagement ?? []) as unknown as StoreEngagement[];
+  const rawStores = (storeEngagement ?? []) as unknown as StoreEngagementRow[];
+  const stores = mapStoreRows(rawStores);
   const daily = (dailyAggregates ?? []) as unknown as DailyAggregate[];
 
   // Compute KPIs
-  const totalUniqueUsers = new Set(stores.map((s) => s.total_unique_users)).size > 0
-    ? stores.reduce((max, s) => Math.max(max, s.total_unique_users), 0)
-    : 0;
-  const totalSearches = stores.reduce((sum, s) => sum + s.search_impressions, 0);
-  const totalDetailViews = stores.reduce((sum, s) => sum + s.detail_views, 0);
-  const totalListAdds = stores.reduce((sum, s) => sum + s.list_adds, 0);
+  const totalUniqueUsers = rawStores.reduce((max, s) => Math.max(max, s.total_unique_users), 0);
+  const totalSearches = rawStores.reduce((sum, s) => sum + s.search_impressions, 0);
+  const totalDetailViews = rawStores.reduce((sum, s) => sum + s.detail_views, 0);
+  const totalListAdds = rawStores.reduce((sum, s) => sum + s.list_adds, 0);
 
   const kpis = [
     {
@@ -100,10 +103,13 @@ export default async function EngagementDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <SectionHeader
-        title="Engajamento por Mercado"
-        subtitle="Métricas de uso do app por loja — base para pitch B2B. &quot;Seu mercado foi buscado X vezes por Y usuários.&quot;"
-      />
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <SectionHeader
+          title="Engajamento por Mercado"
+          subtitle="Métricas de uso do app por loja — base para pitch B2B. &quot;Seu mercado foi buscado X vezes por Y usuários.&quot;"
+        />
+        <DateRangeSelector />
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {kpis.map((kpi) => (
@@ -135,8 +141,42 @@ export default async function EngagementDashboardPage() {
         </h2>
         <p className="mt-1 text-sm text-[var(--color-muted)]">
           Dados que compõem o relatório B2B: &quot;Seu mercado foi buscado X vezes por Y usuários únicos este mês.&quot;
+          Esta tabela mostra dados de todos os tempos (não filtrada pelo período selecionado acima).
         </p>
         <StoreEngagementTable stores={stores} />
+      </section>
+
+      {/* Per-product engagement ranking */}
+      <section className="rounded-2xl border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
+        <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+          Produtos mais engajados
+        </h2>
+        <p className="mt-1 text-sm text-[var(--color-muted)]">
+          Ranking de produtos por buscas e visualizações de detalhe no período selecionado.
+        </p>
+        <ProductEngagementTable products={productRanking} />
+      </section>
+
+      {/* Geographic hot zones */}
+      <section className="rounded-2xl border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
+        <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+          Áreas de maior engajamento
+        </h2>
+        <p className="mt-1 text-sm text-[var(--color-muted)]">
+          Onde o engajamento está concentrado no período selecionado.
+        </p>
+        <GeoHotzoneTable geo={geoRanking} />
+      </section>
+
+      {/* Per-user engagement leaderboard + drill-down */}
+      <section className="rounded-2xl border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
+        <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+          Engajamento por usuário
+        </h2>
+        <p className="mt-1 text-sm text-[var(--color-muted)]">
+          Ranking de usuários por volume de eventos no período selecionado, com o produto, mercado e cidade mais frequentes de cada um.
+        </p>
+        <UserEngagementTable users={userRanking} startDate={startDate} endDate={endDate} />
       </section>
     </div>
   );

@@ -246,6 +246,10 @@ export interface AnalyticsEvent {
   store_id: string | null;
   product_id: string | null;
   metadata: Record<string, unknown>;
+  /** City/state string, e.g. "Matão, SP" — only ever a genuinely resolved
+   * location (manual choice or successful geocode), never a permission
+   * fallback default. Null when unavailable. */
+  region: string | null;
   created_at: string;
 }
 

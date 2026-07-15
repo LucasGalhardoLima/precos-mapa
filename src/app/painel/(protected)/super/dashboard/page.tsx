@@ -13,11 +13,14 @@ import {
 import { SectionOfferAnalytics } from "./section-offer-analytics";
 import { SectionStoreRanking } from "./section-store-ranking";
 import { SectionComparisonCoverage } from "./section-comparison-coverage";
+import { SectionEngagementSummary } from "./section-engagement-summary";
+import { getProductEngagement, getGeoHotZones, resolveDateRange } from "../engajamento/engajamento-queries";
 
 export default async function SuperDashboardPage() {
   await requirePermission("dashboard:global:view");
   const supabase = await createClient();
   const now = new Date().toISOString();
+  const { startDate: engagementStart, endDate: engagementEnd } = resolveDateRange("30d");
 
   // KPIs + unified promotions query
   const [
@@ -25,6 +28,8 @@ export default async function SuperDashboardPage() {
     { count: activeConsumers },
     { count: activeOffers },
     { data: rawPromos },
+    productEngagement,
+    geoEngagement,
   ] = await Promise.all([
     supabase.from("stores").select("id", { count: "exact", head: true }).eq("is_active", true),
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "consumer"),
@@ -38,6 +43,8 @@ export default async function SuperDashboardPage() {
       .select("product_id, store_id, original_price, promo_price, source, end_date, product:products(name, category_id, category:categories(name)), store:stores(name, city, state)")
       .eq("status", "active")
       .gt("end_date", now),
+    getProductEngagement(supabase, engagementStart, engagementEnd),
+    getGeoHotZones(supabase, engagementStart, engagementEnd),
   ]);
 
   const promos = (rawPromos ?? []) as unknown as RawPromotion[];
@@ -107,6 +114,9 @@ export default async function SuperDashboardPage() {
           </div>
         )}
       </section>
+
+      {/* Engagement summary (product + geo hot-zones) */}
+      <SectionEngagementSummary topProducts={productEngagement} topAreas={geoEngagement.byStoreLocation} />
 
       {/* Offer Analytics */}
       <SectionOfferAnalytics data={offerAnalytics} />
