@@ -5,6 +5,52 @@ import {
   normalizeCategory,
 } from "../schemas";
 
+// normalizeValidity() rejects dates outside "today .. today+90 days" (see
+// schemas.ts) — tests need a date that stays inside that window regardless
+// of when the suite runs. A hardcoded literal here previously rotted into a
+// past date as real time passed it by, silently flipping these tests to
+// failing months after they were written.
+function daysFromNow(days: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function toIso(date: Date): string {
+  return date.toISOString().split("T")[0];
+}
+
+function toSlash(date: Date): string {
+  const [y, m, d] = toIso(date).split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function toDash(date: Date): string {
+  const [y, m, d] = toIso(date).split("-");
+  return `${d}-${m}-${y}`;
+}
+
+// Derives day/month/year from the same UTC-based reference as toIso(), rather
+// than Date's local-time getters (getDate()/getMonth()) — mixing the two let
+// this drift by a day near a UTC boundary in UTC-negative timezones (e.g.
+// Brazil), since toISOString() and getDate() can disagree on "today".
+function isoParts(date: Date): { day: number; month: number; year: number } {
+  const [year, month, day] = toIso(date).split("-").map(Number);
+  return { day, month, year };
+}
+
+// Finds the soonest upcoming date (within the 90-day validity window) whose
+// day-of-month is single-digit (1-9), so the padStart(2, "0") logic actually
+// gets exercised — every month has 9 such days, so this always resolves
+// within at most one month, regardless of what "today" is when the suite runs.
+function nextSingleDigitDay(): Date {
+  for (let offset = 1; offset <= 35; offset++) {
+    const candidate = daysFromNow(offset);
+    if (isoParts(candidate).day <= 9) return candidate;
+  }
+  throw new Error("no single-digit day found within 35 days — should be unreachable");
+}
+
 // ---------------------------------------------------------------------------
 // normalizeProducts — price normalization
 // ---------------------------------------------------------------------------
@@ -141,35 +187,42 @@ describe("normalizeProducts unit handling", () => {
 
 describe("normalizeProducts validity handling", () => {
   it("passes through ISO format dates", () => {
+    const target = daysFromNow(30);
     const result = normalizeProducts([
-      { name: "Produto", price: 10, unit: "un", validity: "2026-05-15" },
+      { name: "Produto", price: 10, unit: "un", validity: toIso(target) },
     ]);
     expect(result).toHaveLength(1);
-    expect(result[0].validity).toBe("2026-05-15");
+    expect(result[0].validity).toBe(toIso(target));
   });
 
   it("converts slash format (dd/mm/yyyy) to ISO", () => {
+    const target = daysFromNow(30);
     const result = normalizeProducts([
-      { name: "Produto", price: 10, unit: "un", validity: "15/05/2026" },
+      { name: "Produto", price: 10, unit: "un", validity: toSlash(target) },
     ]);
     expect(result).toHaveLength(1);
-    expect(result[0].validity).toBe("2026-05-15");
+    expect(result[0].validity).toBe(toIso(target));
   });
 
   it("converts dash format (dd-mm-yyyy) to ISO", () => {
+    const target = daysFromNow(30);
     const result = normalizeProducts([
-      { name: "Produto", price: 10, unit: "un", validity: "15-05-2026" },
+      { name: "Produto", price: 10, unit: "un", validity: toDash(target) },
     ]);
     expect(result).toHaveLength(1);
-    expect(result[0].validity).toBe("2026-05-15");
+    expect(result[0].validity).toBe(toIso(target));
   });
 
   it("pads single-digit day and month", () => {
+    const target = nextSingleDigitDay();
+    const { day, month, year } = isoParts(target);
+    // dd/mm/yyyy, day first — matches normalizeValidity's slash[1]=day, slash[2]=month.
+    const input = `${day}/${month}/${year}`;
     const result = normalizeProducts([
-      { name: "Produto", price: 10, unit: "un", validity: "1/8/2026" },
+      { name: "Produto", price: 10, unit: "un", validity: input },
     ]);
     expect(result).toHaveLength(1);
-    expect(result[0].validity).toBe("2026-08-01");
+    expect(result[0].validity).toBe(toIso(target));
   });
 
   it("handles null validity", () => {
@@ -241,10 +294,11 @@ describe("normalizeProducts name handling", () => {
 
 describe("normalizeProducts deduplication", () => {
   it("deduplicates by name|price|unit|validity key", () => {
+    const validity = toIso(daysFromNow(30));
     const result = normalizeProducts([
-      { name: "Arroz 5kg", price: 24.9, unit: "un", validity: "2026-03-15" },
-      { name: "Arroz 5kg", price: 24.9, unit: "un", validity: "2026-03-15" },
-      { name: "Arroz 5kg", price: 24.9, unit: "un", validity: "2026-03-15" },
+      { name: "Arroz 5kg", price: 24.9, unit: "un", validity },
+      { name: "Arroz 5kg", price: 24.9, unit: "un", validity },
+      { name: "Arroz 5kg", price: 24.9, unit: "un", validity },
     ]);
     expect(result).toHaveLength(1);
   });

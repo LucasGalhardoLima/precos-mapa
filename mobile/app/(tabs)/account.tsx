@@ -384,10 +384,6 @@ export default function AccountScreen() {
   // Handlers
   // -----------------------------------------------------------------------
 
-  const handleOpenPaywall = useCallback(() => {
-    setPaywallVisible(true);
-  }, []);
-
   const handleClosePaywall = useCallback(() => {
     setPaywallVisible(false);
   }, []);
@@ -576,62 +572,51 @@ export default function AccountScreen() {
               assinatura nas configurações da loja de aplicativos.
             </Text>
           </View>
-        ) : (
-          /* Upgrade CTA card for free users (matches mockup "Poup Plus" card) */
-          <View style={[styles.upgradeCard, { backgroundColor: '#7C3AED' }]}>
-            <Text style={styles.upgradePoupLabel}>Poup Plus</Text>
-            <Text style={styles.upgradeHeadline}>Economize ainda mais</Text>
-            <Text style={styles.upgradeDesc}>
-              Todos os mercados, listas ilimitadas, histórico de 90 dias, alertas
-              avançados e análise de economia.
-            </Text>
-            <Pressable
-              style={styles.upgradeCta}
-              onPress={handleOpenPaywall}
-            >
-              <Text style={styles.upgradeCtaText}>
-                {'Conhecer o Poup Plus \u2192'}
-              </Text>
-            </Pressable>
-          </View>
-        )}
+        ) : null /* No monetization in Phase 1 -- Poup Plus upsell card hidden until launch */}
 
         {isPaidPlan && (
           <PurchaseProfileCard items={purchaseProfile} tokens={tokens} />
         )}
 
         {/* ----------------------------------------------------------------- */}
-        {/* PREFERÊNCIAS                                                      */}
+        {/* PREFERÊNCIAS — these are per-account values (alerts, saved city, */}
+        {/* favorites); with no session there's nothing real to show, so    */}
+        {/* the section is hidden rather than rendering "0 ativos" /        */}
+        {/* "Não definida" as if they were meaningful states.                */}
         {/* ----------------------------------------------------------------- */}
-        <SectionHeader title="PREFERÊNCIAS" tokens={tokens} />
+        {session && (
+          <>
+            <SectionHeader title="PREFERÊNCIAS" tokens={tokens} />
 
-        <View style={[styles.sectionCard, { backgroundColor: tokens.surface, borderColor: tokens.border }]}>
-          <SettingsRow
-            icon={Bell}
-            iconColor={tokens.primary}
-            label="Alertas de oferta"
-            value={`${alertCount} ativo${alertCount !== 1 ? 's' : ''}`}
-            onPress={handleOpenAlerts}
-            tokens={tokens}
-          />
-          <SettingsRow
-            icon={MapPin}
-            iconColor={tokens.primary}
-            label="Localização"
-            value={locationDisplay}
-            onPress={handleOpenLocation}
-            tokens={tokens}
-          />
-          <SettingsRow
-            icon={Store}
-            iconColor={tokens.primary}
-            label="Meus favoritos"
-            value={`${favoriteCount} produto${favoriteCount !== 1 ? 's' : ''}`}
-            onPress={handleOpenFavorites}
-            tokens={tokens}
-            last
-          />
-        </View>
+            <View style={[styles.sectionCard, { backgroundColor: tokens.surface, borderColor: tokens.border }]}>
+              <SettingsRow
+                icon={Bell}
+                iconColor={tokens.primary}
+                label="Alertas de oferta"
+                value={`${alertCount} ativo${alertCount !== 1 ? 's' : ''}`}
+                onPress={handleOpenAlerts}
+                tokens={tokens}
+              />
+              <SettingsRow
+                icon={MapPin}
+                iconColor={tokens.primary}
+                label="Localização"
+                value={locationDisplay}
+                onPress={handleOpenLocation}
+                tokens={tokens}
+              />
+              <SettingsRow
+                icon={Store}
+                iconColor={tokens.primary}
+                label="Meus favoritos"
+                value={`${favoriteCount} produto${favoriteCount !== 1 ? 's' : ''}`}
+                onPress={handleOpenFavorites}
+                tokens={tokens}
+                last
+              />
+            </View>
+          </>
+        )}
 
         {/* ----------------------------------------------------------------- */}
         {/* CONTA                                                             */}
@@ -677,7 +662,6 @@ export default function AccountScreen() {
             iconColor={tokens.primary}
             label="Plano atual"
             value={planLabel}
-            onPress={isPaidPlan ? undefined : handleOpenPaywall}
             tokens={tokens}
           />
           {isPaidPlan && (

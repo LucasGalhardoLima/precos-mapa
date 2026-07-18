@@ -353,7 +353,7 @@ function PriceChartContent({
             style={{ color: tokens.primary }}
             className="text-xs font-semibold text-center"
           >
-            Bom momento para comprar {'\u2014'} pre\u00E7o pr\u00F3ximo da m\u00EDnima
+            {'Bom momento para comprar \u2014 pre\u00E7o pr\u00F3ximo da m\u00EDnima'}
           </Text>
         </View>
       )}

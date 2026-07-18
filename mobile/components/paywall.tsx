@@ -66,8 +66,6 @@ export function Paywall({ visible, onClose }: PaywallProps) {
   const [selectedCycle, setSelectedCycle] = useState<PlanCycle>('annual');
   const [isPurchasing, setIsPurchasing] = useState(false);
 
-  const packagesUnavailable = !isLoading && !monthlyPackage && !annualPackage;
-
   // -----------------------------------------------------------------------
   // Package resolution
   // -----------------------------------------------------------------------
@@ -78,6 +76,15 @@ export function Paywall({ visible, onClose }: PaywallProps) {
   const annualPackage = offerings?.current?.availablePackages.find(
     (p) => p.identifier === 'plus_annual' || p.identifier === '$rc_annual',
   );
+
+  // Declared after monthlyPackage/annualPackage — a prior version of this
+  // check was hoisted above their declaration and always evaluated against
+  // `undefined`, meaning it always resolved true whenever isLoading was
+  // false, incorrectly showing "unavailable" even when real packages had
+  // loaded. Correctness bug only; the unavailable-state behavior itself is
+  // intentional (App Store compliance — never show a price that might not
+  // match what StoreKit actually charges), not something to remove.
+  const packagesUnavailable = !isLoading && !monthlyPackage && !annualPackage;
 
   const selectedPackage =
     selectedCycle === 'monthly' ? monthlyPackage : annualPackage;

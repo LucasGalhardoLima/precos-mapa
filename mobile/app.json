@@ -52,7 +52,7 @@
       [
         "expo-location",
         {
-            "locationWhenInUsePermission": "Precisamos da sua localização para mostrar lojas e ofertas perto de você."
+          "locationWhenInUsePermission": "Precisamos da sua localização para mostrar lojas e ofertas perto de você."
         }
       ],
       [
@@ -78,7 +78,19 @@
         }
       ],
       "expo-font",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "extraPods": [
+              { "name": "AppCheckCore", "modular_headers": true },
+              { "name": "GoogleUtilities", "modular_headers": true },
+              { "name": "RecaptchaInterop", "modular_headers": true }
+            ]
+          }
+        }
+      ]
     ],
     "extra": {
       "router": {},

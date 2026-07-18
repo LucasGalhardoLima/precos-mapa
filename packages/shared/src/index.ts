@@ -22,6 +22,7 @@ export {
   formatLastUpdated,
   withCache,
 } from './lib/cache';
+export { getAnonymousId } from './lib/anonymous-id';
 
 // Store
 export { useAuthStore } from './store/auth-store';

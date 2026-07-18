@@ -6,9 +6,11 @@ import { MapPin, Bell } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { useAuthStore } from '@poup/shared';
+import { useTheme } from '@/theme/use-theme';
 
 export default function Onboarding() {
   const router = useRouter();
+  const { tokens } = useTheme();
   const setHasSeenOnboarding = useAuthStore((s) => s.setHasSeenOnboarding);
   const [step, setStep] = useState<'location' | 'notification' | 'done'>('location');
   const [requesting, setRequesting] = useState(false);
@@ -33,19 +35,23 @@ export default function Onboarding() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: tokens.bg }]}>
       <View style={styles.content}>
         {step === 'location' && (
           <>
-            <View style={styles.iconWrap}>
-              <MapPin size={48} color="#16a34a" />
+            <View style={[styles.iconWrap, { backgroundColor: tokens.primaryMuted }]}>
+              <MapPin size={48} color={tokens.primary} />
             </View>
-            <Text style={styles.title}>Lojas perto de você</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, { color: tokens.textPrimary }]}>Lojas perto de você</Text>
+            <Text style={[styles.subtitle, { color: tokens.textSecondary }]}>
               Usamos sua localização para mostrar supermercados e ofertas na sua região.
             </Text>
             <Pressable
-              style={[styles.button, requesting && styles.buttonDisabled]}
+              style={[
+                styles.button,
+                { backgroundColor: tokens.primary },
+                requesting && styles.buttonDisabled,
+              ]}
               onPress={requestLocation}
               disabled={requesting}
             >
@@ -54,22 +60,26 @@ export default function Onboarding() {
               </Text>
             </Pressable>
             <Pressable onPress={() => setStep('notification')}>
-              <Text style={styles.skip}>Agora não</Text>
+              <Text style={[styles.skip, { color: tokens.textMuted }]}>Agora não</Text>
             </Pressable>
           </>
         )}
 
         {step === 'notification' && (
           <>
-            <View style={styles.iconWrap}>
-              <Bell size={48} color="#16a34a" />
+            <View style={[styles.iconWrap, { backgroundColor: tokens.primaryMuted }]}>
+              <Bell size={48} color={tokens.primary} />
             </View>
-            <Text style={styles.title}>Alertas de oferta</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, { color: tokens.textPrimary }]}>Alertas de oferta</Text>
+            <Text style={[styles.subtitle, { color: tokens.textSecondary }]}>
               Receba notificações quando preços caírem nos produtos que você acompanha.
             </Text>
             <Pressable
-              style={[styles.button, requesting && styles.buttonDisabled]}
+              style={[
+                styles.button,
+                { backgroundColor: tokens.primary },
+                requesting && styles.buttonDisabled,
+              ]}
               onPress={requestNotification}
               disabled={requesting}
             >
@@ -78,7 +88,7 @@ export default function Onboarding() {
               </Text>
             </Pressable>
             <Pressable onPress={finish}>
-              <Text style={styles.skip}>Agora não</Text>
+              <Text style={[styles.skip, { color: tokens.textMuted }]}>Agora não</Text>
             </Pressable>
           </>
         )}
@@ -90,7 +100,6 @@ export default function Onboarding() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   content: {
     flex: 1,
@@ -103,7 +112,6 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#dcfce7',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -111,18 +119,15 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Poppins_700Bold',
     fontSize: 26,
-    color: '#111827',
     textAlign: 'center',
   },
   subtitle: {
     fontFamily: 'Inter_400Regular',
     fontSize: 16,
-    color: '#6b7280',
     textAlign: 'center',
     lineHeight: 24,
   },
   button: {
-    backgroundColor: '#16a34a',
     borderRadius: 14,
     paddingVertical: 16,
     paddingHorizontal: 32,
@@ -141,7 +146,6 @@ const styles = StyleSheet.create({
   skip: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: '#9ca3af',
     marginTop: 4,
   },
 });

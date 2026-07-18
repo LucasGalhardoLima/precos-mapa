@@ -111,7 +111,7 @@ function rankStores(stores: StoreWithPromotions[]): RankedStore[] {
 // ---------------------------------------------------------------------------
 
 export default function MapScreen() {
-  const { latitude, longitude, permissionGranted } = useLocation();
+  const { latitude, longitude, permissionGranted, requestPermission } = useLocation();
   const { stores, isLoading, error, retry } = useStores({
     userLatitude: latitude,
     userLongitude: longitude,
@@ -124,6 +124,9 @@ export default function MapScreen() {
   const { trackMapPinTap } = useAnalytics();
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  // Per-session only — re-shown next visit if still unresolved, but doesn't
+  // nag within the same visit once the user dismisses it.
+  const [skipPromptDismissed, setSkipPromptDismissed] = useState(false);
 
   const mapRef = useRef<MapView>(null);
   const listBottomSheetRef = useRef<BottomSheet>(null);
@@ -506,6 +509,56 @@ export default function MapScreen() {
         </View>
       )}
 
+      {/* Location never requested — the user tapped "Agora não" during
+          onboarding, so permissionGranted is still null (the system dialog
+          was never shown, unlike the explicit-denial case above, which
+          needs Settings instead — this one can just re-request directly). */}
+      {permissionGranted === null && !skipPromptDismissed && (
+        <View
+          style={[
+            styles.locationBanner,
+            { backgroundColor: tokens.surface, borderColor: tokens.border },
+          ]}
+        >
+          <View style={styles.locationBannerRow}>
+            <MapPin size={18} color={Colors.semantic.warning} />
+            <View style={styles.locationBannerContent}>
+              <Text
+                style={[
+                  styles.locationBannerText,
+                  { color: tokens.textSecondary },
+                ]}
+              >
+                Ative sua localização para ver as lojas mais próximas de você
+              </Text>
+              <View style={styles.locationBannerActions}>
+                <Pressable
+                  onPress={requestPermission}
+                  style={[styles.locationSettingsBtn, { backgroundColor: tokens.primaryMuted }]}
+                  accessibilityLabel="Ativar localização"
+                  accessibilityRole="button"
+                >
+                  <MapPin size={12} color={tokens.primary} />
+                  <Text style={[styles.locationSettingsText, { color: tokens.primary }]}>
+                    Ativar
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setSkipPromptDismissed(true)}
+                  accessibilityLabel="Dispensar"
+                  accessibilityRole="button"
+                  hitSlop={8}
+                >
+                  <Text style={[styles.locationSettingsText, { color: tokens.textHint }]}>
+                    Agora não
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+
       {/* Error state */}
       {error && !isLoading && (
         <View style={styles.noStoresOverlay}>
@@ -797,6 +850,11 @@ const styles = StyleSheet.create({
   },
   locationBannerText: {
     fontSize: 13,
+  },
+  locationBannerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
   locationSettingsBtn: {
     flexDirection: 'row',

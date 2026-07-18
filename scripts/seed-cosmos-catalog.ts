@@ -433,6 +433,7 @@ async function main() {
 
   console.log('\n── Phase 2: GTIN enrichment ──');
 
+  // Priority 0: cesta básica staples (the everyday grocery basket) missing price or image
   // Priority 1: products with store_prices entries (app-visible) missing reference_price
   // Priority 2: any product missing reference_price
   // Priority 3: any product missing brand
@@ -440,33 +441,75 @@ async function main() {
   const BATCH = 500;
   const toEnrich: { id: string; ean: string; name: string }[] = [];
 
-  const addSlot = async (filter: Record<string, string>, exclude: string[]) => {
+  // Brazilian cesta básica staples — prioritize these first since Cosmos
+  // token quota is scarce and these are the items every user searches for.
+  // Multi-word phrases, not bare nouns — bare terms like "banana", "manteiga",
+  // "sal" or "café" collide with flavored/unrelated products (e.g. "Biscoito
+  // Recheado Banana", "Bolacha Manteiga") and would burn scarce Cosmos quota
+  // on non-staples instead of the actual basic-basket items.
+  const CESTA_BASICA_TERMS = [
+    'arroz', 'feijão', 'açúcar', 'óleo de soja', 'café torrado moído',
+    'café solúvel', 'farinha de trigo', 'farinha de mandioca', 'macarrão',
+    'leite integral', 'leite desnatado', 'manteiga com sal', 'manteiga sem sal',
+    'margarina', 'ovo de galinha', 'pão francês', 'pão de forma branco',
+    'pão de forma integral', 'banana prata', 'banana nanica', 'tomate salada',
+    'batata inglesa', 'cebola', 'carne bovina moída', 'acém bovino',
+    'patinho bovino', 'peito de frango', 'extrato de tomate', 'molho de tomate',
+  ];
+
+  const addCestaBasicaSlot = async () => {
+    if (toEnrich.length >= BATCH) return;
+    const nameOr = CESTA_BASICA_TERMS.map((t) => `name.ilike.%${t}%`).join(',');
+    const { data } = await supabase
+      .from('products')
+      .select('id, ean, name')
+      .not('ean', 'is', null)
+      .or(nameOr)
+      .or('reference_price.is.null,image_url.is.null')
+      .limit(BATCH - toEnrich.length);
+    toEnrich.push(...(data ?? []));
+  };
+
+  const addSlot = async (filter: Record<string, string | null>, exclude: string[]) => {
     if (toEnrich.length >= BATCH) return;
     let q = supabase
       .from('products')
       .select('id, ean, name')
       .not('ean', 'is', null)
       .limit(BATCH - toEnrich.length);
-    for (const [col, val] of Object.entries(filter)) q = (q as any).is(col, val);
+    for (const [col, val] of Object.entries(filter)) q = q.is(col, val);
     if (exclude.length > 0) q = q.not('id', 'in', `(${exclude.join(',')})`);
     const { data } = await q;
     toEnrich.push(...(data ?? []));
   };
 
-  const addSlotWithJoin = async (joinTable: string, filter: Record<string, string>, exclude: string[]) => {
+  const addSlotWithJoin = async (joinTable: string, filter: Record<string, string | null>, exclude: string[]) => {
     if (toEnrich.length >= BATCH) return;
     let q = supabase
       .from('products')
       .select(`id, ean, name, ${joinTable}!inner(id)`)
       .not('ean', 'is', null)
       .limit(BATCH - toEnrich.length);
-    for (const [col, val] of Object.entries(filter)) q = (q as any).is(col, val);
+    for (const [col, val] of Object.entries(filter)) q = q.is(col, val);
     if (exclude.length > 0) q = q.not('id', 'in', `(${exclude.join(',')})`);
-    const { data } = await q;
-    toEnrich.push(...((data ?? []).map(({ [joinTable]: _j, ...p }: any) => p)));
+    // `any`: the select() string above is built from a runtime `joinTable`
+    // variable, so supabase-js can't statically parse/type it (its type-level
+    // SQL parser only handles literal select strings) — `data`'s inferred
+    // type is an unusable ParserError placeholder, not the real row shape.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await q as any as { data: Record<string, unknown>[] | null };
+    toEnrich.push(
+      ...(data ?? []).map((row) => {
+        const rest = { ...row };
+        delete rest[joinTable];
+        return rest as { id: string; ean: string; name: string };
+      }),
+    );
   };
 
-  await addSlotWithJoin('store_prices', { reference_price: null }, []);
+  await addCestaBasicaSlot();
+  const seenAfterP0 = toEnrich.map(p => p.id);
+  await addSlotWithJoin('store_prices', { reference_price: null }, seenAfterP0);
   const seenAfterP1 = toEnrich.map(p => p.id);
   await addSlot({ reference_price: null }, seenAfterP1);
   const seenAfterP2 = toEnrich.map(p => p.id);
@@ -474,12 +517,13 @@ async function main() {
   const seenAfterP3 = toEnrich.map(p => p.id);
   await addSlot({ image_url: null }, seenAfterP3);
 
-  const withStorePricesCount = seenAfterP1.length;
+  const cestaBasicaCount = seenAfterP0.length;
+  const withStorePricesCount = seenAfterP1.length - cestaBasicaCount;
 
   if (toEnrich.length === 0) {
     console.log('  Nothing to enrich (all products already have price, image, and brand).');
   } else {
-    console.log(`  ${toEnrich.length} products to enrich via /gtins/{ean} (${withStorePricesCount} with store prices first)`);
+    console.log(`  ${toEnrich.length} products to enrich via /gtins/{ean} (${cestaBasicaCount} cesta básica, ${withStorePricesCount} with store prices, remainder general backlog)`);
     let enriched = 0;
     let enrichErrors = 0;
 
