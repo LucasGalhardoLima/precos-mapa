@@ -3,7 +3,8 @@ import { createHash } from "crypto";
 import {
   discoverAndDownloadAllPdfs,
   discoverAndDownloadImages,
-  renderPdfPagesAsImages,
+  getPdfPageCount,
+  renderPdfPagesIncrementally,
   NATIVE_PDF_MAX_BYTES,
   RenderConfig,
 } from "@/lib/crawler/service";
@@ -211,12 +212,19 @@ export interface DiscoveredFile {
 
 // PDF discovery with oversized-flyer chunking: a PDF under NATIVE_PDF_MAX_BYTES
 // goes through unchanged (native upload, one pdf_imports row). One over that
-// size is rendered to page images to check its page count — above
-// CHUNK_PAGE_THRESHOLD it's split into one image entry per page (dispatched
-// through the single-image worker path); at or under the threshold it's kept
-// as one PDF entry, same as before (processPdfBuffer's existing oversized
-// branch handles a small page count fine on its own).
-export async function discoverAndPreparePdfFiles(url: string): Promise<DiscoveredFile[]> {
+// size, and not already imported, gets its page count checked (cheap — no
+// rendering) — above CHUNK_PAGE_THRESHOLD it's rendered one page at a time
+// and split into one image entry per page (dispatched through the
+// single-image worker path); at or under the threshold it's kept as one PDF
+// entry, same as before (processPdfBuffer's existing oversized branch
+// handles a small page count fine on its own).
+//
+// The already-imported check runs BEFORE any page-count/render work: an
+// oversized PDF that's already 'done' would otherwise get rendered again on
+// every single cron run just to make a decision whose outcome is thrown
+// away a moment later — that redundant rendering (compounded when more than
+// one oversized PDF shares a source) is what OOM-killed a real invocation.
+export async function discoverAndPreparePdfFiles(url: string, storeId: string): Promise<DiscoveredFile[]> {
   const pdfs = await discoverAndDownloadAllPdfs(url);
   const files: DiscoveredFile[] = [];
 
@@ -226,20 +234,37 @@ export async function discoverAndPreparePdfFiles(url: string): Promise<Discovere
       continue;
     }
 
-    const pages = await renderPdfPagesAsImages(pdf.pdfBuffer);
+    const hash = createHash("sha256").update(pdf.pdfBuffer).digest("hex");
+    const { data: existing } = await getSupabaseAdmin()
+      .from("pdf_imports")
+      .select("status")
+      .eq("store_id", storeId)
+      .eq("file_hash", hash)
+      .maybeSingle();
 
-    if (pages.length > CHUNK_PAGE_THRESHOLD) {
-      console.log(`[CRON] ${pdf.filename}: ${pages.length} pages > ${CHUNK_PAGE_THRESHOLD} — chunking into per-page imports`);
-      for (const page of pages) {
-        files.push({
-          buffer: page.buffer,
-          filename: pdf.filename.replace(/\.pdf$/i, `_p${page.pageNumber}.png`),
-          asImage: true,
-        });
-      }
-    } else {
+    if ((existing as { status: string } | null)?.status === "done") {
+      // Already imported — skip page count/rendering. The main loop below
+      // hashes this same buffer again and will correctly skip it as
+      // already_done, with zero rendering cost paid here.
       files.push({ buffer: pdf.pdfBuffer, filename: pdf.filename, asImage: false });
+      continue;
     }
+
+    const pageCount = await getPdfPageCount(pdf.pdfBuffer);
+
+    if (pageCount <= CHUNK_PAGE_THRESHOLD) {
+      files.push({ buffer: pdf.pdfBuffer, filename: pdf.filename, asImage: false });
+      continue;
+    }
+
+    console.log(`[CRON] ${pdf.filename}: ${pageCount} pages > ${CHUNK_PAGE_THRESHOLD} — chunking into per-page imports`);
+    await renderPdfPagesIncrementally(pdf.pdfBuffer, async (page) => {
+      files.push({
+        buffer: page.buffer,
+        filename: pdf.filename.replace(/\.pdf$/i, `_p${page.pageNumber}.png`),
+        asImage: true,
+      });
+    });
   }
 
   return files;
@@ -258,7 +283,7 @@ async function discoverAndPrepare(source: PdfSource): Promise<{
         filename: f.filename,
         asImage: true,
       }))
-    : await discoverAndPreparePdfFiles(source.url);
+    : await discoverAndPreparePdfFiles(source.url, source.store_id);
 
   console.log(`[CRON] Source ${source.id}: discovered ${files.length} file(s)`);
 

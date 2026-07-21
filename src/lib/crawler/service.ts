@@ -220,20 +220,78 @@ REGRAS:
 // optimized images instead — same approach as the JPG/PNG import path.
 export const NATIVE_PDF_MAX_BYTES = 8 * 1024 * 1024;
 
-// Discovery-time helper: renders each page of an oversized PDF to a raw PNG
-// buffer, for callers that want to dispatch pages as individual imports
-// (see process-import's per-page chunking) rather than bundling every page
-// into one processPdfBuffer() call. Reuses renderPdfToImages, so page count
-// is capped at MAX_PDF_PAGES the same way.
-export async function renderPdfPagesAsImages(
+// Discovery-time helper: reads a PDF's page count via pdfjs without
+// rendering any page — no canvas allocation. Lets callers (process-import's
+// chunking decision) decide chunk-vs-not before paying rendering's memory
+// cost, and skip it entirely for files whose dedup status makes rendering
+// unnecessary at all.
+export async function getPdfPageCount(pdfBuffer: Uint8Array | Buffer): Promise<number> {
+  const data = new Uint8Array(pdfBuffer);
+  const loadingTask = pdfjs.getDocument({ data, canvasFactory: new NapiCanvasFactory() });
+  const pdf = await loadingTask.promise;
+  const numPages = pdf.numPages;
+  await pdf.destroy();
+  return numPages;
+}
+
+// Discovery-time helper: renders one page at a time, invoking onPage per
+// page and releasing that page's rendering resources before moving to the
+// next — keeps peak memory bounded to roughly one page instead of the whole
+// document. renderPdfToImages (above) materializes every page at once,
+// which is fine for extractFromPdfPages's small-oversized-PDF combined-call
+// path (a few pages at most) but OOM-killed a real Vercel Standard instance
+// (2GB) when used the same way against a genuine 30-page flyer.
+//
+// Measured locally against the real flyer that triggered this: without
+// page.cleanup(), RSS climbed ~15-20MB per page (410MB → 871MB over 30
+// pages) even with the canvas explicitly zeroed out between pages — pdfjs
+// caches per-page rendering state (fonts, decoded XObjects) on the
+// PDFDocumentProxy itself, which a canvas reset doesn't touch. page.cleanup()
+// is pdfjs's own documented API for releasing exactly that.
+//
+// Renders at a lower scale than renderPdfToImages since each page here is
+// sent to the vision model on its own — optimizeImage() downsamples to
+// 3072px in the worker regardless, so the extra resolution renderPdfToImages
+// uses for multi-page-per-call legibility isn't needed.
+const INCREMENTAL_RENDER_SCALE = 2.0;
+
+export async function renderPdfPagesIncrementally(
   pdfBuffer: Uint8Array | Buffer,
-): Promise<{ buffer: Buffer; pageNumber: number; totalPages: number }[]> {
-  const rendered = await renderPdfToImages(pdfBuffer);
-  return rendered.images.map((dataUrl, index) => ({
-    buffer: Buffer.from(dataUrl.split(",")[1], "base64"),
-    pageNumber: index + 1,
-    totalPages: rendered.totalPages,
-  }));
+  onPage: (page: { buffer: Buffer; pageNumber: number; totalPages: number }) => Promise<void>,
+): Promise<void> {
+  const data = new Uint8Array(pdfBuffer);
+  const loadingTask = pdfjs.getDocument({ data, canvasFactory: new NapiCanvasFactory() });
+  const pdf = await loadingTask.promise;
+
+  try {
+    const pageCount = Math.min(pdf.numPages, MAX_PDF_PAGES);
+
+    for (let index = 1; index <= pageCount; index += 1) {
+      const page = await pdf.getPage(index);
+      try {
+        const viewport = page.getViewport({ scale: INCREMENTAL_RENDER_SCALE });
+
+        const canvas = createCanvas(Math.floor(viewport.width), Math.floor(viewport.height));
+        const context = canvas.getContext("2d");
+
+        await page.render({
+          // @napi-rs/canvas context is API-compatible with DOM CanvasRenderingContext2D
+          canvasContext: context as unknown as CanvasRenderingContext2D,
+          viewport,
+        }).promise;
+
+        const pngBuffer = canvas.toBuffer("image/png");
+        await onPage({ buffer: pngBuffer, pageNumber: index, totalPages: pdf.numPages });
+
+        canvas.width = 0;
+        canvas.height = 0;
+      } finally {
+        page.cleanup();
+      }
+    }
+  } finally {
+    await pdf.destroy();
+  }
 }
 
 // Multiple rendered pages in one request need much tighter compression than
