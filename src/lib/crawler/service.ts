@@ -1,18 +1,20 @@
 import { createCanvas, DOMMatrix, Path2D } from "@napi-rs/canvas";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import OpenAI from "openai";
 import sharp from "sharp";
-import { generateObject, createGateway } from "ai";
+import { generateObject } from "ai";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { Agent } from "undici";
 import { z } from "zod";
 import { EncarteProduct, EncarteSchema, normalizeEncartePayload } from "@/lib/schemas";
 import puppeteer from "puppeteer-core";
 
-// Vercel AI Gateway — routes through Vercel's gateway where provider API keys
-// are configured. On Vercel, authenticates via OIDC automatically.
-// Large PDFs can take several minutes to process; Node's default undici fetch
-// enforces a 5-minute headers timeout, so extend it per Vercel's guidance.
-const gateway = createGateway({
+// Direct Anthropic API — was previously routed through Vercel's AI Gateway,
+// which draws from a separate, shared credit pool that ran low under normal
+// PDF-crawler volume. Billing here goes straight to the Anthropic account
+// (ANTHROPIC_API_KEY) instead. Large PDFs can take several minutes to
+// process; Node's default undici fetch enforces a 5-minute headers timeout,
+// so extend it the same way the Gateway client did.
+const anthropicClient = createAnthropic({
   fetch: (url, init) =>
     fetch(url, {
       ...init,
@@ -77,18 +79,6 @@ interface PdfRenderResult {
   processedPages: number;
 }
 
-let _openai: OpenAI | null = null;
-
-function getOpenAi(): OpenAI {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY não configurada no servidor.");
-  }
-  if (!_openai) {
-    _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  }
-  return _openai;
-}
-
 const MAX_PDF_PAGES = 30;
 
 function extractErrorMessage(error: unknown): string {
@@ -96,6 +86,16 @@ function extractErrorMessage(error: unknown): string {
     return error.message;
   }
   return "Erro desconhecido";
+}
+
+// generateObject's ImagePart.image only accepts a bare base64 string, a
+// Buffer, or an http(s) URL — a full "data:image/png;base64,..." string is
+// treated as a URL and rejected ("URL scheme must be http or https, got
+// data:"). optimizeImage()/optimizePageForBatch() both return data URLs, so
+// every caller needs to strip the prefix before passing it as `image`.
+function stripDataUrlPrefix(dataUrl: string): string {
+  const commaIndex = dataUrl.indexOf(",");
+  return commaIndex === -1 ? dataUrl : dataUrl.slice(commaIndex + 1);
 }
 
 export async function optimizeImage(buffer: Buffer): Promise<string> {
@@ -113,62 +113,33 @@ export async function optimizeImage(buffer: Buffer): Promise<string> {
   return `data:image/png;base64,${processed.toString("base64")}`;
 }
 
-const IMAGE_EXTRACTION_RETRIES = 3;
-
-// The org's gpt-4o tier caps at a low tokens-per-minute budget, which a batch
-// of concurrently-dispatched images can exhaust in seconds. Without this,
-// every pass silently fails with an empty result — indistinguishable from a
-// genuinely offer-less image — instead of waiting out the rate limit.
-async function withRateLimitRetry<T>(fn: () => Promise<T>): Promise<T> {
-  for (let attempt = 1; ; attempt++) {
-    try {
-      return await fn();
-    } catch (err) {
-      if (!(err instanceof OpenAI.RateLimitError) || attempt >= IMAGE_EXTRACTION_RETRIES) {
-        throw err;
-      }
-      const hint = err.message.match(/try again in ([\d.]+)s/i);
-      const waitMs = hint ? Math.ceil(parseFloat(hint[1]) * 1000) + 500 : attempt * 2000;
-      console.warn(`[CRON] gpt-4o rate limited (attempt ${attempt}/${IMAGE_EXTRACTION_RETRIES}) — waiting ${waitMs}ms`);
-      await new Promise((resolve) => setTimeout(resolve, waitMs));
-    }
-  }
-}
-
+// Single-image extraction, now on Claude Sonnet instead of GPT-4o — keeps
+// the whole extraction pipeline (PDF + image) on one provider, billed
+// directly through ANTHROPIC_API_KEY. generateObject's built-in retry
+// (maxRetries) covers transient 429/5xx without the OpenAI-specific
+// "try again in Xs" backoff parsing this used to need.
+//
+// Returns Promise<unknown> shaped like { products: [...] } — matching the
+// old raw-JSON contract — so callers that run it through
+// normalizeEncartePayload() don't need to change.
 export async function extractFromImage(base64Image: string): Promise<unknown> {
-  const response = await withRateLimitRetry(() =>
-    getOpenAi().chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `Você é um especialista em encartes de supermercado brasileiro.
+  const { object } = await generateObject({
+    model: anthropicClient("claude-sonnet-4-6"),
+    schema: EncarteSchema,
+    system: EXTRACTION_SYSTEM_PROMPT,
+    maxRetries: 3,
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "image" as const, image: stripDataUrlPrefix(base64Image) },
+          { type: "text" as const, text: "Extraia todas as ofertas deste encarte de supermercado." },
+        ],
+      },
+    ],
+  });
 
-REGRAS:
-1. Preços devem ser números (29.90).
-2. Se houver dúvida, não invente produto.
-3. Unidade deve ser uma destas: kg, un, l, g, ml, pack.
-4. Ignore logos e elementos decorativos.
-5. Validade no formato YYYY-MM-DD ou null.
-6. Se o produto mostrar preço anterior/original (ex: "de 5,99 por 3,99"), extraia como original_price. Se não houver, retorne null.
-7. Classifique cada produto em uma destas categorias: Bebidas, Limpeza, Alimentos, Hortifruti, Padaria, Higiene. Use "Alimentos" como padrão se não tiver certeza.
-
-Retorne JSON estrito no formato: { "products": [{ "name": "...", "price": 3.99, "original_price": 5.99, "unit": "un", "validity": "2026-01-21", "market_origin": "Savegnago", "category": "Alimentos" }] }`,
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Extraia ofertas." },
-            { type: "image_url", image_url: { url: base64Image } },
-          ],
-        },
-      ],
-      response_format: { type: "json_object" },
-    }),
-  );
-
-  const content = response.choices[0]?.message?.content ?? "{}";
-  return JSON.parse(content) as unknown;
+  return { products: object.products };
 }
 
 async function renderPdfToImages(pdfBuffer: Uint8Array | Buffer): Promise<PdfRenderResult> {
@@ -326,14 +297,14 @@ async function extractFromPdfPages(
   }
 
   const { object } = await generateObject({
-    model: gateway("anthropic/claude-sonnet-4-6"),
+    model: anthropicClient("claude-sonnet-4-6"),
     schema: EncarteSchema,
     system: EXTRACTION_SYSTEM_PROMPT,
     messages: [
       {
         role: "user",
         content: [
-          ...optimizedImages.map((image) => ({ type: "image" as const, image })),
+          ...optimizedImages.map((image) => ({ type: "image" as const, image: stripDataUrlPrefix(image) })),
           {
             type: "text" as const,
             text: "Extraia todas as ofertas deste encarte de supermercado. Analise todas as páginas.",
@@ -363,7 +334,7 @@ export async function processPdfBuffer(
     onProgress?.(`Enviando PDF (${Math.round(pdfData.byteLength / 1024)} KB) para Claude Sonnet...`);
 
     const { object } = await generateObject({
-      model: gateway("anthropic/claude-sonnet-4-6"),
+      model: anthropicClient("claude-sonnet-4-6"),
       schema: EncarteSchema,
       system: EXTRACTION_SYSTEM_PROMPT,
       messages: [
@@ -437,7 +408,7 @@ async function discoverPdfLinksFromHtml(url: string): Promise<string[]> {
     console.log(`[CRON] Running AI extraction for ${url}...`);
 
     const { object } = await generateObject({
-      model: gateway("anthropic/claude-sonnet-4-6"),
+      model: anthropicClient("claude-sonnet-4-6"),
       schema: PdfUrlsSchema,
       system: `You are a web scraping expert. Analyze the provided HTML source code and extract ALL URLs that point to PDF files. Look in:
 - href attributes (a tags, link tags)
