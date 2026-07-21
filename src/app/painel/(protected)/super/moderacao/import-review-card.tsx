@@ -35,7 +35,20 @@ function formatPrice(value: number): string {
 export function ImportReviewCard({ item }: { item: ImportReviewItem }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [activePass, setActivePass] = useState<1 | 2 | 3>(1);
+
+  // Find the pass with the most products for the "best pass" indicator —
+  // computed before activePass's initial state so the card opens on the
+  // actual recommended pass instead of always defaulting to Pass 1, which
+  // is frequently empty or rate-limited (it fires first into the same
+  // concurrent burst) while a later pass has the real products.
+  const validPasses = item.passes
+    .map((p, i) => ({ index: i + 1, count: p.productCount, hasError: p.hasError }))
+    .filter((p) => !p.hasError && p.count > 0);
+  const bestPass = validPasses.length > 0
+    ? validPasses.reduce((a, b) => (a.count >= b.count ? a : b))
+    : null;
+
+  const [activePass, setActivePass] = useState<1 | 2 | 3>((bestPass?.index as 1 | 2 | 3 | undefined) ?? 1);
 
   const handleApprove = (passNumber: 1 | 2 | 3) => {
     startTransition(async () => {
@@ -59,14 +72,6 @@ export function ImportReviewCard({ item }: { item: ImportReviewItem }) {
   };
 
   const currentPass = item.passes[activePass - 1];
-
-  // Find the pass with the most products for the "best pass" indicator
-  const validPasses = item.passes
-    .map((p, i) => ({ index: i + 1, count: p.productCount, hasError: p.hasError }))
-    .filter((p) => !p.hasError && p.count > 0);
-  const bestPass = validPasses.length > 0
-    ? validPasses.reduce((a, b) => (a.count >= b.count ? a : b))
-    : null;
 
   return (
     <article className="rounded-2xl border border-[var(--color-line)] bg-white p-5 shadow-[var(--shadow-soft)]">
