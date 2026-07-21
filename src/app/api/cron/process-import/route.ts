@@ -1,7 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
-import { discoverAndDownloadAllPdfs, discoverAndDownloadImages, RenderConfig } from "@/lib/crawler/service";
+import {
+  discoverAndDownloadAllPdfs,
+  discoverAndDownloadImages,
+  renderPdfPagesAsImages,
+  NATIVE_PDF_MAX_BYTES,
+  RenderConfig,
+} from "@/lib/crawler/service";
 import { getSupabaseAdmin } from "@/lib/supabase-server";
+
+// A many-page flyer rendered and sent as one multi-image AI call can exceed
+// Vercel's 300s function limit before a single progress log line fires
+// (confirmed against a real 30-page, 14MB flyer that timed out with zero
+// intermediate output). PDFs with more rendered pages than this are split
+// into one pdf_imports row per page instead, reusing the single-image
+// worker path that's already proven to finish comfortably within budget.
+const CHUNK_PAGE_THRESHOLD = 6;
+
+// Cap on how many times discoverAndPrepare will reset a non-done row back to
+// 'pending' and redispatch it. Without this, a row that fails the same way
+// every time (e.g. still too slow even after chunking) gets retried forever,
+// burning a worker invocation + AI call each cron run for no chance of success.
+const MAX_ATTEMPTS = 3;
 
 interface PdfSource {
   id: string;
@@ -183,33 +203,73 @@ export async function POST(request: NextRequest) {
 // Returns list of importIds ready for worker dispatch.
 // ---------------------------------------------------------------------------
 
+export interface DiscoveredFile {
+  buffer: Buffer;
+  filename: string;
+  asImage: boolean;
+}
+
+// PDF discovery with oversized-flyer chunking: a PDF under NATIVE_PDF_MAX_BYTES
+// goes through unchanged (native upload, one pdf_imports row). One over that
+// size is rendered to page images to check its page count — above
+// CHUNK_PAGE_THRESHOLD it's split into one image entry per page (dispatched
+// through the single-image worker path); at or under the threshold it's kept
+// as one PDF entry, same as before (processPdfBuffer's existing oversized
+// branch handles a small page count fine on its own).
+export async function discoverAndPreparePdfFiles(url: string): Promise<DiscoveredFile[]> {
+  const pdfs = await discoverAndDownloadAllPdfs(url);
+  const files: DiscoveredFile[] = [];
+
+  for (const pdf of pdfs) {
+    if (pdf.pdfBuffer.byteLength <= NATIVE_PDF_MAX_BYTES) {
+      files.push({ buffer: pdf.pdfBuffer, filename: pdf.filename, asImage: false });
+      continue;
+    }
+
+    const pages = await renderPdfPagesAsImages(pdf.pdfBuffer);
+
+    if (pages.length > CHUNK_PAGE_THRESHOLD) {
+      console.log(`[CRON] ${pdf.filename}: ${pages.length} pages > ${CHUNK_PAGE_THRESHOLD} — chunking into per-page imports`);
+      for (const page of pages) {
+        files.push({
+          buffer: page.buffer,
+          filename: pdf.filename.replace(/\.pdf$/i, `_p${page.pageNumber}.png`),
+          asImage: true,
+        });
+      }
+    } else {
+      files.push({ buffer: pdf.pdfBuffer, filename: pdf.filename, asImage: false });
+    }
+  }
+
+  return files;
+}
+
 async function discoverAndPrepare(source: PdfSource): Promise<{
   dispatched: { sourceId: string; importId: string; filename: string }[];
   skipped: { sourceId: string; filename: string; reason: string }[];
 }> {
-  const isImage = source.source_type === "image";
+  const isImageSource = source.source_type === "image";
 
   // Discover files based on source type
-  const files = isImage
+  const files: DiscoveredFile[] = isImageSource
     ? (await discoverAndDownloadImages(source.url, source.render_config ?? undefined)).map((f) => ({
         buffer: f.imageBuffer,
         filename: f.filename,
+        asImage: true,
       }))
-    : (await discoverAndDownloadAllPdfs(source.url)).map((f) => ({
-        buffer: f.pdfBuffer,
-        filename: f.filename,
-      }));
+    : await discoverAndPreparePdfFiles(source.url);
 
-  const typeLabel = isImage ? "image" : "PDF";
-  console.log(`[CRON] Source ${source.id}: discovered ${files.length} ${typeLabel}(s)`);
+  console.log(`[CRON] Source ${source.id}: discovered ${files.length} file(s)`);
 
   const dispatched: { sourceId: string; importId: string; filename: string }[] = [];
   const skipped: { sourceId: string; filename: string; reason: string }[] = [];
 
   for (let i = 0; i < files.length; i++) {
-    const { buffer, filename: discoveredFilename } = files[i];
+    const { buffer, filename: discoveredFilename, asImage } = files[i];
+    const typeLabel = asImage ? "image" : "PDF";
     const hash = createHash("sha256").update(buffer).digest("hex");
-    const ext = isImage ? discoveredFilename.split(".").pop() ?? "png" : "pdf";
+    const ext = asImage ? discoveredFilename.split(".").pop() ?? "png" : "pdf";
     const filename = source.label
       ? `${source.label.replace(/[^a-zA-Z0-9_-]/g, "_")}_${i + 1}.${ext}`
       : discoveredFilename;
@@ -219,12 +279,12 @@ async function discoverAndPrepare(source: PdfSource): Promise<{
     // DB dedup
     const { data: existing } = await getSupabaseAdmin()
       .from("pdf_imports")
-      .select("id, status")
+      .select("id, status, attempt_count")
       .eq("store_id", source.store_id)
       .eq("file_hash", hash)
       .maybeSingle();
 
-    const existingRecord = existing as { id: string; status: string } | null;
+    const existingRecord = existing as { id: string; status: string; attempt_count: number } | null;
 
     if (existingRecord?.status === "done") {
       console.log(`[CRON] ${typeLabel} ${i + 1}/${files.length}: skipped (already done)`);
@@ -232,10 +292,25 @@ async function discoverAndPrepare(source: PdfSource): Promise<{
       continue;
     }
 
+    if (existingRecord && existingRecord.attempt_count >= MAX_ATTEMPTS) {
+      console.warn(`[CRON] ${typeLabel} ${i + 1}/${files.length}: skipped (${existingRecord.attempt_count} failed attempts — needs manual review)`);
+      if (existingRecord.status !== "needs_review") {
+        await getSupabaseAdmin()
+          .from("pdf_imports")
+          .update({
+            status: "needs_review",
+            error_message: `Excedeu ${MAX_ATTEMPTS} tentativas — última: ${existingRecord.status}`,
+          })
+          .eq("id", existingRecord.id);
+      }
+      skipped.push({ sourceId: source.id, filename, reason: "max_attempts_exceeded" });
+      continue;
+    }
+
     // Upload to storage (images go to image-imports bucket, PDFs to pdf-imports)
-    const bucket = isImage ? "image-imports" : "pdf-imports";
+    const bucket = asImage ? "image-imports" : "pdf-imports";
     const storagePath = `${source.store_id}/${hash}.${ext}`;
-    const contentType = isImage
+    const contentType = asImage
       ? (ext === "jpg" ? "image/jpeg" : ext === "webp" ? "image/webp" : "image/png")
       : "application/pdf";
 
@@ -259,6 +334,7 @@ async function discoverAndPrepare(source: PdfSource): Promise<{
           error_message: null,
           storage_path: storagePath,
           source_url: source.url,
+          attempt_count: existingRecord.attempt_count + 1,
         })
         .eq("id", existingRecord.id);
       importId = existingRecord.id;
@@ -273,6 +349,7 @@ async function discoverAndPrepare(source: PdfSource): Promise<{
           source_url: source.url,
           storage_path: storagePath,
           status: "pending",
+          attempt_count: 1,
         })
         .select("id")
         .single();

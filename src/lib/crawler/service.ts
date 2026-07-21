@@ -218,7 +218,23 @@ REGRAS:
 // Native PDF ingestion (sending the raw file) hits Claude's "Input is too
 // long" limit on large, image-heavy flyers. Above this size, render pages to
 // optimized images instead — same approach as the JPG/PNG import path.
-const NATIVE_PDF_MAX_BYTES = 8 * 1024 * 1024;
+export const NATIVE_PDF_MAX_BYTES = 8 * 1024 * 1024;
+
+// Discovery-time helper: renders each page of an oversized PDF to a raw PNG
+// buffer, for callers that want to dispatch pages as individual imports
+// (see process-import's per-page chunking) rather than bundling every page
+// into one processPdfBuffer() call. Reuses renderPdfToImages, so page count
+// is capped at MAX_PDF_PAGES the same way.
+export async function renderPdfPagesAsImages(
+  pdfBuffer: Uint8Array | Buffer,
+): Promise<{ buffer: Buffer; pageNumber: number; totalPages: number }[]> {
+  const rendered = await renderPdfToImages(pdfBuffer);
+  return rendered.images.map((dataUrl, index) => ({
+    buffer: Buffer.from(dataUrl.split(",")[1], "base64"),
+    pageNumber: index + 1,
+    totalPages: rendered.totalPages,
+  }));
+}
 
 // Multiple rendered pages in one request need much tighter compression than
 // the single-image import path (optimizeImage's 3072px PNG) or the combined
