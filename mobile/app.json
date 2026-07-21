@@ -3,7 +3,7 @@
     "name": "Poup",
     "slug": "poup",
     "owner": "lucasgalhardo",
-    "version": "1.0.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -19,9 +19,9 @@
       "bundleIdentifier": "com.poup.consumer",
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
+      "deploymentTarget": "13.0",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Precisamos da sua localizacao para mostrar lojas e ofertas perto de voce.",
-        "NSLocationAlwaysUsageDescription": "Usamos sua localizacao para enviar alertas quando uma oferta aparece perto de voce.",
+        "NSLocationWhenInUseUsageDescription": "Precisamos da sua localização para mostrar lojas e ofertas perto de você.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -52,8 +52,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Usamos sua localizacao para enviar alertas quando uma oferta aparece perto de voce.",
-          "locationWhenInUsePermission": "Precisamos da sua localizacao para mostrar lojas e ofertas perto de voce."
+          "locationWhenInUsePermission": "Precisamos da sua localização para mostrar lojas e ofertas perto de você."
         }
       ],
       [
@@ -79,7 +78,19 @@
         }
       ],
       "expo-font",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "extraPods": [
+              { "name": "AppCheckCore", "modular_headers": true },
+              { "name": "GoogleUtilities", "modular_headers": true },
+              { "name": "RecaptchaInterop", "modular_headers": true }
+            ]
+          }
+        }
+      ]
     ],
     "extra": {
       "router": {},

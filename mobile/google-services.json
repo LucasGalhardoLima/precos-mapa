@@ -1,26 +1,52 @@
 {
   "project_info": {
-    "project_number": "452901808238",
-    "project_id": "poup-f63d3",
-    "storage_bucket": "poup-f63d3.firebasestorage.app"
+    "project_number": "824881461560",
+    "project_id": "poup-491818",
+    "storage_bucket": "poup-491818.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:452901808238:android:c5302270ce4b67b2ee5e7f",
+        "mobilesdk_app_id": "1:824881461560:android:38d561e78aff83b048e9cd",
         "android_client_info": {
           "package_name": "com.poup.consumer"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "824881461560-ng02lbhr954503c8pjt1murmcc102sid.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.poup.consumer",
+            "certificate_hash": "186e3a546f09dbd841f06eb24788a73eb0972015"
+          }
+        },
+        {
+          "client_id": "824881461560-qf4v6to4fc2vmpt0iqplisl102so5047.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyCMxm16Mp8Io-sBPwMmVz8t1Hw1n_JqfUg"
+          "current_key": "AIzaSyBlzojlDNhkxgqN1E_moNuM_PcFYRifUU0"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "824881461560-qf4v6to4fc2vmpt0iqplisl102so5047.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "824881461560-qqgqu622abjoh6tk6iaui36ru6mhmp12.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.poup.consumer",
+                "app_store_id": "6761384621"
+              }
+            }
+          ]
         }
       }
     }

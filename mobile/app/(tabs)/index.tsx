@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,9 @@ import {
   Pressable,
   StatusBar,
   StyleSheet,
-  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ChevronDown, MapPin } from 'lucide-react-native';
 
 import { GradientHeader } from '@/components/gradient-header';
 import { useTheme } from '@/theme/use-theme';
@@ -20,7 +18,6 @@ import { usePromotions } from '@/hooks/use-promotions';
 import { useCategories } from '@/hooks/use-categories';
 import { useLocation } from '@/hooks/use-location';
 import { useStores } from '@/hooks/use-stores';
-import { useCities } from '@/hooks/use-cities';
 import { StoreRanking as StoreRankingComponent } from '@/components/store-ranking';
 import { StoreCard } from '@/components/store-card';
 import { DealCard } from '@/components/themed/deal-card';
@@ -44,7 +41,7 @@ export default function HomeScreen() {
   // Category filter state
   // ---------------------------------------------------------------------------
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [cityPickerVisible, setCityPickerVisible] = useState(false);
+  const [shuffledPromos, setShuffledPromos] = useState<EnrichedPromotion[]>([]);
 
   // ---------------------------------------------------------------------------
   // Data hooks
@@ -66,12 +63,21 @@ export default function HomeScreen() {
     categoryId: selectedCategory ?? undefined,
   });
 
+  // Shuffle once per fetch so "Ofertas perto de você" shows variety
+  useEffect(() => {
+    if (promotions.length === 0) return;
+    const copy = [...promotions];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    setShuffledPromos(copy);
+  }, [promotions]);
+
   const {
     categories,
     isLoading: categoriesLoading,
   } = useCategories();
-
-  const { cities: cityOptions, isLoading: citiesLoading } = useCities();
 
   const {
     stores,
@@ -106,15 +112,7 @@ export default function HomeScreen() {
     ),
     [],
   );
-  const handleSelectCity = useCallback(
-    async (nextCity: string, nextState: string) => {
-      await setPreferredCity(nextCity, nextState);
-      setCityPickerVisible(false);
-    },
-    [setPreferredCity],
-  );
-
-  const isLoading = promotionsLoading || categoriesLoading || storesLoading || citiesLoading;
+  const isLoading = promotionsLoading || categoriesLoading || storesLoading;
 
   if (hasError) {
     return (
@@ -150,18 +148,6 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 16 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.locationSection}>
-          <Pressable
-            onPress={() => setCityPickerVisible(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Selecionar cidade"
-            style={styles.locationPill}
-          >
-            <MapPin size={14} color="#E2E8F0" />
-            <Text style={styles.locationLabel}>{locationLabel}</Text>
-            <ChevronDown size={14} color="#E2E8F0" />
-          </Pressable>
-        </View>
 
         {/* ------------------------------------------------------------------ */}
         {/* 1. Ranking em Destaque                                              */}
@@ -280,7 +266,7 @@ export default function HomeScreen() {
 
           <FlatList
             horizontal
-            data={promotions.slice(0, 10)}
+            data={shuffledPromos.slice(0, 10)}
             keyExtractor={keyExtractor}
             renderItem={renderDealCard}
             showsHorizontalScrollIndicator={false}
@@ -318,7 +304,7 @@ export default function HomeScreen() {
                 logoColor={sw.store.logo_color}
                 distanceKm={sw.distanceKm}
                 dealCount={sw.activePromotionCount}
-                isOpen
+                isOpen={sw.isOpen ?? undefined}
                 onPress={() => router.push({ pathname: '/(tabs)/map', params: { storeId: sw.store.id } } as any)}
               />
             ))}
@@ -326,38 +312,6 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      <Modal
-        visible={cityPickerVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setCityPickerVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setCityPickerVisible(false)} />
-          <View style={[styles.modalSheet, { paddingBottom: insets.bottom + 12 }]}>
-            <Text style={styles.modalTitle}>Selecionar cidade</Text>
-            {cityOptions.map((option) => {
-              const isActive = option.city === city && option.state === state;
-              return (
-                <Pressable
-                  key={`${option.city}-${option.state}`}
-                  onPress={() => handleSelectCity(option.city, option.state)}
-                  style={[
-                    styles.cityOption,
-                    isActive
-                      ? { backgroundColor: tokens.primaryMuted, borderColor: tokens.primary }
-                      : { backgroundColor: tokens.surface, borderColor: tokens.border },
-                  ]}
-                >
-                  <Text style={[styles.cityOptionText, { color: tokens.textPrimary }]}>
-                    {option.city}, {option.state}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

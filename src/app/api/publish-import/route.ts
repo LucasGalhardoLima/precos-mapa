@@ -129,23 +129,9 @@ export async function POST(request: Request) {
         continue;
       }
 
-      // Dual-write current price to store_prices (ERP-ready price layer)
-      // store_prices upsert failure is non-fatal
-      const { error: priceError } = await getSupabaseAdmin()
-        .from('store_prices')
-        .upsert(
-          {
-            product_id:  productId,
-            store_id:    body.storeId,
-            price:       product.price,
-            is_promo:    (product.original_price ?? product.price) > product.price,
-            source:      'pdf_import',
-            valid_until: endDate,
-            updated_at:  now,
-          },
-          { onConflict: 'product_id,store_id' }
-        );
-      if (priceError) console.error('[publish-import] store_prices upsert failed:', priceError.message);
+      // store_prices (the canonical current-price table) is kept in sync by
+      // a DB trigger on promotions (migration 054) — no app-level dual-write
+      // needed here anymore.
 
       published++;
     }

@@ -162,11 +162,11 @@ export function ProductPriceCard({
             </Text>
           </View>
         )}
-        <Pressable
-          onPress={() => onPressProduct(product.product_id)}
-          style={[styles.storeCountButton, { backgroundColor: 'rgba(13,148,136,0.08)' }]}
-          hitSlop={4}
-        >
+        {/* Plain View, not a second Pressable — it triggers the exact same
+            onPressProduct as the card's outer Pressable, so nesting it as
+            its own interactive element only shadowed it from the
+            accessibility tree without adding any real functionality. */}
+        <View style={[styles.storeCountButton, { backgroundColor: 'rgba(13,148,136,0.08)' }]}>
           <Text style={[styles.storeCountText, { color: product.has_active_price ? tokens.primary : COLORS.textSecondary }]}>
             {product.has_active_price
               ? `${storeCount} mercado${storeCount !== 1 ? 's' : ''} ›`
@@ -174,7 +174,7 @@ export function ProductPriceCard({
               ? `${storeCount} mercado${storeCount !== 1 ? 's' : ''}`
               : 'Ver produto ›'}
           </Text>
-        </Pressable>
+        </View>
       </View>
     </View>
   );

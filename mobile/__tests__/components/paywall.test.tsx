@@ -51,17 +51,24 @@ jest.mock('../../components/themed/discount-badge', () => ({
   },
 }));
 
-// Mock useSubscription — UI-only, no RevenueCat flows
+// Mock useSubscription — UI-only, no RevenueCat flows.
+// Default returns real-looking packages so the pricing UI renders; tests for
+// the unavailable state override this via mockUseSubscription.mockReturnValue.
 const mockPurchasePackage = jest.fn();
 const mockRestore = jest.fn();
+const mockUseSubscription = jest.fn();
 jest.mock('../../hooks/use-subscription', () => ({
-  useSubscription: () => ({
-    offerings: null,
-    purchasePackage: mockPurchasePackage,
-    restore: mockRestore,
-    isLoading: false,
-  }),
+  useSubscription: () => mockUseSubscription(),
 }));
+
+const MOCK_OFFERINGS = {
+  current: {
+    availablePackages: [
+      { identifier: 'plus_monthly', product: { priceString: 'R$ 9,90', price: 9.9 } },
+      { identifier: 'plus_annual', product: { priceString: 'R$ 94,80', price: 94.8 } },
+    ],
+  },
+};
 
 describe('Paywall', () => {
   const onClose = jest.fn();
@@ -70,6 +77,12 @@ describe('Paywall', () => {
     onClose.mockClear();
     mockPurchasePackage.mockClear();
     mockRestore.mockClear();
+    mockUseSubscription.mockReturnValue({
+      offerings: MOCK_OFFERINGS,
+      purchasePackage: mockPurchasePackage,
+      restore: mockRestore,
+      isLoading: false,
+    });
   });
 
   it('renders hero savings amount', () => {
@@ -117,11 +130,39 @@ describe('Paywall', () => {
     expect(getByText('Anual')).toBeTruthy();
   });
 
-  it('shows fallback prices when offerings are null', () => {
+  it('shows real package prices from offerings', () => {
     const { getByText } = render(<Paywall visible onClose={onClose} />);
     expect(getByText('R$ 9,90')).toBeTruthy();
     expect(getByText('R$ 7,90')).toBeTruthy();
-    expect(getByText('R$ 94,90/ano')).toBeTruthy();
+    expect(getByText('R$ 94,80/ano')).toBeTruthy();
+  });
+
+  it('shows an unavailable message instead of a price when no packages are offered', () => {
+    // App Store compliance: never show a price that might not match what
+    // StoreKit actually charges — when RevenueCat has no packages loaded,
+    // the paywall must show an explicit unavailable state, not a fallback price.
+    mockUseSubscription.mockReturnValue({
+      offerings: null,
+      purchasePackage: mockPurchasePackage,
+      restore: mockRestore,
+      isLoading: false,
+    });
+    const { getByText, queryByText } = render(<Paywall visible onClose={onClose} />);
+    expect(getByText(/Assinatura indisponível no momento/)).toBeTruthy();
+    expect(queryByText('R$ 9,90')).toBeNull();
+    expect(queryByText('Experimentar 7 dias grátis')).toBeNull();
+  });
+
+  it('shows a loading indicator while offerings are loading', () => {
+    mockUseSubscription.mockReturnValue({
+      offerings: null,
+      purchasePackage: mockPurchasePackage,
+      restore: mockRestore,
+      isLoading: true,
+    });
+    const { queryByText } = render(<Paywall visible onClose={onClose} />);
+    expect(queryByText(/Assinatura indisponível no momento/)).toBeNull();
+    expect(queryByText('Experimentar 7 dias grátis')).toBeNull();
   });
 
   it('renders CTA button text', () => {

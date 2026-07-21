@@ -44,7 +44,8 @@ export function MapStorePin({
     <Marker
       coordinate={{ latitude: store.latitude, longitude: store.longitude }}
       onPress={onPress}
-      tracksViewChanges={false}
+      tracksViewChanges={selected}
+      anchor={{ x: 0.5, y: 0.5 }}
     >
       <View style={[styles.container, dimmed && styles.dimmed]}>
         {/* Pin circle with offer count */}

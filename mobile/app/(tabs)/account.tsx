@@ -28,6 +28,7 @@ import {
   TrendingDown,
 } from 'lucide-react-native';
 
+import Purchases from 'react-native-purchases';
 import { useTheme } from '@/theme/use-theme';
 import { useAuthStore } from '@poup/shared';
 import { useFavorites } from '@/hooks/use-favorites';
@@ -383,10 +384,6 @@ export default function AccountScreen() {
   // Handlers
   // -----------------------------------------------------------------------
 
-  const handleOpenPaywall = useCallback(() => {
-    setPaywallVisible(true);
-  }, []);
-
   const handleClosePaywall = useCallback(() => {
     setPaywallVisible(false);
   }, []);
@@ -434,35 +431,60 @@ export default function AccountScreen() {
     });
   }, [exportData]);
 
-  const handleDeleteAccount = useCallback(() => {
-    Alert.alert(
-      'Excluir conta',
-      'Tem certeza que deseja excluir sua conta? Esta ação é irreversível e todos os seus dados serão apagados permanentemente.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            const success = await deleteAccount();
-            if (success) {
-              Burnt.toast({
-                title: 'Conta excluída',
-                message: 'Sua conta foi excluída com sucesso.',
-                preset: 'done',
-                haptic: 'success',
-              });
-            } else {
-              Alert.alert(
-                'Erro',
-                'Não foi possível excluir sua conta. Tente novamente mais tarde.',
-              );
-            }
-          },
-        },
-      ],
-    );
+  const handleManageSubscription = useCallback(async () => {
+    try {
+      await Purchases.showManageSubscriptions();
+    } catch {
+      Linking.openURL('https://apps.apple.com/account/subscriptions');
+    }
+  }, []);
+
+  const confirmDeleteAccount = useCallback(async () => {
+    const success = await deleteAccount();
+    if (success) {
+      Burnt.toast({
+        title: 'Conta excluída',
+        message: 'Sua conta foi excluída com sucesso.',
+        preset: 'done',
+        haptic: 'success',
+      });
+    } else {
+      Alert.alert(
+        'Erro',
+        'Não foi possível excluir sua conta. Tente novamente mais tarde.',
+      );
+    }
   }, [deleteAccount]);
+
+  const handleDeleteAccount = useCallback(() => {
+    if (isPaidPlan) {
+      Alert.alert(
+        'Excluir conta',
+        'Você possui uma assinatura ativa. Cancele-a antes de excluir sua conta para evitar cobranças futuras.',
+        [
+          { text: 'Voltar', style: 'cancel' },
+          {
+            text: 'Cancelar assinatura',
+            onPress: handleManageSubscription,
+          },
+          {
+            text: 'Excluir mesmo assim',
+            style: 'destructive',
+            onPress: confirmDeleteAccount,
+          },
+        ],
+      );
+    } else {
+      Alert.alert(
+        'Excluir conta',
+        'Tem certeza que deseja excluir sua conta? Esta ação é irreversível e todos os seus dados serão apagados permanentemente.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Excluir', style: 'destructive', onPress: confirmDeleteAccount },
+        ],
+      );
+    }
+  }, [confirmDeleteAccount, isPaidPlan, handleManageSubscription]);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -550,62 +572,51 @@ export default function AccountScreen() {
               assinatura nas configurações da loja de aplicativos.
             </Text>
           </View>
-        ) : (
-          /* Upgrade CTA card for free users (matches mockup "Poup Plus" card) */
-          <View style={[styles.upgradeCard, { backgroundColor: '#7C3AED' }]}>
-            <Text style={styles.upgradePoupLabel}>Poup Plus</Text>
-            <Text style={styles.upgradeHeadline}>Economize ainda mais</Text>
-            <Text style={styles.upgradeDesc}>
-              Todos os mercados, listas ilimitadas, histórico de 90 dias, alertas
-              avançados e análise de economia.
-            </Text>
-            <Pressable
-              style={styles.upgradeCta}
-              onPress={handleOpenPaywall}
-            >
-              <Text style={styles.upgradeCtaText}>
-                {'Conhecer o Poup Plus \u2192'}
-              </Text>
-            </Pressable>
-          </View>
-        )}
+        ) : null /* No monetization in Phase 1 -- Poup Plus upsell card hidden until launch */}
 
         {isPaidPlan && (
           <PurchaseProfileCard items={purchaseProfile} tokens={tokens} />
         )}
 
         {/* ----------------------------------------------------------------- */}
-        {/* PREFERÊNCIAS                                                      */}
+        {/* PREFERÊNCIAS — these are per-account values (alerts, saved city, */}
+        {/* favorites); with no session there's nothing real to show, so    */}
+        {/* the section is hidden rather than rendering "0 ativos" /        */}
+        {/* "Não definida" as if they were meaningful states.                */}
         {/* ----------------------------------------------------------------- */}
-        <SectionHeader title="PREFERÊNCIAS" tokens={tokens} />
+        {session && (
+          <>
+            <SectionHeader title="PREFERÊNCIAS" tokens={tokens} />
 
-        <View style={[styles.sectionCard, { backgroundColor: tokens.surface, borderColor: tokens.border }]}>
-          <SettingsRow
-            icon={Bell}
-            iconColor={tokens.primary}
-            label="Alertas de oferta"
-            value={`${alertCount} ativo${alertCount !== 1 ? 's' : ''}`}
-            onPress={handleOpenAlerts}
-            tokens={tokens}
-          />
-          <SettingsRow
-            icon={MapPin}
-            iconColor={tokens.primary}
-            label="Localização"
-            value={locationDisplay}
-            onPress={handleOpenLocation}
-            tokens={tokens}
-          />
-          <SettingsRow
-            icon={Store}
-            iconColor={tokens.primary}
-            label="Meus favoritos"
-            value={`${favoriteCount} produto${favoriteCount !== 1 ? 's' : ''}`}
-            onPress={handleOpenFavorites}
-            tokens={tokens}
-            last
-          />
-        </View>
+            <View style={[styles.sectionCard, { backgroundColor: tokens.surface, borderColor: tokens.border }]}>
+              <SettingsRow
+                icon={Bell}
+                iconColor={tokens.primary}
+                label="Alertas de oferta"
+                value={`${alertCount} ativo${alertCount !== 1 ? 's' : ''}`}
+                onPress={handleOpenAlerts}
+                tokens={tokens}
+              />
+              <SettingsRow
+                icon={MapPin}
+                iconColor={tokens.primary}
+                label="Localização"
+                value={locationDisplay}
+                onPress={handleOpenLocation}
+                tokens={tokens}
+              />
+              <SettingsRow
+                icon={Store}
+                iconColor={tokens.primary}
+                label="Meus favoritos"
+                value={`${favoriteCount} produto${favoriteCount !== 1 ? 's' : ''}`}
+                onPress={handleOpenFavorites}
+                tokens={tokens}
+                last
+              />
+            </View>
+          </>
+        )}
 
         {/* ----------------------------------------------------------------- */}
         {/* CONTA                                                             */}
@@ -651,9 +662,17 @@ export default function AccountScreen() {
             iconColor={tokens.primary}
             label="Plano atual"
             value={planLabel}
-            onPress={isPaidPlan ? undefined : handleOpenPaywall}
             tokens={tokens}
           />
+          {isPaidPlan && (
+            <SettingsRow
+              icon={Crown}
+              iconColor={tokens.warning}
+              label="Gerenciar assinatura"
+              onPress={handleManageSubscription}
+              tokens={tokens}
+            />
+          )}
           <SettingsRow
             icon={FileText}
             iconColor={tokens.primary}

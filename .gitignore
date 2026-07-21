@@ -52,3 +52,6 @@ supabase/.temp/
 supabase/.branches/
 .worktrees/
 scripts/.seed-cosmos-checkpoint.json
+scripts/.retailer-sitemap-cache.json
+scripts/.retailer-image-candidates.csv
+scripts/.retailer-exact-matches.csv

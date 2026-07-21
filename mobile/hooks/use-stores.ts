@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { calculateDistanceKm } from '@/hooks/use-location';
 import { getGamificationMessage } from '@/constants/messages';
+import { computeIsOpen } from '@/utils/store-hours';
 import type { Store, StoreWithPromotions, EnrichedPromotion, PromotionWithRelations } from '@/types';
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -133,6 +134,7 @@ export function useStores(params: UseStoresParams) {
         topDeals,
         distanceKm,
         promotionCountByCategory: countByCategory,
+        isOpen: computeIsOpen((store as Store).opening_hours),
       };
     });
   }, [raw, userLatitude, userLongitude]);

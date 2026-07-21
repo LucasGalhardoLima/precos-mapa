@@ -89,8 +89,16 @@ export function SearchResultCard({
   const iconBg = getCategoryBg(categoryName);
   const hasDiscount = promotion.original_price > promotion.promo_price;
 
-  const cardContent = (
-    <View style={[styles.card, { backgroundColor: tokens.surface }]}>
+  // Two independent tap targets live in this row: "open detail" and "add to
+  // list". They must be siblings, not nested Pressables — a Pressable with
+  // an accessibilityLabel collapses its whole subtree into one opaque
+  // accessibility element on iOS, which silently swallows any Pressable
+  // nested inside it. That's what broke Maestro (and VoiceOver) taps on the
+  // add button here: it was only reachable by raw coordinates, not by its
+  // own accessibility node, once the outer card became one combined-label
+  // element.
+  const detailInfo = (
+    <>
       {/* Left: emoji icon */}
       <View style={[styles.iconContainer, { backgroundColor: iconBg }]}>
         <Text style={styles.iconEmoji}>{emoji}</Text>
@@ -127,9 +135,33 @@ export function SearchResultCard({
           )}
         </View>
       </View>
+    </>
+  );
 
-      {/* Right: add button */}
+  const cardContent = (
+    <View style={[styles.card, { backgroundColor: tokens.surface }]}>
+      {/* Locked cards have no "view detail" tap target at all — only the lock
+          overlay below is interactive — so this renders as an inert View,
+          never as a nested Pressable the overlay would otherwise hide from
+          accessibility tools while still occupying the tree. */}
+      {promotion.isLocked ? (
+        <View style={styles.detailTapArea}>{detailInfo}</View>
+      ) : (
+        <Pressable
+          testID={testID}
+          accessibilityRole="button"
+          accessibilityLabel={`${promotion.product.name}, ${formatPrice(promotion.promo_price)}, ${promotion.store.name}`}
+          onPress={() => onPress(promotion)}
+          style={styles.detailTapArea}
+        >
+          {detailInfo}
+        </Pressable>
+      )}
+
+      {/* Right: add button — sibling of the detail Pressable, not nested inside it */}
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Adicionar ${promotion.product.name} à lista`}
         style={[styles.addButton, { borderColor: tokens.primary }]}
         onPress={() => (onPressAdd ?? onPress)(promotion)}
         hitSlop={8}
@@ -154,24 +186,10 @@ export function SearchResultCard({
     </View>
   );
 
-  if (promotion.isLocked) {
-    return (
-      <View testID={testID} style={styles.cardWrapper}>
-        {cardContent}
-      </View>
-    );
-  }
-
   return (
-    <Pressable
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={`${promotion.product.name}, ${formatPrice(promotion.promo_price)}, ${promotion.store.name}`}
-      onPress={() => onPress(promotion)}
-      style={styles.cardWrapper}
-    >
+    <View testID={promotion.isLocked ? testID : undefined} style={styles.cardWrapper}>
       {cardContent}
-    </Pressable>
+    </View>
   );
 }
 
@@ -203,6 +221,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
+    gap: 12,
+  },
+  detailTapArea: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
   iconContainer: {

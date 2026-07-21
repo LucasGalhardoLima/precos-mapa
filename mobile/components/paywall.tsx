@@ -10,7 +10,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, Minus, Sparkles, TrendingDown, Star, ShieldCheck } from 'lucide-react-native';
+import { Check, Minus, Sparkles, TrendingDown, Star, ShieldCheck, X } from 'lucide-react-native';
 import { useSubscription } from '@/hooks/use-subscription';
 import { useTheme } from '@/theme/use-theme';
 
@@ -39,17 +39,10 @@ const COMPARISON_ROWS: ComparisonRow[] = [
   { label: 'Comparar mercados', free: 'limitado', plus: 'Todos' },
   { label: 'Lista de compras', free: 'limitada', plus: 'Ilimitada' },
   { label: 'Histórico de preços', free: null, plus: '90 dias' },
-  { label: 'Alertas de preço', free: null, plus: '✓' },
+  { label: 'Alertas de preço', free: 'Até 3', plus: 'Ilimitados' },
   { label: 'Análise de economia', free: null, plus: '✓' },
 ];
 
-// ---------------------------------------------------------------------------
-// Fallback pricing (shown when RevenueCat isn't loaded)
-// ---------------------------------------------------------------------------
-
-const FALLBACK_MONTHLY_PRICE = 'R$ 9,90';
-const FALLBACK_ANNUAL_PRICE = 'R$ 7,90';
-const FALLBACK_ANNUAL_TOTAL = 'R$ 94,90/ano';
 
 // ---------------------------------------------------------------------------
 // Highlights
@@ -83,6 +76,15 @@ export function Paywall({ visible, onClose }: PaywallProps) {
   const annualPackage = offerings?.current?.availablePackages.find(
     (p) => p.identifier === 'plus_annual' || p.identifier === '$rc_annual',
   );
+
+  // Declared after monthlyPackage/annualPackage — a prior version of this
+  // check was hoisted above their declaration and always evaluated against
+  // `undefined`, meaning it always resolved true whenever isLoading was
+  // false, incorrectly showing "unavailable" even when real packages had
+  // loaded. Correctness bug only; the unavailable-state behavior itself is
+  // intentional (App Store compliance — never show a price that might not
+  // match what StoreKit actually charges), not something to remove.
+  const packagesUnavailable = !isLoading && !monthlyPackage && !annualPackage;
 
   const selectedPackage =
     selectedCycle === 'monthly' ? monthlyPackage : annualPackage;
@@ -151,14 +153,29 @@ export function Paywall({ visible, onClose }: PaywallProps) {
       onRequestClose={onClose}
     >
       <View style={[styles.container, { backgroundColor: tokens.bg, paddingBottom: insets.bottom }]}>
-        {/* Drag handle */}
+        {/* Drag handle + close button */}
         <View style={styles.handleRow}>
           <View style={[styles.handle, { backgroundColor: tokens.textHint }]} />
+          <Pressable
+            onPress={onClose}
+            hitSlop={12}
+            style={styles.closeBtn}
+            accessibilityLabel="Fechar"
+            accessibilityRole="button"
+          >
+            <X size={20} color={tokens.textSecondary} />
+          </Pressable>
         </View>
 
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={tokens.primary} />
+          </View>
+        ) : packagesUnavailable ? (
+          <View style={styles.loadingContainer}>
+            <Text style={{ color: tokens.textSecondary, textAlign: 'center', paddingHorizontal: 32 }}>
+              Assinatura indisponível no momento.{'\n'}Tente novamente mais tarde.
+            </Text>
           </View>
         ) : (
           <ScrollView
@@ -212,7 +229,7 @@ export function Paywall({ visible, onClose }: PaywallProps) {
                   Mensal
                 </Text>
                 <Text style={[styles.pricingPrice, { color: tokens.textPrimary }]}>
-                  {monthlyPackage?.product?.priceString ?? FALLBACK_MONTHLY_PRICE}
+                  {monthlyPackage?.product?.priceString ?? '—'}
                 </Text>
                 <Text style={[styles.pricingPeriod, { color: tokens.textHint }]}>
                   /mês
@@ -242,16 +259,16 @@ export function Paywall({ visible, onClose }: PaywallProps) {
                 <Text style={[styles.pricingPrice, { color: tokens.textPrimary }]}>
                   {annualPackage?.product
                     ? `R$ ${(annualPackage.product.price / 12).toFixed(2).replace('.', ',')}`
-                    : FALLBACK_ANNUAL_PRICE}
+                    : '—'}
                 </Text>
                 <Text style={[styles.pricingPeriod, { color: tokens.textHint }]}>
                   /mês
                 </Text>
-                <Text style={[styles.pricingTotal, { color: tokens.textHint }]}>
-                  {annualPackage?.product?.priceString
-                    ? `${annualPackage.product.priceString}/ano`
-                    : FALLBACK_ANNUAL_TOTAL}
-                </Text>
+                {annualPackage?.product?.priceString ? (
+                  <Text style={[styles.pricingTotal, { color: tokens.textHint }]}>
+                    {annualPackage.product.priceString}/ano
+                  </Text>
+                ) : null}
               </Pressable>
             </View>
 
@@ -273,6 +290,15 @@ export function Paywall({ visible, onClose }: PaywallProps) {
                 </Text>
               )}
             </Pressable>
+
+            {/* Trial disclosure */}
+            <Text style={[styles.trialDisclosure, { color: tokens.textHint }]}>
+              {selectedCycle === 'annual' && annualPackage?.product
+                ? `Após 7 dias grátis, ${annualPackage.product.priceString}/ano. Cancele a qualquer momento nas Configurações da Apple.`
+                : selectedCycle === 'monthly' && monthlyPackage?.product
+                  ? `Após 7 dias grátis, ${monthlyPackage.product.priceString}/mês. Cancele a qualquer momento nas Configurações da Apple.`
+                  : 'Após o período gratuito, será cobrado o valor da assinatura selecionada. Cancele a qualquer momento nas Configurações da Apple.'}
+            </Text>
 
             {/* Restore */}
             <Pressable
@@ -348,12 +374,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 8,
     paddingBottom: 4,
+    position: 'relative',
   },
   handle: {
     width: 36,
     height: 5,
     borderRadius: 3,
     opacity: 0.3,
+  },
+  closeBtn: {
+    position: 'absolute',
+    right: 16,
+    top: 8,
+    padding: 4,
   },
 
   // Scroll
@@ -474,6 +507,15 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+
+  // Trial disclosure
+  trialDisclosure: {
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 16,
+    marginBottom: 8,
+    paddingHorizontal: 8,
   },
 
   // Restore

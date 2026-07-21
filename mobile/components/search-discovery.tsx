@@ -27,6 +27,8 @@ const CATEGORY_EMOJI: Record<string, string> = {
   bebidas: '🍺',
   pet: '🐶',
   alimentos: '🍚',
+  congelados: '🧊',
+  bebes: '👶',
 };
 
 function normalize(name: string): string {
@@ -77,10 +79,16 @@ export function SearchDiscovery({
 }: SearchDiscoveryProps) {
   const { tokens } = useTheme();
 
-  // Filter out "Todos" category
-  const filteredCategories = categories.filter(
-    (cat) => normalize(cat.name) !== 'todos',
-  );
+  // Filter out "Todos" and sort "Outros" to the end
+  const filteredCategories = categories
+    .filter((cat) => normalize(cat.name) !== 'todos')
+    .sort((a, b) => {
+      const aIsOutros = normalize(a.name) === 'outros';
+      const bIsOutros = normalize(b.name) === 'outros';
+      if (aIsOutros && !bIsOutros) return 1;
+      if (!aIsOutros && bIsOutros) return -1;
+      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+    });
 
   return (
     <ScrollView

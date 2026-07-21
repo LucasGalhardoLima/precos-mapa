@@ -1,6 +1,6 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore, useLocation } from '@poup/shared';
+import { useAuthStore, useLocation, getAnonymousId } from '@poup/shared';
 import type { AnalyticsEventType } from '@poup/shared';
 
 interface TrackOptions {
@@ -29,12 +29,19 @@ export function useAnalytics() {
   const userId = session?.user?.id;
   const { locationLabel, hasResolvedLocation } = useLocation();
 
+  // Fallback identity for logged-out users — without this, every event from
+  // the (majority) unauthenticated traffic was silently dropped.
+  const [anonymousId, setAnonymousId] = useState<string | null>(null);
+  useEffect(() => {
+    getAnonymousId().then(setAnonymousId);
+  }, []);
+
   // Deduplicate rapid-fire events (e.g., search results appearing)
   const recentEvents = useRef<Set<string>>(new Set());
 
   const track = useCallback(
     (eventType: AnalyticsEventType, options: TrackOptions = {}) => {
-      if (!userId) return;
+      if (!userId && !anonymousId) return;
 
       // Build a dedup key from event type + store + product
       const dedupKey = `${eventType}:${options.storeId ?? ''}:${options.productId ?? ''}`;
@@ -50,7 +57,8 @@ export function useAnalytics() {
         .from('analytics_events')
         .insert({
           event_type: eventType,
-          user_id: userId,
+          user_id: userId ?? null,
+          anonymous_id: userId ? null : anonymousId,
           store_id: options.storeId ?? null,
           product_id: options.productId ?? null,
           metadata: options.metadata ?? {},
@@ -60,7 +68,7 @@ export function useAnalytics() {
           // fire-and-forget
         });
     },
-    [userId, locationLabel, hasResolvedLocation],
+    [userId, anonymousId, locationLabel, hasResolvedLocation],
   );
 
   const trackSearch = useCallback(

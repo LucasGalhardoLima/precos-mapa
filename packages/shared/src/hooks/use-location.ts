@@ -87,6 +87,43 @@ export function useLocation() {
   // as if it were a real location need this signal, not detectedCity alone.
   const [deviceLocationResolved, setDeviceLocationResolved] = useState(false);
 
+  // Shared by the initial mount effect and requestPermission() below — the
+  // latter lets a screen re-prompt a user who skipped location during
+  // onboarding, without duplicating the permission/geocode logic.
+  const resolveDeviceLocation = useCallback(async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      const granted = status === 'granted';
+      setPermissionGranted(granted);
+
+      if (granted) {
+        const pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        setLocation({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+
+        const geocode = await Location.reverseGeocodeAsync({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+
+        if (geocode.length > 0) {
+          setDetectedCity(getCityStateFromGeocode(geocode[0]));
+          setDeviceLocationResolved(true);
+        }
+      }
+
+      return granted;
+    } catch {
+      // Keep fallback location
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
     async function getLocation() {
       try {
@@ -98,39 +135,19 @@ export function useLocation() {
           }
         }
 
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        const granted = status === 'granted';
-        setPermissionGranted(granted);
-
-        if (granted) {
-          const pos = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-
-          setLocation({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-          });
-
-          const geocode = await Location.reverseGeocodeAsync({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-          });
-
-          if (geocode.length > 0) {
-            setDetectedCity(getCityStateFromGeocode(geocode[0]));
-            setDeviceLocationResolved(true);
-          }
-        }
-      } catch {
-        // Keep fallback location
+        await resolveDeviceLocation();
       } finally {
         setIsLoading(false);
       }
     }
 
     getLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const requestPermission = useCallback(async () => {
+    return resolveDeviceLocation();
+  }, [resolveDeviceLocation]);
 
   const setPreferredCity = useCallback(async (city: string, state: string) => {
     const next = {
@@ -165,5 +182,6 @@ export function useLocation() {
     hasResolvedLocation,
     setPreferredCity,
     clearPreferredCity,
+    requestPermission,
   };
 }

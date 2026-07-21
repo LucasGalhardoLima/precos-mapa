@@ -237,7 +237,7 @@ function normalizeUnit(value: unknown): EncarteProduct["unit"] | null {
   if (unit === "pack" || unit.includes("pct") || unit.includes("pacote")) return "pack";
   if (unit === "dz" || unit.includes("duzia") || unit.includes("dúzia")) return "dz";
   if (unit === "cx" || unit.includes("caixa")) return "pack";
-  if (unit === "bd" || unit.includes("bandeja")) return "un";
+  if (unit === "bd" || unit === "bdj" || unit.includes("bandeja")) return "un";
 
   return null;
 }
