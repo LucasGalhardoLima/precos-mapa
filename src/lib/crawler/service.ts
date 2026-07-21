@@ -113,13 +113,36 @@ export async function optimizeImage(buffer: Buffer): Promise<string> {
   return `data:image/png;base64,${processed.toString("base64")}`;
 }
 
+const IMAGE_EXTRACTION_RETRIES = 3;
+
+// The org's gpt-4o tier caps at a low tokens-per-minute budget, which a batch
+// of concurrently-dispatched images can exhaust in seconds. Without this,
+// every pass silently fails with an empty result — indistinguishable from a
+// genuinely offer-less image — instead of waiting out the rate limit.
+async function withRateLimitRetry<T>(fn: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (!(err instanceof OpenAI.RateLimitError) || attempt >= IMAGE_EXTRACTION_RETRIES) {
+        throw err;
+      }
+      const hint = err.message.match(/try again in ([\d.]+)s/i);
+      const waitMs = hint ? Math.ceil(parseFloat(hint[1]) * 1000) + 500 : attempt * 2000;
+      console.warn(`[CRON] gpt-4o rate limited (attempt ${attempt}/${IMAGE_EXTRACTION_RETRIES}) — waiting ${waitMs}ms`);
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+    }
+  }
+}
+
 export async function extractFromImage(base64Image: string): Promise<unknown> {
-  const response = await getOpenAi().chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content: `Você é um especialista em encartes de supermercado brasileiro.
+  const response = await withRateLimitRetry(() =>
+    getOpenAi().chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `Você é um especialista em encartes de supermercado brasileiro.
 
 REGRAS:
 1. Preços devem ser números (29.90).
@@ -131,17 +154,18 @@ REGRAS:
 7. Classifique cada produto em uma destas categorias: Bebidas, Limpeza, Alimentos, Hortifruti, Padaria, Higiene. Use "Alimentos" como padrão se não tiver certeza.
 
 Retorne JSON estrito no formato: { "products": [{ "name": "...", "price": 3.99, "original_price": 5.99, "unit": "un", "validity": "2026-01-21", "market_origin": "Savegnago", "category": "Alimentos" }] }`,
-      },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: "Extraia ofertas." },
-          { type: "image_url", image_url: { url: base64Image } },
-        ],
-      },
-    ],
-    response_format: { type: "json_object" },
-  });
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Extraia ofertas." },
+            { type: "image_url", image_url: { url: base64Image } },
+          ],
+        },
+      ],
+      response_format: { type: "json_object" },
+    }),
+  );
 
   const content = response.choices[0]?.message?.content ?? "{}";
   return JSON.parse(content) as unknown;
@@ -554,6 +578,23 @@ export async function discoverAndDownloadImages(
     // Wait briefly for images to load after interactions
     await page.waitForNetworkIdle({ idleTime: 1500, timeout: 15000 }).catch(() => {});
 
+    // Wait for matched <img> elements to actually finish loading so
+    // naturalWidth is populated — otherwise unresolved/lazy images read
+    // naturalWidth === 0 and silently bypass the size filter below.
+    await page.evaluate((sel: string) => {
+      const imgs = Array.from(document.querySelectorAll(sel)) as HTMLImageElement[];
+      return Promise.all(
+        imgs.map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise<void>((resolve) => {
+            img.addEventListener("load", () => resolve(), { once: true });
+            img.addEventListener("error", () => resolve(), { once: true });
+            setTimeout(resolve, 3000);
+          });
+        }),
+      );
+    }, imageSelector);
+
     // Extract image URLs from rendered DOM
     const imageUrls = await page.evaluate(
       (sel: string, minW: number) => {
@@ -565,8 +606,10 @@ export async function discoverAndDownloadImages(
           const el = img as HTMLImageElement;
           const src = el.src || el.dataset.src || el.getAttribute("data-lazy-src") || "";
           if (!src || seen.has(src)) return;
-          // Filter by natural width if available, or accept all
-          if (el.naturalWidth > 0 && el.naturalWidth < minW) return;
+          // Reject anything below the minimum width, including images whose
+          // size never resolved (naturalWidth === 0) — unverifiable size is
+          // not a pass, since that's exactly how unloaded lazy banners slip through.
+          if (el.naturalWidth < minW) return;
           // Skip tiny icons, logos, spacers
           if (src.includes("logo") || src.includes("icon") || src.includes("spacer")) return;
           seen.add(src);

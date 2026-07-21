@@ -54,8 +54,8 @@ export async function runIncrementalImageExtraction(
   for (let i = 0; i < maxPasses; i++) {
     try {
       const raw = await extractFromImage(optimizedBase64);
-      const products = normalizeEncartePayload(raw);
-      passes.push({ passIndex: i, products: normalizeProducts(products) });
+      const { products } = normalizeEncartePayload(raw);
+      passes.push({ passIndex: i, products });
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Erro desconhecido";
       console.error(`[CRON] Image pass ${i + 1} failed: ${errorMsg}`);
@@ -120,10 +120,10 @@ export async function runMultiPassImageExtraction(
   const settled = await Promise.allSettled(
     Array.from({ length: passCount }, async (_, i) => {
       const raw = await extractFromImage(optimizedBase64);
-      const products = normalizeEncartePayload(raw);
+      const { products } = normalizeEncartePayload(raw);
       return {
         passIndex: i,
-        products: normalizeProducts(products),
+        products,
       };
     }),
   );
