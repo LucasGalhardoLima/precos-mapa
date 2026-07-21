@@ -7,6 +7,19 @@ import { revalidatePath } from "next/cache";
 
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "webp"]);
 
+// Leaves ~40s of buffer before Vercel's 300s hard function-kill so the catch
+// block below always gets to run and write a terminal status.
+const SOFT_TIMEOUT_MS = 260_000;
+
+function withSoftTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} exceeded ${Math.round(ms / 1000)}s soft budget`)), ms),
+    ),
+  ]);
+}
+
 const CATEGORY_DEFAULTS: Record<string, { name: string; icon: string; sort_order: number }> = {
   cat_alimentos: { name: "Alimentos", icon: "wheat", sort_order: 0 },
   cat_bebidas: { name: "Bebidas", icon: "cup-soda", sort_order: 1 },
@@ -71,10 +84,18 @@ export async function POST(request: NextRequest) {
     const typeLabel = isImage ? "image" : "PDF";
     console.log(`[WORKER] Processing ${typeLabel} import ${importId} (${record.filename}, ${fileBuffer.byteLength} bytes)`);
 
-    // 4. Incremental extraction: pass 1, then pass 2 if needed, then pass 3
-    const consensus = isImage
-      ? await runIncrementalImageExtraction(fileBuffer, record.filename)
-      : await runIncrementalExtraction(fileBuffer, record.filename);
+    // 4. Incremental extraction: pass 1, then pass 2 if needed, then pass 3.
+    // Raced against a soft deadline, well under Vercel's 300s hard kill —
+    // without this, a slow extraction leaves the row stuck at "processing"
+    // forever (the hard kill doesn't let the catch block below run), which
+    // gets silently redispatched and retried on every future cron run.
+    const consensus = await withSoftTimeout(
+      isImage
+        ? runIncrementalImageExtraction(fileBuffer, record.filename)
+        : runIncrementalExtraction(fileBuffer, record.filename),
+      SOFT_TIMEOUT_MS,
+      `${typeLabel} extraction`,
+    );
     console.log(`[WORKER] Import ${importId}: consensus=${consensus.type}, confidence=${consensus.confidenceScore}, products=${consensus.consensusProducts?.length ?? 0}, passes=${consensus.passes.length}`);
 
     // 5. Save extraction passes
