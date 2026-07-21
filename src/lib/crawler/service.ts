@@ -3,13 +3,25 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 import OpenAI from "openai";
 import sharp from "sharp";
 import { generateObject, createGateway } from "ai";
+import { Agent } from "undici";
 import { z } from "zod";
 import { EncarteProduct, EncarteSchema, normalizeEncartePayload } from "@/lib/schemas";
 import puppeteer from "puppeteer-core";
 
 // Vercel AI Gateway — routes through Vercel's gateway where provider API keys
 // are configured. On Vercel, authenticates via OIDC automatically.
-const gateway = createGateway();
+// Large PDFs can take several minutes to process; Node's default undici fetch
+// enforces a 5-minute headers timeout, so extend it per Vercel's guidance.
+const gateway = createGateway({
+  fetch: (url, init) =>
+    fetch(url, {
+      ...init,
+      dispatcher: new Agent({
+        headersTimeout: 15 * 60 * 1000,
+        bodyTimeout: 15 * 60 * 1000,
+      }),
+    } as RequestInit),
+});
 
 // pdfjs-dist tries require('canvas') to polyfill DOMMatrix and Path2D.
 // We provide them from @napi-rs/canvas instead.
@@ -179,15 +191,41 @@ REGRAS:
 6. Se o produto mostrar preço anterior/original (ex: "de 5,99 por 3,99"), extraia como original_price. Se não houver, retorne null.
 7. Classifique cada produto em uma destas categorias: Bebidas, Limpeza, Alimentos, Hortifruti, Padaria, Higiene. Use "Alimentos" como padrão se não tiver certeza.`;
 
-export async function processPdfBuffer(
-  buffer: Uint8Array | Buffer,
-  sourceName: string,
-  onProgress?: (message: string) => void,
-): Promise<CrawlerResult> {
-  onProgress?.(`Iniciando análise do PDF: ${sourceName}`);
+// Native PDF ingestion (sending the raw file) hits Claude's "Input is too
+// long" limit on large, image-heavy flyers. Above this size, render pages to
+// optimized images instead — same approach as the JPG/PNG import path.
+const NATIVE_PDF_MAX_BYTES = 8 * 1024 * 1024;
 
-  const pdfData = Buffer.from(buffer);
-  onProgress?.(`Enviando PDF (${Math.round(pdfData.byteLength / 1024)} KB) para Claude Sonnet...`);
+// Multiple rendered pages in one request need much tighter compression than
+// the single-image import path (optimizeImage's 3072px PNG) or the combined
+// payload trips the Gateway's request size limit ("Request Entity Too Large").
+async function optimizePageForBatch(buffer: Buffer): Promise<string> {
+  const processed = await sharp(buffer)
+    .resize(1800, 1800, {
+      fit: "inside",
+      withoutEnlargement: true,
+      kernel: "lanczos3",
+    })
+    .sharpen({ sigma: 1.2 })
+    .normalize()
+    .jpeg({ quality: 72 })
+    .toBuffer();
+
+  return `data:image/jpeg;base64,${processed.toString("base64")}`;
+}
+
+async function extractFromPdfPages(
+  buffer: Uint8Array | Buffer,
+  onProgress?: (message: string) => void,
+): Promise<EncarteProduct[]> {
+  const rendered = await renderPdfToImages(buffer);
+  onProgress?.(`PDF grande — renderizando ${rendered.processedPages} de ${rendered.totalPages} página(s) como imagens...`);
+
+  const optimizedImages: string[] = [];
+  for (const dataUrl of rendered.images) {
+    const base64 = dataUrl.split(",")[1];
+    optimizedImages.push(await optimizePageForBatch(Buffer.from(base64, "base64")));
+  }
 
   const { object } = await generateObject({
     model: gateway("anthropic/claude-sonnet-4-6"),
@@ -197,13 +235,9 @@ export async function processPdfBuffer(
       {
         role: "user",
         content: [
+          ...optimizedImages.map((image) => ({ type: "image" as const, image })),
           {
-            type: "file",
-            data: pdfData,
-            mediaType: "application/pdf",
-          },
-          {
-            type: "text",
+            type: "text" as const,
             text: "Extraia todas as ofertas deste encarte de supermercado. Analise todas as páginas.",
           },
         ],
@@ -211,8 +245,50 @@ export async function processPdfBuffer(
     ],
   });
 
-  const products = object.products;
-  onProgress?.(`${products.length} ofertas extraídas via Claude Sonnet.`);
+  return object.products;
+}
+
+export async function processPdfBuffer(
+  buffer: Uint8Array | Buffer,
+  sourceName: string,
+  onProgress?: (message: string) => void,
+): Promise<CrawlerResult> {
+  onProgress?.(`Iniciando análise do PDF: ${sourceName}`);
+
+  const pdfData = Buffer.from(buffer);
+  let products: EncarteProduct[];
+
+  if (pdfData.byteLength > NATIVE_PDF_MAX_BYTES) {
+    products = await extractFromPdfPages(pdfData, onProgress);
+    onProgress?.(`${products.length} ofertas extraídas via renderização de páginas.`);
+  } else {
+    onProgress?.(`Enviando PDF (${Math.round(pdfData.byteLength / 1024)} KB) para Claude Sonnet...`);
+
+    const { object } = await generateObject({
+      model: gateway("anthropic/claude-sonnet-4-6"),
+      schema: EncarteSchema,
+      system: EXTRACTION_SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "file",
+              data: pdfData,
+              mediaType: "application/pdf",
+            },
+            {
+              type: "text",
+              text: "Extraia todas as ofertas deste encarte de supermercado. Analise todas as páginas.",
+            },
+          ],
+        },
+      ],
+    });
+
+    products = object.products;
+    onProgress?.(`${products.length} ofertas extraídas via Claude Sonnet.`);
+  }
 
   if (products.length === 0) {
     throw new Error("Extração sem produtos. Nenhum item reconhecido no PDF.");
