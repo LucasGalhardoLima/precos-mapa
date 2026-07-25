@@ -67,7 +67,7 @@
         "expo-image-picker",
         {
           "photosPermission": "Acesse suas fotos para selecionar imagens de encartes.",
-          "cameraPermission": "Acesse sua câmera para fotografar encartes."
+          "cameraPermission": "Acesse sua câmera para fotografar encartes, escanear código de barras e notas fiscais."
         }
       ],
       "expo-dev-client",
@@ -79,6 +79,13 @@
       ],
       "expo-font",
       "expo-localization",
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "Acesse sua câmera para fotografar encartes, escanear código de barras e notas fiscais.",
+          "enableCodeScanner": true
+        }
+      ],
       [
         "expo-build-properties",
         {
