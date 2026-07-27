@@ -6,16 +6,19 @@
 // and "Validation & trust" sections.
 //
 // A minimal structural type instead of the real SupabaseClient generic: this
-// file only ever calls .from(table).select()/.insert(), so it doesn't need
-// (and shouldn't import) the full supabase-js type surface — this also keeps
-// persist.test.ts's mock trivial to write and to keep honest.
+// file only ever calls .from(table).select()/.insert()/.rpc(), so it doesn't
+// need (and shouldn't import) the full supabase-js type surface — this also
+// keeps persist.test.ts's mock trivial to write and to keep honest.
 export interface MinimalSupabaseClient {
   // deno-lint-ignore no-explicit-any
   from(table: string): any;
+  // deno-lint-ignore no-explicit-any
+  rpc(fn: string, args: Record<string, unknown>): any;
 }
 
 import { normalizeCnpj } from './qr-parser.ts';
 import type { ParsedNfceReceipt } from './html-parser.ts';
+import { findOrCreateProduct } from '../_shared/find-or-create-product.ts';
 
 export interface PersistInput {
   chNFe: string;
@@ -120,6 +123,25 @@ export async function persistReceipt(
           .eq('ean', item.ean)
           .maybeSingle();
         productId = product?.id ?? null;
+      }
+
+      // No EAN match (the common case — most stores' receipt item codes are
+      // internal SKUs, not real EANs, per html-parser.ts's RCod extraction).
+      // Reuse the same fuzzy-match-or-create path as the PDF-import pipeline
+      // (src/lib/product-match.ts's findOrCreateProduct, ported to
+      // find-or-create-product.ts) instead of leaving this permanently
+      // orphaned — this is what lets a repeat purchase of the same item
+      // build price history instead of silently vanishing.
+      if (!productId) {
+        try {
+          const resolved = await findOrCreateProduct(supabase, {
+            name: item.description,
+            referencePrice: item.unitPrice,
+          });
+          productId = resolved.id;
+        } catch {
+          productId = null; // fail-safe — keep this one item unmatched rather than failing the whole receipt
+        }
       }
 
       const { error } = await supabase.from('price_reports').insert({

@@ -4,17 +4,36 @@ import type { ParsedNfceReceipt } from './html-parser.ts';
 
 const CHAVE = '35260712345678000190650010000012345678901234';
 
+interface MatchCandidate {
+  id: string;
+  name: string;
+  brand: string | null;
+  match_type: string;
+  match_score: number;
+  confidence: number;
+}
+
 interface MockDb {
   receiptImports: Record<string, { total_value: number; item_count: number }>;
   stores: { id: string; cnpj: string }[];
-  products: { id: string; ean: string }[];
+  products: { id: string; ean: string | null; name?: string }[];
   insertedReceiptImports: Record<string, unknown>[];
   insertedPriceReports: Record<string, unknown>[];
+  insertedProducts: Record<string, unknown>[];
   priceReportInsertShouldFailFor?: string; // ean to reject with a 23505, simulating the daily-dedup constraint
+  /** Candidates returned by the mocked match_product_for_upsert RPC — empty means "no fuzzy match, create a new product". */
+  matchCandidates: MatchCandidate[];
+  nextProductId: () => string;
 }
 
 function makeMockClient(db: MockDb) {
   return {
+    rpc(fn: string, _args: Record<string, unknown>) {
+      if (fn === 'match_product_for_upsert') {
+        return Promise.resolve({ data: db.matchCandidates, error: null });
+      }
+      throw new Error(`unexpected rpc in test: ${fn}`);
+    },
     from(table: string) {
       if (table === 'receipt_imports') {
         return {
@@ -45,9 +64,23 @@ function makeMockClient(db: MockDb) {
       }
       if (table === 'products') {
         return {
-          select: () => ({
-            eq: (_col: string, val: string) => ({
-              maybeSingle: () => Promise.resolve({ data: db.products.find((p) => p.ean === val) ?? null, error: null }),
+          select: (_cols?: string) => ({
+            eq: (col: string, val: string) => ({
+              maybeSingle: () =>
+                Promise.resolve({
+                  data: db.products.find((p) => (col === 'ean' ? p.ean === val : p.name === val)) ?? null,
+                  error: null,
+                }),
+            }),
+          }),
+          insert: (row: Record<string, unknown>) => ({
+            select: () => ({
+              single: () => {
+                const id = db.nextProductId();
+                db.insertedProducts.push(row);
+                db.products.push({ id, ean: (row.ean as string) ?? null, name: row.name as string });
+                return Promise.resolve({ data: { id }, error: null });
+              },
             }),
           }),
         };
@@ -69,12 +102,16 @@ function makeMockClient(db: MockDb) {
 }
 
 function freshDb(overrides: Partial<MockDb> = {}): MockDb {
+  let counter = 0;
   return {
     receiptImports: {},
     stores: [],
     products: [],
     insertedReceiptImports: [],
     insertedPriceReports: [],
+    insertedProducts: [],
+    matchCandidates: [],
+    nextProductId: () => `new-product-${++counter}`,
     ...overrides,
   };
 }
@@ -115,7 +152,13 @@ Deno.test('persistReceipt - a fresh processed receipt writes receipt_imports and
   assertEquals(db.insertedPriceReports[0].confidence, 1.0);
   assertEquals(db.insertedPriceReports[0].source, 'nfce_receipt');
   assertEquals(db.insertedPriceReports[0].store_id, 'store-1');
-  assertEquals(db.insertedPriceReports[1].product_id, null); // no matching product row in this fixture
+  // item[1]'s EAN doesn't match any catalog product — falls back to
+  // findOrCreateProduct, which (no fuzzy candidates seeded here) creates a
+  // new product rather than leaving this orphaned.
+  assertEquals(db.insertedPriceReports[1].product_id, 'new-product-1');
+  assertEquals(db.insertedProducts.length, 1);
+  assertEquals(db.insertedProducts[0].name, 'Feijão Carioca 1kg');
+  assertEquals(db.insertedProducts[0].reference_price, 8.5);
 });
 
 Deno.test('persistReceipt - falls back to QR-param-only (status partial) when html parsing failed', async () => {
@@ -193,7 +236,7 @@ Deno.test('persistReceipt - one item losing the daily-dedup race does not block 
   assertEquals(db.insertedPriceReports[0].ean, '7899876543210');
 });
 
-Deno.test('persistReceipt - an item with no EAN on the receipt still saves (product_id null), not skipped', async () => {
+Deno.test('persistReceipt - an item with no EAN and no fuzzy match creates a new product instead of staying orphaned', async () => {
   const db = freshDb();
   const client = makeMockClient(db);
   const receiptWithUnknownItem: ParsedNfceReceipt = {
@@ -211,6 +254,60 @@ Deno.test('persistReceipt - an item with no EAN on the receipt still saves (prod
   });
 
   assertEquals(result.savedItemCount, 1);
-  assertEquals(db.insertedPriceReports[0].ean, null);
-  assertEquals(db.insertedPriceReports[0].product_id, null);
+  assertEquals(db.insertedPriceReports[0].ean, null); // no EAN on the receipt itself — unchanged
+  assertEquals(db.insertedPriceReports[0].product_id, 'new-product-1');
+  assertEquals(db.insertedProducts[0].name, 'Item Avulso Sem Código');
+  assertEquals(db.insertedProducts[0].reference_price, 3.5);
+});
+
+Deno.test('persistReceipt - reuses an existing fuzzy-matched product instead of creating a duplicate', async () => {
+  const db = freshDb({
+    matchCandidates: [
+      { id: 'existing-product-1', name: 'Água Mineral Levíssima 1,5L', brand: null, match_type: 'fuzzy', match_score: 0.8, confidence: 0.7 },
+    ],
+  });
+  const client = makeMockClient(db);
+  const receipt: ParsedNfceReceipt = {
+    storeName: null,
+    storeCnpj: null,
+    items: [{ ean: null, description: 'AGUA MIN LEVISSIMA 1,5L SG', quantity: 1, unit: 'UN', unitPrice: 2.29, totalPrice: 2.29 }],
+  };
+
+  const result = await persistReceipt(client, {
+    chNFe: CHAVE,
+    anonymousId: 'anon-1',
+    rawHtml: '<html></html>',
+    totalValueFromQr: 2.29,
+    parsed: receipt,
+  });
+
+  assertEquals(result.savedItemCount, 1);
+  assertEquals(db.insertedPriceReports[0].product_id, 'existing-product-1');
+  assertEquals(db.insertedProducts.length, 0); // reused the match — no new product created
+});
+
+Deno.test('persistReceipt - a size-incompatible fuzzy candidate is rejected, creating a new product instead of misattributing the price', async () => {
+  const db = freshDb({
+    matchCandidates: [
+      { id: 'wrong-size-product', name: 'Agua Min Levissima 500ml', brand: null, match_type: 'fuzzy', match_score: 0.7, confidence: 0.6 },
+    ],
+  });
+  const client = makeMockClient(db);
+  const receipt: ParsedNfceReceipt = {
+    storeName: null,
+    storeCnpj: null,
+    items: [{ ean: null, description: 'AGUA MIN LEVISSIMA 1,5L SG', quantity: 1, unit: 'UN', unitPrice: 2.29, totalPrice: 2.29 }],
+  };
+
+  const result = await persistReceipt(client, {
+    chNFe: CHAVE,
+    anonymousId: 'anon-1',
+    rawHtml: '<html></html>',
+    totalValueFromQr: 2.29,
+    parsed: receipt,
+  });
+
+  assertEquals(result.savedItemCount, 1);
+  assertEquals(db.insertedPriceReports[0].product_id, 'new-product-1'); // rejected the 500ml candidate — different size
+  assertEquals(db.insertedProducts.length, 1);
 });

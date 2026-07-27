@@ -1,22 +1,17 @@
 // ============================================================================
-// UNVERIFIED — built without ever fetching a real nfce.fazenda.sp.gov.br
-// consulta page. There was no real São Paulo NFC-e receipt/chNFe available to
-// test against this session (see specs/015-price-scanner/plan.md "Research
-// findings" #2 for why this has to be an HTML scrape, not an XML/REST call).
+// Verified against a real nfce.fazenda.sp.gov.br consulta page (fetched from
+// an actual device-scanned São Paulo receipt). The selectors themselves
+// (`table#tabResult`, `.txtTit`/`.RCod`/`.Rqtd`/`.RUN`/`.RvlUnit`/`.valor`)
+// were right on the first guess; the bug was assuming each field's element
+// held a bare value. Real markup embeds a label in the same element
+// ("<strong>Qtde.:</strong>1", "<strong>Vl. Unit.:</strong> 2,29",
+// "<strong>UN: </strong>KG"), and the CNPJ has no dedicated class at all —
+// it's a plain ".text" div next to the address inside ".txtCenter". See
+// parseBrNumber and the unit/CNPJ extraction below for how those are pulled
+// out from the surrounding label text.
 //
-// The selectors below (`table#tabResult`, the `.txtTit`/`.RCod`/`.Rqtd`/
-// `.RUN`/`.RvlUnit` classes) are a best-effort guess based on general
-// knowledge of how Brazilian state NFC-e "consulta pública" portals are
-// typically templated — NOT confirmed against SP's actual markup. The
-// accompanying html-parser.test.ts fixture was authored BY THIS CODE'S
-// AUTHOR to match this guess; it proves internal consistency only, and
-// proves nothing about real-world correctness.
-//
-// This file is expected to be rewritten once a real chNFe/receipt is
-// available — that's the whole reason its logic is isolated here rather
-// than inlined into index.ts: everything else in this function (QR parsing,
-// the QR-param-only fallback, and the receipt_imports/price_reports writes
-// in persist.ts) is real, spec'd, and tested; only this file is a stand-in.
+// Still only tested against one real receipt/store — other stores' NFC-e
+// templates could vary (missing address line, different row shape, etc.).
 //
 // Designed to fail safe: if the expected table/rows aren't found, this
 // returns null rather than guessing at wrong data, which the caller (index.ts)
@@ -45,9 +40,15 @@ export interface ParsedNfceReceipt {
   items: ParsedNfceItem[];
 }
 
+// Real SP markup embeds a label inside the same element as the value
+// ("<strong>Qtde.:</strong>1", "<strong>Vl. Unit.:</strong> 2,29"), so the
+// element's textContent is "Qtde.:1"/"Vl. Unit.: 2,29", not a bare number —
+// confirmed against a real consulta page fetch. Only the trailing numeric
+// token (Brazilian formatting: "1.234,56" -> 1234.56) is the actual value.
 function parseBrNumber(text: string): number | null {
-  // Brazilian numeric formatting: "1.234,56" -> 1234.56
-  const cleaned = text.trim().replace(/\./g, '').replace(',', '.');
+  const match = text.trim().match(/(-?\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*$/);
+  if (!match) return null;
+  const cleaned = match[1].replace(/\./g, '').replace(',', '.');
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
 }
@@ -83,13 +84,22 @@ export function parseConsultaHtml(html: string): ParsedNfceReceipt | null {
     if (quantity == null || unitPrice == null) continue;
 
     const totalPrice = totalPriceEl ? parseBrNumber(totalPriceEl.textContent ?? '') : null;
-    const rawEan = codeEl?.textContent?.trim() ?? '';
+    // Real markup wraps the code as "(Código:\n11476\n)" — strip everything
+    // but digits rather than testing the raw label text.
+    const rawEan = (codeEl?.textContent ?? '').replace(/\D/g, '');
+
+    // Same label-in-value shape as quantity/price ("<strong>UN: </strong>UN")
+    // in real markup — take whatever follows the last colon, falling back to
+    // the raw text when there's no label (the fixture's plain "UN").
+    const unitRaw = unitEl?.textContent ?? '';
+    const unitMatch = unitRaw.match(/:\s*(\S.*)$/);
+    const unit = (unitMatch ? unitMatch[1] : unitRaw).trim();
 
     items.push({
       ean: /^\d{8,14}$/.test(rawEan) ? rawEan : null,
       description: (descriptionEl.textContent ?? '').trim(),
       quantity,
-      unit: (unitEl?.textContent ?? '').trim(),
+      unit,
       unitPrice,
       totalPrice: totalPrice ?? Number((quantity * unitPrice).toFixed(2)),
     });
@@ -98,8 +108,13 @@ export function parseConsultaHtml(html: string): ParsedNfceReceipt | null {
   if (items.length === 0) return null;
 
   const storeNameEl = doc.querySelector('.txtTopo, .fixo-emitente-nome, #u20');
+  // Real SP markup has no dedicated CNPJ element — it's a generic `.text` div
+  // alongside the address, inside the `.txtCenter` store-info block. Try a
+  // specific selector first (other portal templates / the fixture), then
+  // fall back to searching that whole block's text for a CNPJ-shaped run.
   const storeCnpjEl = doc.querySelector('.text-muted, .fixo-emitente-cnpj, #u21');
-  const storeCnpjMatch = (storeCnpjEl?.textContent ?? '').match(/\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/);
+  const cnpjSearchScope = storeCnpjEl ?? doc.querySelector('.txtCenter') ?? doc;
+  const storeCnpjMatch = (cnpjSearchScope.textContent ?? '').match(/\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/);
 
   return {
     storeName: storeNameEl?.textContent?.trim() || null,

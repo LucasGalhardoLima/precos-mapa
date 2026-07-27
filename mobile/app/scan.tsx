@@ -53,6 +53,11 @@ export default function ScanScreen() {
   const [nearestStoreId, setNearestStoreId] = useState<string | null>(null);
   const [confirmationName, setConfirmationName] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!permissionRequested) return;
+    console.log('[scan] camera state', { hasPermission, device: device?.id ?? null });
+  }, [permissionRequested, hasPermission, device]);
+
   // Nearest active store within NEAREST_STORE_MAX_KM, resolved once real
   // location is available. Small dataset (Matão-only) — a single query is
   // fine, no need for the heavier paginated useStores hook.
@@ -63,7 +68,8 @@ export default function ScanScreen() {
       .from('stores')
       .select('id,latitude,longitude')
       .eq('is_active', true)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) console.error('[scan] stores query failed', error);
         if (cancelled || !data) return;
         let closestId: string | null = null;
         let closestKm = Infinity;
@@ -93,7 +99,13 @@ export default function ScanScreen() {
   });
 
   // Product lookup — deterministic EAN match against the catalog, per the
-  // Mode A user flow in specs/015-price-scanner/plan.md.
+  // Mode A user flow in specs/015-price-scanner/plan.md. Creating a new
+  // product from a bare barcode scan is a DISABLED FUTURE FEATURE — see
+  // plan.md's "Open decisions" #5 for why (no name to create a row with,
+  // and live per-scan Cosmos lookups would compete with the seeder's paid
+  // quota) and the free Open Food Facts option earmarked for when this gets
+  // picked up. An unrecognized EAN just shows "sem correspondência" until
+  // the catalog catches up via the seeder script.
   useEffect(() => {
     if (!scannedEan) {
       setProduct(null);
@@ -106,7 +118,8 @@ export default function ScanScreen() {
       .select('*')
       .eq('ean', scannedEan)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) console.error('[scan] product lookup failed', scannedEan, error);
         if (cancelled) return;
         setProduct((data as Product) ?? null);
         setIsLookingUp(false);
@@ -132,7 +145,8 @@ export default function ScanScreen() {
       .eq('product_id', product.id)
       .eq('store_id', nearestStoreId)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) console.error('[scan] store price lookup failed', error);
         if (cancelled) return;
         setNearestStorePrice(data?.price ?? null);
       });
@@ -184,6 +198,7 @@ export default function ScanScreen() {
       });
 
       if (error) {
+        console.error('[scan] price report insert failed', error);
         setSubmitState('idle');
         setSubmitError(
           error.code === '23505'

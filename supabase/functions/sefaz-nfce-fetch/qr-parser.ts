@@ -1,7 +1,9 @@
-// QR-code URL parsing for NFC-e receipts. This part is fully spec'd — the
-// param schema is documented as national (specs/015-price-scanner/plan.md,
-// "NFC-e QR format") — and needs no HTML scraping, so it's real, tested code,
-// not a placeholder like html-parser.ts.
+// QR-code URL parsing for NFC-e receipts. São Paulo's real QR-Code v2 packs
+// everything into a single pipe-delimited `p` param — chave|nVersao|tpAmb|
+// cIdToken|cHashQRCode — confirmed against a real scanned receipt. There is
+// no separate vNF/vICMS/dhEmi/digVal anywhere in the QR itself; those would
+// only ever come from the HTML scrape (html-parser.ts), which is why they
+// stay null here.
 
 export interface NfceQrParams {
   chNFe: string;
@@ -42,31 +44,25 @@ export function parseNfceQrUrl(rawUrl: string): QrParseResult {
     return { ok: false, reason: 'unsupported_state', host: url.hostname };
   }
 
-  const chNFe = url.searchParams.get('chNFe');
-  if (!chNFe || !/^\d{44}$/.test(chNFe)) {
+  const parts = (url.searchParams.get('p') ?? '').split('|');
+  const chNFe = parts[0] ?? '';
+  if (!/^\d{44}$/.test(chNFe)) {
     return { ok: false, reason: 'missing_chave' };
   }
-
-  const num = (key: string): number | null => {
-    const v = url.searchParams.get(key);
-    if (v == null) return null;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  };
 
   return {
     ok: true,
     uf,
     params: {
       chNFe,
-      nVersao: url.searchParams.get('nVersao') ?? '',
-      tpAmb: url.searchParams.get('tpAmb') ?? '',
-      dhEmi: url.searchParams.get('dhEmi'),
-      vNF: num('vNF'),
-      vICMS: num('vICMS'),
-      digVal: url.searchParams.get('digVal'),
-      cIdToken: url.searchParams.get('cIdToken'),
-      cHashQRCode: url.searchParams.get('cHashQRCode'),
+      nVersao: parts[1] ?? '',
+      tpAmb: parts[2] ?? '',
+      dhEmi: null,
+      vNF: null,
+      vICMS: null,
+      digVal: null,
+      cIdToken: parts[3] ?? null,
+      cHashQRCode: parts[4] ?? null,
     },
   };
 }

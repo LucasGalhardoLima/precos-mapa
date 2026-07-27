@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -64,6 +64,16 @@ export default function ScanReceiptScreen() {
       });
 
       if (error) {
+        console.error('[scan-receipt] sefaz-nfce-fetch invoke failed', error.message);
+        const response = error.context;
+        if (response && typeof response.clone === 'function') {
+          console.error('[scan-receipt] edge function status', response.status);
+          response
+            .clone()
+            .text()
+            .then((body: string) => console.error('[scan-receipt] edge function body', body))
+            .catch((readErr: unknown) => console.error('[scan-receipt] failed to read body', readErr));
+        }
         setScreen({ kind: 'error', message: 'Não foi possível ler a nota fiscal. Tente novamente.' });
         return;
       }
@@ -72,15 +82,22 @@ export default function ScanReceiptScreen() {
         return;
       }
       if (data?.error) {
+        console.warn('[scan-receipt] sefaz-nfce-fetch returned error', data.error);
         setScreen({ kind: 'error', message: 'Código QR não reconhecido como uma nota fiscal (NFC-e).' });
         return;
       }
 
       setScreen({ kind: 'result', result: data as ReceiptResult });
-    } catch {
+    } catch (err) {
+      console.error('[scan-receipt] handleQrScanned threw', err);
       setScreen({ kind: 'error', message: 'Não foi possível ler a nota fiscal. Tente novamente.' });
     }
   }, []);
+
+  useEffect(() => {
+    if (!permissionRequested) return;
+    console.log('[scan-receipt] camera state', { hasPermission, device: device?.id ?? null });
+  }, [permissionRequested, hasPermission, device]);
 
   const codeScanner = useCodeScanner({
     codeTypes: ['qr'],

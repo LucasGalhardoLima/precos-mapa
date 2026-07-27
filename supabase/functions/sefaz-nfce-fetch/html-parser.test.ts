@@ -1,10 +1,9 @@
-// These tests run against a FIXTURE HTML STRING AUTHORED BY THE SAME PERSON
-// WHO WROTE html-parser.ts's selectors — they prove the parser is internally
-// consistent (correct BR-number parsing, fails safe on malformed rows,
-// returns null when the expected table is absent) but prove NOTHING about
-// whether table#tabResult / .RCod / .Rqtd / etc. match a real
-// nfce.fazenda.sp.gov.br page. Do not read a green run here as "the scraper
-// works" — see the warning header in html-parser.ts.
+// Most fixtures below use clean per-field values and mainly cover parsing
+// edge cases (missing total column, non-EAN codes, missing table, malformed
+// rows). The "handles real SP markup" test further down is the one grounded
+// in an actual nfce.fazenda.sp.gov.br page fetched from a real device scan —
+// see html-parser.ts's header for what that page's markup actually looks
+// like and why the label-in-value shape matters.
 
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
 import { parseConsultaHtml } from './html-parser.ts';
@@ -94,6 +93,54 @@ Deno.test('parseConsultaHtml - fails safe (null) when the expected item table is
 
 Deno.test('parseConsultaHtml - fails safe (null) on malformed/empty HTML', () => {
   assertEquals(parseConsultaHtml(''), null);
+});
+
+Deno.test('parseConsultaHtml - handles real SP markup: labels embedded in the value spans, CNPJ in a generic .text div', () => {
+  // Structurally matches an actual nfce.fazenda.sp.gov.br consulta page
+  // (captured via a real device scan): quantity/unit/price are wrapped as
+  // "<strong>label</strong>value" inside one span (not a clean cell per
+  // field, unlike the top fixture), and the CNPJ has no dedicated class —
+  // it's a plain ".text" div alongside the address inside ".txtCenter".
+  const html = `
+    <html><body>
+      <div class="txtCenter">
+        <div id="u20" class="txtTopo">MERCADO EXEMPLO LTDA</div>
+        <div class="text">CNPJ:
+        12.345.678/0001-90</div>
+        <div class="text">RUA EXEMPLO, 100, CENTRO, SAO PAULO, SP</div>
+      </div>
+      <table id="tabResult">
+        <tr id="Item + 1">
+          <td valign="top">
+            <span class="txtTit">PRODUTO EXEMPLO 1KG</span>
+            <span class="RCod">(Código:
+            12345
+            )</span>
+            <br>
+            <span class="Rqtd"><strong>Qtde.:</strong>2</span>
+            <span class="RUN"><strong>UN: </strong>KG</span>
+            <span class="RvlUnit"><strong>Vl. Unit.:</strong>
+            10,50</span>
+          </td>
+          <td align="right" valign="top" class="txtTit noWrap">
+            Vl. Total
+            <br><span class="valor">21,00</span></td>
+        </tr>
+      </table>
+    </body></html>
+  `;
+  const result = parseConsultaHtml(html);
+  if (!result) throw new Error('expected a parsed receipt');
+  assertEquals(result.storeName, 'MERCADO EXEMPLO LTDA');
+  assertEquals(result.storeCnpj, '12.345.678/0001-90');
+  assertEquals(result.items[0], {
+    ean: null, // "12345" is only 5 digits, not a real EAN — correctly rejected
+    description: 'PRODUTO EXEMPLO 1KG',
+    quantity: 2,
+    unit: 'KG',
+    unitPrice: 10.5,
+    totalPrice: 21,
+  });
 });
 
 Deno.test('parseConsultaHtml - skips a row missing required fields instead of throwing', () => {
