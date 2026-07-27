@@ -44,6 +44,13 @@ export function MapStorePin({
     <Marker
       coordinate={{ latitude: store.latitude, longitude: store.longitude }}
       onPress={onPress}
+      // Without this, a marker tap also bubbles up to the parent MapView's
+      // own onPress (map.tsx wires that to handleCloseStoreSheet) — the
+      // store card would get selected and immediately deselected in the same
+      // touch, which reads as "tapping a pin does nothing." iOS/Apple Maps
+      // only (react-native-maps default provider here, no `provider` prop
+      // set) — see https://github.com/react-community/react-native-maps/issues/1132.
+      stopPropagation
       tracksViewChanges={selected}
       anchor={{ x: 0.5, y: 0.5 }}
     >

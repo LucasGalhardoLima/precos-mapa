@@ -159,8 +159,8 @@ export default function HomeScreen() {
                 🏆 Ranking em Destaque
               </Text>
               <Pressable
-                onPress={() => router.push('/search')}
-                accessibilityLabel="Ver todos os rankings"
+                onPress={() => router.push('/(tabs)/map')}
+                accessibilityLabel="Ver todos os mercados no mapa"
                 accessibilityRole="link"
               >
                 <Text style={[styles.sectionLink, { color: tokens.primary }]}>
@@ -168,7 +168,15 @@ export default function HomeScreen() {
                 </Text>
               </Pressable>
             </View>
-            <StoreRankingComponent ranking={ranking} />
+            <StoreRankingComponent
+              ranking={ranking}
+              onPressStore={(entry) =>
+                router.push({
+                  pathname: '/(tabs)/search',
+                  params: { storeId: entry.id, storeName: entry.name },
+                } as any)
+              }
+            />
           </View>
         )}
 
@@ -254,7 +262,7 @@ export default function HomeScreen() {
               Ofertas perto de você
             </Text>
             <Pressable
-              onPress={() => router.push('/search')}
+              onPress={() => router.push({ pathname: '/(tabs)/search', params: { viewAll: '1' } } as any)}
               accessibilityLabel="Ver todas as ofertas"
               accessibilityRole="link"
             >

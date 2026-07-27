@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 
 import { useTheme } from '../theme/use-theme';
 
@@ -11,6 +11,7 @@ import type { StoreRanking as StoreRankingType, StoreRankEntry } from '@/hooks/u
 
 interface StoreRankingProps {
   ranking: StoreRankingType;
+  onPressStore: (entry: StoreRankEntry) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -50,14 +51,17 @@ const MEDAL: Record<1 | 2 | 3, string> = {
 // RankCard
 // ---------------------------------------------------------------------------
 
-function RankCard({ entry }: { entry: StoreRankEntry }) {
+function RankCard({ entry, onPress }: { entry: StoreRankEntry; onPress: () => void }) {
   const { tokens } = useTheme();
   const isFirst = entry.rank === 1;
   const initial = entry.name.charAt(0).toUpperCase();
   const avatarBg = avatarColorForName(entry.name);
 
   return (
-    <View
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Ver ofertas em ${entry.name}`}
+      onPress={onPress}
       style={[
         styles.card,
         { backgroundColor: tokens.surface },
@@ -91,7 +95,7 @@ function RankCard({ entry }: { entry: StoreRankEntry }) {
           <Text style={styles.badgeText}>Mais barato</Text>
         </View>
       )}
-    </View>
+    </Pressable>
   );
 }
 
@@ -103,11 +107,11 @@ function RankCard({ entry }: { entry: StoreRankEntry }) {
  * "Ranking em Destaque" section showing top 3 cheapest stores as side-by-side
  * cards.
  */
-export function StoreRanking({ ranking }: StoreRankingProps) {
+export function StoreRanking({ ranking, onPressStore }: StoreRankingProps) {
   return (
     <View style={styles.row}>
       {ranking.stores.map((entry) => (
-        <RankCard key={entry.id} entry={entry} />
+        <RankCard key={entry.id} entry={entry} onPress={() => onPressStore(entry)} />
       ))}
     </View>
   );

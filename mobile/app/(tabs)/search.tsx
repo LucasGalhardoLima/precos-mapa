@@ -68,7 +68,7 @@ export default function SearchScreen() {
   const { stores: storeData } = useStores({ userLatitude: latitude, userLongitude: longitude });
 
   const { trackSearch, trackListAdd } = useAnalytics();
-  const { storeId, storeName } = useLocalSearchParams<{ storeId?: string; storeName?: string }>();
+  const { storeId, storeName, viewAll } = useLocalSearchParams<{ storeId?: string; storeName?: string; viewAll?: string }>();
 
   // Local state
   const [query, setQuery] = useState('');
@@ -247,8 +247,11 @@ export default function SearchScreen() {
     }
   }, [debouncedQuery, isLoading, useProductMode, productResults, promotions, trackSearch]);
 
-  // View state
-  const hasFilter = debouncedQuery.length > 0 || !!categoryId || !!storeId;
+  // View state. viewAll comes from Home's "Ofertas perto de você → Ver todas"
+  // — there's no query/category/store to filter on, but the user explicitly
+  // asked to see everything nearby, so it should show real results rather
+  // than falling through to the empty discovery view.
+  const hasFilter = debouncedQuery.length > 0 || !!categoryId || !!storeId || viewAll === '1';
   const showError = hasFilter && !isLoading && error != null;
   const showLoading = hasFilter && isLoading;
   const showEmpty = hasFilter && !isLoading && !error && isEmpty;

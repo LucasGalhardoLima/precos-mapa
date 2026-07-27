@@ -6,9 +6,9 @@ const REFERENCE_BASKET = [
   'Arroz', 'Feijão', 'Óleo', 'Açúcar', 'Leite', 'Café', 'Farinha', 'Sal',
 ] as const;
 
-interface PromoRow {
+interface PriceRow {
   product_id: string;
-  promo_price: number;
+  price: number;
   store_id: string;
   product: { name: string };
   store: { id: string; name: string };
@@ -22,18 +22,16 @@ interface StoreRankEntry {
   rank: 1 | 2 | 3;
 }
 
-const MIN_ITEMS = 3;
-
-function rankStores(promoRows: PromoRow[]): StoreRankEntry[] | null {
+function rankStores(priceRows: PriceRow[]): StoreRankEntry[] | null {
   // Filter for basket items
-  const basketPromos = promoRows.filter((row) => {
+  const basketPrices = priceRows.filter((row) => {
     const productName = row.product?.name ?? '';
     return REFERENCE_BASKET.some((item) =>
       productName.toLowerCase().includes(item.toLowerCase()),
     );
   });
 
-  if (basketPromos.length === 0) return null;
+  if (basketPrices.length === 0) return null;
 
   // Group by store, cheapest per basket item
   const storeMap = new Map<
@@ -41,10 +39,10 @@ function rankStores(promoRows: PromoRow[]): StoreRankEntry[] | null {
     { name: string; basketPrices: Map<string, number> }
   >();
 
-  for (const promo of basketPromos) {
-    const storeId = promo.store?.id ?? promo.store_id;
-    const storeName = promo.store?.name ?? 'Loja';
-    const productName = promo.product?.name ?? '';
+  for (const row of basketPrices) {
+    const storeId = row.store?.id ?? row.store_id;
+    const storeName = row.store?.name ?? 'Loja';
+    const productName = row.product?.name ?? '';
 
     const matchedItem = REFERENCE_BASKET.find((item) =>
       productName.toLowerCase().includes(item.toLowerCase()),
@@ -57,15 +55,15 @@ function rankStores(promoRows: PromoRow[]): StoreRankEntry[] | null {
 
     const entry = storeMap.get(storeId)!;
     const current = entry.basketPrices.get(matchedItem);
-    if (current === undefined || promo.promo_price < current) {
-      entry.basketPrices.set(matchedItem, promo.promo_price);
+    if (current === undefined || row.price < current) {
+      entry.basketPrices.set(matchedItem, row.price);
     }
   }
 
-  // Filter: at least MIN_ITEMS basket items
+  // Require ALL 8 basket items — a partial basket isn't a fair comparison
   const storeEntries: { id: string; name: string; totalPrice: number }[] = [];
   for (const [storeId, { name, basketPrices }] of storeMap) {
-    if (basketPrices.size < MIN_ITEMS) continue;
+    if (basketPrices.size < REFERENCE_BASKET.length) continue;
     let totalPrice = 0;
     for (const [, price] of basketPrices) totalPrice += price;
     storeEntries.push({ id: storeId, name, totalPrice });
@@ -96,19 +94,31 @@ function rankStores(promoRows: PromoRow[]): StoreRankEntry[] | null {
 // Helpers
 // ===========================================================================
 
-function makePromo(
+function makePrice(
   storeId: string,
   storeName: string,
   productName: string,
-  promoPrice: number,
-): PromoRow {
+  price: number,
+): PriceRow {
   return {
     product_id: `prod-${productName.toLowerCase()}`,
-    promo_price: promoPrice,
+    price,
     store_id: storeId,
     product: { name: productName },
     store: { id: storeId, name: storeName },
   };
+}
+
+/** A full 8-item basket for one store, all at the same price — override individual items via `overrides`. */
+function makeFullBasket(
+  storeId: string,
+  storeName: string,
+  basePrice: number,
+  overrides: Partial<Record<(typeof REFERENCE_BASKET)[number], number>> = {},
+): PriceRow[] {
+  return REFERENCE_BASKET.map((item) =>
+    makePrice(storeId, storeName, item, overrides[item] ?? basePrice),
+  );
 }
 
 // ===========================================================================
@@ -116,145 +126,117 @@ function makePromo(
 // ===========================================================================
 
 describe('Store Ranking — Basket Filtering', () => {
-  it('returns null when no promos match basket items', () => {
-    const promos = [
-      makePromo('s1', 'Loja A', 'Cerveja', 8.0),
-      makePromo('s1', 'Loja A', 'Refrigerante', 5.0),
+  it('returns null when no prices match basket items', () => {
+    const prices = [
+      makePrice('s1', 'Loja A', 'Cerveja', 8.0),
+      makePrice('s1', 'Loja A', 'Refrigerante', 5.0),
     ];
 
-    expect(rankStores(promos)).toBeNull();
+    expect(rankStores(prices)).toBeNull();
   });
 
   it('matches basket items case-insensitively', () => {
-    const promos = [
-      makePromo('s1', 'Loja A', 'arroz integral', 6.0),
-      makePromo('s1', 'Loja A', 'FEIJÃO preto', 7.0),
-      makePromo('s1', 'Loja A', 'Óleo de soja', 5.0),
-    ];
+    const prices = makeFullBasket('s1', 'Loja A', 6.0).map((row) => ({
+      ...row,
+      product: { name: row.product.name.toLowerCase() },
+    }));
 
-    const result = rankStores(promos);
+    const result = rankStores(prices);
     expect(result).not.toBeNull();
     expect(result).toHaveLength(1);
   });
 
   it('matches partial names (e.g. "Arroz integral" matches "Arroz")', () => {
-    const promos = [
-      makePromo('s1', 'Loja A', 'Arroz integral tipo 1', 6.0),
-      makePromo('s1', 'Loja A', 'Feijão carioca 1kg', 7.0),
-      makePromo('s1', 'Loja A', 'Leite integral', 4.0),
-    ];
+    const prices = makeFullBasket('s1', 'Loja A', 6.0, { Arroz: 6.0 }).map((row) =>
+      row.product.name === 'Arroz' ? { ...row, product: { name: 'Arroz integral tipo 1' } } : row,
+    );
 
-    const result = rankStores(promos);
+    const result = rankStores(prices);
     expect(result).not.toBeNull();
   });
 });
 
-describe('Store Ranking — Minimum Items Filter', () => {
-  it('excludes stores with fewer than 3 basket items', () => {
-    const promos = [
-      // Store A has only 2 items
-      makePromo('s1', 'Loja A', 'Arroz', 6.0),
-      makePromo('s1', 'Loja A', 'Feijão', 7.0),
-      // Store B has 3 items
-      makePromo('s2', 'Loja B', 'Arroz', 5.0),
-      makePromo('s2', 'Loja B', 'Feijão', 6.0),
-      makePromo('s2', 'Loja B', 'Leite', 4.0),
+describe('Store Ranking — Requires the Full Basket', () => {
+  it('excludes stores missing even one basket item', () => {
+    const prices = [
+      // Store A has all 8 items
+      ...makeFullBasket('s1', 'Loja A', 6.0),
+      // Store B has only 7 of the 8 items (missing Sal)
+      ...makeFullBasket('s2', 'Loja B', 5.0).filter((row) => row.product.name !== 'Sal'),
     ];
 
-    const result = rankStores(promos);
+    const result = rankStores(prices);
     expect(result).toHaveLength(1);
-    expect(result![0].name).toBe('Loja B');
+    expect(result![0].name).toBe('Loja A');
   });
 
-  it('returns null when all stores have fewer than 3 items', () => {
-    const promos = [
-      makePromo('s1', 'Loja A', 'Arroz', 6.0),
-      makePromo('s1', 'Loja A', 'Feijão', 7.0),
+  it('returns null when no store has all 8 basket items', () => {
+    const prices = [
+      makePrice('s1', 'Loja A', 'Arroz', 6.0),
+      makePrice('s1', 'Loja A', 'Feijão', 7.0),
     ];
 
-    expect(rankStores(promos)).toBeNull();
+    expect(rankStores(prices)).toBeNull();
   });
 });
 
 describe('Store Ranking — Cheapest Per Basket Item', () => {
-  it('picks cheapest promo when store has multiple for same basket item', () => {
-    const promos = [
-      makePromo('s1', 'Loja A', 'Arroz tipo 1', 8.0),
-      makePromo('s1', 'Loja A', 'Arroz integral', 6.0), // cheaper, same basket item
-      makePromo('s1', 'Loja A', 'Feijão', 7.0),
-      makePromo('s1', 'Loja A', 'Leite', 4.0),
+  it('picks cheapest price when a store has multiple entries for the same basket item', () => {
+    const prices = [
+      ...makeFullBasket('s1', 'Loja A', 5.0),
+      makePrice('s1', 'Loja A', 'Arroz integral', 8.0), // pricier duplicate for the same basket item
+      makePrice('s1', 'Loja A', 'Arroz tipo 1', 3.0),   // cheaper duplicate — should win
     ];
 
-    const result = rankStores(promos);
+    const result = rankStores(prices);
     expect(result).toHaveLength(1);
-    // Arroz cheapest = 6.0, Feijão = 7.0, Leite = 4.0 → total = 17.0
-    expect(result![0].totalPrice).toBe(17.0);
+    // 7 items at 5.0 + Arroz at cheapest (3.0) = 38.0
+    expect(result![0].totalPrice).toBe(38.0);
   });
 });
 
 describe('Store Ranking — Sorting & Top 3', () => {
   it('ranks stores by total basket price ascending', () => {
-    const promos = [
-      // Store A: Arroz 6, Feijão 7, Leite 4 = 17
-      makePromo('s1', 'Loja A', 'Arroz', 6.0),
-      makePromo('s1', 'Loja A', 'Feijão', 7.0),
-      makePromo('s1', 'Loja A', 'Leite', 4.0),
-      // Store B: Arroz 5, Feijão 6, Leite 3 = 14
-      makePromo('s2', 'Loja B', 'Arroz', 5.0),
-      makePromo('s2', 'Loja B', 'Feijão', 6.0),
-      makePromo('s2', 'Loja B', 'Leite', 3.0),
-      // Store C: Arroz 7, Feijão 8, Leite 5 = 20
-      makePromo('s3', 'Loja C', 'Arroz', 7.0),
-      makePromo('s3', 'Loja C', 'Feijão', 8.0),
-      makePromo('s3', 'Loja C', 'Leite', 5.0),
+    const prices = [
+      ...makeFullBasket('s1', 'Loja A', 17 / 8), // arbitrary total, see below
+      ...makeFullBasket('s2', 'Loja B', 14 / 8),
+      ...makeFullBasket('s3', 'Loja C', 20 / 8),
     ];
 
-    const result = rankStores(promos);
+    const result = rankStores(prices);
     expect(result).toHaveLength(3);
-    expect(result![0].name).toBe('Loja B');  // 14 → rank 1
-    expect(result![1].name).toBe('Loja A');  // 17 → rank 2
-    expect(result![2].name).toBe('Loja C');  // 20 → rank 3
+    expect(result![0].name).toBe('Loja B'); // cheapest total
+    expect(result![1].name).toBe('Loja A');
+    expect(result![2].name).toBe('Loja C'); // priciest total
   });
 
   it('limits to top 3 stores', () => {
-    const items = ['Arroz', 'Feijão', 'Leite'];
-    const promos = Array.from({ length: 5 }, (_, i) =>
-      items.map((item) =>
-        makePromo(`s${i}`, `Loja ${i}`, item, 5.0 + i),
-      ),
-    ).flat();
+    const prices = Array.from({ length: 5 }, (_, i) => makeFullBasket(`s${i}`, `Loja ${i}`, 5.0 + i)).flat();
 
-    const result = rankStores(promos);
+    const result = rankStores(prices);
     expect(result).toHaveLength(3);
   });
 
   it('assigns ranks 1, 2, 3', () => {
-    const items = ['Arroz', 'Feijão', 'Leite'];
-    const promos = [
-      ...items.map((item) => makePromo('s1', 'A', item, 10.0)),
-      ...items.map((item) => makePromo('s2', 'B', item, 8.0)),
-      ...items.map((item) => makePromo('s3', 'C', item, 12.0)),
+    const prices = [
+      ...makeFullBasket('s1', 'A', 10.0),
+      ...makeFullBasket('s2', 'B', 8.0),
+      ...makeFullBasket('s3', 'C', 12.0),
     ];
 
-    const result = rankStores(promos);
+    const result = rankStores(prices);
     expect(result!.map((r) => r.rank)).toEqual([1, 2, 3]);
   });
 });
 
 describe('Store Ranking — Savings Percent', () => {
   it('calculates savings relative to most expensive in top 3', () => {
-    const promos = [
-      // Store A: total = 14
-      makePromo('s1', 'Loja A', 'Arroz', 5.0),
-      makePromo('s1', 'Loja A', 'Feijão', 5.0),
-      makePromo('s1', 'Loja A', 'Leite', 4.0),
-      // Store B: total = 20
-      makePromo('s2', 'Loja B', 'Arroz', 7.0),
-      makePromo('s2', 'Loja B', 'Feijão', 7.0),
-      makePromo('s2', 'Loja B', 'Leite', 6.0),
+    const prices = [
+      ...makeFullBasket('s1', 'Loja A', 14 / 8), // total = 14
+      ...makeFullBasket('s2', 'Loja B', 20 / 8), // total = 20
     ];
 
-    const result = rankStores(promos);
+    const result = rankStores(prices);
     // Store A: (1 - 14/20) * 100 = 30%
     expect(result![0].savingsPercent).toBe(30);
     // Store B: most expensive → 0%
@@ -262,13 +244,12 @@ describe('Store Ranking — Savings Percent', () => {
   });
 
   it('most expensive store in top 3 always has 0% savings', () => {
-    const items = ['Arroz', 'Feijão', 'Leite'];
-    const promos = [
-      ...items.map((item) => makePromo('s1', 'A', item, 5.0)),
-      ...items.map((item) => makePromo('s2', 'B', item, 8.0)),
+    const prices = [
+      ...makeFullBasket('s1', 'A', 5.0),
+      ...makeFullBasket('s2', 'B', 8.0),
     ];
 
-    const result = rankStores(promos);
+    const result = rankStores(prices);
     const lastStore = result![result!.length - 1];
     expect(lastStore.savingsPercent).toBe(0);
   });

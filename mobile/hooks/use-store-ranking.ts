@@ -69,45 +69,50 @@ export function useStoreRanking(params: UseStoreRankingParams) {
     setIsLoading(true);
 
     try {
-      // Fetch active promotions with product and store data
-      const { data: promoRows } = await supabase
-        .from('promotions')
-        .select('product_id, promo_price, store_id, product:products(name), store:stores(id, name, latitude, longitude)')
-        .eq('status', 'active')
-        .gt('end_date', new Date().toISOString());
+      // Source from store_prices — the canonical current-price table (promo
+      // + regular ERP/PDF-import + crowdsourced, see migration 054), not just
+      // active promotions. Ranking on promotions alone meant a store with a
+      // handful of promoted items could rank as "cheapest" while its regular
+      // (non-promo) prices on the rest of the basket were never considered.
+      const { data: priceRows } = await supabase
+        .from('store_prices')
+        .select(
+          'product_id, price, store_id, product:products(name), store:stores!inner(id, name, latitude, longitude, is_active)',
+        )
+        .eq('store.is_active', true);
 
-      if (!promoRows || promoRows.length === 0) {
+      if (!priceRows || priceRows.length === 0) {
         setRanking(null);
         setIsLoading(false);
         return;
       }
 
-      // Filter for promotions whose product name matches any basket item (case-insensitive)
-      const basketPromos = promoRows.filter((row) => {
+      // Filter for prices whose product name matches any basket item (case-insensitive)
+      const basketPrices = priceRows.filter((row) => {
         const productName: string = (row.product as any)?.name ?? '';
         return REFERENCE_BASKET.some((item) =>
           productName.toLowerCase().includes(item.toLowerCase()),
         );
       });
 
-      if (basketPromos.length === 0) {
+      if (basketPrices.length === 0) {
         setRanking(null);
         setIsLoading(false);
         return;
       }
 
-      // Group by store, then find cheapest price per basket item per store
+      // Group by store, then find the cheapest price per basket item per store
       // storeMap: storeId -> { name, basketPrices: Map<basketItem, cheapestPrice> }
       const storeMap = new Map<
         string,
         { name: string; basketPrices: Map<string, number> }
       >();
 
-      for (const promo of basketPromos) {
-        const store = promo.store as any;
-        const storeId: string = store?.id ?? promo.store_id;
+      for (const row of basketPrices) {
+        const store = row.store as any;
+        const storeId: string = store?.id ?? row.store_id;
         const storeName: string = store?.name ?? 'Loja';
-        const productName: string = (promo.product as any)?.name ?? '';
+        const productName: string = (row.product as any)?.name ?? '';
 
         // M1 fix: skip stores outside the radius
         const storeLat: number | undefined = store?.latitude;
@@ -129,17 +134,19 @@ export function useStoreRanking(params: UseStoreRankingParams) {
 
         const entry = storeMap.get(storeId)!;
         const current = entry.basketPrices.get(matchedItem);
-        if (current === undefined || promo.promo_price < current) {
-          entry.basketPrices.set(matchedItem, promo.promo_price);
+        if (current === undefined || row.price < current) {
+          entry.basketPrices.set(matchedItem, row.price);
         }
       }
 
-      // Only include stores that have at least 3 of the 8 basket items
-      const MIN_ITEMS = 3;
+      // Require ALL 8 basket items so every ranked store's total is a true
+      // apples-to-apples comparison — a partial basket (e.g. 3 of 8 cheap
+      // items) isn't a meaningful "cheapest store" signal, it's just whichever
+      // store happened to have fewer items priced.
       const storeEntries: { id: string; name: string; totalPrice: number }[] = [];
 
       for (const [storeId, { name, basketPrices }] of storeMap) {
-        if (basketPrices.size < MIN_ITEMS) continue;
+        if (basketPrices.size < REFERENCE_BASKET.length) continue;
 
         let totalPrice = 0;
         for (const [, price] of basketPrices) {

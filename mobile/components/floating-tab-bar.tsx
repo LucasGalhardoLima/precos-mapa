@@ -93,28 +93,6 @@ export function FloatingTabBar({
     })
     .filter(Boolean);
 
-  // Inserted mid-row (not perfectly centered on an odd tab count, but the
-  // closest even split) rather than absolutely positioned, so it claims its
-  // own flex slot and never overlaps the tab beneath it — see 015-price-scanner:
-  // scan.tsx/scan-receipt.tsx existed only as poup:// deep links with no
-  // in-app affordance until this button.
-  tabButtons.splice(
-    Math.floor(tabButtons.length / 2),
-    0,
-    <Pressable
-      key="scan-fab"
-      accessibilityRole="button"
-      accessibilityLabel="Escanear preço ou nota fiscal"
-      onPress={() => setScanSheetOpen(true)}
-      style={styles.scanFabWrap}
-    >
-      <View style={[styles.scanFab, { backgroundColor: tokens.primary }]}>
-        <ScanLine size={22} color="#FFFFFF" />
-      </View>
-      <Text style={[styles.label, { color: tokens.primary }]}>Escanear</Text>
-    </Pressable>,
-  );
-
   return (
     <View
       style={[
@@ -126,6 +104,28 @@ export function FloatingTabBar({
       ]}
     >
       <View style={styles.tabRow}>{tabButtons}</View>
+
+      {/* True floating FAB above the bar, not a mid-row slot — matches the
+          app's existing floating-button convention (e.g. the shopping list's
+          "add item" FAB: bottom-right, absolutely positioned, floating clear
+          of the tab row) rather than sharing the tabs' flex layout. See
+          015-price-scanner: scan.tsx/scan-receipt.tsx existed only as
+          poup:// deep links with no in-app affordance until this button. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Escanear preço ou nota fiscal"
+        onPress={() => setScanSheetOpen(true)}
+        style={[
+          styles.scanFab,
+          {
+            backgroundColor: tokens.primary,
+            bottom: TAB_BAR_HEIGHT + insets.bottom + 16,
+          },
+        ]}
+      >
+        <ScanLine size={24} color="#FFFFFF" />
+      </Pressable>
+
       <ScanModeSheet visible={scanSheetOpen} onClose={() => setScanSheetOpen(false)} />
     </View>
   );
@@ -173,28 +173,23 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#EF4444',
   },
-  scanFabWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
   scanFab: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    position: 'absolute',
+    right: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -26,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
-        shadowRadius: 6,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 6,
+        elevation: 8,
       },
     }),
   },

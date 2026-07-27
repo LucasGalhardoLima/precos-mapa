@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import type { BottomSheetDefaultBackdropProps } from '@gorhom/bottom-sheet/lib/typescript/components/bottomSheetBackdrop/types';
 
 import { useTheme } from '@/theme/use-theme';
@@ -95,7 +95,7 @@ export const SearchFilterSheet = React.forwardRef<BottomSheet, SearchFilterSheet
         handleIndicatorStyle={styles.handle}
         backgroundStyle={[styles.sheetBg, { backgroundColor: tokens.surface }]}
       >
-        <View style={styles.sheetContent}>
+        <BottomSheetView style={styles.sheetContent}>
           <Text style={[styles.sheetTitle, { color: tokens.textPrimary }]}>
             Filtrar resultados
           </Text>
@@ -224,7 +224,7 @@ export const SearchFilterSheet = React.forwardRef<BottomSheet, SearchFilterSheet
           >
             <Text style={styles.applyButtonText}>Aplicar filtros</Text>
           </Pressable>
-        </View>
+        </BottomSheetView>
       </BottomSheet>
     );
   },
