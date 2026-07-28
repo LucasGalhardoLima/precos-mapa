@@ -20,6 +20,7 @@ interface MockDb {
   insertedReceiptImports: Record<string, unknown>[];
   insertedPriceReports: Record<string, unknown>[];
   insertedProducts: Record<string, unknown>[];
+  insertedSynonyms: Record<string, unknown>[];
   priceReportInsertShouldFailFor?: string; // ean to reject with a 23505, simulating the daily-dedup constraint
   /** Candidates returned by the mocked match_product_for_upsert RPC — empty means "no fuzzy match, create a new product". */
   matchCandidates: MatchCandidate[];
@@ -96,6 +97,14 @@ function makeMockClient(db: MockDb) {
           },
         };
       }
+      if (table === 'product_synonyms') {
+        return {
+          insert: (row: Record<string, unknown>) => {
+            db.insertedSynonyms.push(row);
+            return Promise.resolve({ error: null });
+          },
+        };
+      }
       throw new Error(`unexpected table in test: ${table}`);
     },
   };
@@ -110,6 +119,7 @@ function freshDb(overrides: Partial<MockDb> = {}): MockDb {
     insertedReceiptImports: [],
     insertedPriceReports: [],
     insertedProducts: [],
+    insertedSynonyms: [],
     matchCandidates: [],
     nextProductId: () => `new-product-${++counter}`,
     ...overrides,
@@ -258,6 +268,11 @@ Deno.test('persistReceipt - an item with no EAN and no fuzzy match creates a new
   assertEquals(db.insertedPriceReports[0].product_id, 'new-product-1');
   assertEquals(db.insertedProducts[0].name, 'Item Avulso Sem Código');
   assertEquals(db.insertedProducts[0].reference_price, 3.5);
+  // Learned as a synonym so the exact same receipt phrasing fast-paths to
+  // this product next time, instead of re-running fuzzy matching.
+  assertEquals(db.insertedSynonyms.length, 1);
+  assertEquals(db.insertedSynonyms[0].term, 'Item Avulso Sem Código');
+  assertEquals(db.insertedSynonyms[0].product_id, 'new-product-1');
 });
 
 Deno.test('persistReceipt - reuses an existing fuzzy-matched product instead of creating a duplicate', async () => {
@@ -284,6 +299,7 @@ Deno.test('persistReceipt - reuses an existing fuzzy-matched product instead of 
   assertEquals(result.savedItemCount, 1);
   assertEquals(db.insertedPriceReports[0].product_id, 'existing-product-1');
   assertEquals(db.insertedProducts.length, 0); // reused the match — no new product created
+  assertEquals(db.insertedSynonyms.length, 0); // no synonym learned from a fuzzy (non-exact) match — only from a fresh create
 });
 
 Deno.test('persistReceipt - a size-incompatible fuzzy candidate is rejected, creating a new product instead of misattributing the price', async () => {
@@ -310,4 +326,6 @@ Deno.test('persistReceipt - a size-incompatible fuzzy candidate is rejected, cre
   assertEquals(result.savedItemCount, 1);
   assertEquals(db.insertedPriceReports[0].product_id, 'new-product-1'); // rejected the 500ml candidate — different size
   assertEquals(db.insertedProducts.length, 1);
+  assertEquals(db.insertedSynonyms.length, 1); // learned so this exact phrasing matches the new 1,5L product directly next time
+  assertEquals(db.insertedSynonyms[0].term, 'Agua Min Levissima 1,5l Sg');
 });

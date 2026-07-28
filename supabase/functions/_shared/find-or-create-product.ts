@@ -126,5 +126,25 @@ export async function findOrCreateProduct(
   }
   if (!data) throw new Error('Erro ao criar produto: desconhecido');
 
+  // Learn this exact phrasing as a synonym for the product we just created,
+  // so the next receipt using the same short/abbreviated description (very
+  // common — many stores share the same POS/ERP vendor and print near-
+  // identical item text) hits the RPC's synonym fast-path (confidence 1.0)
+  // instead of re-running fuzzy matching, which can miss a real match when
+  // wording varies (e.g. "Suco Fruit Shoot 150ml" vs. the catalog's
+  // "Bebida Mista Fruit Shoot Maguary 150ml" — same product, similarity
+  // score too low to clear the fuzzy threshold) and silently create another
+  // near-duplicate product. Never done for a *matched* (non-new) product:
+  // a fuzzy match is a guess, and baking a wrong guess in as a permanent
+  // synonym would entrench it instead of just risking it once.
+  // Awaited (not fire-and-forget) — a Deno edge function isolate can be torn
+  // down as soon as the response is sent, so an un-awaited call here could
+  // get cut off before the insert actually reaches Postgres.
+  try {
+    await supabase.from('product_synonyms').insert({ term: normalizedName, product_id: data.id });
+  } catch {
+    // best-effort — a term collision or transient error here is harmless to ignore
+  }
+
   return { id: data.id, matched: false, isNew: true };
 }
