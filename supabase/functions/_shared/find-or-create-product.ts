@@ -58,6 +58,8 @@ export interface FindOrCreateInput {
 
 export interface FindOrCreateResult {
   id: string;
+  /** Resolved product's canonical name — the actual matched/created row's name, not just the input's normalized text (they can differ when a match is reused). */
+  name: string;
   matched: boolean;
   isNew: boolean;
 }
@@ -87,13 +89,13 @@ export async function findOrCreateProduct(
 
   for (const match of (candidates ?? []) as MatchCandidate[]) {
     if (match.match_type === 'synonym') {
-      return { id: match.id, matched: true, isNew: false };
+      return { id: match.id, name: match.name, matched: true, isNew: false };
     }
     if (!isBrandCompatible(input.brand, match.brand)) continue;
     const matchSize = extractSize(match.name);
     const sizesCompatible = !inputSize || !matchSize || inputSize === matchSize;
     if (sizesCompatible) {
-      return { id: match.id, matched: true, isNew: false };
+      return { id: match.id, name: match.name, matched: true, isNew: false };
     }
   }
 
@@ -117,10 +119,10 @@ export async function findOrCreateProduct(
       // Concurrent caller created the same product — re-fetch the winner.
       const { data: existing } = await supabase
         .from('products')
-        .select('id')
+        .select('id, name')
         .eq('name', normalizedName)
         .maybeSingle();
-      if (existing) return { id: existing.id, matched: true, isNew: false };
+      if (existing) return { id: existing.id, name: existing.name, matched: true, isNew: false };
     }
     throw new Error(`Erro ao criar produto: ${error.message}`);
   }
@@ -146,5 +148,5 @@ export async function findOrCreateProduct(
     // best-effort — a term collision or transient error here is harmless to ignore
   }
 
-  return { id: data.id, matched: false, isNew: true };
+  return { id: data.id, name: normalizedName, matched: false, isNew: true };
 }

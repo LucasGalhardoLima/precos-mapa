@@ -90,7 +90,7 @@ describe('ScanReceiptScreen NFC-e result handling', () => {
 
   it('calls the edge function with the scanned QR url and anonymous id', async () => {
     mockInvoke.mockResolvedValue({
-      data: { status: 'processed', storeName: 'Savegnago', totalValue: 87.4, itemCount: 12, savedItemCount: 12 },
+      data: { status: 'processed', storeName: 'Savegnago', totalValue: 87.4, itemCount: 12, savedItemCount: 12, items: [] },
       error: null,
     });
 
@@ -104,7 +104,7 @@ describe('ScanReceiptScreen NFC-e result handling', () => {
 
   it('shows the item count, store, and total on a processed result', async () => {
     mockInvoke.mockResolvedValue({
-      data: { status: 'processed', storeName: 'Savegnago', totalValue: 87.4, itemCount: 12, savedItemCount: 12 },
+      data: { status: 'processed', storeName: 'Savegnago', totalValue: 87.4, itemCount: 12, savedItemCount: 12, items: [] },
       error: null,
     });
 
@@ -115,9 +115,38 @@ describe('ScanReceiptScreen NFC-e result handling', () => {
     expect(getByText('Savegnago — R$ 87,40. Isso ajuda outros consumidores.')).toBeTruthy();
   });
 
+  it('shows each scanned item — name, quantity/unit, and price', async () => {
+    mockInvoke.mockResolvedValue({
+      data: {
+        status: 'processed',
+        storeName: 'Savegnago',
+        totalValue: 30.79,
+        itemCount: 2,
+        savedItemCount: 1,
+        items: [
+          { name: 'Arroz Tio João 5kg', quantity: 1, unit: 'UN', price: 24.9, saved: true },
+          { name: 'Banana Nanica Kg', quantity: 1.5, unit: 'KG', price: 3.95, saved: false },
+        ],
+      },
+      error: null,
+    });
+
+    const { getByText } = render(<ScanReceiptScreen />);
+    await simulateScan(QR_URL);
+
+    await waitFor(() => getByText('Arroz Tio João 5kg'));
+    expect(getByText('1 UN')).toBeTruthy();
+    expect(getByText('R$ 24,90')).toBeTruthy();
+
+    expect(getByText('Banana Nanica Kg')).toBeTruthy();
+    // KG quantities render with 3 decimal places; the unsaved item is flagged inline.
+    expect(getByText('1,500 KG · já registrado hoje')).toBeTruthy();
+    expect(getByText('R$ 3,95')).toBeTruthy();
+  });
+
   it('shows the partial-result message when item scraping failed but the total was saved', async () => {
     mockInvoke.mockResolvedValue({
-      data: { status: 'partial', storeName: null, totalValue: 87.4, itemCount: 0, savedItemCount: 0 },
+      data: { status: 'partial', storeName: null, totalValue: 87.4, itemCount: 0, savedItemCount: 0, items: [] },
       error: null,
     });
 
@@ -130,9 +159,16 @@ describe('ScanReceiptScreen NFC-e result handling', () => {
     ).toBeTruthy();
   });
 
-  it('shows the already-processed message without claiming new items were saved', async () => {
+  it('shows the already-processed message and the original items reconstructed from price_reports', async () => {
     mockInvoke.mockResolvedValue({
-      data: { status: 'already_processed', storeName: null, totalValue: 87.4, itemCount: 12, savedItemCount: 12 },
+      data: {
+        status: 'already_processed',
+        storeName: null,
+        totalValue: 87.4,
+        itemCount: 1,
+        savedItemCount: 1,
+        items: [{ name: 'Arroz Tio João 5kg', quantity: 1, unit: 'UN', price: 24.9, saved: true }],
+      },
       error: null,
     });
 
@@ -140,7 +176,8 @@ describe('ScanReceiptScreen NFC-e result handling', () => {
     await simulateScan(QR_URL);
 
     await waitFor(() => getByText('Nota já registrada'));
-    expect(getByText('Você já registrou os 12 itens desta nota anteriormente.')).toBeTruthy();
+    expect(getByText('Você já registrou os 1 itens desta nota anteriormente.')).toBeTruthy();
+    expect(getByText('Arroz Tio João 5kg')).toBeTruthy();
   });
 
   it('shows the São Paulo-only message for an unsupported state', async () => {

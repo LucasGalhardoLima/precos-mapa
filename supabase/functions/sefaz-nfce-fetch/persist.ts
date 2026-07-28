@@ -30,6 +30,16 @@ export interface PersistInput {
   parsed: ParsedNfceReceipt | null;
 }
 
+export interface PersistedItem {
+  /** Resolved catalog product name — never the raw receipt description, so the client shows something presentable. */
+  name: string;
+  quantity: number;
+  unit: string;
+  price: number;
+  /** False if this one line lost the price_reports daily-dedup race — still shown to the user, just flagged as not newly recorded. */
+  saved: boolean;
+}
+
 export interface PersistResult {
   status: 'processed' | 'partial' | 'already_processed';
   storeName: string | null;
@@ -37,6 +47,8 @@ export interface PersistResult {
   itemCount: number;
   /** May be < itemCount: individual items can lose the price_reports daily-dedup race (migration 053 unique_daily_report) without failing the whole receipt. */
   savedItemCount: number;
+  /** Empty for 'partial' (no items were scraped) and 'already_processed' (nothing new to show). */
+  items: PersistedItem[];
 }
 
 const DUPLICATE_KEY = '23505';
@@ -57,12 +69,32 @@ export async function persistReceipt(
     .maybeSingle();
 
   if (existing) {
+    // Reconstruct the item list from the price_reports this receipt already
+    // wrote (same nfce_key) — a re-scan should show the same feedback as
+    // the original scan, not just a bare count/total.
+    const { data: priorReports } = await supabase
+      .from('price_reports')
+      .select('price, metadata, product:products(name)')
+      .eq('nfce_key', chNFe);
+
     return {
       status: 'already_processed',
       storeName: null,
       totalValue: existing.total_value ?? null,
       itemCount: existing.item_count ?? 0,
       savedItemCount: existing.item_count ?? 0,
+      items: (priorReports ?? []).map((row: {
+        price: number;
+        metadata: { quantity?: number; unit?: string; description?: string } | null;
+        // deno-lint-ignore no-explicit-any
+        product: any;
+      }) => ({
+        name: row.product?.name ?? row.metadata?.description ?? 'Item',
+        quantity: row.metadata?.quantity ?? 1,
+        unit: row.metadata?.unit ?? 'UN',
+        price: row.price,
+        saved: true,
+      })),
     };
   }
 
@@ -104,10 +136,12 @@ export async function persistReceipt(
       totalValue,
       itemCount: items.length,
       savedItemCount: 0,
+      items: [], // rare concurrent-scan race — the other request's response already showed the itemized feedback
     };
   }
 
   let savedItemCount = 0;
+  const resolvedItems: PersistedItem[] = [];
   if (status === 'processed') {
     // One insert per item, not a single bulk insert: price_reports'
     // unique_daily_report constraint (migration 053) can legitimately reject
@@ -116,13 +150,15 @@ export async function persistReceipt(
     // items on the same receipt.
     for (const item of items) {
       let productId: string | null = null;
+      let productName: string | null = null;
       if (item.ean) {
         const { data: product } = await supabase
           .from('products')
-          .select('id')
+          .select('id, name')
           .eq('ean', item.ean)
           .maybeSingle();
         productId = product?.id ?? null;
+        productName = product?.name ?? null;
       }
 
       // No EAN match (the common case — most stores' receipt item codes are
@@ -139,6 +175,7 @@ export async function persistReceipt(
             referencePrice: item.unitPrice,
           });
           productId = resolved.id;
+          productName = resolved.name;
         } catch {
           productId = null; // fail-safe — keep this one item unmatched rather than failing the whole receipt
         }
@@ -156,6 +193,14 @@ export async function persistReceipt(
         metadata: { quantity: item.quantity, unit: item.unit, description: item.description },
       });
       if (!error) savedItemCount++;
+
+      resolvedItems.push({
+        name: productName ?? item.description,
+        quantity: item.quantity,
+        unit: item.unit,
+        price: item.unitPrice,
+        saved: !error,
+      });
     }
   }
 
@@ -163,6 +208,7 @@ export async function persistReceipt(
     status,
     storeName: parsed?.storeName ?? null,
     totalValue,
+    items: resolvedItems,
     itemCount: items.length,
     savedItemCount,
   };

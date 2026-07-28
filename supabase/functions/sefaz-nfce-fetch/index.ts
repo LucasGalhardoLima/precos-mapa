@@ -95,5 +95,6 @@ Deno.serve(async (req) => {
     totalValue: result.totalValue,
     itemCount: result.itemCount,
     savedItemCount: result.savedItemCount,
+    items: result.items,
   });
 });

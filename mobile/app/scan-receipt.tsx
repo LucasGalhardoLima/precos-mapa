@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ActivityIndicator, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
@@ -32,17 +32,32 @@ type ScreenState =
   | { kind: 'result'; result: ReceiptResult }
   | { kind: 'error'; message: string };
 
+interface ReceiptItem {
+  name: string;
+  quantity: number;
+  unit: string;
+  price: number;
+  /** False if this line lost the price_reports daily-dedup race — still shown, just flagged as already counted today. */
+  saved: boolean;
+}
+
 interface ReceiptResult {
   status: 'processed' | 'partial' | 'already_processed';
   storeName: string | null;
   totalValue: number | null;
   itemCount: number;
   savedItemCount: number;
+  items: ReceiptItem[];
 }
 
 function formatCurrency(value: number | null): string {
   if (value == null) return '—';
   return `R$ ${value.toFixed(2).replace('.', ',')}`;
+}
+
+function formatQuantity(quantity: number, unit: string): string {
+  const qtyText = unit === 'KG' ? quantity.toFixed(3).replace('.', ',') : String(quantity);
+  return `${qtyText} ${unit}`;
 }
 
 export default function ScanReceiptScreen() {
@@ -163,18 +178,44 @@ export default function ScanReceiptScreen() {
       )}
 
       {screen.kind === 'result' && (
-        <View style={[styles.centerFill, { backgroundColor: tokens.dark }]}>
-          <CircleCheckBig size={40} color={tokens.primary} />
-          <Text style={styles.title}>{resultHeadline(screen.result)}</Text>
-          <Text style={styles.body}>{resultBody(screen.result)}</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Escanear outra nota"
-            onPress={resetScan}
-            style={[styles.primaryButton, { backgroundColor: tokens.primary }]}
-          >
-            <Text style={styles.primaryButtonText}>Escanear outra nota</Text>
-          </Pressable>
+        <View style={[styles.resultContainer, { backgroundColor: tokens.dark }]}>
+          <View style={[styles.resultHeader, { paddingTop: insets.top + 56 }]}>
+            <CircleCheckBig size={36} color={tokens.primary} />
+            <Text style={styles.title}>{resultHeadline(screen.result)}</Text>
+            <Text style={styles.body}>{resultBody(screen.result)}</Text>
+          </View>
+
+          {screen.result.items.length > 0 && (
+            <FlatList
+              data={screen.result.items}
+              keyExtractor={(_, index) => String(index)}
+              style={styles.itemsList}
+              contentContainerStyle={styles.itemsListContent}
+              renderItem={({ item }) => (
+                <View style={styles.itemRow}>
+                  <View style={styles.itemInfo}>
+                    <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
+                    <Text style={styles.itemQty}>
+                      {formatQuantity(item.quantity, item.unit)}
+                      {!item.saved && ' · já registrado hoje'}
+                    </Text>
+                  </View>
+                  <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
+                </View>
+              )}
+            />
+          )}
+
+          <View style={[styles.resultFooter, { paddingBottom: insets.bottom + 16 }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Escanear outra nota"
+              onPress={resetScan}
+              style={[styles.primaryButton, { backgroundColor: tokens.primary }]}
+            >
+              <Text style={styles.primaryButtonText}>Escanear outra nota</Text>
+            </Pressable>
+          </View>
         </View>
       )}
 
@@ -231,6 +272,24 @@ const styles = StyleSheet.create({
   body: { color: '#CBD5E1', fontSize: 14, textAlign: 'center', lineHeight: 20 },
   primaryButton: { marginTop: 12, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14 },
   primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  resultContainer: { flex: 1 },
+  resultHeader: { alignItems: 'center', gap: 8, paddingHorizontal: 32, paddingBottom: 16 },
+  resultFooter: { paddingHorizontal: 32, paddingTop: 8 },
+  itemsList: { flex: 1 },
+  itemsListContent: { paddingHorizontal: 24, paddingBottom: 8 },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  itemInfo: { flex: 1, gap: 2 },
+  itemName: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  itemQty: { color: '#94A3B8', fontSize: 12 },
+  itemPrice: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   closeButton: {
     position: 'absolute',
     left: 16,

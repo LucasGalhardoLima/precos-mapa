@@ -13,10 +13,18 @@ interface MatchCandidate {
   confidence: number;
 }
 
+interface MockPriceReport {
+  price: number;
+  metadata: { quantity?: number; unit?: string; description?: string } | null;
+  productName: string | null;
+}
+
 interface MockDb {
   receiptImports: Record<string, { total_value: number; item_count: number }>;
   stores: { id: string; cnpj: string }[];
   products: { id: string; ean: string | null; name?: string }[];
+  /** Seeded price_reports rows, keyed by nfce_key, for the already_processed reconstruction path. */
+  priceReportsByChave: Record<string, MockPriceReport[]>;
   insertedReceiptImports: Record<string, unknown>[];
   insertedPriceReports: Record<string, unknown>[];
   insertedProducts: Record<string, unknown>[];
@@ -88,6 +96,17 @@ function makeMockClient(db: MockDb) {
       }
       if (table === 'price_reports') {
         return {
+          select: (_cols?: string) => ({
+            eq: (_col: string, val: string) =>
+              Promise.resolve({
+                data: (db.priceReportsByChave[val] ?? []).map((r) => ({
+                  price: r.price,
+                  metadata: r.metadata,
+                  product: r.productName ? { name: r.productName } : null,
+                })),
+                error: null,
+              }),
+          }),
           insert: (row: Record<string, unknown>) => {
             if (row.ean === db.priceReportInsertShouldFailFor) {
               return Promise.resolve({ error: { code: '23505', message: 'duplicate key' } });
@@ -116,6 +135,7 @@ function freshDb(overrides: Partial<MockDb> = {}): MockDb {
     receiptImports: {},
     stores: [],
     products: [],
+    priceReportsByChave: {},
     insertedReceiptImports: [],
     insertedPriceReports: [],
     insertedProducts: [],
@@ -136,7 +156,10 @@ const TWO_ITEM_RECEIPT: ParsedNfceReceipt = {
 };
 
 Deno.test('persistReceipt - a fresh processed receipt writes receipt_imports and one price_reports row per item', async () => {
-  const db = freshDb({ stores: [{ id: 'store-1', cnpj: '12345678000190' }], products: [{ id: 'product-1', ean: '7891234567890' }] });
+  const db = freshDb({
+    stores: [{ id: 'store-1', cnpj: '12345678000190' }],
+    products: [{ id: 'product-1', ean: '7891234567890', name: 'Arroz Tio João 5kg' }],
+  });
   const client = makeMockClient(db);
 
   const result = await persistReceipt(client, {
@@ -169,6 +192,12 @@ Deno.test('persistReceipt - a fresh processed receipt writes receipt_imports and
   assertEquals(db.insertedProducts.length, 1);
   assertEquals(db.insertedProducts[0].name, 'Feijão Carioca 1kg');
   assertEquals(db.insertedProducts[0].reference_price, 8.5);
+
+  // Feedback shown to the user: the actual items, with the resolved
+  // catalog name (not the raw receipt text) for the EAN-matched one.
+  assertEquals(result.items.length, 2);
+  assertEquals(result.items[0], { name: 'Arroz Tio João 5kg', quantity: 2, unit: 'UN', price: 24.9, saved: true });
+  assertEquals(result.items[1], { name: 'Feijão Carioca 1kg', quantity: 1, unit: 'UN', price: 8.5, saved: true });
 });
 
 Deno.test('persistReceipt - falls back to QR-param-only (status partial) when html parsing failed', async () => {
@@ -187,6 +216,7 @@ Deno.test('persistReceipt - falls back to QR-param-only (status partial) when ht
   assertEquals(result.itemCount, 0);
   assertEquals(result.savedItemCount, 0);
   assertEquals(result.totalValue, 87.4); // falls back to the QR's own vNF
+  assertEquals(result.items, []); // nothing was scraped — no item feedback to show
   assertEquals(db.insertedPriceReports.length, 0); // no items to attribute a price to
   assertEquals(db.insertedReceiptImports[0].status, 'partial');
 });
@@ -208,8 +238,16 @@ Deno.test('persistReceipt - a receipt with no CNPJ match still saves, with store
   assertEquals(db.insertedPriceReports[0].store_id, null);
 });
 
-Deno.test('persistReceipt - a previously-processed chNFe short-circuits as already_processed, no duplicate writes', async () => {
-  const db = freshDb({ receiptImports: { [CHAVE]: { total_value: 58.3, item_count: 2 } } });
+Deno.test('persistReceipt - a previously-processed chNFe short-circuits as already_processed, reconstructing items from price_reports', async () => {
+  const db = freshDb({
+    receiptImports: { [CHAVE]: { total_value: 58.3, item_count: 2 } },
+    priceReportsByChave: {
+      [CHAVE]: [
+        { price: 24.9, metadata: { quantity: 2, unit: 'UN', description: 'ARROZ TIPO 1 5KG' }, productName: 'Arroz Tio João 5kg' },
+        { price: 8.5, metadata: { quantity: 1, unit: 'UN', description: 'FEIJAO CARIOCA 1KG' }, productName: null },
+      ],
+    },
+  });
   const client = makeMockClient(db);
 
   const result = await persistReceipt(client, {
@@ -225,6 +263,13 @@ Deno.test('persistReceipt - a previously-processed chNFe short-circuits as alrea
   assertEquals(result.itemCount, 2);
   assertEquals(db.insertedReceiptImports.length, 0);
   assertEquals(db.insertedPriceReports.length, 0);
+
+  // A re-scan shows the same feedback as the original scan, not just a bare
+  // count/total — resolved product name where available, falling back to
+  // the receipt's raw description for a report with no linked product.
+  assertEquals(result.items.length, 2);
+  assertEquals(result.items[0], { name: 'Arroz Tio João 5kg', quantity: 2, unit: 'UN', price: 24.9, saved: true });
+  assertEquals(result.items[1], { name: 'FEIJAO CARIOCA 1KG', quantity: 1, unit: 'UN', price: 8.5, saved: true });
 });
 
 Deno.test('persistReceipt - one item losing the daily-dedup race does not block the rest of the receipt', async () => {
@@ -244,6 +289,11 @@ Deno.test('persistReceipt - one item losing the daily-dedup race does not block 
   assertEquals(result.savedItemCount, 1); // one of the two lost the race
   assertEquals(db.insertedPriceReports.length, 1);
   assertEquals(db.insertedPriceReports[0].ean, '7899876543210');
+
+  // Both items are still shown to the user — the lost-race one flagged as not saved.
+  assertEquals(result.items.length, 2);
+  assertEquals(result.items[0].saved, false);
+  assertEquals(result.items[1].saved, true);
 });
 
 Deno.test('persistReceipt - an item with no EAN and no fuzzy match creates a new product instead of staying orphaned', async () => {
@@ -273,6 +323,8 @@ Deno.test('persistReceipt - an item with no EAN and no fuzzy match creates a new
   assertEquals(db.insertedSynonyms.length, 1);
   assertEquals(db.insertedSynonyms[0].term, 'Item Avulso Sem Código');
   assertEquals(db.insertedSynonyms[0].product_id, 'new-product-1');
+
+  assertEquals(result.items[0].name, 'Item Avulso Sem Código'); // the resolved (created) product's name, not the raw description
 });
 
 Deno.test('persistReceipt - reuses an existing fuzzy-matched product instead of creating a duplicate', async () => {
@@ -300,6 +352,7 @@ Deno.test('persistReceipt - reuses an existing fuzzy-matched product instead of 
   assertEquals(db.insertedPriceReports[0].product_id, 'existing-product-1');
   assertEquals(db.insertedProducts.length, 0); // reused the match — no new product created
   assertEquals(db.insertedSynonyms.length, 0); // no synonym learned from a fuzzy (non-exact) match — only from a fresh create
+  assertEquals(result.items[0].name, 'Água Mineral Levíssima 1,5L'); // the matched product's real name, not the raw receipt text
 });
 
 Deno.test('persistReceipt - a size-incompatible fuzzy candidate is rejected, creating a new product instead of misattributing the price', async () => {
@@ -328,4 +381,5 @@ Deno.test('persistReceipt - a size-incompatible fuzzy candidate is rejected, cre
   assertEquals(db.insertedProducts.length, 1);
   assertEquals(db.insertedSynonyms.length, 1); // learned so this exact phrasing matches the new 1,5L product directly next time
   assertEquals(db.insertedSynonyms[0].term, 'Agua Min Levissima 1,5l Sg');
+  assertEquals(result.items[0].name, 'Agua Min Levissima 1,5l Sg');
 });
