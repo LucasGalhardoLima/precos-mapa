@@ -1,6 +1,14 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 
-const SIZE_REGEX = /(\d+(?:[.,]\d+)?)\s*(ml|l|g|kg|un|pct|pack|dz|cx|bd)\b/i;
+// `unidades?` must precede `un` in the alternation — "Unidades" would
+// otherwise satisfy the shorter `un` branch up to the `\b` check, which
+// fails mid-word and forces a backtrack; listing the longer form first
+// avoids relying on that. Without it, pack-count phrasing ("Bandeja C/20
+// Unidades", "com 10 unidades") extracted no size token at all, so
+// different-count products could pass the size-compatibility check as
+// merge candidates — see the Jaú Serve trial run that mismatched a 10-egg
+// and a 20-egg carton this way.
+const SIZE_REGEX = /(\d+(?:[.,]\d+)?)\s*(ml|l|g|kg|unidades?|un|pct|pack|dz|cx|bd)\b/i;
 
 /** Extract normalized size token: "350ml", "2l", "5kg", etc. */
 export function extractSize(name: string): string | null {
@@ -22,11 +30,40 @@ export function isBrandCompatible(
   return queryBrand.trim().toLowerCase() === candidateBrand.trim().toLowerCase();
 }
 
+/**
+ * Reject a match only when both EANs are non-null and differ. Unlike brand
+ * (which the composite confidence already soft-weights), a differing real
+ * EAN is a hard signal these are different physical products no matter how
+ * similar the names are — e.g. two wine flavors from the same brand+size
+ * family. See migration 064 for the data loss this gap caused.
+ */
+export function isEanCompatible(
+  queryEan: string | null | undefined,
+  candidateEan: string | null | undefined,
+): boolean {
+  if (!queryEan || !candidateEan) return true;
+  return queryEan.trim() === candidateEan.trim();
+}
+
 interface FindOrCreateInput {
   name: string;
   categoryId?: string;
   brand?: string;
+  ean?: string;
   referencePrice: number;
+  /**
+   * When true and this item has no EAN, only reuse an existing product on
+   * an exact (normalized) name match — never on fuzzy similarity alone.
+   * For scraper callers, which write straight to the DB with no human
+   * review: two genuinely different unbranded/no-EAN items (e.g. deli
+   * items sold under a near-identical name template, differing only by
+   * flavor) can clear the fuzzy threshold easily once brand and size both
+   * match. See migration 067 for the pizza-flavor incident this fixes.
+   * Left off for PDF-import-family callers, which need fuzzy tolerance for
+   * OCR/receipt phrasing variance and already have a lower-stakes safety
+   * net (confidence-based flagging for manual review).
+   */
+  strictNoEanMatch?: boolean;
 }
 
 export interface FindOrCreateResult {
@@ -58,6 +95,15 @@ export async function findOrCreateProduct(
     }
     if (!isBrandCompatible(input.brand, match.brand)) {
       continue;
+    }
+    if (!isEanCompatible(input.ean, match.ean)) {
+      continue;
+    }
+    if (input.strictNoEanMatch && !input.ean) {
+      const candidateNormalized = match.name.trim().replace(/\s+/g, " ").toLowerCase();
+      if (candidateNormalized !== normalizedName.toLowerCase()) {
+        continue;
+      }
     }
     const matchSize = extractSize(match.name);
     const sizesCompatible = !inputSize || !matchSize || inputSize === matchSize;

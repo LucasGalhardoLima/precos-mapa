@@ -7,7 +7,9 @@
 // colliding one. Keep the matching/creation logic here in sync with
 // src/lib/product-match.ts if either changes.
 
-const SIZE_REGEX = /(\d+(?:[.,]\d+)?)\s*(ml|l|g|kg|un|pct|pack|dz|cx|bd)\b/i;
+// Kept in sync with src/lib/product-match.ts's SIZE_REGEX — see its comment
+// for why `unidades?` must precede `un` in the alternation.
+const SIZE_REGEX = /(\d+(?:[.,]\d+)?)\s*(ml|l|g|kg|unidades?|un|pct|pack|dz|cx|bd)\b/i;
 
 /** Extract normalized size token: "350ml", "2l", "5kg", etc. */
 export function extractSize(name: string): string | null {
@@ -27,6 +29,21 @@ export function isBrandCompatible(
 ): boolean {
   if (!queryBrand || !candidateBrand) return true;
   return queryBrand.trim().toLowerCase() === candidateBrand.trim().toLowerCase();
+}
+
+/**
+ * Reject a match only when both EANs are non-null and differ. Currently a
+ * no-op here since no caller of this file populates FindOrCreateInput.ean
+ * (a receipt scan's "looks like an EAN" code is too low-confidence to trust
+ * — see the create-path comment below), but kept in sync with the same
+ * guard in src/lib/product-match.ts per this file's header contract.
+ */
+export function isEanCompatible(
+  queryEan: string | null | undefined,
+  candidateEan: string | null | undefined,
+): boolean {
+  if (!queryEan || !candidateEan) return true;
+  return queryEan.trim() === candidateEan.trim();
 }
 
 const GROCERY_ACRONYMS = new Set(['UHT', 'PC', 'UN', 'CX', 'LT', 'SC', 'PT']);
@@ -53,6 +70,7 @@ export interface FindOrCreateInput {
   name: string;
   categoryId?: string;
   brand?: string | null;
+  ean?: string | null;
   referencePrice?: number | null;
 }
 
@@ -68,6 +86,7 @@ interface MatchCandidate {
   id: string;
   name: string;
   brand: string | null;
+  ean: string | null;
   match_type: string;
   match_score: number;
   confidence: number;
@@ -92,6 +111,7 @@ export async function findOrCreateProduct(
       return { id: match.id, name: match.name, matched: true, isNew: false };
     }
     if (!isBrandCompatible(input.brand, match.brand)) continue;
+    if (!isEanCompatible(input.ean, match.ean)) continue;
     const matchSize = extractSize(match.name);
     const sizesCompatible = !inputSize || !matchSize || inputSize === matchSize;
     if (sizesCompatible) {
