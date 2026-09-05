@@ -51,7 +51,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { findOrCreateProduct } from '../src/lib/product-match';
 
@@ -421,6 +421,17 @@ async function main() {
   console.log(`Total processed across all runs: ${processed.size} / ${allUrls.length}`);
   console.log(`Review file: ${REVIEW_FILE}`);
   if (DRY_RUN) console.log('\nDRY_RUN is true — nothing was written to the database. Review the CSV, then set DRY_RUN = false to apply.');
+
+  // A checkpoint that only ever grows would make every future run a no-op
+  // once the catalog is fully covered — fine for a one-time backfill, wrong
+  // for a script meant to be re-run periodically to refresh prices. Clearing
+  // it on a clean full pass (not on DRY_RUN, which never actually commits
+  // anything) makes the next invocation a fresh full re-scrape instead of
+  // permanently skipping every already-seen URL.
+  if (!DRY_RUN && processed.size >= allUrls.length && existsSync(CHECKPOINT_FILE)) {
+    unlinkSync(CHECKPOINT_FILE);
+    console.log('Full catalog covered — checkpoint cleared so the next run does a fresh refresh.');
+  }
   console.log('════════════════════════════════════');
 }
 

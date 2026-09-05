@@ -572,6 +572,19 @@ async function main() {
   console.log(`Total processed across all runs: ${processed.size} / ${inStock.length}`);
   console.log(`Review file: ${REVIEW_FILE}`);
   if (DRY_RUN) console.log('\nDRY_RUN is true — nothing was written to the database. Review the CSV, then set DRY_RUN = false to apply.');
+
+  // A checkpoint that only ever grows would make every future run a no-op
+  // once the catalog is fully covered — fine for a one-time backfill, wrong
+  // for a script meant to be re-run periodically to refresh prices. Discovery
+  // above already re-fetches fresh prices every run (see discoverCatalog's
+  // own comment); clearing this checkpoint too on a clean full pass (not on
+  // DRY_RUN, which never actually commits anything) makes the next
+  // invocation actually re-write those fresh prices instead of skipping
+  // every already-seen SKU forever.
+  if (!DRY_RUN && processed.size >= inStock.length && existsSync(CHECKPOINT_FILE)) {
+    unlinkSync(CHECKPOINT_FILE);
+    console.log('Full catalog covered — checkpoint cleared so the next run does a fresh refresh.');
+  }
   console.log('════════════════════════════════════');
 }
 
