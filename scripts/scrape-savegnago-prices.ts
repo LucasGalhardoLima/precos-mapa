@@ -114,7 +114,7 @@ const USER_AGENT = 'Mozilla/5.0 (compatible; PoupPriceCompare/1.0; +lima.galhard
 const DELAY_MS = 400;
 const PAGE_SIZE = 50; // VTEX legacy search API hard cap — confirmed via live 400 response
 const MAX_RESULTS_PER_CATEGORY = 2500; // VTEX search backend cap (task brief, not directly re-tested)
-const BATCH = 1000; // per-run product cap — re-run to continue via checkpoint
+const BATCH = 20000; // deliberately >> catalog size (~15.2k) — clears everything in one run; doesn't change request volume/rate against the site, only how many invocations it takes
 
 // Matão store's registered CEP (stores.id = 'd5912ae4-2aa3-44e6-bcf6-9d6503c57bfe',
 // "R. São Lourenço, 1170 - Centro, Matão - SP, 15990-005"), digits only.
@@ -125,7 +125,7 @@ const CHECKPOINT_FILE = resolve(process.cwd(), 'scripts/.scrape-savegnago-checkp
 const REVIEW_FILE = resolve(process.cwd(), 'scripts/.scrape-savegnago-review.csv');
 
 // Set to false only after reviewing a sample run's output.
-const DRY_RUN = true;
+const DRY_RUN = false;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));

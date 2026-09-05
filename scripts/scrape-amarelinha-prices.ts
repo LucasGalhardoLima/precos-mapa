@@ -98,7 +98,7 @@ const CATEGORY_IDS = [
 ];
 
 // Set to false only after reviewing a sample run's output.
-const DRY_RUN = true;
+const DRY_RUN = false;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));

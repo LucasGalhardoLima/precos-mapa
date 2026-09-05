@@ -63,7 +63,7 @@ const BASE = 'https://www.jauserve.com.br';
 const SITE_PATH = 'on/demandware.store/Sites-JauServe-Site/pt_BR';
 const USER_AGENT = 'Mozilla/5.0 (compatible; PoupBot/1.0; +lima.galhardo@gmail.com)';
 const DELAY_MS = 500;
-const BATCH = 500; // per-run limit — re-run to continue via checkpoint
+const BATCH = 2000; // per-run limit — re-run to continue via checkpoint; raised from 500 to cut down on manual re-invocations against the now-8,953-URL catalog
 const PAGE_SIZE = 16;
 const MAX_PAGES_PER_CATEGORY = 60; // safety cap — 960 products/category, generous but bounded
 
@@ -87,7 +87,7 @@ const CATEGORY_IDS = [
 ];
 
 // Set to false only after reviewing a sample run's output.
-const DRY_RUN = true;
+const DRY_RUN = false;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -145,7 +145,7 @@ async function getStoreCookies(): Promise<string> {
   return `dw_storeid=${storeId}; dw_shippostalcode=${postalCode}`;
 }
 
-async function discoverProductUrls(): Promise<string[]> {
+async function discoverProductUrls(storeCookie: string): Promise<string[]> {
   if (existsSync(DISCOVERY_CACHE_FILE)) {
     console.log('Loading cached product URL list...');
     return JSON.parse(readFileSync(DISCOVERY_CACHE_FILE, 'utf-8'));
@@ -160,7 +160,11 @@ async function discoverProductUrls(): Promise<string[]> {
       const start = page * PAGE_SIZE;
       const gridUrl = `${BASE}/${SITE_PATH}/Search-UpdateGrid?cgid=${cgid}&start=${start}&sz=${PAGE_SIZE}`;
       try {
-        const res = await fetchWithTimeout(gridUrl, 20000);
+        // Store context is required here, not just on Product-Variation below —
+        // without it the grid renders "0 de 0 produtos" for every store-scoped
+        // category (confirmed live: this silently produced a 127-URL "catalog"
+        // instead of the real ~4,000+ before this fix).
+        const res = await fetchWithTimeout(gridUrl, 20000, { Cookie: storeCookie });
         if (!res.ok) break;
         const html = await res.text();
         const hrefs = [...html.matchAll(/href="(\/[a-zA-Z0-9-]+\.html)"/g)].map((m) => m[1]);
@@ -285,7 +289,7 @@ async function main() {
     process.exit(1);
   }
 
-  const allUrls = await discoverProductUrls();
+  const allUrls = await discoverProductUrls(storeCookie);
 
   const processed = existsSync(CHECKPOINT_FILE)
     ? new Set<string>(JSON.parse(readFileSync(CHECKPOINT_FILE, 'utf-8')).processedUrls ?? [])

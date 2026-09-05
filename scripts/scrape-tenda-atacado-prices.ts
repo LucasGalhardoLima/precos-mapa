@@ -107,7 +107,7 @@ const DISCOVERY_CHECKPOINT_FILE = resolve(process.cwd(), 'scripts/.scrape-tenda-
 const REVIEW_FILE = resolve(process.cwd(), 'scripts/.scrape-tenda-review.csv');
 
 // Set to false only after reviewing a sample run's output.
-const DRY_RUN = true;
+const DRY_RUN = false;
 
 // The 16 top-level departments that cover the entire catalog (subcategories
 // aggregate into their parent department) — confirmed live 2026-09-01 via
