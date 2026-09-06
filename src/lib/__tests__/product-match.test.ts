@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractSize, isBrandCompatible } from "../product-match";
+import { extractSize, isBrandCompatible, looksLikeProduce } from "../product-match";
 
 // ---------------------------------------------------------------------------
 // extractSize
@@ -77,5 +77,30 @@ describe("isBrandCompatible", () => {
     expect(isBrandCompatible("Phenix", null)).toBe(true);
     expect(isBrandCompatible(undefined, undefined)).toBe(true);
     expect(isBrandCompatible("", "Premium")).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// looksLikeProduce
+// ---------------------------------------------------------------------------
+
+describe("looksLikeProduce", () => {
+  it("accepts raw produce names, accented or not", () => {
+    expect(looksLikeProduce("Maçã Fuji")).toBe(true);
+    expect(looksLikeProduce("Maca Fuji Unidade")).toBe(true);
+    expect(looksLikeProduce("Batata Inglesa Kg")).toBe(true);
+    expect(looksLikeProduce("banana prata")).toBe(true);
+  });
+
+  it("rejects prepared/processed foods that merely mention a produce word", () => {
+    expect(looksLikeProduce("Suco de Laranja")).toBe(false);
+    expect(looksLikeProduce("Molho de Tomate")).toBe(false);
+    expect(looksLikeProduce("Bolo de Cenoura")).toBe(false);
+    expect(looksLikeProduce("Purê de Batata")).toBe(false);
+  });
+
+  it("rejects unrelated names", () => {
+    expect(looksLikeProduce("Coca-Cola 350ml")).toBe(false);
+    expect(looksLikeProduce("")).toBe(false);
   });
 });

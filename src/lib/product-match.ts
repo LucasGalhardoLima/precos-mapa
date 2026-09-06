@@ -17,6 +17,49 @@ export function extractSize(name: string): string | null {
   return (m[1] + m[2]).toLowerCase();
 }
 
+function stripAccents(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+// Checked against the item's FIRST word only — "Suco de Laranja" or "Molho
+// de Tomate" contain a produce word but aren't produce themselves; a raw
+// produce item is named starting with the produce word ("Maçã Fuji",
+// "Batata Inglesa Kg"), a prepared/processed one isn't.
+const PRODUCE_FIRST_WORDS = new Set([
+  // frutas
+  "maca", "macas", "banana", "bananas", "laranja", "laranjas", "mamao", "mamoes",
+  "melancia", "melancias", "melao", "meloes", "uva", "uvas", "morango", "morangos",
+  "abacaxi", "abacaxis", "manga", "mangas", "pera", "peras", "pessego", "pessegos",
+  "ameixa", "ameixas", "kiwi", "kiwis", "limao", "limoes", "tangerina", "tangerinas",
+  "mexerica", "mexericas", "abacate", "abacates", "goiaba", "goiabas", "caqui", "caquis",
+  "coco", "cocos", "maracuja", "maracujas", "carambola", "carambolas", "jaca", "jacas",
+  "graviola", "graviolas", "acerola", "acerolas", "framboesa", "framboesas", "amora", "amoras",
+  "cereja", "cerejas", "figo", "figos", "roma", "romas", "tamarindo", "tamarindos",
+  "pitanga", "pitangas", "jabuticaba", "jabuticabas", "nectarina", "nectarinas",
+  // legumes e verduras
+  "batata", "batatas", "cebola", "cebolas", "tomate", "tomates", "cenoura", "cenouras",
+  "alface", "alfaces", "couve", "couves", "repolho", "repolhos", "brocolis",
+  "abobrinha", "abobrinhas", "abobora", "aboboras", "chuchu", "chuchus",
+  "pepino", "pepinos", "pimentao", "pimentoes", "berinjela", "berinjelas", "vagem", "vagens",
+  "quiabo", "quiabos", "beterraba", "beterrabas", "rabanete", "rabanetes", "espinafre",
+  "agriao", "rucula", "salsa", "cebolinha", "cebolinhas", "coentro", "alho",
+  "aipo", "nabo", "nabos", "inhame", "inhames", "mandioca", "mandiocas", "mandioquinha",
+  "mandioquinhas", "milho", "milhos", "ervilha", "ervilhas", "broto", "brotos",
+]);
+
+/**
+ * Whole-word first-token heuristic for common Brazilian hortifruti items —
+ * scoped narrowly (fruits/vegetables only) because that's where genuine
+ * flavor-variant risk (the failure mode migrations 064/066/067 fixed for
+ * wine/pizza) doesn't really apply: an apple is an apple, price-relevant
+ * variation is basically just weight/pack size, already handled separately
+ * by extractSize's own size-compatibility check.
+ */
+export function looksLikeProduce(name: string): boolean {
+  const firstWord = stripAccents(name.trim().toLowerCase()).split(/\s+/)[0] ?? "";
+  return PRODUCE_FIRST_WORDS.has(firstWord);
+}
+
 /**
  * Reject a match only when both brands are non-null and clearly differ.
  * Returns true (compatible) when either side is missing — the matcher's
@@ -79,6 +122,26 @@ export async function findOrCreateProduct(
 ): Promise<FindOrCreateResult> {
   const normalizedName = input.name.trim().replace(/\s+/g, " ");
   const inputSize = extractSize(normalizedName);
+  const isProduce = !input.ean && (input.categoryId === "cat_hortifruti" || looksLikeProduce(normalizedName));
+
+  // 0. Hortifrúti items without an EAN: retailers spell the same generic
+  // item differently ("Maçã Fuji" / "Maca Fuji" / "Maçã Fuji Unidade") in
+  // ways match_product_for_upsert's trigram similarity() never bridges —
+  // confirmed live that querying "Maçã Fuji" doesn't even return "Maca
+  // Fuji" as a fuzzy candidate, so no amount of loosening the comparison
+  // below would help; the candidate never arrives there. This calls a
+  // dedicated accent-insensitive exact-match RPC instead (see migrations
+  // 069/070) — gated the same as strictNoEanMatch below, so it only runs
+  // for scraper callers, not PDF-import.
+  if (input.strictNoEanMatch && isProduce) {
+    const { data: produceMatches } = await supabase.rpc("find_produce_exact_match", {
+      query_name: normalizedName,
+    });
+    for (const match of produceMatches ?? []) {
+      if (!isBrandCompatible(input.brand, match.brand)) continue;
+      return { id: match.id, matched: true, confidence: 0.9, isNew: false };
+    }
+  }
 
   // 1. Query candidates with brand/category/size scoring
   const { data: candidates } = await supabase.rpc("match_product_for_upsert", {
@@ -122,7 +185,7 @@ export async function findOrCreateProduct(
     .from("products")
     .insert({
       name: normalizedName,
-      category_id: input.categoryId ?? "cat_alimentos",
+      category_id: input.categoryId ?? (isProduce ? "cat_hortifruti" : "cat_alimentos"),
       brand: input.brand ?? null,
       reference_price: input.referencePrice,
     })
