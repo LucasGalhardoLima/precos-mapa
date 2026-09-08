@@ -12,7 +12,7 @@ name: Scrape retailer prices
 
 on:
   schedule:
-    - cron: '0 6 * * *' # 03:00 BRT — ahead of the app's own crons (05:00/13:00 UTC)
+    - cron: '0 6 * * *' # 03:00 BRT — ahead of the app's own process-import cron (05:00 UTC)
   workflow_dispatch:
 
 jobs:
