@@ -63,7 +63,7 @@ const BASE = 'https://www.jauserve.com.br';
 const SITE_PATH = 'on/demandware.store/Sites-JauServe-Site/pt_BR';
 const USER_AGENT = 'Mozilla/5.0 (compatible; PoupBot/1.0; +lima.galhardo@gmail.com)';
 const DELAY_MS = 500;
-const BATCH = 2000; // per-run limit — re-run to continue via checkpoint; raised from 500 to cut down on manual re-invocations against the now-8,953-URL catalog
+const BATCH = 12000; // deliberately >> catalog size (~8,953) — clears everything in one run, required for the unattended GH Actions cron (its checkpoint doesn't survive across daily runs)
 const PAGE_SIZE = 16;
 const MAX_PAGES_PER_CATEGORY = 60; // safety cap — 960 products/category, generous but bounded
 
@@ -85,6 +85,32 @@ const CATEGORY_IDS = [
   'EC01', 'EC02', 'EC03', 'EC04', 'EC05', 'EC06', 'EC07', 'EC08', 'EC09',
   'EC10', 'EC11', 'EC12', 'EC13', 'EC14', 'EC15', 'EC16', 'EC17',
 ];
+
+// Maps each category id to our internal categories.id taxonomy (12 rows —
+// see the `categories` table) — real names confirmed live via each
+// category's own breadcrumb/<h1>. EC08 (Sazonais/seasonal), EC14
+// (Jardinagem/gardening) and EC15 (Bazar) don't map cleanly to any single
+// internal category — cat_outros rather than guessing. EC17 (Proteínas) is
+// protein supplements/shakes, not the meat aisle (that's EC03) — cat_alimentos.
+const CATEGORY_TO_INTERNAL: Record<string, string> = {
+  EC01: 'cat_bebidas', // Bebidas alcoólicas
+  EC02: 'cat_bebidas', // Bebidas não alcoólicas
+  EC03: 'cat_carnes', // Carnes, aves e peixes
+  EC04: 'cat_congelados', // Congelados
+  EC05: 'cat_laticinios', // Frios e laticínios
+  EC06: 'cat_alimentos', // Mercearia
+  EC07: 'cat_hortifruti', // Hortifruti
+  EC08: 'cat_outros', // Sazonais
+  EC09: 'cat_padaria', // Padaria, confeitaria e pizzaria
+  EC10: 'cat_higiene', // Higiene e beleza
+  EC11: 'cat_limpeza', // Limpeza
+  EC12: 'cat_pet', // Pet shop
+  EC13: 'cat_alimentos', // Alimentos saudáveis
+  EC14: 'cat_outros', // Jardinagem
+  EC15: 'cat_outros', // Bazar
+  EC16: 'cat_alimentos', // Empório (deli/specialty foods)
+  EC17: 'cat_alimentos', // Proteínas (supplements)
+};
 
 // Set to false only after reviewing a sample run's output.
 const DRY_RUN = false;
@@ -145,14 +171,19 @@ async function getStoreCookies(): Promise<string> {
   return `dw_storeid=${storeId}; dw_shippostalcode=${postalCode}`;
 }
 
-async function discoverProductUrls(storeCookie: string): Promise<string[]> {
+interface DiscoveredUrl {
+  url: string;
+  categoryId: string; // our internal categories.id, from the first category grid this URL was seen under
+}
+
+async function discoverProductUrls(storeCookie: string): Promise<DiscoveredUrl[]> {
   if (existsSync(DISCOVERY_CACHE_FILE)) {
     console.log('Loading cached product URL list...');
     return JSON.parse(readFileSync(DISCOVERY_CACHE_FILE, 'utf-8'));
   }
 
   console.log('Crawling category grids to discover product URLs (first run — cached afterwards)...');
-  const urls = new Set<string>();
+  const byUrl = new Map<string, DiscoveredUrl>();
 
   for (const cgid of CATEGORY_IDS) {
     let pageUrls = 0;
@@ -170,7 +201,9 @@ async function discoverProductUrls(storeCookie: string): Promise<string[]> {
         const hrefs = [...html.matchAll(/href="(\/[a-zA-Z0-9-]+\.html)"/g)].map((m) => m[1]);
         if (hrefs.length === 0) break;
         for (const h of hrefs) {
-          urls.add(BASE + h);
+          const url = BASE + h;
+          if (byUrl.has(url)) continue; // first category grid a URL appears under wins
+          byUrl.set(url, { url, categoryId: CATEGORY_TO_INTERNAL[cgid] ?? 'cat_alimentos' });
           pageUrls++;
         }
       } catch (err) {
@@ -182,7 +215,7 @@ async function discoverProductUrls(storeCookie: string): Promise<string[]> {
     console.log(`  ${cgid}: ${pageUrls} product links found`);
   }
 
-  const result = [...urls];
+  const result = [...byUrl.values()];
   writeFileSync(DISCOVERY_CACHE_FILE, JSON.stringify(result));
   console.log(`Total unique product URLs discovered: ${result.length}\n`);
   return result;
@@ -294,7 +327,7 @@ async function main() {
   const processed = existsSync(CHECKPOINT_FILE)
     ? new Set<string>(JSON.parse(readFileSync(CHECKPOINT_FILE, 'utf-8')).processedUrls ?? [])
     : new Set<string>();
-  const pending = allUrls.filter((u) => !processed.has(u)).slice(0, BATCH);
+  const pending = allUrls.filter((u) => !processed.has(u.url)).slice(0, BATCH);
   console.log(`${processed.size} already processed in prior runs. Processing ${pending.length} this run (${DRY_RUN ? 'DRY RUN' : 'LIVE — writing to DB'}).\n`);
 
   const reviewRows: string[] = ['url,pid,ean,name,brand,price,is_promo,image_url,status,matched_product_id,is_new_product'];
@@ -305,7 +338,7 @@ async function main() {
   let skipped = 0;
   let failed = 0;
 
-  for (const url of pending) {
+  for (const { url, categoryId } of pending) {
     try {
       const pid = pidFromUrl(url);
       if (!pid) {
@@ -349,7 +382,7 @@ async function main() {
             productId = existing.id;
             matchedByEan++;
           } else {
-            const result = await findOrCreateProduct(supabase, { name: parsed.name, brand: parsed.brand ?? undefined, ean: parsed.ean, referencePrice: price, strictNoEanMatch: true });
+            const result = await findOrCreateProduct(supabase, { name: parsed.name, categoryId, brand: parsed.brand ?? undefined, ean: parsed.ean, referencePrice: price, strictNoEanMatch: true });
             productId = result.id;
             isNew = result.isNew;
             if (result.isNew) {
@@ -364,7 +397,7 @@ async function main() {
             }
           }
         } else {
-          const result = await findOrCreateProduct(supabase, { name: parsed.name, brand: parsed.brand ?? undefined, referencePrice: price, strictNoEanMatch: true });
+          const result = await findOrCreateProduct(supabase, { name: parsed.name, categoryId, brand: parsed.brand ?? undefined, referencePrice: price, strictNoEanMatch: true });
           productId = result.id;
           isNew = result.isNew;
           if (result.isNew) created++;

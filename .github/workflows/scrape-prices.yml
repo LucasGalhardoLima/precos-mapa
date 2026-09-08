@@ -1,0 +1,41 @@
+# shortcut: each scrape-*.ts script assumes it clears its entire catalog
+# within a single job run — checkpoint/discovery-cache files are local to
+# the runner and don't survive across days. If a retailer's site ever slows
+# down enough that a run doesn't finish (measured live 2026-09-07: Savegnago
+# ~40min, Amarelinha ~20-25min, Tenda ~25-40min, Jaú Serve the long pole at
+# ~2.4h — all comfortably under the timeout below), that day's tail of the
+# catalog silently goes unrefreshed and the next day's run starts over from
+# scratch (self-healing, not data loss). Upgrade: persist checkpoint /
+# discovery-cache state to a Supabase table keyed by retailer if this
+# actually starts happening.
+name: Scrape retailer prices
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # 03:00 BRT — ahead of the app's own crons (05:00/13:00 UTC)
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    name: Scrape ${{ matrix.retailer }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        retailer: [amarelinha, jauserve, savegnago, tenda-atacado]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Install Playwright Chromium
+        if: matrix.retailer == 'tenda-atacado'
+        run: npx playwright install --with-deps chromium
+      - name: Run scraper
+        run: npx tsx scripts/scrape-${{ matrix.retailer }}-prices.ts
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

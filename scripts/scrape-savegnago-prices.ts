@@ -75,12 +75,9 @@
  * directly (unlike Jaú Serve), so it's passed through to improve fuzzy-match
  * quality — a legitimate use of available data, not scope creep.
  *
- * NOT wired up: mapping VTEX's `categoriesIds` to this project's internal
- * `products.category_id` taxonomy. The data is available in every response
- * but there's no existing VTEX→internal-category mapping anywhere in this
- * codebase's scrapers to reuse, and jauserve (the structural template this
- * script follows) also leaves category_id unset. Left as a known gap, not
- * an oversight — see the categoryId comment near parseProduct().
+ * Category mapping: uses this script's own leaf category `path` (not
+ * VTEX's `categoriesIds`, which the parsed product data doesn't carry) —
+ * see TOP_LEVEL_CATEGORY_MAP / mapSavegnagoCategory() below.
  *
  * DRY_RUN defaults to true (writes a review CSV, no DB writes) — same
  * caution as the other scrape-*.ts scripts. Flip to false only after
@@ -215,6 +212,37 @@ interface LeafCategory {
   path: string; // human-readable, for the review CSV
 }
 
+// Maps a leaf's top-level path segment to our internal categories.id
+// taxonomy (12 rows — see the `categories` table). "Frios e Congelados" is
+// Savegnago's own top-level bucket spanning both frios (deli/dairy) and
+// actual frozen goods — resolved by its 2nd-level segment instead (checked
+// live: "Frios" -> cat_laticinios, everything else under that bucket —
+// Hamburguer e Empanados, Legumes e Vegetais Congelados, Polpa de Frutas,
+// Pratos Prontos e Pizzas, Pão de Queijo — is frozen -> cat_congelados).
+const TOP_LEVEL_CATEGORY_MAP: Record<string, string> = {
+  'Bazar E Utilidades': 'cat_outros',
+  Bebidas: 'cat_bebidas',
+  Brindes: 'cat_outros',
+  Carnes: 'cat_carnes',
+  'Flores E Plantas': 'cat_outros',
+  Hortifruti: 'cat_hortifruti',
+  Laticínios: 'cat_laticinios',
+  Limpeza: 'cat_limpeza',
+  Mercearia: 'cat_alimentos',
+  Padaria: 'cat_padaria',
+  'Perfumaria E Beleza': 'cat_higiene',
+  'Pet Shop': 'cat_pet',
+  Rotisserie: 'cat_alimentos',
+};
+
+function mapSavegnagoCategory(path: string): string {
+  const segments = path.split(' > ');
+  if (segments[0] === 'Frios e Congelados') {
+    return segments[1] === 'Frios' ? 'cat_laticinios' : 'cat_congelados';
+  }
+  return TOP_LEVEL_CATEGORY_MAP[segments[0]] ?? 'cat_alimentos';
+}
+
 function collectLeaves(nodes: CategoryTreeNode[], idPath: number[] = [], namePath: string[] = []): LeafCategory[] {
   let leaves: LeafCategory[] = [];
   for (const n of nodes) {
@@ -322,7 +350,6 @@ function parseProduct(p: VtexProduct): ParsedProduct | null {
       listPrice: offer.ListPrice,
       isPromo: offer.Price < offer.ListPrice,
       imageUrl: item.images?.[0]?.imageUrl ?? null,
-      // categoryId intentionally not mapped here — see header comment.
     };
   }
   return null; // no item/seller available at this store
@@ -455,6 +482,7 @@ async function main() {
             } else {
               const result = await findOrCreateProduct(supabase, {
                 name: parsed.name,
+                categoryId: mapSavegnagoCategory(leaf.path),
                 brand: parsed.brand ?? undefined,
                 ean: parsed.ean,
                 referencePrice: parsed.price,
@@ -472,6 +500,7 @@ async function main() {
           } else {
             const result = await findOrCreateProduct(supabase, {
               name: parsed.name,
+              categoryId: mapSavegnagoCategory(leaf.path),
               brand: parsed.brand ?? undefined,
               referencePrice: parsed.price,
               strictNoEanMatch: true,

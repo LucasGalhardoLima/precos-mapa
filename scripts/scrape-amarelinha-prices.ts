@@ -77,7 +77,7 @@ const STORE_NAME_PATTERN = 'Amarelinha%'; // matches all 5 "Amarelinha Loja N" r
 const BASE = 'https://online.grupoamarelinha.com.br';
 const USER_AGENT = 'Mozilla/5.0 (compatible; PoupBot/1.0; +lima.galhardo@gmail.com)';
 const DELAY_MS = 500;
-const BATCH = 500; // per-run limit — re-run to continue via checkpoint
+const BATCH = 3000; // deliberately >> catalog size (~1.4k) — clears everything in one run, required for the unattended GH Actions cron (its checkpoint doesn't survive across daily runs)
 
 // OpenCart's internal store_id for the CITY of Matão (see file header —
 // this is a city-wide id, not tied to any single "Loja N" physical address).
@@ -96,6 +96,31 @@ const CATEGORY_IDS = [
   '10002', '10003', '10004', '10006', '10007', '10008', '10009', '10014',
   '10015', '10017', '10021', '10024', '10025', '10058', '10066', '10817',
 ];
+
+// Maps each category id to our internal categories.id taxonomy (12 rows —
+// see the `categories` table) — real names confirmed live via each
+// category page's own <h1>. Several map to the same internal bucket
+// (Matinais/Cereais e Farináceos/Molhos.../Doces e Sobremesas/Naturais e
+// Dietéticos/Biscoitos e Salgadinhos are all cat_alimentos) since our
+// taxonomy is coarser than the site's own.
+const CATEGORY_TO_INTERNAL: Record<string, string> = {
+  '10002': 'cat_bebidas', // Bebidas
+  '10003': 'cat_limpeza', // Limpeza
+  '10004': 'cat_higiene', // Higiene e Perfumaria
+  '10006': 'cat_carnes', // Açougue
+  '10007': 'cat_laticinios', // Frios e Laticínios
+  '10008': 'cat_padaria', // Padaria
+  '10009': 'cat_hortifruti', // Hortifrúti
+  '10014': 'cat_alimentos', // Matinais
+  '10015': 'cat_alimentos', // Cereais e Farináceos
+  '10017': 'cat_alimentos', // Molhos, Conservas e Condimentos
+  '10021': 'cat_alimentos', // Doces e Sobremesas
+  '10024': 'cat_alimentos', // Naturais e Dietéticos
+  '10025': 'cat_alimentos', // Biscoitos e Salgadinhos
+  '10058': 'cat_bebes', // Higiene Infantil
+  '10066': 'cat_outros', // Bazar
+  '10817': 'cat_pet', // Pet Shop
+};
 
 // Set to false only after reviewing a sample run's output.
 const DRY_RUN = false;
@@ -149,14 +174,19 @@ async function getMataoSessionCookie(): Promise<string> {
   return cookieHeader();
 }
 
-async function discoverProductUrls(cookie: string): Promise<string[]> {
+interface DiscoveredUrl {
+  url: string;
+  categoryId: string; // our internal categories.id, from the first category page this URL was seen under
+}
+
+async function discoverProductUrls(cookie: string): Promise<DiscoveredUrl[]> {
   if (existsSync(DISCOVERY_CACHE_FILE)) {
     console.log('Loading cached product URL list...');
     return JSON.parse(readFileSync(DISCOVERY_CACHE_FILE, 'utf-8'));
   }
 
   console.log('Crawling category pages to discover product URLs (first run — cached afterwards)...');
-  const urls = new Set<string>();
+  const byUrl = new Map<string, DiscoveredUrl>();
 
   for (const path of CATEGORY_IDS) {
     const catUrl = `${BASE}/index.php?route=product/category&path=${path}`;
@@ -170,7 +200,9 @@ async function discoverProductUrls(cookie: string): Promise<string[]> {
       const matches = [...html.matchAll(/online\.grupoamarelinha\.com\.br\/([a-z0-9-]+-(\d{4,}))['"]/g)];
       let pageUrls = 0;
       for (const m of matches) {
-        urls.add(`${BASE}/${m[1]}`);
+        const url = `${BASE}/${m[1]}`;
+        if (byUrl.has(url)) continue; // first category page a URL appears under wins
+        byUrl.set(url, { url, categoryId: CATEGORY_TO_INTERNAL[path] ?? 'cat_alimentos' });
         pageUrls++;
       }
       console.log(`  ${path}: ${pageUrls} product links found`);
@@ -180,7 +212,7 @@ async function discoverProductUrls(cookie: string): Promise<string[]> {
     await sleep(300);
   }
 
-  const result = [...urls];
+  const result = [...byUrl.values()];
   writeFileSync(DISCOVERY_CACHE_FILE, JSON.stringify(result));
   console.log(`Total unique product URLs discovered: ${result.length}\n`);
   return result;
@@ -290,7 +322,7 @@ async function main() {
   const processed = existsSync(CHECKPOINT_FILE)
     ? new Set<string>(JSON.parse(readFileSync(CHECKPOINT_FILE, 'utf-8')).processedUrls ?? [])
     : new Set<string>();
-  const pending = allUrls.filter((u) => !processed.has(u)).slice(0, BATCH);
+  const pending = allUrls.filter((u) => !processed.has(u.url)).slice(0, BATCH);
   console.log(`${processed.size} already processed in prior runs. Processing ${pending.length} this run (${DRY_RUN ? 'DRY RUN' : 'LIVE — writing to DB'}).\n`);
 
   const reviewRows: string[] = ['url,ean,brand,name,price,is_promo,matched_product_id,is_new_product'];
@@ -300,7 +332,7 @@ async function main() {
   let skipped = 0;
   let failed = 0;
 
-  for (const url of pending) {
+  for (const { url, categoryId } of pending) {
     try {
       const res = await fetchWithTimeout(url, cookie, 20000);
       if (!res.ok) {
@@ -341,6 +373,7 @@ async function main() {
           } else {
             const result = await findOrCreateProduct(supabase, {
               name: parsed.name,
+              categoryId,
               brand: parsed.brand ?? undefined,
               ean: parsed.ean,
               referencePrice: parsed.price,
@@ -363,6 +396,7 @@ async function main() {
         } else {
           const result = await findOrCreateProduct(supabase, {
             name: parsed.name,
+            categoryId,
             brand: parsed.brand ?? undefined,
             referencePrice: parsed.price,
             strictNoEanMatch: true,

@@ -132,6 +132,30 @@ const DEPARTMENTS: { id: number; link: string; name: string }[] = [
   { id: 14, link: 'pet-shop', name: 'Pet Shop' },
 ];
 
+// Maps each department to our internal categories.id taxonomy (12 rows —
+// see the `categories` table). "Marca própria" is a cross-cutting private-
+// label collection (spans Mercearia/Limpeza/etc. per the DEPARTMENTS
+// comment above) with no single correct category, so it falls to
+// cat_outros rather than guessing.
+const DEPARTMENT_TO_CATEGORY: Record<string, string> = {
+  'Marca própria': 'cat_outros',
+  'Food Service': 'cat_alimentos',
+  'Fit e Saudável': 'cat_alimentos',
+  Bebidas: 'cat_bebidas',
+  Mercearia: 'cat_alimentos',
+  Congelados: 'cat_congelados',
+  'Frios e Laticínios': 'cat_laticinios',
+  'Carnes, Aves e Peixes': 'cat_carnes',
+  Limpeza: 'cat_limpeza',
+  'Higiene e Perfumaria': 'cat_higiene',
+  Bebê: 'cat_bebes',
+  Bomboniere: 'cat_alimentos',
+  'Pães e Bolos': 'cat_padaria',
+  Hortifrúti: 'cat_hortifruti',
+  Bazar: 'cat_outros',
+  'Pet Shop': 'cat_pet',
+};
+
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -241,6 +265,7 @@ interface DiscoveredProduct {
   price: number;
   availability: string | null;
   mataoStock: number | null; // null = branch not found in inventory[] (unknown, not excluded)
+  categoryId: string; // our internal categories.id, from the department this SKU was first seen under
 }
 
 /**
@@ -390,6 +415,7 @@ async function discoverCatalog(cartId: string, branchId: string): Promise<Map<st
           price: p.price,
           availability: p.availability ?? null,
           mataoStock: mataoInventory ? mataoInventory.totalAvailable : null,
+          categoryId: DEPARTMENT_TO_CATEGORY[dept.name] ?? 'cat_alimentos',
         });
         deptNew++;
       }
@@ -488,6 +514,7 @@ async function main() {
           } else {
             const result = await findOrCreateProduct(supabase, {
               name: p.name,
+              categoryId: p.categoryId,
               brand: p.brand ?? undefined,
               ean: p.barcode ?? undefined,
               referencePrice: p.price,
@@ -506,6 +533,7 @@ async function main() {
         } else {
           const result = await findOrCreateProduct(supabase, {
             name: p.name,
+            categoryId: p.categoryId,
             brand: p.brand ?? undefined,
             referencePrice: p.price,
             strictNoEanMatch: true,
