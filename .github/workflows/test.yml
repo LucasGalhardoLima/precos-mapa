@@ -1,0 +1,58 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-backend:
+    name: Backend (Vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-key-for-tests
+          CRON_SECRET: placeholder-cron-secret-32-chars-long
+          STRIPE_WEBHOOK_SECRET: whsec_placeholder
+
+  test-mobile:
+    name: Mobile (Jest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci --legacy-peer-deps
+        working-directory: mobile
+      - run: npm test -- --passWithNoTests --forceExit
+        working-directory: mobile
+
+  test-e2e-mobile:
+    name: Mobile E2E (Maestro)
+    runs-on: macos-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+      - name: Start iOS Simulator
+        run: |
+          xcrun simctl boot "iPhone 16" || true
+      - name: Run Maestro flows
+        run: maestro test mobile/__tests__/e2e/
+        env:
+          MAESTRO_DRIVER: ios
