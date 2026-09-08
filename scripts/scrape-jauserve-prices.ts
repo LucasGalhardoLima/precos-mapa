@@ -54,6 +54,7 @@ import { createClient } from '@supabase/supabase-js';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { findOrCreateProduct } from '../src/lib/product-match';
+import { syncCrawlerPromotion } from '../src/lib/crawler-promotions';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -234,6 +235,7 @@ interface ScrapedProduct {
   brand: string | null;
   price: number | null; // null when isInAPriceBook is false
   isPromo: boolean;
+  originalPrice: number | null; // price.list.value when isPromo — null otherwise
   imageUrl: string | null;
   isInAPriceBook: boolean;
 }
@@ -275,6 +277,9 @@ async function fetchProductVariation(pid: string, storeCookie: string): Promise<
   const ean = /^\d{13}$/.test(rawId) ? rawId : null;
   const salesValue = product.price?.sales?.value;
   const price = typeof salesValue === 'number' ? salesValue : null;
+  const listValue = product.price?.list?.value;
+  const originalPrice = typeof listValue === 'number' ? listValue : null;
+  const isPromo = originalPrice != null && price != null && originalPrice > price;
   const imageUrl = product.images?.large?.[0]?.url ?? product.images?.small?.[0]?.url ?? null;
 
   return {
@@ -283,7 +288,8 @@ async function fetchProductVariation(pid: string, storeCookie: string): Promise<
     name: product.productName.replace(/\s+/g, ' ').trim(),
     brand: product.brand?.trim() || null,
     price,
-    isPromo: product.price?.list != null,
+    isPromo,
+    originalPrice: isPromo ? originalPrice : null,
     imageUrl,
     isInAPriceBook: product.isInAPriceBook === true,
   };
@@ -424,6 +430,15 @@ async function main() {
           { onConflict: 'product_id,store_id' },
         );
         if (upsertError) console.warn(`  [store_prices upsert failed] ${url}: ${upsertError.message}`);
+
+        if (parsed.isPromo && parsed.originalPrice != null) {
+          await syncCrawlerPromotion(supabase, {
+            productId,
+            storeId: store.id,
+            originalPrice: parsed.originalPrice,
+            promoPrice: price,
+          });
+        }
 
         reviewRows.push(
           [url, parsed.rawId, parsed.ean ?? '', csvField(parsed.name), csvField(parsed.brand ?? ''), String(price), String(parsed.isPromo), parsed.imageUrl ?? '', 'written', productId, String(isNew)].join(','),

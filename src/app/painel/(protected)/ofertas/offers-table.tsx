@@ -193,10 +193,18 @@ export function OffersTable({
                     className={`rounded-full px-2 py-1 text-xs font-semibold ${
                       p.source === "importador_ia" || p.source === "cron"
                         ? "bg-sky-100 text-sky-700"
-                        : "bg-zinc-100 text-zinc-700"
+                        : p.source === "crawler"
+                          ? "bg-violet-100 text-violet-700"
+                          : "bg-zinc-100 text-zinc-700"
                     }`}
                   >
-                    {p.source === "importador_ia" ? "Importador IA" : p.source === "cron" ? "Cron" : "Manual"}
+                    {p.source === "importador_ia"
+                      ? "Importador IA"
+                      : p.source === "cron"
+                        ? "Cron"
+                        : p.source === "crawler"
+                          ? "Site"
+                          : "Manual"}
                   </span>
                 </td>
                 <td className="px-4 py-3">

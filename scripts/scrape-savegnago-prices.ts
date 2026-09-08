@@ -95,6 +95,7 @@ import { createClient } from '@supabase/supabase-js';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { findOrCreateProduct } from '../src/lib/product-match';
+import { syncCrawlerPromotion } from '../src/lib/crawler-promotions';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -525,6 +526,15 @@ async function main() {
             { onConflict: 'product_id,store_id' },
           );
           if (upsertError) console.warn(`  [store_prices upsert failed] ${parsed.productId}: ${upsertError.message}`);
+
+          if (parsed.isPromo) {
+            await syncCrawlerPromotion(supabase, {
+              productId,
+              storeId: store.id,
+              originalPrice: parsed.listPrice,
+              promoPrice: parsed.price,
+            });
+          }
 
           reviewRows.push(
             [
