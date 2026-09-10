@@ -68,6 +68,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { syncCrawlerPromotion } from '../src/lib/crawler-promotions';
 import { findOrCreateProduct } from '../src/lib/product-match';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -224,6 +225,7 @@ interface ScrapedProduct {
   brand: string | null;
   price: number;
   isPromo: boolean;
+  originalPrice: number | null;
 }
 
 /**
@@ -267,6 +269,8 @@ function parseProductPage(html: string): ScrapedProduct | null {
   if (!Number.isFinite(price) || price <= 0) return null;
 
   const isPromo = /class="old-price/.test(html);
+  const oldPriceMatch = html.match(/class="old-price[^"]*">R\$\s*([\d.,]+)/);
+  const originalPrice = oldPriceMatch ? parsePtBrPrice(oldPriceMatch[1]) : null;
 
   const eanMatch = html.match(/Código de Barras:\s*(\d+)/);
   const ean = eanMatch && isLikelyRealEan(eanMatch[1]) ? eanMatch[1] : null;
@@ -289,6 +293,7 @@ function parseProductPage(html: string): ScrapedProduct | null {
     brand,
     price,
     isPromo,
+    originalPrice: originalPrice != null && Number.isFinite(originalPrice) && originalPrice > 0 ? originalPrice : null,
   };
 }
 
@@ -424,6 +429,15 @@ async function main() {
             { onConflict: 'product_id,store_id' },
           );
           if (upsertError) console.warn(`  [store_prices upsert failed] ${store.name} / ${url}: ${upsertError.message}`);
+
+          if (parsed.isPromo && parsed.originalPrice != null && parsed.originalPrice > parsed.price) {
+            await syncCrawlerPromotion(supabase, {
+              productId,
+              storeId: store.id,
+              originalPrice: parsed.originalPrice,
+              promoPrice: parsed.price,
+            });
+          }
         }
 
         reviewRows.push([
