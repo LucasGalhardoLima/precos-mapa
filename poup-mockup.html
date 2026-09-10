@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poup — Mockup do App</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800;900&family=Nunito:wght@800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#0D9488;--primary-dark:#0f766e;--primary-light:#14B8A6;--primary-lighter:#5EEAD4;
+    --accent:#F59E0B;--accent-light:#FDE68A;
+    --text:#1A1A2E;--text-secondary:#64748B;--text-muted:#94A3B8;
+    --bg:#F0FDFA;--bg-card:#FFFFFF;
+    --success:#16A34A;--alert:#EF4444;--warning:#F59E0B;--neutral:#64748B;
+    --coin-gold:#e8a820;--coin-light:#f5c842;--coin-dark:#c07810;
+    --cream:#e8d9b8;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:linear-gradient(135deg,#e0f5f0 0%,#d0ece5 50%,#c4e8df 100%);min-height:100vh;padding:40px 20px 60px}
+
+  .page-header{text-align:center;margin-bottom:40px}
+  .page-header h1{font-family:'Poppins';font-size:32px;font-weight:800;color:var(--text)}
+  .page-header p{color:var(--text-secondary);font-size:14px;margin-top:6px}
+
+  .screens-grid{display:flex;gap:32px;justify-content:center;flex-wrap:wrap;max-width:1400px;margin:0 auto}
+
+  /* Phone frame */
+  .phone{width:320px;flex-shrink:0}
+  .phone-label{text-align:center;font-family:'Poppins';font-size:13px;font-weight:700;color:var(--primary-dark);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px}
+  .phone-frame{
+    width:320px;height:692px;border-radius:40px;overflow:hidden;
+    background:var(--bg);position:relative;
+    box-shadow:0 4px 6px rgba(0,0,0,.04),0 20px 50px rgba(13,148,136,.15),inset 0 0 0 2px rgba(0,0,0,.06);
+  }
+
+  /* Status bar */
+  .status-bar{height:48px;padding:14px 24px 0;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;color:var(--text);position:relative;z-index:10}
+  .status-bar.light{color:#fff}
+  .sb-icons{display:flex;gap:5px;align-items:center}
+  .sb-icons .bar{width:18px;height:10px;border-radius:2px;border:1.5px solid currentColor;position:relative}
+  .sb-icons .bar::after{content:'';position:absolute;left:2px;top:2px;width:10px;height:4px;border-radius:1px;background:currentColor}
+  .sb-icons .wifi{width:14px;height:10px;border:2px solid currentColor;border-radius:50% 50% 0 0;border-bottom:0}
+  .sb-icons .batt{width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative}
+  .sb-icons .batt::before{content:'';position:absolute;right:-4px;top:2px;width:3px;height:5px;background:currentColor;border-radius:0 2px 2px 0}
+  .sb-icons .batt::after{content:'';position:absolute;left:2px;top:2px;width:14px;height:5px;background:currentColor;border-radius:1px}
+
+  /* Bottom tab bar */
+  .tab-bar{position:absolute;bottom:0;left:0;right:0;height:72px;background:#fff;display:flex;justify-content:space-around;align-items:center;padding-bottom:8px;border-top:1px solid #e2e8f0;z-index:20}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:600;color:var(--text-muted);cursor:pointer}
+  .tab.active{color:var(--primary)}
+  .tab svg{width:22px;height:22px}
+  .tab-dot{width:4px;height:4px;border-radius:2px;background:var(--primary);margin-top:-1px}
+
+  /* Scrollable content */
+  .screen-content{height:calc(692px - 48px - 72px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .screen-content::-webkit-scrollbar{display:none}
+
+  /* ========== SPLASH SCREEN ========== */
+  .splash-bg{
+    height:692px;
+    background:linear-gradient(145deg,var(--primary-dark) 0%,var(--primary) 50%,var(--primary-light) 100%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  }
+  .splash-tagline{color:rgba(255,255,255,.75);font-size:13px;font-weight:500;letter-spacing:.5px}
+  .splash-dots{display:flex;gap:8px;position:absolute;bottom:80px}
+  .splash-dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3)}
+  .splash-dots span.active{background:#fff;width:24px;border-radius:4px}
+
+  /* ========== HOME SCREEN ========== */
+  .home-header{
+    background:linear-gradient(145deg,var(--primary-dark),var(--primary));
+    padding:0 20px 24px;border-radius:0 0 28px 28px;
+  }
+  .home-top{display:flex;justify-content:space-between;align-items:center;padding:8px 0 16px}
+  .home-greeting{color:rgba(255,255,255,.7);font-size:12px;font-weight:500}
+  .home-name{color:#fff;font-size:18px;font-weight:700;margin-top:2px}
+  .home-avatar{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid rgba(255,255,255,.2)}
+  .home-search{
+    background:rgba(255,255,255,.15);border-radius:14px;padding:12px 16px;
+    display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.6);font-size:13px;
+    backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.1);
+  }
+  .home-search svg{width:18px;height:18px;stroke:rgba(255,255,255,.5);fill:none;stroke-width:2}
+
+  /* Categories */
+  .cats{display:flex;gap:12px;padding:20px 20px 4px;overflow-x:auto}
+  .cats::-webkit-scrollbar{display:none}
+  .cat{text-align:center;flex-shrink:0;width:62px}
+  .cat-icon{width:48px;height:48px;border-radius:14px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto;box-shadow:0 2px 4px rgba(0,0,0,.04)}
+  .cat-icon.active{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff}
+  .cat-name{font-size:9px;font-weight:600;color:var(--text-secondary);margin-top:6px}
+
+  /* Section headers */
+  .sec-header{display:flex;justify-content:space-between;align-items:center;padding:20px 20px 12px}
+  .sec-title{font-family:'Poppins';font-size:16px;font-weight:700;color:var(--text)}
+  .sec-link{font-size:12px;font-weight:600;color:var(--primary)}
+
+  /* Offer cards (horizontal scroll) */
+  .offers-scroll{display:flex;gap:12px;padding:0 20px;overflow-x:auto}
+  .offers-scroll::-webkit-scrollbar{display:none}
+  .offer-card{
+    flex-shrink:0;width:180px;background:#fff;border-radius:16px;overflow:hidden;
+    box-shadow:0 2px 8px rgba(0,0,0,.05);border:1px solid #e2e8f0;
+  }
+  .offer-img{height:100px;display:flex;align-items:center;justify-content:center;font-size:40px;position:relative}
+  .offer-img .badge{position:absolute;top:8px;left:8px;background:var(--alert);color:#fff;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px}
+  .offer-img .badge.green{background:var(--success)}
+  .offer-info{padding:10px 12px 14px}
+  .offer-name{font-size:12px;font-weight:600;color:var(--text);line-height:1.3}
+  .offer-store{font-size:10px;color:var(--text-muted);margin-top:2px}
+  .offer-prices{display:flex;align-items:baseline;gap:6px;margin-top:6px}
+  .offer-old{font-size:11px;color:var(--text-muted);text-decoration:line-through}
+  .offer-new{font-size:16px;font-weight:800;color:var(--primary)}
+  .offer-save{font-size:9px;font-weight:700;color:var(--success);background:#dcfce7;padding:2px 6px;border-radius:4px;margin-top:4px;display:inline-block}
+
+  /* Nearby list */
+  .nearby{padding:0 20px}
+  .nearby-item{
+    display:flex;gap:12px;padding:14px;background:#fff;border-radius:14px;
+    margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.04);border:1px solid #f1f5f9;
+  }
+  .nearby-logo{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .nearby-info{flex:1;min-width:0}
+  .nearby-name{font-size:13px;font-weight:700;color:var(--text)}
+  .nearby-addr{font-size:10px;color:var(--text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nearby-meta{display:flex;gap:8px;margin-top:4px;font-size:10px;font-weight:600}
+  .nearby-dist{color:var(--primary)}
+  .nearby-deals{color:var(--accent)}
+
+  /* ========== COMPARISON SCREEN ========== */
+  .comp-header{
+    background:linear-gradient(145deg,var(--primary-dark),var(--primary));
+    padding:0 20px 20px;
+  }
+  .comp-top{display:flex;align-items:center;gap:12px;padding:8px 0 16px}
+  .comp-back{color:#fff;font-size:20px;cursor:pointer}
+  .comp-title{color:#fff;font-size:17px;font-weight:700;flex:1}
+
+  .comp-product{
+    margin:-12px 20px 0;background:#fff;border-radius:16px;padding:16px;
+    box-shadow:0 4px 12px rgba(0,0,0,.06);display:flex;gap:14px;position:relative;z-index:5;
+  }
+  .comp-product-img{width:70px;height:70px;border-radius:12px;background:#f8fafc;display:flex;align-items:center;justify-content:center;font-size:36px;flex-shrink:0}
+  .comp-product-info{flex:1}
+  .comp-product-name{font-size:14px;font-weight:700;color:var(--text);line-height:1.3}
+  .comp-product-desc{font-size:10px;color:var(--text-muted);margin-top:3px}
+  .comp-product-best{margin-top:8px;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--success)}
+
+  .comp-list{padding:16px 20px}
+  .comp-store{
+    display:flex;align-items:center;gap:12px;padding:14px;background:#fff;border-radius:14px;
+    margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.04);border:1px solid #f1f5f9;position:relative;
+  }
+  .comp-store.best{border:2px solid var(--success);background:#f0fdf4}
+  .comp-store.best::after{content:'Menor preço';position:absolute;top:-8px;right:12px;background:var(--success);color:#fff;font-size:8px;font-weight:700;padding:2px 8px;border-radius:4px}
+  .comp-store-logo{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .comp-store-info{flex:1}
+  .comp-store-name{font-size:13px;font-weight:600;color:var(--text)}
+  .comp-store-dist{font-size:10px;color:var(--text-muted)}
+  .comp-store-price{text-align:right}
+  .comp-store-val{font-size:18px;font-weight:800;color:var(--text)}
+  .comp-store.best .comp-store-val{color:var(--success)}
+  .comp-store-unit{font-size:9px;color:var(--text-muted)}
+
+  /* ========== MAP SCREEN ========== */
+  .map-container{
+    height:calc(692px - 48px - 72px);position:relative;
+    background:linear-gradient(180deg,#d1e8d5 0%,#e0ecdf 40%,#d8e4da 100%);
+  }
+  .map-bg{position:absolute;inset:0;opacity:.5}
+  .map-roads{position:absolute;inset:0}
+  .map-road{position:absolute;background:rgba(255,255,255,.7);border-radius:2px}
+  .map-road.h{height:3px;width:100%}
+  .map-road.v{width:3px;height:100%}
+  .map-road.main{background:rgba(255,255,255,.9)}
+  .map-road.main.h{height:5px}
+  .map-road.main.v{width:5px}
+
+  .map-pin{
+    position:absolute;width:44px;height:56px;transform:translate(-50%,-100%);z-index:5;cursor:pointer;
+  }
+  .map-pin-head{
+    width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;
+    box-shadow:0 2px 8px rgba(0,0,0,.2);position:relative;
+  }
+  .map-pin-tail{
+    width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;
+    margin:0 auto;margin-top:-2px;
+  }
+  .map-pin.green .map-pin-head{background:var(--primary);color:#fff}
+  .map-pin.green .map-pin-tail{border-top:10px solid var(--primary)}
+  .map-pin.red .map-pin-head{background:var(--alert);color:#fff}
+  .map-pin.red .map-pin-tail{border-top:10px solid var(--alert)}
+  .map-pin.blue .map-pin-head{background:#3b82f6;color:#fff}
+  .map-pin.blue .map-pin-tail{border-top:10px solid #3b82f6}
+  .map-pin.gold .map-pin-head{background:var(--accent);color:#fff}
+  .map-pin.gold .map-pin-tail{border-top:10px solid var(--accent)}
+
+  .map-pin-label{
+    position:absolute;top:-8px;left:50%;transform:translateX(-50%);white-space:nowrap;
+    background:#fff;padding:3px 8px;border-radius:6px;font-size:9px;font-weight:700;
+    color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.12);
+  }
+  .map-pin-price{color:var(--success)}
+
+  .map-user{
+    position:absolute;width:20px;height:20px;border-radius:50%;background:var(--primary);
+    border:3px solid #fff;box-shadow:0 0 0 6px rgba(13,148,136,.2),0 2px 4px rgba(0,0,0,.15);
+    z-index:8;
+  }
+  .map-user::after{content:'';position:absolute;inset:-8px;border-radius:50%;background:rgba(13,148,136,.08);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:0}}
+
+  .map-search-bar{
+    position:absolute;top:8px;left:14px;right:14px;z-index:10;
+    background:#fff;border-radius:14px;padding:12px 16px;
+    display:flex;align-items:center;gap:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);font-size:13px;color:var(--text-muted);
+  }
+
+  .map-bottom-card{
+    position:absolute;bottom:8px;left:14px;right:14px;z-index:10;
+    background:#fff;border-radius:16px;padding:16px;
+    box-shadow:0 -2px 12px rgba(0,0,0,.08);
+  }
+  .map-bc-store{display:flex;gap:10px;align-items:center}
+  .map-bc-logo{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .map-bc-info{flex:1}
+  .map-bc-name{font-size:14px;font-weight:700;color:var(--text)}
+  .map-bc-addr{font-size:10px;color:var(--text-muted);margin-top:1px}
+  .map-bc-meta{display:flex;gap:12px;margin-top:6px}
+  .map-bc-tag{font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px}
+  .map-bc-tag.dist{background:#e0f2fe;color:#0369a1}
+  .map-bc-tag.deals{background:#fef3c7;color:#92400e}
+  .map-bc-tag.open{background:#dcfce7;color:#166534}
+
+  /* ========== LIST SCREEN ========== */
+  .list-header{
+    background:linear-gradient(145deg,var(--primary-dark),var(--primary));
+    padding:0 20px 20px;
+  }
+  .list-top{display:flex;align-items:center;justify-content:space-between;padding:8px 0 12px}
+  .list-title{color:#fff;font-size:17px;font-weight:700}
+  .list-add{background:rgba(255,255,255,.2);color:#fff;border:none;padding:7px 14px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer}
+  .list-summary{
+    background:rgba(255,255,255,.12);border-radius:12px;padding:12px 16px;
+    display:flex;justify-content:space-between;color:#fff;border:1px solid rgba(255,255,255,.1);
+  }
+  .list-stat{text-align:center}
+  .list-stat-val{font-size:18px;font-weight:800}
+  .list-stat-label{font-size:9px;opacity:.7;margin-top:2px}
+
+  .list-items{padding:16px 20px}
+  .list-item{
+    display:flex;align-items:center;gap:12px;padding:14px;background:#fff;border-radius:14px;
+    margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.04);border:1px solid #f1f5f9;
+  }
+  .list-check{
+    width:24px;height:24px;border-radius:8px;border:2px solid #d1d5db;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;
+  }
+  .list-check.done{background:var(--primary);border-color:var(--primary);color:#fff;font-size:12px}
+  .list-item-info{flex:1;min-width:0}
+  .list-item-name{font-size:13px;font-weight:600;color:var(--text)}
+  .list-item-name.done{color:var(--text-muted);text-decoration:line-through}
+  .list-item-detail{font-size:10px;color:var(--text-muted);margin-top:2px}
+  .list-item-price{text-align:right;flex-shrink:0}
+  .list-item-val{font-size:14px;font-weight:700;color:var(--primary)}
+  .list-item-store{font-size:9px;color:var(--text-muted)}
+
+  /* ========== ALERTS SCREEN ========== */
+  .alerts-header{
+    background:linear-gradient(145deg,var(--primary-dark),var(--primary));
+    padding:0 20px 20px;
+  }
+  .alerts-top{display:flex;align-items:center;justify-content:space-between;padding:8px 0 12px}
+  .alerts-title{color:#fff;font-size:17px;font-weight:700}
+  .alerts-count{background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:10px}
+
+  .alert-card{
+    margin:0 20px 12px;background:#fff;border-radius:14px;padding:14px;
+    box-shadow:0 1px 4px rgba(0,0,0,.04);border:1px solid #f1f5f9;
+  }
+  .alert-card:first-child{margin-top:16px}
+  .alert-card.highlight{border-left:4px solid var(--success);background:#f0fdf4}
+  .alert-top{display:flex;align-items:center;gap:10px}
+  .alert-emoji{font-size:28px;flex-shrink:0}
+  .alert-info{flex:1}
+  .alert-product{font-size:13px;font-weight:700;color:var(--text)}
+  .alert-desc{font-size:11px;color:var(--text-secondary);margin-top:2px;line-height:1.4}
+  .alert-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9}
+  .alert-time{font-size:10px;color:var(--text-muted)}
+  .alert-btn{background:var(--primary);color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer}
+
+  @media(max-width:768px){
+    .screens-grid{gap:24px}
+    .phone{width:280px}
+    .phone-frame{width:280px;height:605px;border-radius:34px}
+    .screen-content{height:calc(605px - 48px - 72px)}
+    .splash-bg{height:605px}
+    .map-container{height:calc(605px - 48px - 72px)}
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Poup — Mockup do App</h1>
+  <p>Identidade visual completa: Paleta Economia Verde · Poppins + Inter · Ícone Wordmark</p>
+</div>
+
+<div class="screens-grid">
+
+  <!-- ==================== SPLASH ==================== -->
+  <div class="phone">
+    <div class="phone-label">Splash</div>
+    <div class="phone-frame">
+      <div class="splash-bg">
+        <div class="status-bar light" style="position:absolute;top:0;left:0;right:0">
+          <span>9:41</span>
+          <div class="sb-icons" style="color:#fff"><div class="bar"></div><div class="batt"></div></div>
+        </div>
+
+        <!-- Logo wordmark -->
+        <svg width="200" height="200" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="splCoin" x1="0.2" y1="0" x2="0.9" y2="1"><stop offset="0%" style="stop-color:#f5c842"/><stop offset="40%" style="stop-color:#e8a820"/><stop offset="100%" style="stop-color:#c07810"/></linearGradient>
+            <linearGradient id="splEdge" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#a86510"/><stop offset="100%" style="stop-color:#7a4a08"/></linearGradient>
+          </defs>
+          <g transform="translate(200,270)" stroke="#e8d9b8" fill="none" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.95">
+            <polyline points="-100,-15 -78,-15"/>
+            <path d="M-78,-15 L-64,55 L84,55 L94,-8 L-60,-8"/>
+            <circle cx="-38" cy="74" r="14" stroke-width="13" fill="none"/>
+            <circle cx="66" cy="74" r="14" stroke-width="13" fill="none"/>
+          </g>
+          <text x="48" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">P</text>
+          <text x="218" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">UP</text>
+          <ellipse cx="203" cy="184" rx="64" ry="66" fill="url(#splEdge)"/>
+          <ellipse cx="200" cy="178" rx="64" ry="66" fill="url(#splCoin)"/>
+          <text x="200" y="202" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="900" font-size="72" fill="#fff">$</text>
+          <g transform="translate(118,105)" fill="#e8d9b8" opacity="0.9"><path d="M0,-14 C0,-4 -4,0 -14,0 C-4,0 0,4 0,14 C0,4 4,0 14,0 C4,0 0,-4 0,-14Z"/></g>
+        </svg>
+
+        <span class="splash-tagline">Economize em cada compra</span>
+
+        <div class="splash-dots">
+          <span class="active"></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== HOME ==================== -->
+  <div class="phone">
+    <div class="phone-label">Home</div>
+    <div class="phone-frame">
+      <div class="status-bar light" style="position:absolute;top:0;left:0;right:0;z-index:20;background:linear-gradient(180deg,rgba(15,118,110,.9),transparent)">
+        <span>9:41</span>
+        <div class="sb-icons" style="color:#fff"><div class="bar"></div><div class="batt"></div></div>
+      </div>
+      <div class="screen-content" style="padding-top:0">
+
+        <div class="home-header" style="padding-top:48px">
+          <div class="home-top">
+            <div>
+              <div class="home-greeting">Boa tarde,</div>
+              <div class="home-name">Lucas</div>
+            </div>
+            <div class="home-avatar">L</div>
+          </div>
+          <div class="home-search">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            Buscar produto ou mercado...
+          </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="cats">
+          <div class="cat"><div class="cat-icon active">🔥</div><div class="cat-name">Ofertas</div></div>
+          <div class="cat"><div class="cat-icon">🥩</div><div class="cat-name">Carnes</div></div>
+          <div class="cat"><div class="cat-icon">🥛</div><div class="cat-name">Laticínios</div></div>
+          <div class="cat"><div class="cat-icon">🧹</div><div class="cat-name">Limpeza</div></div>
+          <div class="cat"><div class="cat-icon">🥤</div><div class="cat-name">Bebidas</div></div>
+          <div class="cat"><div class="cat-icon">🍎</div><div class="cat-name">Frutas</div></div>
+        </div>
+
+        <!-- Ofertas em destaque -->
+        <div class="sec-header">
+          <span class="sec-title">Ofertas em destaque</span>
+          <span class="sec-link">Ver todas →</span>
+        </div>
+        <div class="offers-scroll">
+          <div class="offer-card">
+            <div class="offer-img" style="background:#fef3c7">
+              🧈
+              <span class="badge">-38%</span>
+            </div>
+            <div class="offer-info">
+              <div class="offer-name">Manteiga Président 200g</div>
+              <div class="offer-store">Extra · 800m</div>
+              <div class="offer-prices">
+                <span class="offer-old">R$ 14,99</span>
+                <span class="offer-new">R$ 9,29</span>
+              </div>
+              <span class="offer-save">Economize R$ 5,70</span>
+            </div>
+          </div>
+          <div class="offer-card">
+            <div class="offer-img" style="background:#fce7f3">
+              🥩
+              <span class="badge green">Menor preço</span>
+            </div>
+            <div class="offer-info">
+              <div class="offer-name">Picanha Bovina kg</div>
+              <div class="offer-store">Assaí · 1.2km</div>
+              <div class="offer-prices">
+                <span class="offer-old">R$ 49,90</span>
+                <span class="offer-new">R$ 34,90</span>
+              </div>
+              <span class="offer-save">Economize R$ 15,00</span>
+            </div>
+          </div>
+          <div class="offer-card">
+            <div class="offer-img" style="background:#dbeafe">
+              🧴
+              <span class="badge">-25%</span>
+            </div>
+            <div class="offer-info">
+              <div class="offer-name">Amaciante Downy 1.5L</div>
+              <div class="offer-store">Carrefour · 2km</div>
+              <div class="offer-prices">
+                <span class="offer-old">R$ 22,90</span>
+                <span class="offer-new">R$ 16,99</span>
+              </div>
+              <span class="offer-save">Economize R$ 5,91</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mercados perto -->
+        <div class="sec-header">
+          <span class="sec-title">Perto de você</span>
+          <span class="sec-link">Mapa →</span>
+        </div>
+        <div class="nearby">
+          <div class="nearby-item">
+            <div class="nearby-logo" style="background:#e0f2fe">🏪</div>
+            <div class="nearby-info">
+              <div class="nearby-name">Extra Hiper</div>
+              <div class="nearby-addr">Av. Paulista, 1578</div>
+              <div class="nearby-meta">
+                <span class="nearby-dist">📍 800m</span>
+                <span class="nearby-deals">🏷️ 23 ofertas</span>
+              </div>
+            </div>
+          </div>
+          <div class="nearby-item">
+            <div class="nearby-logo" style="background:#fef3c7">🛒</div>
+            <div class="nearby-info">
+              <div class="nearby-name">Assaí Atacadista</div>
+              <div class="nearby-addr">R. Augusta, 2340</div>
+              <div class="nearby-meta">
+                <span class="nearby-dist">📍 1.2km</span>
+                <span class="nearby-deals">🏷️ 45 ofertas</span>
+              </div>
+            </div>
+          </div>
+          <div class="nearby-item">
+            <div class="nearby-logo" style="background:#dbeafe">🏬</div>
+            <div class="nearby-info">
+              <div class="nearby-name">Carrefour</div>
+              <div class="nearby-addr">R. Oscar Freire, 890</div>
+              <div class="nearby-meta">
+                <span class="nearby-dist">📍 2.0km</span>
+                <span class="nearby-deals">🏷️ 18 ofertas</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:20px"></div>
+      </div>
+
+      <!-- Tab Bar -->
+      <div class="tab-bar">
+        <div class="tab active">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>
+          Home
+          <div class="tab-dot"></div>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Buscar
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Mapa
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          Lista
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          Alertas
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== COMPARAÇÃO ==================== -->
+  <div class="phone">
+    <div class="phone-label">Comparação</div>
+    <div class="phone-frame">
+      <div class="status-bar light" style="position:absolute;top:0;left:0;right:0;z-index:20;background:linear-gradient(180deg,rgba(15,118,110,.9),transparent)">
+        <span>9:41</span>
+        <div class="sb-icons" style="color:#fff"><div class="bar"></div><div class="batt"></div></div>
+      </div>
+      <div class="screen-content" style="padding-top:0">
+
+        <div class="comp-header" style="padding-top:48px">
+          <div class="comp-top">
+            <span class="comp-back">←</span>
+            <span class="comp-title">Comparar preços</span>
+          </div>
+        </div>
+
+        <div class="comp-product">
+          <div class="comp-product-img">🧈</div>
+          <div class="comp-product-info">
+            <div class="comp-product-name">Manteiga Président com Sal 200g</div>
+            <div class="comp-product-desc">Manteiga extra · Importada · Tablete</div>
+            <div class="comp-product-best">✓ Menor preço encontrado: R$ 9,29</div>
+          </div>
+        </div>
+
+        <div style="padding:12px 20px 4px"><span style="font-size:12px;font-weight:700;color:var(--text-secondary)">5 mercados encontrados</span></div>
+
+        <div class="comp-list">
+          <div class="comp-store best">
+            <div class="comp-store-logo" style="background:#e0f2fe">🏪</div>
+            <div class="comp-store-info">
+              <div class="comp-store-name">Extra Hiper</div>
+              <div class="comp-store-dist">📍 800m · Av. Paulista</div>
+            </div>
+            <div class="comp-store-price">
+              <div class="comp-store-val">R$ 9,29</div>
+              <div class="comp-store-unit">Atualizado há 2h</div>
+            </div>
+          </div>
+          <div class="comp-store">
+            <div class="comp-store-logo" style="background:#fef3c7">🛒</div>
+            <div class="comp-store-info">
+              <div class="comp-store-name">Assaí Atacadista</div>
+              <div class="comp-store-dist">📍 1.2km · R. Augusta</div>
+            </div>
+            <div class="comp-store-price">
+              <div class="comp-store-val">R$ 10,49</div>
+              <div class="comp-store-unit">Atualizado há 5h</div>
+            </div>
+          </div>
+          <div class="comp-store">
+            <div class="comp-store-logo" style="background:#dbeafe">🏬</div>
+            <div class="comp-store-info">
+              <div class="comp-store-name">Carrefour</div>
+              <div class="comp-store-dist">📍 2.0km · R. Oscar Freire</div>
+            </div>
+            <div class="comp-store-price">
+              <div class="comp-store-val">R$ 11,79</div>
+              <div class="comp-store-unit">Atualizado há 3h</div>
+            </div>
+          </div>
+          <div class="comp-store">
+            <div class="comp-store-logo" style="background:#fce7f3">🏪</div>
+            <div class="comp-store-info">
+              <div class="comp-store-name">Pão de Açúcar</div>
+              <div class="comp-store-dist">📍 2.5km · R. Haddock Lobo</div>
+            </div>
+            <div class="comp-store-price">
+              <div class="comp-store-val">R$ 13,49</div>
+              <div class="comp-store-unit">Atualizado há 1h</div>
+            </div>
+          </div>
+          <div class="comp-store">
+            <div class="comp-store-logo" style="background:#f3e8ff">🛍️</div>
+            <div class="comp-store-info">
+              <div class="comp-store-name">Dia Supermercados</div>
+              <div class="comp-store-dist">📍 3.1km · Al. Santos</div>
+            </div>
+            <div class="comp-store-price">
+              <div class="comp-store-val">R$ 14,99</div>
+              <div class="comp-store-unit">Atualizado há 8h</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>Home</div>
+        <div class="tab active"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" fill="none"/></svg>Buscar<div class="tab-dot"></div></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Mapa</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Lista</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>Alertas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAPA ==================== -->
+  <div class="phone">
+    <div class="phone-label">Mapa</div>
+    <div class="phone-frame">
+      <div class="status-bar" style="position:absolute;top:0;left:0;right:0;z-index:20">
+        <span>9:41</span>
+        <div class="sb-icons"><div class="bar"></div><div class="batt"></div></div>
+      </div>
+
+      <div style="position:absolute;top:48px;bottom:72px;left:0;right:0">
+        <div class="map-container">
+          <!-- Roads grid (simulated) -->
+          <div class="map-road h main" style="top:30%"></div>
+          <div class="map-road h" style="top:50%"></div>
+          <div class="map-road h main" style="top:72%"></div>
+          <div class="map-road h" style="top:15%"></div>
+          <div class="map-road h" style="top:88%"></div>
+          <div class="map-road v main" style="left:35%"></div>
+          <div class="map-road v" style="left:60%"></div>
+          <div class="map-road v main" style="left:80%"></div>
+          <div class="map-road v" style="left:15%"></div>
+
+          <!-- Search bar -->
+          <div class="map-search-bar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            Buscar mercado...
+          </div>
+
+          <!-- User location -->
+          <div class="map-user" style="top:55%;left:45%"></div>
+
+          <!-- Store pins -->
+          <div class="map-pin green" style="top:28%;left:52%">
+            <div class="map-pin-label">Extra · <span class="map-pin-price">R$ 9,29</span></div>
+            <div class="map-pin-head">🏪</div>
+            <div class="map-pin-tail"></div>
+          </div>
+          <div class="map-pin gold" style="top:38%;left:78%">
+            <div class="map-pin-head">🛒</div>
+            <div class="map-pin-tail"></div>
+          </div>
+          <div class="map-pin blue" style="top:68%;left:28%">
+            <div class="map-pin-head">🏬</div>
+            <div class="map-pin-tail"></div>
+          </div>
+          <div class="map-pin red" style="top:20%;left:18%">
+            <div class="map-pin-head">🏪</div>
+            <div class="map-pin-tail"></div>
+          </div>
+
+          <!-- Bottom store card -->
+          <div class="map-bottom-card">
+            <div class="map-bc-store">
+              <div class="map-bc-logo" style="background:#e0f2fe">🏪</div>
+              <div class="map-bc-info">
+                <div class="map-bc-name">Extra Hiper</div>
+                <div class="map-bc-addr">Av. Paulista, 1578 · Bela Vista</div>
+                <div class="map-bc-meta">
+                  <span class="map-bc-tag dist">📍 800m</span>
+                  <span class="map-bc-tag deals">🏷️ 23 ofertas</span>
+                  <span class="map-bc-tag open">Aberto</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>Home</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>Buscar</div>
+        <div class="tab active"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="3" fill="currentColor"/></svg>Mapa<div class="tab-dot"></div></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Lista</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>Alertas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== LISTA ==================== -->
+  <div class="phone">
+    <div class="phone-label">Lista</div>
+    <div class="phone-frame">
+      <div class="status-bar light" style="position:absolute;top:0;left:0;right:0;z-index:20;background:linear-gradient(180deg,rgba(15,118,110,.9),transparent)">
+        <span>9:41</span>
+        <div class="sb-icons" style="color:#fff"><div class="bar"></div><div class="batt"></div></div>
+      </div>
+      <div class="screen-content" style="padding-top:0">
+
+        <div class="list-header" style="padding-top:48px">
+          <div class="list-top">
+            <span class="list-title">Minha Lista</span>
+            <button class="list-add">+ Adicionar</button>
+          </div>
+          <div class="list-summary">
+            <div class="list-stat"><div class="list-stat-val">12</div><div class="list-stat-label">Itens</div></div>
+            <div class="list-stat"><div class="list-stat-val">R$ 147</div><div class="list-stat-label">Estimado</div></div>
+            <div class="list-stat"><div class="list-stat-val" style="color:var(--accent-light)">R$ 23</div><div class="list-stat-label">Economia</div></div>
+          </div>
+        </div>
+
+        <div class="list-items" style="margin-top:16px">
+          <div class="list-item">
+            <div class="list-check done">✓</div>
+            <div class="list-item-info">
+              <div class="list-item-name done">Arroz Tio João 5kg</div>
+              <div class="list-item-detail">1 un · Grãos</div>
+            </div>
+            <div class="list-item-price">
+              <div class="list-item-val">R$ 22,90</div>
+              <div class="list-item-store">Extra</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-check done">✓</div>
+            <div class="list-item-info">
+              <div class="list-item-name done">Feijão Carioca Camil 1kg</div>
+              <div class="list-item-detail">2 un · Grãos</div>
+            </div>
+            <div class="list-item-price">
+              <div class="list-item-val">R$ 7,49</div>
+              <div class="list-item-store">Assaí</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-check"></div>
+            <div class="list-item-info">
+              <div class="list-item-name">Leite Integral Parmalat 1L</div>
+              <div class="list-item-detail">6 un · Laticínios</div>
+            </div>
+            <div class="list-item-price">
+              <div class="list-item-val">R$ 5,29</div>
+              <div class="list-item-store">Carrefour</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-check"></div>
+            <div class="list-item-info">
+              <div class="list-item-name">Manteiga Président 200g</div>
+              <div class="list-item-detail">1 un · Laticínios</div>
+            </div>
+            <div class="list-item-price">
+              <div class="list-item-val">R$ 9,29</div>
+              <div class="list-item-store">Extra</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-check"></div>
+            <div class="list-item-info">
+              <div class="list-item-name">Café Pilão 500g</div>
+              <div class="list-item-detail">1 un · Bebidas</div>
+            </div>
+            <div class="list-item-price">
+              <div class="list-item-val">R$ 15,90</div>
+              <div class="list-item-store">Assaí</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-check"></div>
+            <div class="list-item-info">
+              <div class="list-item-name">Açúcar União 1kg</div>
+              <div class="list-item-detail">1 un · Mercearia</div>
+            </div>
+            <div class="list-item-price">
+              <div class="list-item-val">R$ 4,99</div>
+              <div class="list-item-store">Dia</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-check"></div>
+            <div class="list-item-info">
+              <div class="list-item-name">Detergente Ypê 500ml</div>
+              <div class="list-item-detail">3 un · Limpeza</div>
+            </div>
+            <div class="list-item-price">
+              <div class="list-item-val">R$ 2,49</div>
+              <div class="list-item-store">Extra</div>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-check"></div>
+            <div class="list-item-info">
+              <div class="list-item-name">Papel Higiênico Neve 12un</div>
+              <div class="list-item-detail">1 pct · Limpeza</div>
+            </div>
+            <div class="list-item-price">
+              <div class="list-item-val">R$ 18,90</div>
+              <div class="list-item-store">Carrefour</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:20px"></div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>Home</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>Buscar</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Mapa</div>
+        <div class="tab active"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" fill="none" stroke="currentColor" stroke-width="2"/></svg>Lista<div class="tab-dot"></div></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>Alertas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ALERTAS ==================== -->
+  <div class="phone">
+    <div class="phone-label">Alertas</div>
+    <div class="phone-frame">
+      <div class="status-bar light" style="position:absolute;top:0;left:0;right:0;z-index:20;background:linear-gradient(180deg,rgba(15,118,110,.9),transparent)">
+        <span>9:41</span>
+        <div class="sb-icons" style="color:#fff"><div class="bar"></div><div class="batt"></div></div>
+      </div>
+      <div class="screen-content" style="padding-top:0">
+
+        <div class="alerts-header" style="padding-top:48px">
+          <div class="alerts-top">
+            <span class="alerts-title">Alertas de Preço</span>
+            <span class="alerts-count">3 novos</span>
+          </div>
+        </div>
+
+        <div class="alert-card highlight">
+          <div class="alert-top">
+            <div class="alert-emoji">🧈</div>
+            <div class="alert-info">
+              <div class="alert-product">Manteiga Président 200g</div>
+              <div class="alert-desc">Preço caiu <strong style="color:var(--success)">38%</strong> no Extra! De R$ 14,99 por <strong style="color:var(--success)">R$ 9,29</strong>. Menor preço dos últimos 30 dias.</div>
+            </div>
+          </div>
+          <div class="alert-bottom">
+            <span class="alert-time">Há 23 minutos</span>
+            <button class="alert-btn">Ver oferta</button>
+          </div>
+        </div>
+
+        <div class="alert-card highlight">
+          <div class="alert-top">
+            <div class="alert-emoji">🥩</div>
+            <div class="alert-info">
+              <div class="alert-product">Picanha Bovina kg</div>
+              <div class="alert-desc">O Assaí baixou o preço! Agora por <strong style="color:var(--success)">R$ 34,90/kg</strong>. Você economiza R$ 15,00.</div>
+            </div>
+          </div>
+          <div class="alert-bottom">
+            <span class="alert-time">Há 1 hora</span>
+            <button class="alert-btn">Ver oferta</button>
+          </div>
+        </div>
+
+        <div class="alert-card">
+          <div class="alert-top">
+            <div class="alert-emoji">🧴</div>
+            <div class="alert-info">
+              <div class="alert-product">Amaciante Downy 1.5L</div>
+              <div class="alert-desc">Novo menor preço no Carrefour! <strong>R$ 16,99</strong> (era R$ 22,90).</div>
+            </div>
+          </div>
+          <div class="alert-bottom">
+            <span class="alert-time">Há 3 horas</span>
+            <button class="alert-btn">Ver oferta</button>
+          </div>
+        </div>
+
+        <div class="alert-card">
+          <div class="alert-top">
+            <div class="alert-emoji">☕</div>
+            <div class="alert-info">
+              <div class="alert-product">Café Pilão 500g</div>
+              <div class="alert-desc">Preço estável em <strong>R$ 15,90</strong> no Assaí. Ainda é o melhor preço da região.</div>
+            </div>
+          </div>
+          <div class="alert-bottom">
+            <span class="alert-time">Há 5 horas</span>
+            <button class="alert-btn" style="background:var(--text-muted)">Monitorando</button>
+          </div>
+        </div>
+
+        <div class="alert-card">
+          <div class="alert-top">
+            <div class="alert-emoji">🍚</div>
+            <div class="alert-info">
+              <div class="alert-product">Arroz Tio João 5kg</div>
+              <div class="alert-desc">Preço subiu 8% no Pão de Açúcar (R$ 24,90 → R$ 26,90). Extra ainda tem por <strong>R$ 22,90</strong>.</div>
+            </div>
+          </div>
+          <div class="alert-bottom">
+            <span class="alert-time">Ontem</span>
+            <button class="alert-btn">Comparar</button>
+          </div>
+        </div>
+
+        <div style="height:20px"></div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>Home</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>Buscar</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Mapa</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Lista</div>
+        <div class="tab active"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" fill="none" stroke="currentColor" stroke-width="2"/></svg>Alertas<div class="tab-dot"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="text-align:center;padding:40px 20px;color:#6b9e98;font-size:11px;max-width:600px;margin:0 auto;line-height:1.6">
+  <strong style="color:var(--primary-dark)">Poup — Mockup Completo</strong><br>
+  Paleta Economia Verde · Poppins + Inter · Ícone Wordmark P($)UP<br>
+  Cores: #0D9488 · #14B8A6 · #5EEAD4 · #F59E0B · #1A1A2E · #F0FDFA<br>
+  Março 2026
+</div>
+
+</body>
+</html>

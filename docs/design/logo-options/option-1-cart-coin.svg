@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Poup Option 1 - Cart + Coin</title>
+  <desc id="desc">Flat icon with shopping cart and coin on teal background.</desc>
+  <rect width="1024" height="1024" rx="224" fill="#12766C"/>
+  <g fill="none" stroke="#F5F2EA" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M232 408h96l76 248h348" stroke-width="36"/>
+    <path d="M396 656 360 472h438l-34 184z" stroke-width="34"/>
+    <circle cx="460" cy="724" r="42" fill="#F5F2EA" stroke="none"/>
+    <circle cx="690" cy="724" r="42" fill="#F5F2EA" stroke="none"/>
+  </g>
+  <circle cx="562" cy="382" r="112" fill="#CDA03D"/>
+  <circle cx="562" cy="382" r="92" fill="none" stroke="#E3BE63" stroke-width="14"/>
+  <path d="M581 318c0-20-16-34-40-34s-42 14-42 34c0 18 14 28 38 35 26 8 41 16 41 34 0 22-17 35-44 35s-45-14-45-35" fill="none" stroke="#F5F2EA" stroke-width="22" stroke-linecap="round"/>
+  <path d="M540 264v236" fill="none" stroke="#F5F2EA" stroke-width="16" stroke-linecap="round"/>
+</svg>

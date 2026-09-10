@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poup — Produto — Mockup Completo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#0D9488;--primary-dark:#0f766e;--primary-light:#14B8A6;--primary-lighter:#5EEAD4;
+    --accent:#F59E0B;--accent-light:#FDE68A;
+    --text:#1A1A2E;--text-secondary:#64748B;--text-muted:#94A3B8;
+    --bg:#F0FDFA;--bg-card:#FFFFFF;
+    --success:#16A34A;--alert:#EF4444;
+    --purple:#7C3AED;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#e0f0ec;min-height:100vh;padding:40px 20px 60px}
+
+  .section-divider{max-width:1400px;margin:0 auto 32px;padding:0 20px}
+  .section-divider h1{font-family:'Poppins';font-size:28px;font-weight:800;color:var(--text);text-align:center}
+  .section-divider p{color:var(--text-secondary);font-size:13px;margin-top:6px;max-width:700px;margin-inline:auto;line-height:1.5;text-align:center}
+
+  .phones{display:flex;gap:32px;justify-content:center;flex-wrap:wrap;align-items:flex-start;max-width:1400px;margin:0 auto}
+  .phone-col{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .phone-label{font-family:'Poppins';font-size:11px;font-weight:700;color:var(--primary-dark);text-transform:uppercase;letter-spacing:1px;text-align:center}
+  .phone-sublabel{font-size:10px;color:var(--text-muted);max-width:280px;text-align:center;line-height:1.4;margin-top:-6px}
+
+  .phone-frame{
+    width:320px;height:692px;border-radius:40px;overflow:hidden;
+    background:var(--bg);position:relative;
+    box-shadow:0 4px 6px rgba(0,0,0,.04),0 20px 50px rgba(13,148,136,.15),inset 0 0 0 2px rgba(0,0,0,.06);
+  }
+
+  .status-bar{height:50px;padding:14px 24px 0;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;color:var(--text);position:absolute;top:0;left:0;right:0;z-index:20}
+  .sb-r{display:flex;gap:5px;align-items:center;font-size:10px}
+
+  .screen{position:absolute;top:50px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .screen::-webkit-scrollbar{display:none}
+
+  /* ===== NAV BAR ===== */
+  .nav-bar{
+    background:#fff;padding:12px 16px;
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid #f1f5f9;position:sticky;top:0;z-index:15;
+  }
+  .nav-back{display:flex;align-items:center;gap:4px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer}
+  .nav-back svg{width:20px;height:20px;stroke:var(--text);fill:none;stroke-width:2.5}
+  .nav-actions{display:flex;gap:14px;align-items:center}
+  .nav-actions svg{width:20px;height:20px;stroke:var(--text-muted);fill:none;stroke-width:2;cursor:pointer}
+
+  /* ===== PRODUCT HEADER ===== */
+  .product-header{padding:16px 16px 14px;display:flex;gap:14px;align-items:flex-start}
+  .ph-icon{
+    width:48px;height:48px;border-radius:12px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;
+  }
+  .ph-info{flex:1;min-width:0}
+  .ph-name{font-family:'Poppins';font-size:17px;font-weight:700;color:var(--text);line-height:1.3}
+  .ph-category{font-size:11px;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:4px}
+  .ph-best-price{display:flex;align-items:baseline;gap:6px;margin-top:6px}
+  .ph-best-label{font-size:11px;color:var(--text-muted);font-weight:500}
+  .ph-best-value{font-family:'Poppins';font-size:22px;font-weight:800;color:var(--primary)}
+  .ph-best-market{font-size:11px;color:var(--primary);font-weight:600}
+
+  /* ===== COMPARE SECTION ===== */
+  .section-header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:16px 16px 10px;
+  }
+  .section-title{font-family:'Poppins';font-size:14px;font-weight:700;color:var(--text)}
+  .section-count{font-size:11px;color:var(--text-muted);font-weight:500}
+
+  .market-row{
+    margin:0 16px 8px;padding:12px 14px;
+    background:#fff;border-radius:12px;border:1.5px solid #e8edf2;
+    display:flex;align-items:center;gap:12px;cursor:pointer;
+  }
+  .market-row.best{border-color:var(--primary);background:#f0fdfa}
+  .market-row .mr-rank{
+    width:22px;height:22px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:800;flex-shrink:0;
+  }
+  .market-row.best .mr-rank{background:var(--primary);color:#fff}
+  .market-row:not(.best) .mr-rank{background:#f1f5f9;color:var(--text-muted)}
+  .mr-icon{
+    width:36px;height:36px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;font-weight:800;color:#fff;flex-shrink:0;
+  }
+  .mr-info{flex:1;min-width:0}
+  .mr-name{font-size:13px;font-weight:700;color:var(--text)}
+  .mr-detail{font-size:10px;color:var(--text-muted);margin-top:1px;display:flex;align-items:center;gap:6px}
+  .mr-right{text-align:right;flex-shrink:0}
+  .mr-price{font-size:16px;font-weight:800}
+  .mr-badge{
+    font-size:8px;font-weight:700;padding:2px 7px;border-radius:5px;
+    margin-top:3px;display:inline-block;
+  }
+  .mr-badge.best{background:#dcfce7;color:#166534}
+  .mr-badge.discount{background:#fef3c7;color:#92400e}
+  .mr-badge.historic{background:#ede9fe;color:#5b21b6}
+
+  /* ===== PRICE HISTORY ===== */
+  .history-card{
+    margin:4px 16px 0;padding:14px;
+    background:#fff;border-radius:14px;border:1.5px solid #e8edf2;
+  }
+  .hc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .hc-title{font-size:12px;font-weight:700;color:var(--text)}
+  .hc-pills{display:flex;gap:4px}
+  .hc-pill{
+    padding:4px 10px;border-radius:6px;font-size:9px;font-weight:700;
+    cursor:pointer;border:1px solid #e2e8f0;color:var(--text-muted);background:#fff;
+  }
+  .hc-pill.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .hc-pill.locked{opacity:.5;cursor:default}
+
+  .chart-area{height:100px;position:relative;margin:8px 0}
+  .chart-svg{width:100%;height:100%}
+  .chart-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--text-muted);margin-top:4px}
+
+  .hc-empty{
+    height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:#f8fffe;border-radius:10px;
+  }
+  .hc-empty svg{width:24px;height:24px;stroke:var(--text-muted);fill:none;stroke-width:1.5;margin-bottom:6px}
+  .hc-empty span{font-size:11px;color:var(--text-muted)}
+
+  /* ===== ALERT SECTION ===== */
+  .alert-section{
+    margin:12px 16px 0;padding:14px;
+    background:#fff;border-radius:14px;border:1.5px solid #e8edf2;
+  }
+  .as-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .as-icon{
+    width:32px;height:32px;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .as-icon svg{width:16px;height:16px;fill:none;stroke-width:2}
+  .as-title{font-size:13px;font-weight:700;color:var(--text);flex:1}
+  .as-toggle{
+    width:42px;height:24px;border-radius:12px;position:relative;cursor:pointer;flex-shrink:0;
+  }
+  .as-toggle::after{
+    content:'';position:absolute;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;
+    box-shadow:0 1px 3px rgba(0,0,0,.15);
+  }
+  .as-toggle.on{background:var(--primary)}
+  .as-toggle.on::after{right:2px}
+  .as-toggle.off{background:#d1d5db}
+  .as-toggle.off::after{left:2px}
+  .as-desc{font-size:11px;color:var(--text-muted);line-height:1.5}
+  .as-status{font-size:10px;font-weight:600;color:var(--primary);margin-top:6px;display:flex;align-items:center;gap:4px}
+  .as-status .dot{width:6px;height:6px;border-radius:50%;background:var(--primary)}
+
+  /* Plus alert version */
+  .as-plus-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+  .as-input-group{
+    display:flex;align-items:center;gap:6px;flex:1;
+    background:#f8fffe;border:1.5px solid var(--primary-lighter);
+    border-radius:10px;padding:8px 12px;
+  }
+  .as-input-group .prefix{font-size:12px;font-weight:700;color:var(--text)}
+  .as-input-group input{
+    border:none;outline:none;background:transparent;font-family:'Inter';
+    font-size:13px;font-weight:600;color:var(--primary);width:100%;
+  }
+  .as-input-group input::placeholder{color:var(--text-muted);font-weight:400;font-size:12px}
+
+  /* ===== IN LIST INDICATOR ===== */
+  .in-list-bar{
+    margin:12px 16px 0;padding:10px 14px;
+    background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;
+    display:flex;align-items:center;gap:8px;
+    font-size:11px;font-weight:600;color:#166534;
+  }
+  .in-list-bar svg{width:16px;height:16px;stroke:#16a34a;fill:none;stroke-width:2;flex-shrink:0}
+
+  /* ===== BOTTOM CTA ===== */
+  .bottom-cta{
+    position:sticky;bottom:0;left:0;right:0;
+    padding:12px 16px;padding-bottom:28px;
+    background:linear-gradient(to top, var(--bg) 60%, transparent);
+    z-index:15;
+  }
+  .cta-btn{
+    width:100%;padding:15px;border-radius:14px;border:none;
+    background:var(--primary);color:#fff;font-family:'Inter';
+    font-size:14px;font-weight:700;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    box-shadow:0 4px 12px rgba(13,148,136,.3);
+  }
+  .cta-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2}
+
+  /* ===== PLUS UPSELL ===== */
+  .plus-lock{
+    margin:12px 16px 0;padding:12px 14px;
+    background:linear-gradient(135deg,#f5f3ff,#ede9fe);
+    border-radius:12px;border:1.5px solid #ddd6fe;
+    display:flex;align-items:center;gap:10px;cursor:pointer;
+  }
+  .plus-lock-icon{
+    width:28px;height:28px;border-radius:8px;
+    background:var(--purple);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .plus-lock-icon svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2}
+  .plus-lock-info{flex:1}
+  .plus-lock-title{font-size:11px;font-weight:700;color:var(--purple)}
+  .plus-lock-desc{font-size:10px;color:var(--purple);opacity:.65;margin-top:1px}
+  .plus-lock-arrow{color:var(--purple);font-size:14px;font-weight:700}
+
+  /* ===== NOTES ===== */
+  .notes{max-width:1400px;margin:50px auto 0;padding:0 20px}
+  .notes h2{font-family:'Poppins';font-size:20px;font-weight:700;color:var(--text);margin-bottom:16px;text-align:center}
+  .notes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+  .note{background:#fff;border-radius:14px;padding:16px 20px;border-left:4px solid var(--primary);box-shadow:0 1px 4px rgba(0,0,0,.04)}
+  .note-title{font-size:13px;font-weight:700;color:var(--primary);margin-bottom:4px}
+  .note-desc{font-size:12px;color:var(--text-secondary);line-height:1.6}
+  .note.purple{border-left-color:var(--purple)}
+  .note.purple .note-title{color:var(--purple)}
+  .note.gold{border-left-color:var(--accent)}
+  .note.gold .note-title{color:#b45309}
+
+  .footer{text-align:center;padding:40px;color:var(--text-muted);font-size:11px}
+</style>
+</head>
+<body>
+
+<div class="section-divider">
+  <h1>Poup — Detalhe do Produto</h1>
+  <p>Três cenários: produto com vários mercados (free), produto com histórico de preço (Plus), e produto já na lista.</p>
+</div>
+
+<div class="phones">
+
+  <!-- ==================== 1. PRODUTO — PLANO GRÁTIS ==================== -->
+  <div class="phone-col">
+    <div class="phone-label">Produto — Plano Grátis</div>
+    <div class="phone-sublabel">Comparação de preços no topo, alerta simples, histórico limitado</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="sb-r">
+          <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="#333" stroke-width="1.5"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h2v10.5h-2z"/></svg>
+          <svg width="14" height="10" viewBox="0 0 24 16" fill="none" stroke="#333" stroke-width="1.8"><path d="M1 12c3.5-7 18.5-7 22 0"/><path d="M5 10c2.5-4 11.5-4 14 0"/><circle cx="12" cy="12" r="1.5" fill="#333"/></svg>
+          <svg width="20" height="10" viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="24" height="13" rx="3" stroke="#333" stroke-opacity=".5"/><rect x="26" y="4" width="2" height="6" rx="1" fill="#333" fill-opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#333"/></svg>
+        </div>
+      </div>
+
+      <div class="screen">
+        <!-- Nav bar -->
+        <div class="nav-bar">
+          <div class="nav-back">
+            <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            Voltar
+          </div>
+          <div class="nav-actions">
+            <!-- Share -->
+            <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          </div>
+        </div>
+
+        <!-- Product header — compact -->
+        <div class="product-header">
+          <div class="ph-icon" style="background:#fef3c7">🍺</div>
+          <div class="ph-info">
+            <div class="ph-name">Tulipa de Cerveja 300ml</div>
+            <div class="ph-category">
+              <span>Bebidas</span>
+              <span style="color:#d1d5db">·</span>
+              <span>Cervejas</span>
+            </div>
+            <div class="ph-best-price">
+              <span class="ph-best-label">A partir de</span>
+              <span class="ph-best-value">R$ 7,49</span>
+            </div>
+            <div class="ph-best-market">Savegnago · 3.4 km</div>
+          </div>
+        </div>
+
+        <!-- ===== COMPARAR MERCADOS (CORE) ===== -->
+        <div class="section-header">
+          <span class="section-title">Comparar mercados</span>
+          <span class="section-count">4 mercados</span>
+        </div>
+
+        <!-- #1 Best price -->
+        <div class="market-row best">
+          <div class="mr-rank">1</div>
+          <div class="mr-icon" style="background:var(--primary)">S</div>
+          <div class="mr-info">
+            <div class="mr-name">Savegnago</div>
+            <div class="mr-detail">
+              <span>3.4 km</span>
+              <span style="color:#d1d5db">·</span>
+              <span>Aberto</span>
+            </div>
+          </div>
+          <div class="mr-right">
+            <div class="mr-price" style="color:var(--primary)">R$ 7,49</div>
+            <div class="mr-badge best">Menor preço</div>
+          </div>
+        </div>
+
+        <!-- #2 -->
+        <div class="market-row">
+          <div class="mr-rank">2</div>
+          <div class="mr-icon" style="background:#6366f1">J</div>
+          <div class="mr-info">
+            <div class="mr-name">Jaú Serve</div>
+            <div class="mr-detail">
+              <span>4.7 km</span>
+              <span style="color:#d1d5db">·</span>
+              <span>Aberto</span>
+            </div>
+          </div>
+          <div class="mr-right">
+            <div class="mr-price" style="color:var(--text)">R$ 8,99</div>
+            <div class="mr-badge discount">-11%</div>
+          </div>
+        </div>
+
+        <!-- #3 -->
+        <div class="market-row">
+          <div class="mr-rank">3</div>
+          <div class="mr-icon" style="background:var(--accent)">P</div>
+          <div class="mr-info">
+            <div class="mr-name">Paulistão</div>
+            <div class="mr-detail">
+              <span>5.1 km</span>
+              <span style="color:#d1d5db">·</span>
+              <span>Aberto</span>
+            </div>
+          </div>
+          <div class="mr-right">
+            <div class="mr-price" style="color:var(--text)">R$ 9,29</div>
+          </div>
+        </div>
+
+        <!-- #4 -->
+        <div class="market-row">
+          <div class="mr-rank">4</div>
+          <div class="mr-icon" style="background:#94a3b8">C</div>
+          <div class="mr-info">
+            <div class="mr-name">Covabra</div>
+            <div class="mr-detail">
+              <span>6.8 km</span>
+              <span style="color:#d1d5db">·</span>
+              <span style="color:var(--alert)">Fechado</span>
+            </div>
+          </div>
+          <div class="mr-right">
+            <div class="mr-price" style="color:var(--text-muted)">R$ 10,49</div>
+          </div>
+        </div>
+
+        <!-- ===== PRICE HISTORY ===== -->
+        <div class="section-header">
+          <span class="section-title">Histórico de preço</span>
+        </div>
+
+        <div class="history-card">
+          <div class="hc-top">
+            <div></div>
+            <div class="hc-pills">
+              <div class="hc-pill active">7d</div>
+              <div class="hc-pill">30d</div>
+              <div class="hc-pill locked" title="Poup Plus">90d 🔒</div>
+            </div>
+          </div>
+          <!-- Simple chart -->
+          <div class="chart-area">
+            <svg class="chart-svg" viewBox="0 0 260 80" preserveAspectRatio="none">
+              <!-- Grid lines -->
+              <line x1="0" y1="20" x2="260" y2="20" stroke="#f1f5f9" stroke-width="1"/>
+              <line x1="0" y1="40" x2="260" y2="40" stroke="#f1f5f9" stroke-width="1"/>
+              <line x1="0" y1="60" x2="260" y2="60" stroke="#f1f5f9" stroke-width="1"/>
+              <!-- Area fill -->
+              <path d="M0,45 L37,42 L74,48 L111,35 L148,30 L185,25 L222,20 L260,18 L260,80 L0,80 Z" fill="url(#grad1)" opacity=".3"/>
+              <!-- Line -->
+              <path d="M0,45 L37,42 L74,48 L111,35 L148,30 L185,25 L222,20 L260,18" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- Current dot -->
+              <circle cx="260" cy="18" r="4" fill="var(--primary)" stroke="#fff" stroke-width="2"/>
+              <defs>
+                <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="var(--primary)" stop-opacity=".3"/>
+                  <stop offset="100%" stop-color="var(--primary)" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="chart-labels">
+            <span>17/03</span>
+            <span>19/03</span>
+            <span>21/03</span>
+            <span>Hoje</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px">
+            <span style="color:var(--success);font-weight:600">↓ R$ 7,49 menor</span>
+            <span style="color:var(--text-muted)">↑ R$ 10,49 maior</span>
+          </div>
+        </div>
+
+        <!-- ===== ALERT (FREE) ===== -->
+        <div class="alert-section" style="margin-top:12px">
+          <div class="as-top">
+            <div class="as-icon" style="background:#fef3c7">
+              <svg viewBox="0 0 24 24" stroke="var(--accent)"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </div>
+            <div class="as-title">Alerta de promoção</div>
+            <div class="as-toggle on"></div>
+          </div>
+          <div class="as-desc">Me avise quando este produto entrar em promoção</div>
+          <div class="as-status">
+            <div class="dot"></div>
+            Monitorando · R$ 7,49 atual
+          </div>
+        </div>
+
+        <!-- Plus upsell for advanced alerts -->
+        <div class="plus-lock">
+          <div class="plus-lock-icon">
+            <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <div class="plus-lock-info">
+            <div class="plus-lock-title">Alerta com valor personalizado</div>
+            <div class="plus-lock-desc">"Avise quando menor que R$ 6,00"</div>
+          </div>
+          <div class="plus-lock-arrow">›</div>
+        </div>
+
+        <!-- Bottom CTA -->
+        <div class="bottom-cta">
+          <button class="cta-btn">
+            <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+            Adicionar à lista
+          </button>
+        </div>
+
+        <div style="height:10px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 2. PRODUTO — POUP PLUS ==================== -->
+  <div class="phone-col">
+    <div class="phone-label">Produto — Poup Plus</div>
+    <div class="phone-sublabel">Histórico 90 dias, alerta com threshold e mais mercados</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="sb-r">
+          <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="#333" stroke-width="1.5"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h2v10.5h-2z"/></svg>
+          <svg width="14" height="10" viewBox="0 0 24 16" fill="none" stroke="#333" stroke-width="1.8"><path d="M1 12c3.5-7 18.5-7 22 0"/><path d="M5 10c2.5-4 11.5-4 14 0"/><circle cx="12" cy="12" r="1.5" fill="#333"/></svg>
+          <svg width="20" height="10" viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="24" height="13" rx="3" stroke="#333" stroke-opacity=".5"/><rect x="26" y="4" width="2" height="6" rx="1" fill="#333" fill-opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#333"/></svg>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="nav-bar">
+          <div class="nav-back">
+            <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            Voltar
+          </div>
+          <div class="nav-actions">
+            <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          </div>
+        </div>
+
+        <!-- Product header -->
+        <div class="product-header">
+          <div class="ph-icon" style="background:#dcfce7">🍚</div>
+          <div class="ph-info">
+            <div class="ph-name">Arroz Tio João 5kg</div>
+            <div class="ph-category">
+              <span>Alimentos</span>
+              <span style="color:#d1d5db">·</span>
+              <span>Grãos & Cereais</span>
+            </div>
+            <div class="ph-best-price">
+              <span class="ph-best-label">A partir de</span>
+              <span class="ph-best-value">R$ 21,90</span>
+            </div>
+            <div class="ph-best-market">Paulistão · 5.1 km</div>
+          </div>
+        </div>
+
+        <!-- Compare -->
+        <div class="section-header">
+          <span class="section-title">Comparar mercados</span>
+          <span class="section-count">5 mercados</span>
+        </div>
+
+        <div class="market-row best">
+          <div class="mr-rank">1</div>
+          <div class="mr-icon" style="background:var(--accent)">P</div>
+          <div class="mr-info">
+            <div class="mr-name">Paulistão</div>
+            <div class="mr-detail"><span>5.1 km</span><span style="color:#d1d5db">·</span><span>Aberto</span></div>
+          </div>
+          <div class="mr-right">
+            <div class="mr-price" style="color:var(--primary)">R$ 21,90</div>
+            <div class="mr-badge best">Menor preço</div>
+          </div>
+        </div>
+
+        <div class="market-row">
+          <div class="mr-rank">2</div>
+          <div class="mr-icon" style="background:var(--primary)">S</div>
+          <div class="mr-info">
+            <div class="mr-name">Savegnago</div>
+            <div class="mr-detail"><span>3.4 km</span><span style="color:#d1d5db">·</span><span>Aberto</span></div>
+          </div>
+          <div class="mr-right">
+            <div class="mr-price" style="color:var(--text)">R$ 22,90</div>
+          </div>
+        </div>
+
+        <div class="market-row">
+          <div class="mr-rank">3</div>
+          <div class="mr-icon" style="background:#6366f1">J</div>
+          <div class="mr-info">
+            <div class="mr-name">Jaú Serve</div>
+            <div class="mr-detail"><span>4.7 km</span><span style="color:#d1d5db">·</span><span>Aberto</span></div>
+          </div>
+          <div class="mr-right">
+            <div class="mr-price" style="color:var(--text)">R$ 23,49</div>
+            <div class="mr-badge historic">Menor em 30d</div>
+          </div>
+        </div>
+
+        <!-- History with data (Plus) -->
+        <div class="section-header">
+          <span class="section-title">Histórico de preço</span>
+        </div>
+
+        <div class="history-card">
+          <div class="hc-top">
+            <div></div>
+            <div class="hc-pills">
+              <div class="hc-pill">7d</div>
+              <div class="hc-pill">30d</div>
+              <div class="hc-pill active">90d</div>
+            </div>
+          </div>
+          <div class="chart-area">
+            <svg class="chart-svg" viewBox="0 0 260 80" preserveAspectRatio="none">
+              <line x1="0" y1="20" x2="260" y2="20" stroke="#f1f5f9" stroke-width="1"/>
+              <line x1="0" y1="40" x2="260" y2="40" stroke="#f1f5f9" stroke-width="1"/>
+              <line x1="0" y1="60" x2="260" y2="60" stroke="#f1f5f9" stroke-width="1"/>
+              <!-- Reference price line -->
+              <line x1="0" y1="35" x2="260" y2="35" stroke="var(--accent)" stroke-width="1" stroke-dasharray="4,3" opacity=".5"/>
+              <!-- Area -->
+              <path d="M0,30 L20,32 L40,35 L60,38 L80,42 L100,40 L120,38 L140,50 L160,55 L180,48 L200,35 L220,30 L240,25 L260,22 L260,80 L0,80 Z" fill="url(#grad2)" opacity=".3"/>
+              <!-- Line -->
+              <path d="M0,30 L20,32 L40,35 L60,38 L80,42 L100,40 L120,38 L140,50 L160,55 L180,48 L200,35 L220,30 L240,25 L260,22" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="260" cy="22" r="4" fill="var(--primary)" stroke="#fff" stroke-width="2"/>
+              <!-- Lowest point -->
+              <circle cx="260" cy="22" r="7" fill="none" stroke="var(--success)" stroke-width="1" stroke-dasharray="2,2"/>
+              <defs>
+                <linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="var(--primary)" stop-opacity=".3"/>
+                  <stop offset="100%" stop-color="var(--primary)" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="chart-labels">
+            <span>Jan</span>
+            <span>Fev</span>
+            <span>Mar</span>
+            <span>Hoje</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px">
+            <span style="color:var(--success);font-weight:600">↓ R$ 21,90 menor (agora!)</span>
+            <span style="color:var(--text-muted)">↑ R$ 27,90 · Fev 14</span>
+          </div>
+        </div>
+
+        <!-- Alert (Plus: threshold) -->
+        <div class="alert-section" style="margin-top:12px">
+          <div class="as-top">
+            <div class="as-icon" style="background:rgba(13,148,136,.08)">
+              <svg viewBox="0 0 24 24" stroke="var(--primary)"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </div>
+            <div class="as-title">Alerta personalizado</div>
+            <div class="as-toggle on"></div>
+          </div>
+          <div class="as-desc">Me avise quando o preço cair abaixo de:</div>
+          <div class="as-plus-row">
+            <div class="as-input-group">
+              <span class="prefix">R$</span>
+              <input type="text" value="20,00" />
+            </div>
+          </div>
+          <div class="as-status" style="margin-top:8px">
+            <div class="dot"></div>
+            Monitorando · Atual R$ 21,90 (falta R$ 1,90)
+          </div>
+        </div>
+
+        <!-- Bottom CTA -->
+        <div class="bottom-cta">
+          <button class="cta-btn">
+            <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+            Adicionar à lista
+          </button>
+        </div>
+
+        <div style="height:10px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 3. PRODUTO — JÁ NA LISTA ==================== -->
+  <div class="phone-col">
+    <div class="phone-label">Produto — Já na lista</div>
+    <div class="phone-sublabel">Produto adicionado + alerta disparado + empty history</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="sb-r">
+          <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="#333" stroke-width="1.5"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h2v10.5h-2z"/></svg>
+          <svg width="14" height="10" viewBox="0 0 24 16" fill="none" stroke="#333" stroke-width="1.8"><path d="M1 12c3.5-7 18.5-7 22 0"/><path d="M5 10c2.5-4 11.5-4 14 0"/><circle cx="12" cy="12" r="1.5" fill="#333"/></svg>
+          <svg width="20" height="10" viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="24" height="13" rx="3" stroke="#333" stroke-opacity=".5"/><rect x="26" y="4" width="2" height="6" rx="1" fill="#333" fill-opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#333"/></svg>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="nav-bar">
+          <div class="nav-back">
+            <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            Voltar
+          </div>
+          <div class="nav-actions">
+            <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          </div>
+        </div>
+
+        <!-- Product header -->
+        <div class="product-header">
+          <div class="ph-icon" style="background:#fef3c7">☕</div>
+          <div class="ph-info">
+            <div class="ph-name">Café Pilão 500g</div>
+            <div class="ph-category">
+              <span>Alimentos</span>
+              <span style="color:#d1d5db">·</span>
+              <span>Café & Chá</span>
+            </div>
+            <div class="ph-best-price">
+              <span class="ph-best-label">A partir de</span>
+              <span class="ph-best-value">R$ 13,49</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+              <span class="ph-best-market">Jaú Serve · 4.7 km</span>
+              <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;background:#ede9fe;color:#5b21b6">Menor em 30d</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- In list indicator -->
+        <div class="in-list-bar">
+          <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+          Já na lista "Compras do mês"
+        </div>
+
+        <!-- Compare -->
+        <div class="section-header">
+          <span class="section-title">Comparar mercados</span>
+          <span class="section-count">3 mercados</span>
+        </div>
+
+        <div class="market-row best">
+          <div class="mr-rank">1</div>
+          <div class="mr-icon" style="background:#6366f1">J</div>
+          <div class="mr-info">
+            <div class="mr-name">Jaú Serve</div>
+            <div class="mr-detail"><span>4.7 km</span><span style="color:#d1d5db">·</span><span>Aberto</span></div>
+          </div>
+          <div class="mr-right">
+            <div class="mr-price" style="color:var(--primary)">R$ 13,49</div>
+            <div class="mr-badge best">Menor preço</div>
+          </div>
+        </div>
+
+        <div class="market-row">
+          <div class="mr-rank">2</div>
+          <div class="mr-icon" style="background:var(--primary)">S</div>
+          <div class="mr-info">
+            <div class="mr-name">Savegnago</div>
+            <div class="mr-detail"><span>3.4 km</span><span style="color:#d1d5db">·</span><span>Aberto</span></div>
+          </div>
+          <div class="mr-right">
+            <div class="mr-price" style="color:var(--text)">R$ 15,99</div>
+            <div class="mr-badge discount">-29%</div>
+          </div>
+        </div>
+
+        <div class="market-row">
+          <div class="mr-rank">3</div>
+          <div class="mr-icon" style="background:var(--accent)">P</div>
+          <div class="mr-info">
+            <div class="mr-name">Paulistão</div>
+            <div class="mr-detail"><span>5.1 km</span><span style="color:#d1d5db">·</span><span>Aberto</span></div>
+          </div>
+          <div class="mr-right">
+            <div class="mr-price" style="color:var(--text)">R$ 18,90</div>
+          </div>
+        </div>
+
+        <!-- History empty state -->
+        <div class="section-header">
+          <span class="section-title">Histórico de preço</span>
+        </div>
+
+        <div class="history-card">
+          <div class="hc-top">
+            <div></div>
+            <div class="hc-pills">
+              <div class="hc-pill active">7d</div>
+              <div class="hc-pill">30d</div>
+              <div class="hc-pill locked">90d 🔒</div>
+            </div>
+          </div>
+          <div class="hc-empty">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Sem dados de histórico para este período</span>
+          </div>
+        </div>
+
+        <!-- Alert triggered! -->
+        <div class="alert-section" style="margin-top:12px;border-color:#bbf7d0;background:#f0fdf4">
+          <div class="as-top">
+            <div class="as-icon" style="background:#dcfce7">
+              <svg viewBox="0 0 24 24" stroke="var(--success)"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <div class="as-title" style="color:var(--success)">Em promoção agora!</div>
+            <div class="as-toggle on" style="background:var(--success)"></div>
+          </div>
+          <div class="as-desc">Você será notificado quando este produto entrar em promoção</div>
+          <div class="as-status" style="color:var(--success)">
+            <div class="dot" style="background:var(--success)"></div>
+            Alerta disparado · R$ 13,49 (-29%)
+          </div>
+        </div>
+
+        <!-- Bottom CTA (already in list) -->
+        <div class="bottom-cta">
+          <button class="cta-btn" style="background:#f1f5f9;color:var(--text-secondary);box-shadow:none">
+            <svg viewBox="0 0 24 24" style="stroke:var(--text-secondary)"><path d="M20 6L9 17l-5-5"/></svg>
+            Já na lista · Compras do mês
+          </button>
+        </div>
+
+        <div style="height:10px"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ===== DESIGN NOTES ===== -->
+<div class="notes">
+  <h2>Decisões de design — Detalhe do Produto</h2>
+  <div class="notes-grid">
+
+    <div class="note">
+      <div class="note-title">Hierarquia invertida: comparação no topo</div>
+      <div class="note-desc">A versão anterior colocava "Comparar mercados" no final da tela. Agora é o primeiro bloco depois do header do produto — é a razão principal do usuário estar nesta tela. Cards ordenados por preço com ranking numérico, ícone do mercado, distância, status (aberto/fechado) e badges.</div>
+    </div>
+
+    <div class="note">
+      <div class="note-title">Header compacto com ícone de categoria</div>
+      <div class="note-desc">Removemos o ícone genérico de caixa 3D. Agora um ícone de categoria estilizado (emoji compacto) em tamanho menor (48px vs o ícone gigante anterior). O nome do produto ganha destaque com Poppins 700. "A partir de R$ X,XX" substitui o vago "Preço de referência" e mostra o mercado com menor preço.</div>
+    </div>
+
+    <div class="note gold">
+      <div class="note-title">"A partir de" substitui "Preço de referência"</div>
+      <div class="note-desc">Linguagem clara e acionável. O usuário entende imediatamente que é o menor preço encontrado. Inclui nome do mercado e distância logo abaixo, dando contexto de onde encontrar esse preço.</div>
+    </div>
+
+    <div class="note purple">
+      <div class="note-title">Alertas: Free vs Plus, sem ambiguidade</div>
+      <div class="note-desc">Free: toggle simples "Me avise quando entrar em promoção" — sem input de valor. Plus: input de threshold "Me avise quando menor que R$ X,XX" com status mostrando quanto falta ("falta R$ 1,90"). O upsell aparece contextualmente para free users mostrando o que estão perdendo.</div>
+    </div>
+
+    <div class="note">
+      <div class="note-title">Histórico: 7d/30d free, 90d Plus</div>
+      <div class="note-desc">Gráfico de linha simples com área preenchida. Pills de período no topo. "90d" aparece com cadeado para free users. Quando há dados, mostra menor e maior preço no período. Empty state limpo quando não há histórico.</div>
+    </div>
+
+    <div class="note">
+      <div class="note-title">"Já na lista" e CTA adaptativo</div>
+      <div class="note-desc">Se o produto já está em uma lista, barra verde "Já na lista Compras do mês" aparece abaixo do header. O CTA no bottom muda para estado desabilitado mostrando em qual lista está, evitando duplicação. O botão mantém padding adequado sem cortar nas bordas (fix do bug visual da versão atual).</div>
+    </div>
+
+    <div class="note">
+      <div class="note-title">Header: Share substitui "Alertas"</div>
+      <div class="note-desc">O link "Alertas" no header da versão atual não fazia sentido — o alerta do produto já está na própria tela. Substituímos por ícone de compartilhar, que permite enviar o produto/preço para amigos. Mais coerente e útil.</div>
+    </div>
+
+    <div class="note gold">
+      <div class="note-title">Alerta disparado: estado de sucesso</div>
+      <div class="note-desc">Quando um alerta é disparado, o card de alerta muda para estilo verde de sucesso com "Em promoção agora!" e o percentual de desconto. Dá feedback claro de que o monitoramento funcionou e o produto está no melhor momento para compra.</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="footer">Poup — Detalhe do Produto — Paleta Economia Verde — Março 2026</div>
+
+</body>
+</html>

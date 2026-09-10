@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poup — Mapa, Lista, Alertas & Conta — Mockups Completos</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800;900&family=Nunito:wght@800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#0D9488;--primary-dark:#0f766e;--primary-light:#14B8A6;--primary-lighter:#5EEAD4;
+    --accent:#F59E0B;--accent-light:#FDE68A;
+    --text:#1A1A2E;--text-secondary:#64748B;--text-muted:#94A3B8;
+    --bg:#F0FDFA;--bg-card:#FFFFFF;
+    --success:#16A34A;--alert:#EF4444;
+    --purple:#7C3AED;--purple-bg:#ede9fe;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#e0f0ec;min-height:100vh;padding:40px 20px 60px}
+
+  /* ===== PAGE STRUCTURE ===== */
+  .section-divider{
+    max-width:1400px;margin:60px auto 32px;padding:0 20px;
+    border-top:2px solid rgba(13,148,136,.15);padding-top:40px;
+  }
+  .section-divider:first-of-type{margin-top:0;border-top:none;padding-top:0}
+  .section-divider h1{font-family:'Poppins';font-size:28px;font-weight:800;color:var(--text);text-align:center}
+  .section-divider p{color:var(--text-secondary);font-size:13px;margin-top:6px;max-width:600px;margin-inline:auto;line-height:1.5;text-align:center}
+
+  .phones{display:flex;gap:32px;justify-content:center;flex-wrap:wrap;align-items:flex-start;max-width:1400px;margin:0 auto}
+  .phone-col{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .phone-label{font-family:'Poppins';font-size:11px;font-weight:700;color:var(--primary-dark);text-transform:uppercase;letter-spacing:1px;text-align:center}
+  .phone-sublabel{font-size:10px;color:var(--text-muted);max-width:280px;text-align:center;line-height:1.4;margin-top:-6px}
+
+  .phone-frame{
+    width:320px;height:692px;border-radius:40px;overflow:hidden;
+    background:var(--bg);position:relative;
+    box-shadow:0 4px 6px rgba(0,0,0,.04),0 20px 50px rgba(13,148,136,.15),inset 0 0 0 2px rgba(0,0,0,.06);
+  }
+
+  /* Status bar */
+  .status-bar{height:50px;padding:14px 24px 0;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;color:var(--text);position:absolute;top:0;left:0;right:0;z-index:20}
+  .status-bar.on-map{color:#333}
+  .sb-r{display:flex;gap:5px;align-items:center;font-size:10px}
+
+  /* Tab bar */
+  .tab-bar{position:absolute;bottom:0;left:0;right:0;height:70px;background:#fff;display:flex;justify-content:space-around;align-items:center;padding-bottom:8px;border-top:1px solid #e2e8f0;z-index:20}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:600;color:var(--text-muted)}
+  .tab.active{color:var(--primary)}
+  .tab svg{width:20px;height:20px}
+  .tab-dot{width:4px;height:4px;border-radius:2px;background:var(--primary)}
+  .tab .badge-count{
+    position:absolute;top:-4px;right:-8px;
+    min-width:16px;height:16px;border-radius:8px;
+    background:var(--alert);color:#fff;font-size:8px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;padding:0 4px;
+  }
+  .tab-icon-wrap{position:relative}
+
+  /* Scrollable */
+  .screen{position:absolute;top:50px;bottom:70px;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .screen::-webkit-scrollbar{display:none}
+  .screen.full{top:0;bottom:0}
+
+  /* ===== SHARED COMPONENTS ===== */
+  .pills{display:flex;gap:8px;padding:12px 16px 0;overflow-x:auto}
+  .pills::-webkit-scrollbar{display:none}
+  .pill{
+    flex-shrink:0;padding:7px 14px;border-radius:18px;
+    font-size:12px;font-weight:600;cursor:pointer;
+    border:1.5px solid #d1d5db;color:var(--text-secondary);background:#fff;
+  }
+  .pill.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+
+  .sec-header{display:flex;justify-content:space-between;align-items:center;padding:18px 16px 10px}
+  .sec-title{font-family:'Poppins';font-size:15px;font-weight:700;color:var(--text)}
+  .sec-link{font-size:12px;font-weight:600;color:var(--primary)}
+
+  /* ===== MAP SCREEN ===== */
+  .map-bg{
+    position:absolute;top:0;left:0;right:0;bottom:0;
+    background:
+      radial-gradient(circle at 30% 35%, #d4edda 0%, transparent 40%),
+      radial-gradient(circle at 70% 60%, #e8f5e9 0%, transparent 35%),
+      linear-gradient(180deg, #e8f4ea 0%, #d0e8d4 40%, #c8dfd0 100%);
+  }
+  .map-road{position:absolute;background:rgba(255,255,255,.7);border-radius:2px}
+  .map-road.h{height:3px;width:80%}
+  .map-road.v{width:3px;height:60%}
+
+  .map-pin{
+    position:absolute;display:flex;flex-direction:column;align-items:center;
+    cursor:pointer;z-index:10;transform:translate(-50%,-100%);
+  }
+  .map-pin-body{
+    width:36px;height:36px;border-radius:50% 50% 50% 0;
+    transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.2);border:2px solid #fff;
+  }
+  .map-pin-body span{transform:rotate(45deg);font-size:11px;font-weight:800;color:#fff}
+  .map-pin.teal .map-pin-body{background:var(--primary)}
+  .map-pin.gold .map-pin-body{background:var(--accent)}
+  .map-pin.gray .map-pin-body{background:#94A3B8}
+  .map-pin-label{
+    margin-top:4px;font-size:9px;font-weight:700;color:var(--text);
+    background:rgba(255,255,255,.9);padding:2px 6px;border-radius:4px;
+    white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.1);
+  }
+  .map-pin.selected .map-pin-body{box-shadow:0 2px 12px rgba(13,148,136,.5);border:3px solid var(--primary-lighter)}
+
+  .map-filter-bar{
+    position:absolute;top:50px;left:0;right:0;z-index:15;
+    display:flex;gap:8px;padding:10px 16px;overflow-x:auto;
+  }
+  .map-filter-bar::-webkit-scrollbar{display:none}
+  .map-chip{
+    flex-shrink:0;padding:8px 14px;border-radius:20px;
+    font-size:11px;font-weight:600;cursor:pointer;
+    background:rgba(255,255,255,.92);color:var(--text-secondary);
+    box-shadow:0 1px 4px rgba(0,0,0,.1);border:1.5px solid transparent;
+    backdrop-filter:blur(8px);
+  }
+  .map-chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+
+  .map-bottom-card{
+    position:absolute;bottom:78px;left:12px;right:12px;z-index:15;
+    background:#fff;border-radius:16px;padding:16px;
+    box-shadow:0 -2px 16px rgba(0,0,0,.1);
+  }
+  .mbc-top{display:flex;align-items:center;gap:12px}
+  .mbc-icon{
+    width:44px;height:44px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;font-weight:800;color:#fff;flex-shrink:0;
+  }
+  .mbc-info{flex:1;min-width:0}
+  .mbc-name{font-size:15px;font-weight:700;color:var(--text)}
+  .mbc-addr{font-size:11px;color:var(--text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mbc-tags{display:flex;gap:6px;margin-top:10px}
+  .mbc-tag{font-size:10px;font-weight:600;padding:4px 10px;border-radius:8px}
+  .mbc-tag.dist{background:#e0f2fe;color:#0369a1}
+  .mbc-tag.deals{background:#fef3c7;color:#92400e}
+  .mbc-tag.open{background:#dcfce7;color:#166534}
+  .mbc-tag.closed{background:#fee2e2;color:#991b1b}
+  .mbc-actions{display:flex;gap:8px;margin-top:12px}
+  .mbc-btn{
+    flex:1;padding:11px;border-radius:10px;border:none;
+    font-family:'Inter';font-size:12px;font-weight:700;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .mbc-btn.primary{background:var(--primary);color:#fff}
+  .mbc-btn.secondary{background:#f1f5f9;color:var(--text-secondary)}
+  .mbc-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+
+  /* ===== LISTA SCREEN ===== */
+  .empty-hero{
+    display:flex;flex-direction:column;align-items:center;
+    padding:40px 30px 20px;text-align:center;
+  }
+  .empty-icon{
+    width:72px;height:72px;border-radius:50%;
+    background:rgba(13,148,136,.08);
+    display:flex;align-items:center;justify-content:center;margin-bottom:16px;
+  }
+  .empty-icon svg{width:32px;height:32px;stroke:var(--primary);fill:none;stroke-width:1.5}
+  .empty-title{font-family:'Poppins';font-size:17px;font-weight:700;color:var(--text)}
+  .empty-desc{font-size:13px;color:var(--text-muted);margin-top:6px;line-height:1.5}
+  .empty-btn{
+    margin-top:18px;padding:13px 32px;border-radius:12px;border:none;
+    background:var(--primary);color:#fff;font-family:'Inter';
+    font-size:14px;font-weight:700;cursor:pointer;
+    display:flex;align-items:center;gap:8px;
+  }
+  .empty-btn svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2}
+
+  .suggested-lists{padding:0 16px}
+  .sug-item{
+    display:flex;align-items:center;gap:12px;padding:14px;
+    background:#fff;border-radius:12px;margin-bottom:8px;
+    border:1.5px solid #e8edf2;cursor:pointer;
+  }
+  .sug-icon{
+    width:40px;height:40px;border-radius:10px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:18px;
+  }
+  .sug-info{flex:1}
+  .sug-name{font-size:13px;font-weight:700;color:var(--text)}
+  .sug-desc{font-size:10px;color:var(--text-muted);margin-top:2px}
+  .sug-arrow{color:var(--text-muted);font-size:14px}
+
+  /* List detail */
+  .list-header-bar{
+    background:#fff;padding:12px 16px;
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid #f1f5f9;
+  }
+  .list-back{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer}
+  .list-back svg{width:18px;height:18px;stroke:var(--primary);fill:none;stroke-width:2.5}
+  .list-actions{display:flex;gap:12px}
+  .list-actions svg{width:20px;height:20px;stroke:var(--text-muted);fill:none;stroke-width:2;cursor:pointer}
+
+  .list-summary{
+    margin:12px 16px 0;padding:14px 16px;
+    background:linear-gradient(135deg,var(--primary),var(--primary-light));
+    border-radius:14px;color:#fff;
+  }
+  .ls-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;opacity:.65}
+  .ls-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+  .ls-total{font-family:'Poppins';font-size:22px;font-weight:800}
+  .ls-count{font-size:12px;font-weight:600;opacity:.8}
+  .ls-economy{font-size:11px;margin-top:6px;opacity:.8;display:flex;align-items:center;gap:4px}
+  .ls-economy svg{width:14px;height:14px;stroke:#5EEAD4;fill:none;stroke-width:2}
+
+  .list-items{padding:12px 16px 0}
+  .list-item{
+    display:flex;align-items:center;gap:12px;padding:14px;
+    background:#fff;border-radius:12px;margin-bottom:8px;
+    border:1.5px solid #e8edf2;
+  }
+  .list-item.checked{opacity:.55}
+  .list-item.checked .li-name{text-decoration:line-through}
+  .li-check{
+    width:24px;height:24px;border-radius:50%;flex-shrink:0;
+    border:2px solid #d1d5db;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+  }
+  .li-check.done{background:var(--success);border-color:var(--success)}
+  .li-check.done svg{display:block}
+  .li-check svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:3;display:none}
+  .li-info{flex:1;min-width:0}
+  .li-name{font-size:13px;font-weight:600;color:var(--text)}
+  .li-detail{font-size:10px;color:var(--text-muted);margin-top:2px}
+  .li-price{font-size:14px;font-weight:800;color:var(--primary);white-space:nowrap}
+  .li-badge{
+    font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;
+    white-space:nowrap;margin-left:4px;
+  }
+  .li-badge.best{background:#dcfce7;color:#166534}
+
+  .list-fab{
+    position:absolute;bottom:82px;right:16px;z-index:15;
+    width:50px;height:50px;border-radius:50%;
+    background:var(--primary);color:#fff;border:none;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px rgba(13,148,136,.4);cursor:pointer;
+  }
+  .list-fab svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2.5}
+
+  .route-bar{
+    margin:10px 16px 0;padding:12px 14px;
+    background:#fff;border-radius:12px;border:1.5px solid var(--primary-lighter);
+    display:flex;align-items:center;gap:10px;cursor:pointer;
+  }
+  .route-bar-icon{
+    width:36px;height:36px;border-radius:10px;
+    background:rgba(13,148,136,.08);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .route-bar-icon svg{width:18px;height:18px;stroke:var(--primary);fill:none;stroke-width:2}
+  .route-bar-info{flex:1}
+  .route-bar-title{font-size:12px;font-weight:700;color:var(--primary)}
+  .route-bar-desc{font-size:10px;color:var(--text-muted);margin-top:1px}
+  .route-bar-arrow{color:var(--primary);font-size:16px;font-weight:700}
+
+  /* ===== ALERTAS SCREEN ===== */
+  .alert-card{
+    margin:0 16px 10px;padding:14px;
+    background:#fff;border-radius:14px;border:1.5px solid #e8edf2;
+  }
+  .ac-top{display:flex;align-items:flex-start;gap:10px}
+  .ac-icon{
+    width:36px;height:36px;border-radius:10px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .ac-icon.price{background:rgba(13,148,136,.08)}
+  .ac-icon.price svg{stroke:var(--primary)}
+  .ac-icon.promo{background:#fef3c7}
+  .ac-icon.promo svg{stroke:var(--accent)}
+  .ac-icon svg{width:18px;height:18px;fill:none;stroke-width:2}
+  .ac-info{flex:1;min-width:0}
+  .ac-name{font-size:13px;font-weight:700;color:var(--text)}
+  .ac-detail{font-size:10px;color:var(--text-muted);margin-top:2px}
+  .ac-status{
+    display:flex;align-items:center;gap:6px;margin-top:8px;
+    font-size:10px;font-weight:600;
+  }
+  .ac-status.watching{color:var(--primary)}
+  .ac-status.triggered{color:var(--success)}
+  .ac-dot{width:6px;height:6px;border-radius:50%}
+  .ac-dot.watching{background:var(--primary)}
+  .ac-dot.triggered{background:var(--success)}
+  .ac-toggle{
+    width:42px;height:24px;border-radius:12px;
+    background:var(--primary);position:relative;cursor:pointer;flex-shrink:0;
+  }
+  .ac-toggle::after{
+    content:'';position:absolute;top:2px;right:2px;
+    width:20px;height:20px;border-radius:50%;background:#fff;
+    box-shadow:0 1px 3px rgba(0,0,0,.15);
+  }
+  .ac-toggle.off{background:#d1d5db}
+  .ac-toggle.off::after{right:auto;left:2px}
+
+  .triggered-banner{
+    margin:0 16px 10px;padding:14px;
+    background:#dcfce7;border-radius:14px;border:1.5px solid #bbf7d0;
+    display:flex;align-items:center;gap:12px;
+  }
+  .tb-icon{
+    width:36px;height:36px;border-radius:50%;
+    background:var(--success);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .tb-icon svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5}
+  .tb-info{flex:1}
+  .tb-title{font-size:13px;font-weight:700;color:#166534}
+  .tb-desc{font-size:10px;color:#15803d;margin-top:2px}
+  .tb-action{font-size:11px;font-weight:700;color:var(--success);cursor:pointer;margin-top:4px}
+
+  .plus-banner{
+    margin:12px 16px;padding:14px 16px;
+    background:linear-gradient(135deg,#f5f3ff,#ede9fe);
+    border-radius:14px;border:1.5px solid #ddd6fe;
+    display:flex;align-items:center;gap:12px;cursor:pointer;
+  }
+  .plus-icon{
+    width:36px;height:36px;border-radius:10px;
+    background:var(--purple);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .plus-icon svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2}
+  .plus-info{flex:1}
+  .plus-title{font-size:12px;font-weight:700;color:var(--purple)}
+  .plus-desc{font-size:10px;color:#7c3aed;opacity:.7;margin-top:2px}
+  .plus-arrow{color:var(--purple);font-size:16px;font-weight:700}
+
+  /* ===== CONTA SCREEN ===== */
+  .conta-header{
+    background:linear-gradient(150deg,var(--primary-dark),var(--primary));
+    padding:58px 20px 24px;text-align:center;color:#fff;
+  }
+  .conta-avatar{
+    width:64px;height:64px;border-radius:50%;
+    background:rgba(255,255,255,.15);border:3px solid rgba(255,255,255,.3);
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px;font-weight:800;margin:0 auto 10px;
+  }
+  .conta-name{font-family:'Poppins';font-size:18px;font-weight:700}
+  .conta-email{font-size:12px;opacity:.65;margin-top:2px}
+  .conta-plan{
+    display:inline-flex;align-items:center;gap:4px;
+    margin-top:10px;padding:5px 14px;border-radius:8px;
+    background:rgba(255,255,255,.15);font-size:11px;font-weight:700;
+  }
+
+  .economia-card{
+    margin:16px 16px 0;padding:16px;
+    background:#fff;border-radius:14px;border:1.5px solid #e8edf2;
+  }
+  .ec-top{display:flex;justify-content:space-between;align-items:center}
+  .ec-label{font-size:12px;font-weight:700;color:var(--text-muted)}
+  .ec-period{font-size:10px;color:var(--text-muted);font-weight:500}
+  .ec-value{font-family:'Poppins';font-size:28px;font-weight:800;color:var(--success);margin-top:6px}
+  .ec-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
+  .ec-bar-bg{height:6px;background:#f1f5f9;border-radius:3px;margin-top:12px}
+  .ec-bar-fill{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--primary),var(--primary-light))}
+  .ec-bar-label{display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text-muted)}
+
+  .conta-menu{padding:16px}
+  .cm-group{background:#fff;border-radius:14px;margin-bottom:12px;border:1.5px solid #e8edf2;overflow:hidden}
+  .cm-item{
+    display:flex;align-items:center;gap:12px;padding:14px 16px;
+    border-bottom:1px solid #f1f5f9;cursor:pointer;
+  }
+  .cm-item:last-child{border-bottom:none}
+  .cm-icon{
+    width:34px;height:34px;border-radius:9px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .cm-icon svg{width:17px;height:17px;fill:none;stroke-width:2}
+  .cm-label{font-size:13px;font-weight:600;color:var(--text);flex:1}
+  .cm-badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px}
+  .cm-arrow{color:var(--text-muted);font-size:14px}
+
+  .plus-upsell{
+    margin:0 16px 16px;padding:18px;
+    background:linear-gradient(135deg,var(--purple),#6d28d9);
+    border-radius:16px;color:#fff;cursor:pointer;
+  }
+  .pu-badge{
+    display:inline-flex;padding:4px 10px;border-radius:6px;
+    background:rgba(255,255,255,.2);font-size:10px;font-weight:700;
+    margin-bottom:8px;
+  }
+  .pu-title{font-family:'Poppins';font-size:16px;font-weight:700}
+  .pu-desc{font-size:11px;opacity:.75;margin-top:4px;line-height:1.5}
+  .pu-btn{
+    margin-top:14px;padding:12px;border-radius:10px;border:none;
+    background:rgba(255,255,255,.2);color:#fff;font-family:'Inter';
+    font-size:13px;font-weight:700;width:100%;cursor:pointer;
+    backdrop-filter:blur(4px);
+  }
+
+  /* ===== ANNOTATIONS ===== */
+  .notes{max-width:1400px;margin:40px auto 0;padding:0 20px}
+  .notes h2{font-family:'Poppins';font-size:20px;font-weight:700;color:var(--text);margin-bottom:16px;text-align:center}
+  .notes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+  .note{background:#fff;border-radius:14px;padding:16px 20px;border-left:4px solid var(--primary);box-shadow:0 1px 4px rgba(0,0,0,.04)}
+  .note-title{font-size:13px;font-weight:700;color:var(--primary);margin-bottom:4px}
+  .note-desc{font-size:12px;color:var(--text-secondary);line-height:1.6}
+  .note.purple{border-left-color:var(--purple)}
+  .note.purple .note-title{color:var(--purple)}
+  .note.gold{border-left-color:var(--accent)}
+  .note.gold .note-title{color:#b45309}
+
+  .footer{text-align:center;padding:40px;color:var(--text-muted);font-size:11px}
+
+  /* SVG icons inline helper */
+  .icon-sm{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+</style>
+</head>
+<body>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║                        1. MAPA                             ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+
+<div class="section-divider">
+  <h1>Poup — Mapa</h1>
+  <p>Dois cenários: visão geral com pins e filtro por categoria + bottom card ao tocar em um mercado.</p>
+</div>
+
+<div class="phones">
+
+  <!-- MAPA — Visão geral -->
+  <div class="phone-col">
+    <div class="phone-label">Mapa — Visão Geral</div>
+    <div class="phone-sublabel">Pins coloridos: teal = com ofertas, cinza = sem ofertas</div>
+    <div class="phone-frame">
+      <div class="status-bar on-map">
+        <span>9:41</span>
+        <div class="sb-r">
+          <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="#333" stroke-width="1.5"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h2v10.5h-2z"/></svg>
+          <svg width="14" height="10" viewBox="0 0 24 16" fill="none" stroke="#333" stroke-width="1.8"><path d="M1 12c3.5-7 18.5-7 22 0"/><path d="M5 10c2.5-4 11.5-4 14 0"/><circle cx="12" cy="12" r="1.5" fill="#333"/></svg>
+          <svg width="20" height="10" viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="24" height="13" rx="3" stroke="#333" stroke-opacity=".5"/><rect x="26" y="4" width="2" height="6" rx="1" fill="#333" fill-opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#333"/></svg>
+        </div>
+      </div>
+
+      <div class="screen full" style="overflow:hidden">
+        <!-- Map background -->
+        <div class="map-bg">
+          <!-- Roads -->
+          <div class="map-road h" style="top:30%;left:10%"></div>
+          <div class="map-road h" style="top:55%;left:5%;width:90%"></div>
+          <div class="map-road h" style="top:75%;left:15%;width:70%"></div>
+          <div class="map-road v" style="left:35%;top:15%"></div>
+          <div class="map-road v" style="left:65%;top:25%;height:50%"></div>
+          <div class="map-road v" style="left:50%;top:40%;height:30%"></div>
+
+          <!-- Pins -->
+          <div class="map-pin teal" style="top:32%;left:38%">
+            <div class="map-pin-body"><span>157</span></div>
+            <div class="map-pin-label">Savegnago</div>
+          </div>
+          <div class="map-pin teal" style="top:50%;left:62%">
+            <div class="map-pin-body"><span>83</span></div>
+            <div class="map-pin-label">Jaú Serve</div>
+          </div>
+          <div class="map-pin gold" style="top:68%;left:42%">
+            <div class="map-pin-body"><span>45</span></div>
+            <div class="map-pin-label">Paulistão</div>
+          </div>
+          <div class="map-pin gray" style="top:42%;left:75%">
+            <div class="map-pin-body"><span>0</span></div>
+            <div class="map-pin-label">Mini Box</div>
+          </div>
+          <div class="map-pin teal" style="top:60%;left:25%">
+            <div class="map-pin-body"><span>28</span></div>
+            <div class="map-pin-label">Covabra</div>
+          </div>
+
+          <!-- User location -->
+          <div style="position:absolute;top:52%;left:48%;transform:translate(-50%,-50%);z-index:12">
+            <div style="width:16px;height:16px;border-radius:50%;background:#4285F4;border:3px solid #fff;box-shadow:0 2px 6px rgba(66,133,244,.4)"></div>
+            <div style="width:40px;height:40px;border-radius:50%;background:rgba(66,133,244,.12);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:-1"></div>
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="map-filter-bar">
+          <div class="map-chip active">Todos</div>
+          <div class="map-chip">Alimentos</div>
+          <div class="map-chip">Bebidas</div>
+          <div class="map-chip">Hortifrúti</div>
+          <div class="map-chip">Limpeza</div>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+          Início
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Busca
+        </div>
+        <div class="tab active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Mapa
+          <div class="tab-dot"></div>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>
+          Lista
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          Alertas
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAPA — Pin selecionado + bottom card -->
+  <div class="phone-col">
+    <div class="phone-label">Mapa — Mercado Selecionado</div>
+    <div class="phone-sublabel">Bottom card com info, ofertas e "Como chegar"</div>
+    <div class="phone-frame">
+      <div class="status-bar on-map">
+        <span>9:41</span>
+        <div class="sb-r">
+          <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="#333" stroke-width="1.5"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h2v10.5h-2z"/></svg>
+          <svg width="14" height="10" viewBox="0 0 24 16" fill="none" stroke="#333" stroke-width="1.8"><path d="M1 12c3.5-7 18.5-7 22 0"/><path d="M5 10c2.5-4 11.5-4 14 0"/><circle cx="12" cy="12" r="1.5" fill="#333"/></svg>
+          <svg width="20" height="10" viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="24" height="13" rx="3" stroke="#333" stroke-opacity=".5"/><rect x="26" y="4" width="2" height="6" rx="1" fill="#333" fill-opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#333"/></svg>
+        </div>
+      </div>
+
+      <div class="screen full" style="overflow:hidden">
+        <div class="map-bg">
+          <div class="map-road h" style="top:30%;left:10%"></div>
+          <div class="map-road h" style="top:55%;left:5%;width:90%"></div>
+          <div class="map-road h" style="top:75%;left:15%;width:70%"></div>
+          <div class="map-road v" style="left:35%;top:15%"></div>
+          <div class="map-road v" style="left:65%;top:25%;height:50%"></div>
+          <div class="map-road v" style="left:50%;top:40%;height:30%"></div>
+
+          <!-- Selected pin highlighted -->
+          <div class="map-pin teal selected" style="top:32%;left:38%">
+            <div class="map-pin-body"><span>157</span></div>
+            <div class="map-pin-label">Savegnago</div>
+          </div>
+          <div class="map-pin teal" style="top:50%;left:62%;opacity:.4">
+            <div class="map-pin-body"><span>83</span></div>
+          </div>
+          <div class="map-pin gold" style="top:68%;left:42%;opacity:.4">
+            <div class="map-pin-body"><span>45</span></div>
+          </div>
+          <div class="map-pin gray" style="top:42%;left:75%;opacity:.4">
+            <div class="map-pin-body"><span>0</span></div>
+          </div>
+          <div class="map-pin teal" style="top:60%;left:25%;opacity:.4">
+            <div class="map-pin-body"><span>28</span></div>
+          </div>
+
+          <div style="position:absolute;top:52%;left:48%;transform:translate(-50%,-50%);z-index:12">
+            <div style="width:16px;height:16px;border-radius:50%;background:#4285F4;border:3px solid #fff;box-shadow:0 2px 6px rgba(66,133,244,.4)"></div>
+            <div style="width:40px;height:40px;border-radius:50%;background:rgba(66,133,244,.12);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:-1"></div>
+          </div>
+        </div>
+
+        <div class="map-filter-bar">
+          <div class="map-chip active">Todos</div>
+          <div class="map-chip">Alimentos</div>
+          <div class="map-chip">Bebidas</div>
+        </div>
+
+        <!-- Bottom card -->
+        <div class="map-bottom-card">
+          <div class="mbc-top">
+            <div class="mbc-icon" style="background:var(--primary)">S</div>
+            <div class="mbc-info">
+              <div class="mbc-name">Savegnago</div>
+              <div class="mbc-addr">Av. Baldan, 1250 — Matão</div>
+            </div>
+          </div>
+          <div class="mbc-tags">
+            <span class="mbc-tag dist">3.4 km</span>
+            <span class="mbc-tag deals">157 ofertas</span>
+            <span class="mbc-tag open">Aberto até 22h</span>
+          </div>
+          <div class="mbc-actions">
+            <button class="mbc-btn secondary">
+              <svg viewBox="0 0 24 24"><path d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Ver ofertas
+            </button>
+            <button class="mbc-btn primary">
+              <svg viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+              Como chegar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+          Início
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Busca
+        </div>
+        <div class="tab active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Mapa
+          <div class="tab-dot"></div>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>
+          Lista
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          Alertas
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAPA — Filtro por categoria -->
+  <div class="phone-col">
+    <div class="phone-label">Mapa — Filtro Ativo</div>
+    <div class="phone-sublabel">Filtro "Bebidas" mostra apenas mercados com ofertas na categoria</div>
+    <div class="phone-frame">
+      <div class="status-bar on-map">
+        <span>9:41</span>
+        <div class="sb-r">
+          <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="#333" stroke-width="1.5"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h2v10.5h-2z"/></svg>
+          <svg width="14" height="10" viewBox="0 0 24 16" fill="none" stroke="#333" stroke-width="1.8"><path d="M1 12c3.5-7 18.5-7 22 0"/><path d="M5 10c2.5-4 11.5-4 14 0"/><circle cx="12" cy="12" r="1.5" fill="#333"/></svg>
+          <svg width="20" height="10" viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="24" height="13" rx="3" stroke="#333" stroke-opacity=".5"/><rect x="26" y="4" width="2" height="6" rx="1" fill="#333" fill-opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#333"/></svg>
+        </div>
+      </div>
+
+      <div class="screen full" style="overflow:hidden">
+        <div class="map-bg">
+          <div class="map-road h" style="top:30%;left:10%"></div>
+          <div class="map-road h" style="top:55%;left:5%;width:90%"></div>
+          <div class="map-road h" style="top:75%;left:15%;width:70%"></div>
+          <div class="map-road v" style="left:35%;top:15%"></div>
+          <div class="map-road v" style="left:65%;top:25%;height:50%"></div>
+
+          <!-- Only pins with "Bebidas" offers shown prominently -->
+          <div class="map-pin teal" style="top:32%;left:38%">
+            <div class="map-pin-body"><span>42</span></div>
+            <div class="map-pin-label">Savegnago</div>
+          </div>
+          <div class="map-pin teal" style="top:50%;left:62%">
+            <div class="map-pin-body"><span>18</span></div>
+            <div class="map-pin-label">Jaú Serve</div>
+          </div>
+          <!-- Others faded -->
+          <div class="map-pin gray" style="top:68%;left:42%;opacity:.3">
+            <div class="map-pin-body"><span>0</span></div>
+          </div>
+          <div class="map-pin gray" style="top:42%;left:75%;opacity:.3">
+            <div class="map-pin-body"><span>0</span></div>
+          </div>
+          <div class="map-pin gray" style="top:60%;left:25%;opacity:.3">
+            <div class="map-pin-body"><span>0</span></div>
+          </div>
+
+          <div style="position:absolute;top:52%;left:48%;transform:translate(-50%,-50%);z-index:12">
+            <div style="width:16px;height:16px;border-radius:50%;background:#4285F4;border:3px solid #fff;box-shadow:0 2px 6px rgba(66,133,244,.4)"></div>
+          </div>
+        </div>
+
+        <div class="map-filter-bar">
+          <div class="map-chip">Todos</div>
+          <div class="map-chip">Alimentos</div>
+          <div class="map-chip active">Bebidas</div>
+          <div class="map-chip">Hortifrúti</div>
+          <div class="map-chip">Limpeza</div>
+        </div>
+
+        <!-- Info pill -->
+        <div style="position:absolute;bottom:82px;left:50%;transform:translateX(-50%);z-index:15;
+          background:rgba(255,255,255,.95);padding:8px 16px;border-radius:10px;
+          box-shadow:0 2px 8px rgba(0,0,0,.1);font-size:11px;font-weight:600;color:var(--text-secondary);
+          display:flex;align-items:center;gap:6px;backdrop-filter:blur(8px);white-space:nowrap">
+          <span style="color:var(--primary);font-weight:800">2</span> mercados com ofertas em Bebidas
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+          Início
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Busca
+        </div>
+        <div class="tab active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Mapa
+          <div class="tab-dot"></div>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>
+          Lista
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          Alertas
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║                        2. LISTA                            ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+
+<div class="section-divider">
+  <h1>Poup — Lista</h1>
+  <p>Três cenários: estado vazio, lista ativa com itens e resumo de economia, e rota otimizada.</p>
+</div>
+
+<div class="phones">
+
+  <!-- LISTA — Empty state -->
+  <div class="phone-col">
+    <div class="phone-label">Lista — Estado Vazio</div>
+    <div class="phone-sublabel">Primeira visita: CTA para criar + listas sugeridas</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="sb-r">
+          <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="#333" stroke-width="1.5"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h2v10.5h-2z"/></svg>
+          <svg width="14" height="10" viewBox="0 0 24 16" fill="none" stroke="#333" stroke-width="1.8"><path d="M1 12c3.5-7 18.5-7 22 0"/><path d="M5 10c2.5-4 11.5-4 14 0"/><circle cx="12" cy="12" r="1.5" fill="#333"/></svg>
+          <svg width="20" height="10" viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="24" height="13" rx="3" stroke="#333" stroke-opacity=".5"/><rect x="26" y="4" width="2" height="6" rx="1" fill="#333" fill-opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#333"/></svg>
+        </div>
+      </div>
+
+      <div class="screen">
+        <!-- Empty hero -->
+        <div class="empty-hero">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          </div>
+          <div class="empty-title">Crie sua primeira lista</div>
+          <div class="empty-desc">Monte sua lista de compras e descubra onde encontrar tudo mais barato</div>
+          <button class="empty-btn">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg>
+            Nova lista
+          </button>
+        </div>
+
+        <!-- Suggested lists -->
+        <div class="sec-header">
+          <span class="sec-title">Listas sugeridas</span>
+        </div>
+        <div class="suggested-lists">
+          <div class="sug-item">
+            <div class="sug-icon" style="background:#dcfce7">🛒</div>
+            <div class="sug-info">
+              <div class="sug-name">Cesta básica essencial</div>
+              <div class="sug-desc">15 itens · Arroz, feijão, óleo, açúcar...</div>
+            </div>
+            <div class="sug-arrow">›</div>
+          </div>
+          <div class="sug-item">
+            <div class="sug-icon" style="background:#fef3c7">🍳</div>
+            <div class="sug-info">
+              <div class="sug-name">Café da manhã</div>
+              <div class="sug-desc">8 itens · Pão, leite, café, manteiga...</div>
+            </div>
+            <div class="sug-arrow">›</div>
+          </div>
+          <div class="sug-item">
+            <div class="sug-icon" style="background:#e0f2fe">🧹</div>
+            <div class="sug-info">
+              <div class="sug-name">Limpeza do mês</div>
+              <div class="sug-desc">12 itens · Detergente, sabão, amaciante...</div>
+            </div>
+            <div class="sug-arrow">›</div>
+          </div>
+          <div class="sug-item">
+            <div class="sug-icon" style="background:#ede9fe">🧴</div>
+            <div class="sug-info">
+              <div class="sug-name">Higiene pessoal</div>
+              <div class="sug-desc">10 itens · Shampoo, sabonete, pasta...</div>
+            </div>
+            <div class="sug-arrow">›</div>
+          </div>
+        </div>
+
+        <div style="height:20px"></div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+          Início
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Busca
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Mapa
+        </div>
+        <div class="tab active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>
+          Lista
+          <div class="tab-dot"></div>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          Alertas
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LISTA — Ativa com itens -->
+  <div class="phone-col">
+    <div class="phone-label">Lista — Compras do Mês</div>
+    <div class="phone-sublabel">Itens com preços, resumo de economia e check de comprado</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="sb-r">
+          <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="#333" stroke-width="1.5"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h2v10.5h-2z"/></svg>
+          <svg width="14" height="10" viewBox="0 0 24 16" fill="none" stroke="#333" stroke-width="1.8"><path d="M1 12c3.5-7 18.5-7 22 0"/><path d="M5 10c2.5-4 11.5-4 14 0"/><circle cx="12" cy="12" r="1.5" fill="#333"/></svg>
+          <svg width="20" height="10" viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="24" height="13" rx="3" stroke="#333" stroke-opacity=".5"/><rect x="26" y="4" width="2" height="6" rx="1" fill="#333" fill-opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#333"/></svg>
+        </div>
+      </div>
+
+      <div class="screen">
+        <!-- List header bar -->
+        <div class="list-header-bar">
+          <div class="list-back">
+            <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            Minhas Listas
+          </div>
+          <div class="list-actions">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg>
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+          </div>
+        </div>
+
+        <!-- Title -->
+        <div style="padding:14px 16px 0">
+          <div style="font-family:'Poppins';font-size:18px;font-weight:700;color:var(--text)">Compras do mês</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">7 itens · Atualizado hoje</div>
+        </div>
+
+        <!-- Summary card -->
+        <div class="list-summary">
+          <div class="ls-label">Estimativa total (menor preço)</div>
+          <div class="ls-row">
+            <div class="ls-total">R$ 89,42</div>
+            <div class="ls-count">3/7 comprados</div>
+          </div>
+          <div class="ls-economy">
+            <svg viewBox="0 0 24 24"><path d="M23 6l-9.5 9.5-5-5L1 18"/></svg>
+            Economize até R$ 23,80 comparando preços
+          </div>
+        </div>
+
+        <!-- Route optimization bar -->
+        <div class="route-bar">
+          <div class="route-bar-icon">
+            <svg viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+          </div>
+          <div class="route-bar-info">
+            <div class="route-bar-title">Rota otimizada disponível</div>
+            <div class="route-bar-desc">3 mercados · 12.3 km total</div>
+          </div>
+          <div class="route-bar-arrow">›</div>
+        </div>
+
+        <!-- Items -->
+        <div class="list-items">
+          <!-- Checked items -->
+          <div class="list-item checked">
+            <div class="li-check done">
+              <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <div class="li-info">
+              <div class="li-name">Arroz Tio João 5kg</div>
+              <div class="li-detail">Savegnago · Comprado 21/03</div>
+            </div>
+            <div class="li-price">R$ 22,90</div>
+          </div>
+          <div class="list-item checked">
+            <div class="li-check done">
+              <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <div class="li-info">
+              <div class="li-name">Leite Parmalat 1L</div>
+              <div class="li-detail">Savegnago · Comprado 21/03</div>
+            </div>
+            <div class="li-price">R$ 4,89</div>
+          </div>
+          <div class="list-item checked">
+            <div class="li-check done">
+              <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <div class="li-info">
+              <div class="li-name">Café Pilão 500g</div>
+              <div class="li-detail">Jaú Serve · Comprado 20/03</div>
+            </div>
+            <div class="li-price">R$ 13,49</div>
+          </div>
+
+          <!-- Pending items -->
+          <div class="list-item">
+            <div class="li-check"></div>
+            <div class="li-info">
+              <div class="li-name">Óleo de Soja Liza 900ml <span class="li-badge best">Menor preço</span></div>
+              <div class="li-detail">a partir de R$ 6,79 · Paulistão</div>
+            </div>
+            <div class="li-price">R$ 6,79</div>
+          </div>
+          <div class="list-item">
+            <div class="li-check"></div>
+            <div class="li-info">
+              <div class="li-name">Açúcar União 1kg</div>
+              <div class="li-detail">a partir de R$ 4,99 · Savegnago</div>
+            </div>
+            <div class="li-price">R$ 4,99</div>
+          </div>
+          <div class="list-item">
+            <div class="li-check"></div>
+            <div class="li-info">
+              <div class="li-name">Feijão Carioca Camil 1kg</div>
+              <div class="li-detail">a partir de R$ 8,49 · Jaú Serve</div>
+            </div>
+            <div class="li-price">R$ 8,49</div>
+          </div>
+          <div class="list-item">
+            <div class="li-check"></div>
+            <div class="li-info">
+              <div class="li-name">Macarrão Barilla 500g</div>
+              <div class="li-detail">a partir de R$ 5,39 · Savegnago</div>
+            </div>
+            <div class="li-price">R$ 5,39</div>
+          </div>
+        </div>
+
+        <div style="height:60px"></div>
+      </div>
+
+      <!-- FAB add item -->
+      <button class="list-fab">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg>
+      </button>
+
+      <div class="tab-bar">
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+          Início
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Busca
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Mapa
+        </div>
+        <div class="tab active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>
+          Lista
+          <div class="tab-dot"></div>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          Alertas
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LISTA — Minhas listas (overview) -->
+  <div class="phone-col">
+    <div class="phone-label">Lista — Minhas Listas</div>
+    <div class="phone-sublabel">Overview de listas criadas + limite free</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="sb-r">
+          <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="#333" stroke-width="1.5"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h2v10.5h-2z"/></svg>
+          <svg width="14" height="10" viewBox="0 0 24 16" fill="none" stroke="#333" stroke-width="1.8"><path d="M1 12c3.5-7 18.5-7 22 0"/><path d="M5 10c2.5-4 11.5-4 14 0"/><circle cx="12" cy="12" r="1.5" fill="#333"/></svg>
+          <svg width="20" height="10" viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="24" height="13" rx="3" stroke="#333" stroke-opacity=".5"/><rect x="26" y="4" width="2" height="6" rx="1" fill="#333" fill-opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#333"/></svg>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div style="padding:14px 16px 0">
+          <div style="font-family:'Poppins';font-size:20px;font-weight:700;color:var(--text)">Minhas Listas</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">2 de 3 listas · <span style="color:var(--primary);font-weight:600">Plano Grátis</span></div>
+        </div>
+
+        <!-- List cards -->
+        <div style="padding:16px">
+          <!-- List 1 -->
+          <div style="background:#fff;border-radius:14px;border:1.5px solid #e8edf2;padding:16px;margin-bottom:10px;cursor:pointer">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <div style="font-size:15px;font-weight:700;color:var(--text)">Compras do mês</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:2px">7 itens · 3 comprados</div>
+              </div>
+              <div style="font-family:'Poppins';font-size:16px;font-weight:800;color:var(--primary)">R$ 89,42</div>
+            </div>
+            <!-- Progress bar -->
+            <div style="height:4px;background:#f1f5f9;border-radius:2px;margin-top:12px">
+              <div style="height:4px;border-radius:2px;background:var(--primary);width:43%"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text-muted)">
+              <span>43% comprado</span>
+              <span>Atualizado hoje</span>
+            </div>
+          </div>
+
+          <!-- List 2 -->
+          <div style="background:#fff;border-radius:14px;border:1.5px solid #e8edf2;padding:16px;margin-bottom:10px;cursor:pointer">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <div style="font-size:15px;font-weight:700;color:var(--text)">Churrasco sábado</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:2px">5 itens · 0 comprados</div>
+              </div>
+              <div style="font-family:'Poppins';font-size:16px;font-weight:800;color:var(--primary)">R$ 142,30</div>
+            </div>
+            <div style="height:4px;background:#f1f5f9;border-radius:2px;margin-top:12px">
+              <div style="height:4px;border-radius:2px;background:var(--accent);width:0%"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text-muted)">
+              <span>0% comprado</span>
+              <span>Criado ontem</span>
+            </div>
+          </div>
+
+          <!-- New list button -->
+          <div style="background:#fff;border-radius:14px;border:2px dashed #d1d5db;padding:18px;text-align:center;cursor:pointer;margin-bottom:10px">
+            <div style="font-size:13px;font-weight:700;color:var(--text-muted)">+ Nova lista</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:4px">1 lista restante no plano grátis</div>
+          </div>
+
+          <!-- Plus upsell -->
+          <div class="plus-banner" style="margin:0">
+            <div class="plus-icon">
+              <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="#fff" fill="none" stroke-width="2"/></svg>
+            </div>
+            <div class="plus-info">
+              <div class="plus-title">Listas ilimitadas com Poup Plus</div>
+              <div class="plus-desc">+ Histórico, alertas avançados e mais</div>
+            </div>
+            <div class="plus-arrow">›</div>
+          </div>
+        </div>
+
+        <div style="height:20px"></div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+          Início
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Busca
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Mapa
+        </div>
+        <div class="tab active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>
+          Lista
+          <div class="tab-dot"></div>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          Alertas
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║                       3. ALERTAS                           ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+
+<div class="section-divider">
+  <h1>Poup — Alertas</h1>
+  <p>Três cenários: estado vazio, alertas ativos com notificação disparada, e upsell Plus para alertas avançados.</p>
+</div>
+
+<div class="phones">
+
+  <!-- ALERTAS — Empty state -->
+  <div class="phone-col">
+    <div class="phone-label">Alertas — Estado Vazio</div>
+    <div class="phone-sublabel">Primeiro acesso: explica o valor + CTA</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="sb-r">
+          <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="#333" stroke-width="1.5"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h2v10.5h-2z"/></svg>
+          <svg width="14" height="10" viewBox="0 0 24 16" fill="none" stroke="#333" stroke-width="1.8"><path d="M1 12c3.5-7 18.5-7 22 0"/><path d="M5 10c2.5-4 11.5-4 14 0"/><circle cx="12" cy="12" r="1.5" fill="#333"/></svg>
+          <svg width="20" height="10" viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="24" height="13" rx="3" stroke="#333" stroke-opacity=".5"/><rect x="26" y="4" width="2" height="6" rx="1" fill="#333" fill-opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#333"/></svg>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div style="padding:14px 16px 0">
+          <div style="font-family:'Poppins';font-size:20px;font-weight:700;color:var(--text)">Alertas</div>
+        </div>
+
+        <div class="empty-hero">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          </div>
+          <div class="empty-title">Nunca perca uma promoção</div>
+          <div class="empty-desc">Crie alertas para seus produtos favoritos e seja notificado quando entrarem em promoção</div>
+          <button class="empty-btn">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg>
+            Criar primeiro alerta
+          </button>
+        </div>
+
+        <!-- How it works -->
+        <div style="padding:0 16px">
+          <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Como funciona</div>
+
+          <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(13,148,136,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:800;color:var(--primary)">1</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">Escolha um produto</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Busque e selecione o produto que deseja monitorar</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(13,148,136,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:800;color:var(--primary)">2</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">Nós monitoramos</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Acompanhamos os preços em todos os mercados da região</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(13,148,136,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:800;color:var(--primary)">3</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">Você é notificado</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Receba uma notificação assim que o produto entrar em promoção</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:20px"></div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+          Início
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Busca
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Mapa
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>
+          Lista
+        </div>
+        <div class="tab active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          Alertas
+          <div class="tab-dot"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALERTAS — Ativos com notificação -->
+  <div class="phone-col">
+    <div class="phone-label">Alertas — Ativos</div>
+    <div class="phone-sublabel">Alertas monitorando + 1 disparado (promoção encontrada)</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="sb-r">
+          <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="#333" stroke-width="1.5"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h2v10.5h-2z"/></svg>
+          <svg width="14" height="10" viewBox="0 0 24 16" fill="none" stroke="#333" stroke-width="1.8"><path d="M1 12c3.5-7 18.5-7 22 0"/><path d="M5 10c2.5-4 11.5-4 14 0"/><circle cx="12" cy="12" r="1.5" fill="#333"/></svg>
+          <svg width="20" height="10" viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="24" height="13" rx="3" stroke="#333" stroke-opacity=".5"/><rect x="26" y="4" width="2" height="6" rx="1" fill="#333" fill-opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#333"/></svg>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div style="padding:14px 16px 4px;display:flex;justify-content:space-between;align-items:center">
+          <div style="font-family:'Poppins';font-size:20px;font-weight:700;color:var(--text)">Alertas</div>
+          <div style="font-size:12px;font-weight:600;color:var(--primary);cursor:pointer">+ Novo</div>
+        </div>
+
+        <!-- Triggered alert banner -->
+        <div style="padding:10px 16px 0">
+          <div class="triggered-banner">
+            <div class="tb-icon">
+              <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <div class="tb-info">
+              <div class="tb-title">Café Pilão 500g em promoção!</div>
+              <div class="tb-desc">R$ 13,49 no Jaú Serve · -29% · Menor em 30 dias</div>
+              <div class="tb-action">Ver oferta →</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;padding:16px 16px 10px">Monitorando (4)</div>
+
+        <!-- Alert cards -->
+        <div class="alert-card">
+          <div class="ac-top">
+            <div class="ac-icon promo">
+              <svg viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </div>
+            <div class="ac-info">
+              <div class="ac-name">Café Pilão 500g</div>
+              <div class="ac-detail">Avisar quando entrar em promoção</div>
+              <div class="ac-status triggered"><div class="ac-dot triggered"></div>Em promoção agora!</div>
+            </div>
+            <div class="ac-toggle"></div>
+          </div>
+        </div>
+
+        <div class="alert-card">
+          <div class="ac-top">
+            <div class="ac-icon promo">
+              <svg viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </div>
+            <div class="ac-info">
+              <div class="ac-name">Arroz Tio João 5kg</div>
+              <div class="ac-detail">Avisar quando entrar em promoção</div>
+              <div class="ac-status watching"><div class="ac-dot watching"></div>Monitorando · R$ 22,90 atual</div>
+            </div>
+            <div class="ac-toggle"></div>
+          </div>
+        </div>
+
+        <div class="alert-card">
+          <div class="ac-top">
+            <div class="ac-icon promo">
+              <svg viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </div>
+            <div class="ac-info">
+              <div class="ac-name">Leite Integral Parmalat 1L</div>
+              <div class="ac-detail">Avisar quando entrar em promoção</div>
+              <div class="ac-status watching"><div class="ac-dot watching"></div>Monitorando · R$ 5,99 atual</div>
+            </div>
+            <div class="ac-toggle"></div>
+          </div>
+        </div>
+
+        <div class="alert-card">
+          <div class="ac-top">
+            <div class="ac-icon promo">
+              <svg viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </div>
+            <div class="ac-info">
+              <div class="ac-name">Óleo de Soja Liza 900ml</div>
+              <div class="ac-detail">Avisar quando entrar em promoção</div>
+              <div class="ac-status watching"><div class="ac-dot watching"></div>Monitorando · R$ 7,69 atual</div>
+            </div>
+            <div class="ac-toggle off"></div>
+          </div>
+        </div>
+
+        <!-- Plus upsell -->
+        <div class="plus-banner">
+          <div class="plus-icon">
+            <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <div class="plus-info">
+            <div class="plus-title">Alertas avançados com Plus</div>
+            <div class="plus-desc">"Me avise quando desconto > 45%"</div>
+          </div>
+          <div class="plus-arrow">›</div>
+        </div>
+
+        <div style="height:20px"></div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+          Início
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Busca
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Mapa
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>
+          Lista
+        </div>
+        <div class="tab active">
+          <div class="tab-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            <div class="badge-count">1</div>
+          </div>
+          Alertas
+          <div class="tab-dot"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║                        4. CONTA                            ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+
+<div class="section-divider">
+  <h1>Poup — Conta</h1>
+  <p>Perfil, economia acumulada, histórico de compras, análise de economia e upsell Poup Plus.</p>
+</div>
+
+<div class="phones">
+
+  <!-- CONTA — Grátis -->
+  <div class="phone-col">
+    <div class="phone-label">Conta — Plano Grátis</div>
+    <div class="phone-sublabel">Perfil com economia, menu e upsell Plus</div>
+    <div class="phone-frame">
+      <div class="status-bar" style="color:#fff;z-index:25">
+        <span>9:41</span>
+        <div class="sb-r">
+          <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="#fff" stroke-width="1.5"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h2v10.5h-2z"/></svg>
+          <svg width="14" height="10" viewBox="0 0 24 16" fill="none" stroke="#fff" stroke-width="1.8"><path d="M1 12c3.5-7 18.5-7 22 0"/><path d="M5 10c2.5-4 11.5-4 14 0"/><circle cx="12" cy="12" r="1.5" fill="#fff"/></svg>
+          <svg width="20" height="10" viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="24" height="13" rx="3" stroke="#fff" stroke-opacity=".6"/><rect x="26" y="4" width="2" height="6" rx="1" fill="#fff" fill-opacity=".5"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#fff"/></svg>
+        </div>
+      </div>
+
+      <div class="screen">
+        <!-- Header with profile -->
+        <div class="conta-header">
+          <div class="conta-avatar">L</div>
+          <div class="conta-name">Lucas</div>
+          <div class="conta-email">lima.galhardo@gmail.com</div>
+          <div class="conta-plan">
+            <span>Plano Grátis</span>
+          </div>
+        </div>
+
+        <!-- Economia card -->
+        <div class="economia-card">
+          <div class="ec-top">
+            <div class="ec-label">Sua economia</div>
+            <div class="ec-period">Março 2026</div>
+          </div>
+          <div class="ec-value">R$ 47,30</div>
+          <div class="ec-sub">economizados usando o Poup</div>
+          <div class="ec-bar-bg">
+            <div class="ec-bar-fill" style="width:47%"></div>
+          </div>
+          <div class="ec-bar-label">
+            <span>R$ 0</span>
+            <span>Meta: R$ 100</span>
+          </div>
+        </div>
+
+        <!-- Plus upsell -->
+        <div class="plus-upsell" style="margin:16px">
+          <div class="pu-badge">Poup Plus</div>
+          <div class="pu-title">Economize ainda mais</div>
+          <div class="pu-desc">Todos os mercados, listas ilimitadas, histórico de 90 dias, alertas avançados e análise de economia.</div>
+          <button class="pu-btn">Conhecer o Poup Plus →</button>
+        </div>
+
+        <!-- Menu items -->
+        <div class="conta-menu">
+          <div class="cm-group">
+            <div class="cm-item">
+              <div class="cm-icon" style="background:rgba(13,148,136,.08)">
+                <svg viewBox="0 0 24 24" stroke="var(--primary)"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              </div>
+              <div class="cm-label">Histórico de compras</div>
+              <div class="cm-arrow">›</div>
+            </div>
+            <div class="cm-item">
+              <div class="cm-icon" style="background:rgba(13,148,136,.08)">
+                <svg viewBox="0 0 24 24" stroke="var(--primary)"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>
+              </div>
+              <div class="cm-label">Análise de economia</div>
+              <div class="cm-badge" style="background:#ede9fe;color:var(--purple)">Plus</div>
+              <div class="cm-arrow">›</div>
+            </div>
+          </div>
+
+          <div class="cm-group">
+            <div class="cm-item">
+              <div class="cm-icon" style="background:#f1f5f9">
+                <svg viewBox="0 0 24 24" stroke="var(--text-muted)"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <div class="cm-label">Editar perfil</div>
+              <div class="cm-arrow">›</div>
+            </div>
+            <div class="cm-item">
+              <div class="cm-icon" style="background:#f1f5f9">
+                <svg viewBox="0 0 24 24" stroke="var(--text-muted)"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <div class="cm-label">Minha localização</div>
+              <div style="font-size:11px;color:var(--text-muted)">Matão, SP</div>
+              <div class="cm-arrow">›</div>
+            </div>
+            <div class="cm-item">
+              <div class="cm-icon" style="background:#f1f5f9">
+                <svg viewBox="0 0 24 24" stroke="var(--text-muted)"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+              </div>
+              <div class="cm-label">Notificações</div>
+              <div class="cm-arrow">›</div>
+            </div>
+          </div>
+
+          <div class="cm-group">
+            <div class="cm-item">
+              <div class="cm-icon" style="background:#f1f5f9">
+                <svg viewBox="0 0 24 24" stroke="var(--text-muted)"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+              </div>
+              <div class="cm-label">Configurações</div>
+              <div class="cm-arrow">›</div>
+            </div>
+            <div class="cm-item">
+              <div class="cm-icon" style="background:#f1f5f9">
+                <svg viewBox="0 0 24 24" stroke="var(--text-muted)"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+              </div>
+              <div class="cm-label">Sobre o Poup</div>
+              <div class="cm-arrow">›</div>
+            </div>
+          </div>
+
+          <!-- Logout -->
+          <div style="text-align:center;padding:8px 0 20px">
+            <span style="font-size:13px;font-weight:600;color:var(--alert);cursor:pointer">Sair da conta</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- No tab bar on Conta — accessed via header avatar -->
+    </div>
+  </div>
+
+  <!-- CONTA — Plus (with economia analysis) -->
+  <div class="phone-col">
+    <div class="phone-label">Conta — Poup Plus</div>
+    <div class="phone-sublabel">Assinante com economia expandida e análise desbloqueada</div>
+    <div class="phone-frame">
+      <div class="status-bar" style="color:#fff;z-index:25">
+        <span>9:41</span>
+        <div class="sb-r">
+          <svg width="14" height="10" viewBox="0 0 16 12" fill="none" stroke="#fff" stroke-width="1.5"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h2v10.5h-2z"/></svg>
+          <svg width="14" height="10" viewBox="0 0 24 16" fill="none" stroke="#fff" stroke-width="1.8"><path d="M1 12c3.5-7 18.5-7 22 0"/><path d="M5 10c2.5-4 11.5-4 14 0"/><circle cx="12" cy="12" r="1.5" fill="#fff"/></svg>
+          <svg width="20" height="10" viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="24" height="13" rx="3" stroke="#fff" stroke-opacity=".6"/><rect x="26" y="4" width="2" height="6" rx="1" fill="#fff" fill-opacity=".5"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#fff"/></svg>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="conta-header">
+          <div class="conta-avatar">L</div>
+          <div class="conta-name">Lucas</div>
+          <div class="conta-email">lima.galhardo@gmail.com</div>
+          <div class="conta-plan" style="background:rgba(245,158,11,.25);color:#fde68a">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Poup Plus
+          </div>
+        </div>
+
+        <!-- Economia expandida -->
+        <div class="economia-card">
+          <div class="ec-top">
+            <div class="ec-label">Sua economia</div>
+            <div style="font-size:10px;color:var(--primary);font-weight:600;cursor:pointer">Ver detalhes →</div>
+          </div>
+          <div class="ec-value">R$ 284,50</div>
+          <div class="ec-sub">economizados desde Janeiro 2026</div>
+          <div style="display:flex;gap:12px;margin-top:14px">
+            <div style="flex:1;background:#f0fdfa;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:18px;font-weight:800;color:var(--primary)">23</div>
+              <div style="font-size:9px;color:var(--text-muted);margin-top:2px">compras</div>
+            </div>
+            <div style="flex:1;background:#fefce8;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:18px;font-weight:800;color:#b45309">18%</div>
+              <div style="font-size:9px;color:var(--text-muted);margin-top:2px">média economia</div>
+            </div>
+            <div style="flex:1;background:#f0fdf4;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:18px;font-weight:800;color:var(--success)">5</div>
+              <div style="font-size:9px;color:var(--text-muted);margin-top:2px">mercados</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Perfil de compras (insights) -->
+        <div style="margin:12px 16px 0;padding:14px;background:#fff;border-radius:14px;border:1.5px solid #e8edf2">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:12px;font-weight:700;color:var(--text-muted)">Perfil de compras</div>
+            <div style="font-size:10px;color:var(--text-muted)">Últimos 90 dias</div>
+          </div>
+          <!-- Category bars -->
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+              <span style="font-weight:600;color:var(--text)">Alimentos</span>
+              <span style="color:var(--text-muted)">62%</span>
+            </div>
+            <div style="height:6px;background:#f1f5f9;border-radius:3px">
+              <div style="height:6px;border-radius:3px;background:var(--primary);width:62%"></div>
+            </div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+              <span style="font-weight:600;color:var(--text)">Bebidas</span>
+              <span style="color:var(--text-muted)">18%</span>
+            </div>
+            <div style="height:6px;background:#f1f5f9;border-radius:3px">
+              <div style="height:6px;border-radius:3px;background:var(--accent);width:18%"></div>
+            </div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+              <span style="font-weight:600;color:var(--text)">Limpeza</span>
+              <span style="color:var(--text-muted)">12%</span>
+            </div>
+            <div style="height:6px;background:#f1f5f9;border-radius:3px">
+              <div style="height:6px;border-radius:3px;background:var(--purple);width:12%"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+              <span style="font-weight:600;color:var(--text)">Higiene</span>
+              <span style="color:var(--text-muted)">8%</span>
+            </div>
+            <div style="height:6px;background:#f1f5f9;border-radius:3px">
+              <div style="height:6px;border-radius:3px;background:#94A3B8;width:8%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Menu (simplified for Plus) -->
+        <div class="conta-menu">
+          <div class="cm-group">
+            <div class="cm-item">
+              <div class="cm-icon" style="background:rgba(13,148,136,.08)">
+                <svg viewBox="0 0 24 24" stroke="var(--primary)"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              </div>
+              <div class="cm-label">Histórico de compras</div>
+              <div class="cm-arrow">›</div>
+            </div>
+            <div class="cm-item">
+              <div class="cm-icon" style="background:rgba(13,148,136,.08)">
+                <svg viewBox="0 0 24 24" stroke="var(--primary)"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>
+              </div>
+              <div class="cm-label">Análise de economia</div>
+              <div class="cm-arrow">›</div>
+            </div>
+            <div class="cm-item">
+              <div class="cm-icon" style="background:#fef3c7">
+                <svg viewBox="0 0 24 24" stroke="#b45309"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              </div>
+              <div class="cm-label">Gerenciar Poup Plus</div>
+              <div class="cm-arrow">›</div>
+            </div>
+          </div>
+
+          <div class="cm-group">
+            <div class="cm-item">
+              <div class="cm-icon" style="background:#f1f5f9">
+                <svg viewBox="0 0 24 24" stroke="var(--text-muted)"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <div class="cm-label">Editar perfil</div>
+              <div class="cm-arrow">›</div>
+            </div>
+            <div class="cm-item">
+              <div class="cm-icon" style="background:#f1f5f9">
+                <svg viewBox="0 0 24 24" stroke="var(--text-muted)"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+              </div>
+              <div class="cm-label">Configurações</div>
+              <div class="cm-arrow">›</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║                   DESIGN NOTES                             ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+
+<div class="notes">
+  <h2>Decisões de design aplicadas</h2>
+  <div class="notes-grid">
+
+    <div class="note">
+      <div class="note-title">Mapa — Pins com contagem de ofertas</div>
+      <div class="note-desc">Cada pin mostra o número de ofertas ativas. Teal = mercados com ofertas, dourado = poucos, cinza = sem ofertas. Ao aplicar filtro de categoria, o número atualiza para refletir apenas a categoria selecionada. Pins sem ofertas naquela categoria ficam esmaecidos.</div>
+    </div>
+
+    <div class="note">
+      <div class="note-title">Mapa — Bottom card e "Como chegar"</div>
+      <div class="note-desc">Ao tocar em um pin, bottom card sobe com info do mercado: nome, endereço, distância, ofertas e horário. Botão "Como chegar" abre Apple Maps/Google Maps para rota. Botão "Ver ofertas" leva ao detalhe do mercado. Outros pins ficam com opacidade reduzida para foco visual.</div>
+    </div>
+
+    <div class="note">
+      <div class="note-title">Mapa — Sem busca, com filtro de categoria</div>
+      <div class="note-desc">Decidimos não incluir busca na aba de Mapa (já existe a aba Busca). Filtro por categoria via chips flutuantes sobre o mapa com backdrop-blur. Pill informativa na base mostra quantos mercados têm ofertas na categoria filtrada.</div>
+    </div>
+
+    <div class="note gold">
+      <div class="note-title">Lista — Empty state com listas sugeridas</div>
+      <div class="note-desc">Dois blocos: CTA principal "Crie sua primeira lista" + listas sugeridas pré-montadas (Cesta básica, Café da manhã, etc.). Facilita onboarding dando ao usuário algo pronto para começar. Listas sugeridas copiam itens para uma nova lista pessoal.</div>
+    </div>
+
+    <div class="note gold">
+      <div class="note-title">Lista — Resumo com economia e rota</div>
+      <div class="note-desc">Card teal no topo com total estimado (menor preço encontrado para cada item), progresso de compras e economia potencial. Barra "Rota otimizada disponível" linka com o Mapa para planejar a ida aos mercados. Items marcados como "comprado" alimentam o histórico na Conta.</div>
+    </div>
+
+    <div class="note gold">
+      <div class="note-title">Lista — Limite de listas no plano grátis</div>
+      <div class="note-desc">Plano grátis permite 3 listas. Exibe "2 de 3 listas" e o CTA de nova lista mostra "1 lista restante". Ao atingir o limite, upsell Poup Plus aparece naturalmente. Plus desbloqueia listas ilimitadas.</div>
+    </div>
+
+    <div class="note purple">
+      <div class="note-title">Alertas — Grátis vs Plus</div>
+      <div class="note-desc">Grátis: "Me avise quando entrar em promoção" — monitoramento binário (tem promoção ou não). Plus: alertas com threshold — "Me avise quando desconto > 45%". Banner de upsell contextual mostra exemplo concreto do que o Plus desbloqueia.</div>
+    </div>
+
+    <div class="note purple">
+      <div class="note-title">Alertas — Banner de promoção encontrada</div>
+      <div class="note-desc">Quando um alerta dispara, banner verde de sucesso aparece no topo com destaque. Badge vermelho "1" no ícone de Alertas na tab bar cria urgência para o usuário checar. Status "Em promoção agora!" no card do alerta com verde de sucesso.</div>
+    </div>
+
+    <div class="note">
+      <div class="note-title">Conta — Economia e perfil de compras</div>
+      <div class="note-desc">Card "Sua economia" mostra quanto o usuário economizou usando o Poup, com barra de meta. Conta Plus mostra stats expandidos (compras, média de economia, mercados visitados) + perfil de compras com breakdown por categoria. Análise de economia mora na Conta, não é uma tab.</div>
+    </div>
+
+    <div class="note">
+      <div class="note-title">Conta — Sem tab bar</div>
+      <div class="note-desc">Conta é acessada via avatar no header da Home, não pela tab bar. Assim ela não compete por espaço com as 5 tabs funcionais (Início, Busca, Mapa, Lista, Alertas). O mockup reflete isso: sem tab bar na tela de Conta.</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="footer">Poup — Mapa, Lista, Alertas & Conta — Mockups Completos — Paleta Economia Verde — Março 2026</div>
+
+</body>
+</html>

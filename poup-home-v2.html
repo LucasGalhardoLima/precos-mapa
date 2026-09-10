@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poup — Home v2 — Proposta Alinhada</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800;900&family=Nunito:wght@800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#0D9488;--primary-dark:#0f766e;--primary-light:#14B8A6;--primary-lighter:#5EEAD4;
+    --accent:#F59E0B;--accent-light:#FDE68A;
+    --text:#1A1A2E;--text-secondary:#64748B;--text-muted:#94A3B8;
+    --bg:#F0FDFA;--bg-card:#FFFFFF;
+    --success:#16A34A;--alert:#EF4444;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#e0f0ec;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px 60px}
+
+  .page-title{text-align:center;margin-bottom:32px}
+  .page-title h1{font-family:'Poppins';font-size:28px;font-weight:800;color:var(--text)}
+  .page-title p{color:var(--text-secondary);font-size:13px;margin-top:6px;max-width:500px;margin-inline:auto;line-height:1.5}
+
+  .phones{display:flex;gap:40px;justify-content:center;flex-wrap:wrap;align-items:flex-start}
+
+  .phone-col{display:flex;flex-direction:column;align-items:center;gap:16px}
+  .phone-label{font-family:'Poppins';font-size:12px;font-weight:700;color:var(--primary-dark);text-transform:uppercase;letter-spacing:1px}
+
+  .phone-frame{
+    width:340px;height:720px;border-radius:44px;overflow:hidden;
+    background:var(--bg);position:relative;
+    box-shadow:0 4px 6px rgba(0,0,0,.04),0 20px 50px rgba(13,148,136,.15),inset 0 0 0 2px rgba(0,0,0,.06);
+  }
+
+  /* Status bar */
+  .status-bar{height:54px;padding:14px 28px 0;display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;position:absolute;top:0;left:0;right:0;z-index:20}
+  .status-bar.on-green{color:#fff;background:linear-gradient(180deg,rgba(15,118,110,.95) 60%,transparent)}
+  .sb-r{display:flex;gap:6px;align-items:center;font-size:11px}
+
+  /* Scrollable content */
+  .screen{height:720px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px}
+  .screen::-webkit-scrollbar{display:none}
+
+  /* Tab bar */
+  .tab-bar{position:absolute;bottom:0;left:0;right:0;height:74px;background:#fff;display:flex;justify-content:space-around;align-items:center;padding-bottom:10px;border-top:1px solid #e2e8f0;z-index:20}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:600;color:var(--text-muted)}
+  .tab.active{color:var(--primary)}
+  .tab svg{width:22px;height:22px}
+  .tab-dot{width:4px;height:4px;border-radius:2px;background:var(--primary)}
+
+  /* ========== HOME HEADER ========== */
+  .home-header{
+    background:linear-gradient(150deg,var(--primary-dark),var(--primary));
+    padding:62px 20px 22px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .header-row{display:flex;justify-content:space-between;align-items:center}
+  .header-left{display:flex;align-items:center;gap:10px}
+  .header-logo{width:32px;height:32px;border-radius:8px;overflow:hidden;flex-shrink:0}
+  .header-greeting{color:rgba(255,255,255,.65);font-size:12px;font-weight:500}
+  .header-name{color:#fff;font-size:16px;font-weight:700;margin-top:1px}
+  .header-avatar{
+    width:38px;height:38px;border-radius:50%;
+    background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.25);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:15px;font-weight:700;cursor:pointer;
+  }
+  .header-location{
+    display:flex;align-items:center;gap:6px;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.1);
+    border-radius:10px;padding:8px 14px;
+    color:rgba(255,255,255,.8);font-size:12px;font-weight:500;
+    cursor:pointer;width:fit-content;
+  }
+  .header-location svg{width:14px;height:14px;stroke:rgba(255,255,255,.6);fill:none;stroke-width:2.5}
+  .header-location .arrow{margin-left:4px;font-size:10px;opacity:.5}
+
+  /* ========== RANKING ========== */
+  .ranking-section{margin:16px 16px 0;border-radius:16px;overflow:hidden}
+  .ranking-header{
+    background:linear-gradient(135deg,var(--primary),var(--primary-light));
+    padding:16px 18px 12px;color:#fff;
+  }
+  .ranking-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;opacity:.7}
+  .ranking-title{font-family:'Poppins';font-size:17px;font-weight:700;margin-top:2px}
+  .ranking-sub{font-size:11px;opacity:.65;margin-top:2px}
+  .ranking-list{background:#fff;padding:4px 0}
+  .ranking-item{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid #f1f5f9}
+  .ranking-item:last-child{border-bottom:none}
+  .ranking-pos{
+    width:28px;height:28px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:800;flex-shrink:0;
+  }
+  .ranking-pos.gold{background:#fef3c7;color:#92400e}
+  .ranking-pos.silver{background:#f1f5f9;color:#64748b}
+  .ranking-pos.bronze{background:#fef3c7;color:#a16207;opacity:.7}
+  .ranking-store{flex:1}
+  .ranking-store-name{font-size:13px;font-weight:700;color:var(--text)}
+  .ranking-store-detail{font-size:10px;color:var(--text-muted);margin-top:1px}
+  .ranking-price{font-size:15px;font-weight:800;color:var(--text)}
+  .ranking-item:first-child .ranking-price{color:var(--success)}
+  .ranking-badge{font-size:8px;font-weight:700;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:4px;margin-left:6px}
+
+  /* ========== PILLS ========== */
+  .pills{display:flex;gap:8px;padding:18px 16px 4px;overflow-x:auto}
+  .pills::-webkit-scrollbar{display:none}
+  .pill{
+    flex-shrink:0;padding:8px 16px;border-radius:20px;
+    font-size:12px;font-weight:600;cursor:pointer;
+    border:1.5px solid #d1d5db;color:var(--text-secondary);background:#fff;
+  }
+  .pill.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+
+  /* ========== OFERTAS ========== */
+  .sec-header{display:flex;justify-content:space-between;align-items:center;padding:18px 16px 10px}
+  .sec-title{font-family:'Poppins';font-size:15px;font-weight:700;color:var(--text)}
+  .sec-link{font-size:12px;font-weight:600;color:var(--primary)}
+
+  .offers-scroll{display:flex;gap:10px;padding:0 16px;overflow-x:auto}
+  .offers-scroll::-webkit-scrollbar{display:none}
+  .offer-card{
+    flex-shrink:0;width:200px;background:#fff;border-radius:14px;
+    border:1.5px solid #e8edf2;padding:14px;
+  }
+  .offer-top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+  .offer-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;flex:1}
+  .offer-badge{
+    flex-shrink:0;font-size:9px;font-weight:700;padding:3px 7px;border-radius:6px;
+    white-space:nowrap;
+  }
+  .offer-badge.best{background:#dcfce7;color:#166534}
+  .offer-badge.discount{background:#fef3c7;color:#92400e}
+  .offer-badge.historic{background:#ede9fe;color:#5b21b6}
+  .offer-meta{font-size:11px;color:var(--text-muted);margin-top:4px}
+  .offer-prices{display:flex;align-items:baseline;gap:8px;margin-top:8px}
+  .offer-new{font-size:18px;font-weight:800;color:var(--primary)}
+  .offer-old{font-size:12px;color:var(--text-muted);text-decoration:line-through}
+  .offer-save{font-size:10px;font-weight:600;color:var(--success);margin-top:4px}
+
+  /* ========== NEARBY ========== */
+  .nearby{padding:0 16px}
+  .nearby-item{
+    display:flex;gap:12px;padding:14px;background:#fff;border-radius:14px;
+    margin-bottom:8px;border:1.5px solid #e8edf2;
+  }
+  .nearby-icon{
+    width:42px;height:42px;border-radius:11px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:800;color:#fff;
+  }
+  .nearby-info{flex:1;min-width:0}
+  .nearby-name{font-size:13px;font-weight:700;color:var(--text)}
+  .nearby-addr{font-size:10px;color:var(--text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nearby-tags{display:flex;gap:6px;margin-top:6px}
+  .nearby-tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px}
+  .nearby-tag.dist{background:#e0f2fe;color:#0369a1}
+  .nearby-tag.deals{background:#fef3c7;color:#92400e}
+  .nearby-tag.open{background:#dcfce7;color:#166534}
+  .nearby-arrow{color:var(--text-muted);font-size:16px;display:flex;align-items:center}
+
+  /* ========== ANNOTATIONS ========== */
+  .note-section{margin-top:40px;max-width:740px;width:100%}
+  .note-section h2{font-family:'Poppins';font-size:20px;font-weight:700;color:var(--text);margin-bottom:16px}
+  .note{background:#fff;border-radius:14px;padding:18px 20px;margin-bottom:12px;border-left:4px solid var(--primary);box-shadow:0 1px 4px rgba(0,0,0,.04)}
+  .note-title{font-size:13px;font-weight:700;color:var(--primary);margin-bottom:4px}
+  .note-desc{font-size:12px;color:var(--text-secondary);line-height:1.6}
+
+  .footer{margin-top:40px;color:var(--text-muted);font-size:11px;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>Poup — Home v2</h1>
+  <p>Proposta alinhada: header com logo + localização, ranking em destaque, badges nos cards, tab bar com Alertas.</p>
+</div>
+
+<div class="phones">
+
+  <!-- ==================== HOME ==================== -->
+  <div class="phone-col">
+    <div class="phone-label">Home — Proposta Final</div>
+    <div class="phone-frame">
+      <div class="status-bar on-green">
+        <span>9:41</span>
+        <div class="sb-r">
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="#fff" stroke-width="1.5"><path d="M1 8.5h2v3H1zM5 6h2v5.5H5zM9 3.5h2v8H9zM13 1h2v10.5h-2z"/></svg>
+          <svg width="16" height="11" viewBox="0 0 24 16" fill="none" stroke="#fff" stroke-width="1.8"><path d="M1 12c3.5-7 18.5-7 22 0"/><path d="M5 10c2.5-4 11.5-4 14 0"/><circle cx="12" cy="12" r="1.5" fill="#fff"/></svg>
+          <svg width="22" height="11" viewBox="0 0 28 14" fill="none"><rect x=".5" y=".5" width="24" height="13" rx="3" stroke="#fff" stroke-opacity=".6"/><rect x="26" y="4" width="2" height="6" rx="1" fill="#fff" fill-opacity=".5"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#fff"/></svg>
+        </div>
+      </div>
+
+      <div class="screen">
+
+        <!-- ===== HEADER ===== -->
+        <div class="home-header">
+          <div class="header-row">
+            <div class="header-left">
+              <!-- Mini Logo Poup -->
+              <div class="header-logo">
+                <svg width="32" height="32" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="hlg" x1="0.2" y1="0" x2="0.9" y2="1"><stop offset="0%" style="stop-color:#f5c842"/><stop offset="40%" style="stop-color:#e8a820"/><stop offset="100%" style="stop-color:#c07810"/></linearGradient>
+                    <linearGradient id="hle" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" style="stop-color:#a86510"/><stop offset="100%" style="stop-color:#7a4a08"/></linearGradient>
+                  </defs>
+                  <rect width="400" height="400" rx="80" fill="rgba(255,255,255,.15)"/>
+                  <g transform="translate(200,270)" stroke="#e8d9b8" fill="none" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".9">
+                    <polyline points="-100,-15 -78,-15"/>
+                    <path d="M-78,-15 L-64,55 L84,55 L94,-8 L-60,-8"/>
+                    <circle cx="-38" cy="74" r="15" stroke-width="14" fill="none"/>
+                    <circle cx="66" cy="74" r="15" stroke-width="14" fill="none"/>
+                  </g>
+                  <text x="48" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">P</text>
+                  <text x="218" y="248" font-family="Nunito,sans-serif" font-weight="900" font-size="178" fill="#e8d9b8" letter-spacing="-4">UP</text>
+                  <ellipse cx="203" cy="184" rx="64" ry="66" fill="url(#hle)"/>
+                  <ellipse cx="200" cy="178" rx="64" ry="66" fill="url(#hlg)"/>
+                  <text x="200" y="202" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="900" font-size="72" fill="#fff">$</text>
+                </svg>
+              </div>
+              <div>
+                <div class="header-greeting">Boa tarde,</div>
+                <div class="header-name">Lucas</div>
+              </div>
+            </div>
+            <div class="header-avatar" title="Minha conta">L</div>
+          </div>
+          <div class="header-location">
+            <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Matão, SP
+            <span class="arrow">▼</span>
+          </div>
+        </div>
+
+        <!-- ===== RANKING DA SEMANA (DESTAQUE) ===== -->
+        <div class="ranking-section">
+          <div class="ranking-header">
+            <div class="ranking-label">Ranking da semana</div>
+            <div class="ranking-title">Mais baratos · Matão</div>
+            <div class="ranking-sub">Baseado na lista base de 15 itens essenciais</div>
+          </div>
+          <div class="ranking-list">
+            <div class="ranking-item">
+              <div class="ranking-pos gold">1º</div>
+              <div class="ranking-store">
+                <div class="ranking-store-name">Savegnago <span class="ranking-badge">Mais barato</span></div>
+                <div class="ranking-store-detail">Av. Baldan · 3.4 km</div>
+              </div>
+              <div class="ranking-price">R$ 62,55</div>
+            </div>
+            <div class="ranking-item">
+              <div class="ranking-pos silver">2º</div>
+              <div class="ranking-store">
+                <div class="ranking-store-name">Jaú Serve</div>
+                <div class="ranking-store-detail">R. XV de Novembro · 4.7 km</div>
+              </div>
+              <div class="ranking-price">R$ 68,30</div>
+            </div>
+            <div class="ranking-item">
+              <div class="ranking-pos bronze">3º</div>
+              <div class="ranking-store">
+                <div class="ranking-store-name">Paulistão</div>
+                <div class="ranking-store-detail">R. Conde do Pinhal · 2.1 km</div>
+              </div>
+              <div class="ranking-price">R$ 71,12</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== PILLS DE CATEGORIA ===== -->
+        <div class="pills">
+          <div class="pill active">Todos</div>
+          <div class="pill">Alimentos</div>
+          <div class="pill">Hortifrúti</div>
+          <div class="pill">Bebidas</div>
+          <div class="pill">Limpeza</div>
+          <div class="pill">Higiene</div>
+        </div>
+
+        <!-- ===== OFERTAS PERTO DE VOCÊ ===== -->
+        <div class="sec-header">
+          <span class="sec-title">Ofertas perto de você</span>
+          <span class="sec-link">Ver todas</span>
+        </div>
+        <div class="offers-scroll">
+          <!-- Card 1 — com badge menor preço -->
+          <div class="offer-card">
+            <div class="offer-top">
+              <div class="offer-name">Arroz Tio João Tipo 1 5kg</div>
+              <span class="offer-badge best">Menor preço</span>
+            </div>
+            <div class="offer-meta">Savegnago · 3.4 km</div>
+            <div class="offer-prices">
+              <span class="offer-new">R$ 22,90</span>
+              <span class="offer-old">R$ 27,49</span>
+            </div>
+            <div class="offer-save">Economize R$ 4,59</div>
+          </div>
+          <!-- Card 2 — com badge desconto -->
+          <div class="offer-card">
+            <div class="offer-top">
+              <div class="offer-name">Leite Integral Parmalat 1L</div>
+              <span class="offer-badge discount">-18%</span>
+            </div>
+            <div class="offer-meta">Savegnago · 3.4 km</div>
+            <div class="offer-prices">
+              <span class="offer-new">R$ 4,89</span>
+              <span class="offer-old">R$ 5,99</span>
+            </div>
+            <div class="offer-save">Economize R$ 1,10</div>
+          </div>
+          <!-- Card 3 — com badge histórico -->
+          <div class="offer-card">
+            <div class="offer-top">
+              <div class="offer-name">Café Pilão Torrado e Moído 500g</div>
+              <span class="offer-badge historic">Menor em 30d</span>
+            </div>
+            <div class="offer-meta">Jaú Serve · 4.7 km</div>
+            <div class="offer-prices">
+              <span class="offer-new">R$ 13,49</span>
+              <span class="offer-old">R$ 18,90</span>
+            </div>
+            <div class="offer-save">Economize R$ 5,41</div>
+          </div>
+          <!-- Card 4 — sem badge -->
+          <div class="offer-card">
+            <div class="offer-top">
+              <div class="offer-name">Óleo de Soja Liza 900ml</div>
+              <span class="offer-badge discount">-12%</span>
+            </div>
+            <div class="offer-meta">Paulistão · 2.1 km</div>
+            <div class="offer-prices">
+              <span class="offer-new">R$ 6,79</span>
+              <span class="offer-old">R$ 7,69</span>
+            </div>
+            <div class="offer-save">Economize R$ 0,90</div>
+          </div>
+        </div>
+
+        <!-- ===== MERCADOS PERTO ===== -->
+        <div class="sec-header">
+          <span class="sec-title">Mercados perto de você</span>
+          <span class="sec-link">Mapa</span>
+        </div>
+        <div class="nearby">
+          <div class="nearby-item">
+            <div class="nearby-icon" style="background:var(--primary)">S</div>
+            <div class="nearby-info">
+              <div class="nearby-name">Savegnago</div>
+              <div class="nearby-addr">Av. Baldan, 1250 — Matão</div>
+              <div class="nearby-tags">
+                <span class="nearby-tag dist">3.4 km</span>
+                <span class="nearby-tag deals">157 ofertas</span>
+                <span class="nearby-tag open">Aberto</span>
+              </div>
+            </div>
+            <div class="nearby-arrow">›</div>
+          </div>
+          <div class="nearby-item">
+            <div class="nearby-icon" style="background:#6366f1">J</div>
+            <div class="nearby-info">
+              <div class="nearby-name">Jaú Serve</div>
+              <div class="nearby-addr">R. XV de Novembro, 420</div>
+              <div class="nearby-tags">
+                <span class="nearby-tag dist">4.7 km</span>
+                <span class="nearby-tag deals">83 ofertas</span>
+                <span class="nearby-tag open">Aberto</span>
+              </div>
+            </div>
+            <div class="nearby-arrow">›</div>
+          </div>
+          <div class="nearby-item">
+            <div class="nearby-icon" style="background:var(--accent)">P</div>
+            <div class="nearby-info">
+              <div class="nearby-name">Paulistão</div>
+              <div class="nearby-addr">R. Conde do Pinhal, 780</div>
+              <div class="nearby-tags">
+                <span class="nearby-tag dist">2.1 km</span>
+                <span class="nearby-tag deals">45 ofertas</span>
+              </div>
+            </div>
+            <div class="nearby-arrow">›</div>
+          </div>
+        </div>
+
+        <div style="height:24px"></div>
+      </div>
+
+      <!-- ===== TAB BAR (NOVA: com Alertas) ===== -->
+      <div class="tab-bar">
+        <div class="tab active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+          Início
+          <div class="tab-dot"></div>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Busca
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Mapa
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>
+          Lista
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          Alertas
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== ANOTAÇÕES DE DESIGN ===== -->
+<div class="note-section">
+  <h2>Decisões de design aplicadas</h2>
+
+  <div class="note">
+    <div class="note-title">Header com logo + localização</div>
+    <div class="note-desc">Logo Poup mini à esquerda cria identidade de marca no primeiro segundo. Saudação personalizada humaniza. Avatar à direita dá acesso à Conta sem ocupar tab bar. Pill de localização "Matão, SP" com ícone de pin — clicável para trocar cidade. Confirma ao usuário que as ofertas são da região dele.</div>
+  </div>
+
+  <div class="note">
+    <div class="note-title">Ranking em destaque com fundo teal</div>
+    <div class="note-desc">Primeiro bloco da Home após o header. Fundo gradiente teal diferencia visualmente do resto e puxa o olhar. Top 3 mercados mais baratos da semana baseado na "lista base" de itens essenciais. Badge "Mais barato" no 1º lugar. Comunica a proposta central do Poup logo ao abrir o app: "aqui você descobre onde comprar mais barato".</div>
+  </div>
+
+  <div class="note">
+    <div class="note-title">Badges nos cards de oferta</div>
+    <div class="note-desc">Três tipos: "Menor preço" (verde) = menor da região, "-X%" (amarelo) = desconto em relação ao preço anterior, "Menor em 30d" (roxo) = preço histórico mais baixo. Ajudam o usuário a priorizar visualmente sem abrir cada card. Sem imagens de produto — mantém a limpeza do app real.</div>
+  </div>
+
+  <div class="note">
+    <div class="note-title">Tab bar: Alertas no lugar de Conta</div>
+    <div class="note-desc">Início, Busca, Mapa, Lista, Alertas. Conta migra para o avatar no header. Alertas ganha visibilidade como feature core de retenção — o usuário vê e lembra de configurar alertas de preço.</div>
+  </div>
+
+  <div class="note">
+    <div class="note-title">Mercados com iniciais coloridas</div>
+    <div class="note-desc">Sem emojis, sem logos reais. Cada mercado tem um círculo colorido com a inicial — simples, escalável, consistente. Tags de distância, ofertas e status (Aberto/Fechado) dão informação rápida.</div>
+  </div>
+</div>
+
+<div class="footer">Poup — Home v2 — Proposta Alinhada — Paleta Economia Verde — Março 2026</div>
+
+</body>
+</html>

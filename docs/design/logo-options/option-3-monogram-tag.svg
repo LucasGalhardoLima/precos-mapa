@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Poup Option 3 - Monogram P + Tag</title>
+  <desc id="desc">Flat icon with monogram P integrated with a price tag shape on teal background.</desc>
+  <rect width="1024" height="1024" rx="224" fill="#146D64"/>
+  <path d="M298 252h192c164 0 272 88 272 228 0 146-110 236-276 236h-76v132H298z" fill="#F5F2EA"/>
+  <path d="M410 366v236h88c94 0 152-42 152-116 0-78-60-120-156-120z" fill="#146D64"/>
+  <path d="M676 362h120l88 88v276c0 26-20 46-46 46H676c-26 0-46-20-46-46V408c0-26 20-46 46-46z" fill="#CDA03D"/>
+  <circle cx="770" cy="448" r="24" fill="#F5F2EA"/>
+  <path d="M700 558h160M700 618h160" stroke="#F5F2EA" stroke-width="24" stroke-linecap="round"/>
+</svg>

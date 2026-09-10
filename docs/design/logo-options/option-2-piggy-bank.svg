@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Poup Option 2 - Piggy Bank Minimal</title>
+  <desc id="desc">Flat icon with piggy bank silhouette and coin slot on teal background.</desc>
+  <rect width="1024" height="1024" rx="224" fill="#0F7F74"/>
+  <g>
+    <ellipse cx="528" cy="548" rx="292" ry="220" fill="#F5F2EA"/>
+    <circle cx="750" cy="546" r="76" fill="#F5F2EA"/>
+    <ellipse cx="748" cy="548" rx="36" ry="28" fill="#D9F0EA"/>
+    <circle cx="430" cy="520" r="28" fill="#0F7F74"/>
+    <path d="M444 666c28 24 66 36 108 36 43 0 81-12 109-36" fill="none" stroke="#0F7F74" stroke-width="20" stroke-linecap="round"/>
+    <path d="M360 796h60v90h-60zM592 796h60v90h-60z" fill="#D9F0EA"/>
+    <path d="M332 350 254 298l44 116zM604 350l78-52-44 116z" fill="#D9F0EA"/>
+    <rect x="462" y="302" width="138" height="24" rx="12" fill="#CDA03D"/>
+  </g>
+</svg>

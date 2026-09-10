@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poup - Flat Logo Options</title>
+  <style>
+    :root {
+      --bg: #ecf4f2;
+      --card: #ffffff;
+      --text: #173a36;
+      --muted: #5b7e78;
+      --border: #d6e6e2;
+      --accent: #12766c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", Arial, sans-serif;
+      background: radial-gradient(circle at top, #f6fbfa 0%, var(--bg) 60%);
+      color: var(--text);
+      padding: 32px 20px 48px;
+    }
+    .wrap {
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+    .subtitle {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+    .grid {
+      margin-top: 28px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 10px 24px rgba(16, 64, 58, 0.08);
+    }
+    .card img {
+      width: 100%;
+      border-radius: 14px;
+      display: block;
+      background: #f7fbfa;
+      border: 1px solid #e6f0ee;
+    }
+    .card h2 {
+      margin: 14px 0 6px;
+      font-size: 18px;
+    }
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .files {
+      margin-top: 28px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+    }
+    .files h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+    .files code {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #f3f8f7;
+      border: 1px solid #e3efec;
+      margin: 6px 0;
+      font-size: 13px;
+      color: #28524d;
+    }
+    .badge {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--accent);
+      padding: 5px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Poup - Flat Logo Options</h1>
+    <p class="subtitle">Three visual directions requested in <strong>LUM-204</strong>, now delivered as image assets.</p>
+
+    <section class="grid">
+      <article class="card">
+        <img src="./option-1-cart-coin.svg" alt="Option 1 cart and coin logo" />
+        <h2>Option 1 - Cart + Coin</h2>
+        <span class="badge">Recommended</span>
+        <p>Directly communicates grocery + savings, with simplified geometry for app icon readability.</p>
+      </article>
+
+      <article class="card">
+        <img src="./option-2-piggy-bank.svg" alt="Option 2 piggy bank logo" />
+        <h2>Option 2 - Piggy Bank</h2>
+        <p>Friendly and savings-first metaphor, flattened to broad shapes and reduced detail.</p>
+      </article>
+
+      <article class="card">
+        <img src="./option-3-monogram-tag.svg" alt="Option 3 monogram and price tag logo" />
+        <h2>Option 3 - Monogram + Tag</h2>
+        <p>More brand-system oriented approach with strong small-size legibility and abstract identity potential.</p>
+      </article>
+    </section>
+
+    <section class="files">
+      <h3>Asset Paths</h3>
+      <code>docs/design/logo-options/option-1-cart-coin.svg</code>
+      <code>docs/design/logo-options/option-2-piggy-bank.svg</code>
+      <code>docs/design/logo-options/option-3-monogram-tag.svg</code>
+      <code>docs/design/logo-options/index.html</code>
+    </section>
+  </div>
+</body>
+</html>

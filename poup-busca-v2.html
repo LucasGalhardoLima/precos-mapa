@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poup — Busca v2 — Todos os Cenários</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#0D9488;--primary-dark:#0f766e;--primary-light:#14B8A6;--primary-lighter:#5EEAD4;
+    --accent:#F59E0B;--accent-light:#FDE68A;
+    --text:#1A1A2E;--text-secondary:#64748B;--text-muted:#94A3B8;
+    --bg:#F0FDFA;--bg-card:#FFFFFF;
+    --success:#16A34A;--alert:#EF4444;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#e0f0ec;min-height:100vh;padding:40px 20px 60px}
+
+  .page-title{text-align:center;margin-bottom:36px}
+  .page-title h1{font-family:'Poppins';font-size:28px;font-weight:800;color:var(--text)}
+  .page-title p{color:var(--text-secondary);font-size:13px;margin-top:6px;max-width:600px;margin-inline:auto;line-height:1.5}
+
+  .phones{display:flex;gap:32px;justify-content:center;flex-wrap:wrap;align-items:flex-start}
+  .phone-col{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .phone-label{font-family:'Poppins';font-size:11px;font-weight:700;color:var(--primary-dark);text-transform:uppercase;letter-spacing:1px;text-align:center}
+  .phone-sublabel{font-size:10px;color:var(--text-muted);max-width:280px;text-align:center;line-height:1.4;margin-top:-6px}
+
+  .phone-frame{
+    width:320px;height:692px;border-radius:40px;overflow:hidden;
+    background:var(--bg);position:relative;
+    box-shadow:0 4px 6px rgba(0,0,0,.04),0 20px 50px rgba(13,148,136,.15),inset 0 0 0 2px rgba(0,0,0,.06);
+  }
+
+  /* Status bar */
+  .status-bar{height:50px;padding:14px 24px 0;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;color:var(--text);position:absolute;top:0;left:0;right:0;z-index:20}
+
+  /* Tab bar */
+  .tab-bar{position:absolute;bottom:0;left:0;right:0;height:70px;background:#fff;display:flex;justify-content:space-around;align-items:center;padding-bottom:8px;border-top:1px solid #e2e8f0;z-index:20}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:600;color:var(--text-muted)}
+  .tab.active{color:var(--primary)}
+  .tab svg{width:20px;height:20px}
+  .tab-dot{width:4px;height:4px;border-radius:2px;background:var(--primary)}
+
+  /* Scrollable */
+  .screen{position:absolute;top:50px;bottom:70px;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .screen::-webkit-scrollbar{display:none}
+
+  /* ===== SEARCH BAR ===== */
+  .search-bar{
+    margin:12px 16px 0;background:#fff;border-radius:12px;
+    border:1.5px solid #e2e8f0;display:flex;align-items:center;
+    padding:0 14px;height:44px;gap:10px;
+  }
+  .search-bar.focused{border-color:var(--primary);box-shadow:0 0 0 3px rgba(13,148,136,.1)}
+  .search-bar svg{width:18px;height:18px;stroke:var(--text-muted);fill:none;stroke-width:2;flex-shrink:0}
+  .search-bar input{
+    border:none;outline:none;font-family:'Inter';font-size:14px;font-weight:500;
+    color:var(--text);background:transparent;flex:1;
+  }
+  .search-bar input::placeholder{color:var(--text-muted);font-weight:400}
+  .search-bar .clear{
+    width:20px;height:20px;border-radius:50%;background:#e2e8f0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;color:var(--text-muted);cursor:pointer;flex-shrink:0;
+  }
+  .search-bar .filter-icon{
+    width:20px;height:20px;stroke:var(--text-muted);fill:none;stroke-width:2;
+    cursor:pointer;flex-shrink:0;
+  }
+
+  /* ===== PILLS ===== */
+  .pills{display:flex;gap:8px;padding:12px 16px 0;overflow-x:auto}
+  .pills::-webkit-scrollbar{display:none}
+  .pill{
+    flex-shrink:0;padding:7px 14px;border-radius:18px;
+    font-size:12px;font-weight:600;cursor:pointer;
+    border:1.5px solid #d1d5db;color:var(--text-secondary);background:#fff;
+  }
+  .pill.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+
+  /* ===== EMPTY STATE ===== */
+  .section-label{padding:20px 16px 8px;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+  .recent-list{padding:0 16px}
+  .recent-item{
+    display:flex;align-items:center;gap:12px;padding:13px 0;
+    border-bottom:1px solid #f1f5f9;cursor:pointer;
+  }
+  .recent-item:last-child{border-bottom:none}
+  .recent-icon{width:32px;height:32px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .recent-icon svg{width:15px;height:15px;stroke:var(--text-muted);fill:none;stroke-width:2}
+  .recent-text{font-size:14px;color:var(--text);font-weight:500;flex:1}
+  .recent-arrow{color:var(--text-muted);font-size:14px}
+
+  .popular-grid{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px}
+  .popular-tag{
+    padding:8px 14px;border-radius:10px;background:#fff;
+    border:1.5px solid #e8edf2;font-size:12px;font-weight:600;
+    color:var(--text-secondary);cursor:pointer;
+  }
+  .popular-tag:hover{border-color:var(--primary);color:var(--primary)}
+
+  /* ===== RESULT CARDS (grouped by product) ===== */
+  .results{padding:12px 16px 0}
+  .results-count{font-size:11px;color:var(--text-muted);font-weight:600;padding:0 0 10px}
+
+  .result-card{
+    background:#fff;border-radius:14px;border:1.5px solid #e8edf2;
+    padding:14px;margin-bottom:10px;
+  }
+  .result-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .result-name{font-size:14px;font-weight:700;color:var(--text);line-height:1.3;flex:1}
+  .result-badge{
+    flex-shrink:0;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;
+    white-space:nowrap;
+  }
+  .result-badge.best{background:#dcfce7;color:#166534}
+  .result-badge.discount{background:#fef3c7;color:#92400e}
+  .result-badge.historic{background:#ede9fe;color:#5b21b6}
+  .result-desc{font-size:11px;color:var(--text-muted);margin-top:2px}
+  .result-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid #f5f7fa}
+  .result-price-group{display:flex;align-items:baseline;gap:4px}
+  .result-from{font-size:10px;color:var(--text-muted);font-weight:500}
+  .result-price{font-size:17px;font-weight:800;color:var(--primary)}
+  .result-stores{
+    font-size:11px;font-weight:600;color:var(--primary);
+    background:rgba(13,148,136,.08);padding:5px 10px;border-radius:8px;
+    cursor:pointer;
+  }
+
+  /* ===== MARKET CARD (smart search) ===== */
+  .market-card{
+    background:linear-gradient(135deg,var(--primary),var(--primary-light));
+    border-radius:14px;padding:16px;margin-bottom:12px;color:#fff;
+  }
+  .market-card-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;opacity:.6;margin-bottom:6px}
+  .market-card-top{display:flex;align-items:center;gap:12px}
+  .market-card-icon{
+    width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.2);
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;font-weight:800;flex-shrink:0;
+  }
+  .market-card-info{flex:1}
+  .market-card-name{font-size:16px;font-weight:700}
+  .market-card-addr{font-size:11px;opacity:.7;margin-top:1px}
+  .market-card-tags{display:flex;gap:6px;margin-top:10px}
+  .market-card-tag{
+    font-size:10px;font-weight:600;padding:4px 10px;border-radius:8px;
+    background:rgba(255,255,255,.18);
+  }
+  .market-card-cta{
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    margin-top:12px;padding:10px;border-radius:10px;
+    background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);
+    font-size:12px;font-weight:700;cursor:pointer;
+  }
+
+  /* ===== FILTER BOTTOM SHEET ===== */
+  .overlay{position:absolute;inset:0;background:rgba(0,0,0,.35);z-index:25}
+  .bottom-sheet{
+    position:absolute;bottom:70px;left:0;right:0;z-index:30;
+    background:#fff;border-radius:20px 20px 0 0;padding:20px;
+    box-shadow:0 -4px 20px rgba(0,0,0,.1);
+  }
+  .bs-handle{width:36px;height:4px;border-radius:2px;background:#d1d5db;margin:0 auto 16px}
+  .bs-title{font-family:'Poppins';font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px}
+  .bs-section{margin-bottom:16px}
+  .bs-label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+  .bs-options{display:flex;gap:8px;flex-wrap:wrap}
+  .bs-opt{
+    padding:8px 14px;border-radius:10px;font-size:12px;font-weight:600;
+    border:1.5px solid #e2e8f0;color:var(--text-secondary);background:#fff;cursor:pointer;
+  }
+  .bs-opt.active{background:rgba(13,148,136,.08);border-color:var(--primary);color:var(--primary)}
+  .bs-apply{
+    width:100%;padding:14px;border-radius:12px;border:none;
+    background:var(--primary);color:#fff;font-family:'Inter';
+    font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;
+  }
+
+  /* ===== NOTES ===== */
+  .notes{max-width:1300px;margin:40px auto 0;padding:0 20px}
+  .notes h2{font-family:'Poppins';font-size:20px;font-weight:700;color:var(--text);margin-bottom:16px}
+  .note{background:#fff;border-radius:14px;padding:16px 20px;margin-bottom:10px;border-left:4px solid var(--primary);box-shadow:0 1px 4px rgba(0,0,0,.04)}
+  .note-title{font-size:13px;font-weight:700;color:var(--primary);margin-bottom:4px}
+  .note-desc{font-size:12px;color:var(--text-secondary);line-height:1.6}
+
+  .footer{text-align:center;padding:40px;color:var(--text-muted);font-size:11px}
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>Poup — Busca v2</h1>
+  <p>Quatro cenários: estado vazio, busca por produto, busca por mercado e filtros avançados.</p>
+</div>
+
+<div class="phones">
+
+  <!-- ==================== 1. ESTADO VAZIO ==================== -->
+  <div class="phone-col">
+    <div class="phone-label">1. Estado Vazio</div>
+    <div class="phone-sublabel">Quando o usuário abre a aba Busca sem digitar nada</div>
+    <div class="phone-frame">
+      <div class="status-bar"><span>9:41</span><span style="font-size:10px;color:var(--text-muted)">●●●● ▲ ■</span></div>
+      <div class="screen">
+
+        <div class="search-bar">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" placeholder="Buscar produto ou mercado..." disabled>
+          <svg class="filter-icon" viewBox="0 0 24 24"><path d="M4 6h16M6 12h12M8 18h8" stroke-linecap="round"/></svg>
+        </div>
+
+        <!-- Buscas recentes -->
+        <div class="section-label">Buscas recentes</div>
+        <div class="recent-list">
+          <div class="recent-item">
+            <div class="recent-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+            <span class="recent-text">Arroz 5kg</span>
+            <span class="recent-arrow">›</span>
+          </div>
+          <div class="recent-item">
+            <div class="recent-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+            <span class="recent-text">Cerveja</span>
+            <span class="recent-arrow">›</span>
+          </div>
+          <div class="recent-item">
+            <div class="recent-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+            <span class="recent-text">Leite integral</span>
+            <span class="recent-arrow">›</span>
+          </div>
+          <div class="recent-item">
+            <div class="recent-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+            <span class="recent-text">Savegnago</span>
+            <span class="recent-arrow">›</span>
+          </div>
+        </div>
+
+        <!-- Populares na região -->
+        <div class="section-label">Populares em Matão</div>
+        <div class="popular-grid">
+          <div class="popular-tag">Arroz</div>
+          <div class="popular-tag">Feijão</div>
+          <div class="popular-tag">Leite</div>
+          <div class="popular-tag">Cerveja</div>
+          <div class="popular-tag">Café</div>
+          <div class="popular-tag">Óleo de soja</div>
+          <div class="popular-tag">Açúcar</div>
+          <div class="popular-tag">Carne</div>
+          <div class="popular-tag">Frango</div>
+          <div class="popular-tag">Detergente</div>
+        </div>
+
+        <div style="height:20px"></div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>Início</div>
+        <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>Busca<div class="tab-dot"></div></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Mapa</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>Lista</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>Alertas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 2. BUSCA POR PRODUTO ==================== -->
+  <div class="phone-col">
+    <div class="phone-label">2. Busca por Produto</div>
+    <div class="phone-sublabel">Resultados agrupados por produto com "a partir de" e contagem de mercados</div>
+    <div class="phone-frame">
+      <div class="status-bar"><span>9:41</span><span style="font-size:10px;color:var(--text-muted)">●●●● ▲ ■</span></div>
+      <div class="screen">
+
+        <div class="search-bar focused">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" value="Cerveja" disabled style="font-weight:600">
+          <div class="clear">✕</div>
+          <svg class="filter-icon" viewBox="0 0 24 24"><path d="M4 6h16M6 12h12M8 18h8" stroke-linecap="round"/></svg>
+        </div>
+
+        <div class="pills">
+          <div class="pill active">Menor preço</div>
+          <div class="pill">Distância</div>
+          <div class="pill">Desconto</div>
+        </div>
+
+        <div class="results">
+          <div class="results-count">8 produtos encontrados</div>
+
+          <div class="result-card">
+            <div class="result-top">
+              <div class="result-name">Cerveja Skol Lata 350ml</div>
+              <span class="result-badge best">Menor preço</span>
+            </div>
+            <div class="result-desc">Cerveja Pilsen · Lata · 350ml</div>
+            <div class="result-bottom">
+              <div class="result-price-group">
+                <span class="result-from">a partir de</span>
+                <span class="result-price">R$ 3,49</span>
+              </div>
+              <span class="result-stores">4 mercados ›</span>
+            </div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-top">
+              <div class="result-name">Cerveja Brahma Duplo Malte 350ml</div>
+              <span class="result-badge discount">-22%</span>
+            </div>
+            <div class="result-desc">Cerveja Puro Malte · Lata · 350ml</div>
+            <div class="result-bottom">
+              <div class="result-price-group">
+                <span class="result-from">a partir de</span>
+                <span class="result-price">R$ 3,79</span>
+              </div>
+              <span class="result-stores">3 mercados ›</span>
+            </div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-top">
+              <div class="result-name">Cerveja Heineken Long Neck 330ml</div>
+              <span class="result-badge historic">Menor em 30d</span>
+            </div>
+            <div class="result-desc">Cerveja Premium · Long Neck · 330ml</div>
+            <div class="result-bottom">
+              <div class="result-price-group">
+                <span class="result-from">a partir de</span>
+                <span class="result-price">R$ 5,99</span>
+              </div>
+              <span class="result-stores">2 mercados ›</span>
+            </div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-top">
+              <div class="result-name">Tulipa de Cerveja 300ml</div>
+            </div>
+            <div class="result-desc">Copo · Vidro · 300ml</div>
+            <div class="result-bottom">
+              <div class="result-price-group">
+                <span class="result-from">a partir de</span>
+                <span class="result-price">R$ 8,99</span>
+              </div>
+              <span class="result-stores">1 mercado ›</span>
+            </div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-top">
+              <div class="result-name">Cerveja Original 600ml</div>
+              <span class="result-badge discount">-15%</span>
+            </div>
+            <div class="result-desc">Cerveja Pilsen · Garrafa · 600ml</div>
+            <div class="result-bottom">
+              <div class="result-price-group">
+                <span class="result-from">a partir de</span>
+                <span class="result-price">R$ 7,49</span>
+              </div>
+              <span class="result-stores">3 mercados ›</span>
+            </div>
+          </div>
+
+          <div style="height:16px"></div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>Início</div>
+        <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>Busca<div class="tab-dot"></div></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Mapa</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>Lista</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>Alertas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 3. BUSCA POR MERCADO ==================== -->
+  <div class="phone-col">
+    <div class="phone-label">3. Busca por Mercado</div>
+    <div class="phone-sublabel">Busca inteligente reconhece "Savegnago" como mercado e mostra card especial</div>
+    <div class="phone-frame">
+      <div class="status-bar"><span>9:41</span><span style="font-size:10px;color:var(--text-muted)">●●●● ▲ ■</span></div>
+      <div class="screen">
+
+        <div class="search-bar focused">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" value="Savegnago" disabled style="font-weight:600">
+          <div class="clear">✕</div>
+          <svg class="filter-icon" viewBox="0 0 24 24"><path d="M4 6h16M6 12h12M8 18h8" stroke-linecap="round"/></svg>
+        </div>
+
+        <div class="results" style="padding-top:16px">
+
+          <!-- Card especial de mercado -->
+          <div class="market-card">
+            <div class="market-card-label">Mercado encontrado</div>
+            <div class="market-card-top">
+              <div class="market-card-icon">S</div>
+              <div class="market-card-info">
+                <div class="market-card-name">Savegnago Supermercados</div>
+                <div class="market-card-addr">Av. Baldan, 1250 — Matão, SP</div>
+              </div>
+            </div>
+            <div class="market-card-tags">
+              <span class="market-card-tag">📍 3.4 km</span>
+              <span class="market-card-tag">🏷️ 157 ofertas</span>
+              <span class="market-card-tag">✓ Aberto</span>
+            </div>
+            <div class="market-card-cta">Ver todas as ofertas deste mercado ›</div>
+          </div>
+
+          <!-- Produtos do Savegnago como resultados abaixo -->
+          <div class="results-count" style="padding-top:4px">Ofertas em destaque no Savegnago</div>
+
+          <div class="result-card">
+            <div class="result-top">
+              <div class="result-name">Arroz Tio João Tipo 1 5kg</div>
+              <span class="result-badge best">Menor preço</span>
+            </div>
+            <div class="result-desc">Grãos · Arroz agulhinha</div>
+            <div class="result-bottom">
+              <div class="result-price-group">
+                <span class="result-price">R$ 22,90</span>
+                <span style="font-size:11px;color:var(--text-muted);text-decoration:line-through;margin-left:4px">R$ 27,49</span>
+              </div>
+              <span class="result-stores" style="background:#dcfce7;color:#166534">-17%</span>
+            </div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-top">
+              <div class="result-name">Leite Integral Parmalat 1L</div>
+              <span class="result-badge discount">-18%</span>
+            </div>
+            <div class="result-desc">Laticínios · Leite UHT</div>
+            <div class="result-bottom">
+              <div class="result-price-group">
+                <span class="result-price">R$ 4,89</span>
+                <span style="font-size:11px;color:var(--text-muted);text-decoration:line-through;margin-left:4px">R$ 5,99</span>
+              </div>
+              <span class="result-stores" style="background:#dcfce7;color:#166534">-18%</span>
+            </div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-top">
+              <div class="result-name">Alimento para cão Pedigree 1kg</div>
+            </div>
+            <div class="result-desc">Pet · Ração seca</div>
+            <div class="result-bottom">
+              <div class="result-price-group">
+                <span class="result-price">R$ 2,79</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-top">
+              <div class="result-name">Café Pilão 500g</div>
+              <span class="result-badge historic">Menor em 30d</span>
+            </div>
+            <div class="result-desc">Bebidas · Torrado e moído</div>
+            <div class="result-bottom">
+              <div class="result-price-group">
+                <span class="result-price">R$ 14,90</span>
+                <span style="font-size:11px;color:var(--text-muted);text-decoration:line-through;margin-left:4px">R$ 18,90</span>
+              </div>
+              <span class="result-stores" style="background:#dcfce7;color:#166534">-21%</span>
+            </div>
+          </div>
+
+          <div style="height:16px"></div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>Início</div>
+        <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>Busca<div class="tab-dot"></div></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Mapa</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>Lista</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>Alertas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 4. FILTROS ==================== -->
+  <div class="phone-col">
+    <div class="phone-label">4. Filtros Avançados</div>
+    <div class="phone-sublabel">Bottom sheet acionado pelo ícone de filtro, previsto para implementação futura</div>
+    <div class="phone-frame">
+      <div class="status-bar"><span>9:41</span><span style="font-size:10px;color:var(--text-muted)">●●●● ▲ ■</span></div>
+
+      <!-- Content behind -->
+      <div class="screen" style="opacity:.3;pointer-events:none">
+        <div class="search-bar focused">
+          <svg viewBox="0 0 24 24" stroke="#94a3b8" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" value="Cerveja" disabled style="font-weight:600">
+        </div>
+        <div class="pills"><div class="pill active">Menor preço</div><div class="pill">Distância</div></div>
+        <div class="results"><div class="result-card"><div class="result-name">Cerveja Skol Lata 350ml</div></div></div>
+      </div>
+
+      <!-- Overlay -->
+      <div class="overlay"></div>
+
+      <!-- Bottom sheet -->
+      <div class="bottom-sheet">
+        <div class="bs-handle"></div>
+        <div class="bs-title">Filtrar resultados</div>
+
+        <div class="bs-section">
+          <div class="bs-label">Distância máxima</div>
+          <div class="bs-options">
+            <div class="bs-opt">Até 2 km</div>
+            <div class="bs-opt active">Até 5 km</div>
+            <div class="bs-opt">Até 10 km</div>
+            <div class="bs-opt">Qualquer</div>
+          </div>
+        </div>
+
+        <div class="bs-section">
+          <div class="bs-label">Faixa de preço</div>
+          <div class="bs-options">
+            <div class="bs-opt">Até R$ 5</div>
+            <div class="bs-opt">Até R$ 15</div>
+            <div class="bs-opt">Até R$ 30</div>
+            <div class="bs-opt active">Qualquer</div>
+          </div>
+        </div>
+
+        <div class="bs-section">
+          <div class="bs-label">Mercado</div>
+          <div class="bs-options">
+            <div class="bs-opt active">Todos</div>
+            <div class="bs-opt">Savegnago</div>
+            <div class="bs-opt">Jaú Serve</div>
+            <div class="bs-opt">Paulistão</div>
+          </div>
+        </div>
+
+        <button class="bs-apply">Aplicar filtros</button>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>Início</div>
+        <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>Busca<div class="tab-dot"></div></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Mapa</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 14l2 2 4-4"/></svg>Lista</div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>Alertas</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== NOTAS ===== -->
+<div class="notes">
+  <h2>Decisões de design aplicadas</h2>
+
+  <div class="note">
+    <div class="note-title">Estado vazio inteligente</div>
+    <div class="note-desc">Buscas recentes com ícone de relógio — toque rápido para repetir. "Populares em Matão" com tags clicáveis — dinâmico por localização, mostra que o app tem dados relevantes da região. Transforma a busca de passiva em ativa.</div>
+  </div>
+
+  <div class="note">
+    <div class="note-title">Resultados agrupados por produto (Opção B)</div>
+    <div class="note-desc">"Cerveja Skol Lata 350ml" aparece uma vez com "a partir de R$ 3,49 · 4 mercados". O botão "4 mercados ›" leva pra tela de comparação entre mercados. Evita lista repetitiva e reforça o core do app: comparar preços.</div>
+  </div>
+
+  <div class="note">
+    <div class="note-title">Busca inteligente por mercado</div>
+    <div class="note-desc">Ao digitar "Savegnago", o app reconhece como mercado e mostra um card diferenciado com fundo teal no topo: nome, endereço, distância, ofertas, status. CTA "Ver todas as ofertas" leva pro perfil do mercado. Abaixo, lista as ofertas em destaque daquele mercado.</div>
+  </div>
+
+  <div class="note">
+    <div class="note-title">Ícone de filtro + bottom sheet</div>
+    <div class="note-desc">Ícone de funil no canto direito do search bar — sempre visível, pronto pra uso futuro. O bottom sheet tem três seções: distância máxima, faixa de preço, mercado específico. Botão "Aplicar filtros" fecha o sheet e atualiza resultados. Não precisa ser implementado agora, mas o espaço no design está previsto.</div>
+  </div>
+
+  <div class="note">
+    <div class="note-title">Badges nos resultados</div>
+    <div class="note-desc">Mesmos badges da Home: "Menor preço" (verde), "-X%" (amarelo), "Menor em 30d" (roxo). Consistência visual entre Home e Busca — o usuário aprende o sistema uma vez e reconhece em qualquer tela.</div>
+  </div>
+</div>
+
+<div class="footer">Poup — Busca v2 — 4 Cenários — Paleta Economia Verde — Março 2026</div>
+
+</body>
+</html>
