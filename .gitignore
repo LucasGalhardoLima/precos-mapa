@@ -56,3 +56,34 @@ scripts/.retailer-sitemap-cache.json
 scripts/.retailer-image-candidates.csv
 scripts/.retailer-exact-matches.csv
 scripts/.scrape-*
+
+# local AI-tool skill installs — .agents/skills holds the real fetched
+# content, every other dot-dir here is a per-tool symlink mirror of it
+# (see b714dd61, which excluded the same list from Vercel uploads as
+# "local tooling state, not app files" — this extends that to git).
+.agents
+.claude/skills
+/skills
+.codebuddy
+.commandcode
+.continue
+.crush
+.factory
+.goose
+.junie
+.kilocode
+.kiro
+.kode
+.mcpjam
+.mux
+.neovate
+.openhands
+.pi
+.pochi
+.qoder
+.qwen
+.roo
+.superpowers
+.trae
+.windsurf
+.zencoder
