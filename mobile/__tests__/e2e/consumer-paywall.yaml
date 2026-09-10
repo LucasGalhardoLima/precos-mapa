@@ -1,0 +1,55 @@
+# E2E: Consumer Free triggers the Poup Plus paywall from the account screen
+# Verifies the paywall modal renders with correct plan name and highlights
+# Auth: testconsumer@gmail.com / TestConsumer2026 (consumer role, free plan)
+appId: com.poup.consumer
+---
+- launchApp
+
+# Dismiss Expo Dev Client modals if present
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Poup"
+    optional: true
+
+# Sign in if on onboarding
+- runFlow:
+    when:
+      visible: "Começar"
+    commands:
+      - tapOn: "Já tenho conta"
+      - waitForAnimationToEnd
+      - tapOn: "Entrar com email"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Email"
+      - inputText: "testconsumer@gmail.com"
+      - hideKeyboard
+      - tapOn:
+          text: "Senha"
+      - inputText: "TestConsumer2026"
+      - hideKeyboard
+      - tapOn: "Entrar"
+      - extendedWaitUntil:
+          visible: "Início"
+          timeout: 10000
+
+# Dismiss iOS "Save Password?" dialog if present
+- runFlow:
+    when:
+      visible: "Agora Não"
+    commands:
+      - tapOn: "Agora Não"
+      - waitForAnimationToEnd
+
+# Open paywall from upgrade CTA on account screen (visible for free users)
+- runFlow:
+    when:
+      visible: "Conhecer o Poup Plus"
+    commands:
+      - tapOn: "Conhecer o Poup Plus"
+      - waitForAnimationToEnd
+      # Verify paywall rendered with key content
+      - assertVisible: "Plus"
+      - assertVisible: "Favoritos e alertas ilimitados"

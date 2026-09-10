@@ -1,0 +1,65 @@
+# E2E: Consumer searches for a product and opens its detail screen
+# Precondition: Supabase must have promotions matching "Arroz"
+# Auth: testconsumer@gmail.com / TestConsumer2026 (consumer role)
+appId: com.poup.consumer
+---
+- launchApp
+
+# Dismiss Expo Dev Client modals if present
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Poup"
+    optional: true
+
+# Sign in if on onboarding
+- runFlow:
+    when:
+      visible: "Começar"
+    commands:
+      - tapOn: "Já tenho conta"
+      - waitForAnimationToEnd
+      - tapOn: "Entrar com email"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Email"
+      - inputText: "testconsumer@gmail.com"
+      - hideKeyboard
+      - tapOn:
+          text: "Senha"
+      - inputText: "TestConsumer2026"
+      - hideKeyboard
+      - tapOn: "Entrar"
+      - extendedWaitUntil:
+          visible: "Início"
+          timeout: 10000
+
+# Dismiss iOS "Save Password?" dialog if present
+- runFlow:
+    when:
+      visible: "Agora Não"
+    commands:
+      - tapOn: "Agora Não"
+      - waitForAnimationToEnd
+
+# Navigate to search tab
+- tapOn: "Busca"
+- waitForAnimationToEnd
+
+# Search for a product with known results
+- tapOn:
+    text: "Buscar produto..."
+- inputText: "Arroz"
+- pressKey: Enter
+- waitForAnimationToEnd
+
+# Tap the first result
+- tapOn:
+    text: "Arroz"
+    index: 0
+- waitForAnimationToEnd
+
+# Verify product detail screen loaded
+- assertVisible:
+    text: "Arroz"

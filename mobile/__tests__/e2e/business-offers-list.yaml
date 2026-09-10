@@ -1,0 +1,44 @@
+# E2E: Business user opens Ofertas tab and verifies the offers list screen
+# Note: offer creation via UI is not yet enabled (button is disabled).
+#       This flow verifies the list renders without errors.
+# Auth: testbusiness@gmail.com / TestBusiness2026 (business role)
+appId: com.poup.consumer
+---
+- launchApp
+
+# Dismiss Expo Dev Client modals if present
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Poup"
+    optional: true
+
+# Sign in if on onboarding
+- runFlow:
+    when:
+      visible: "Começar"
+    commands:
+      - tapOn: "Já tenho conta"
+      - waitForAnimationToEnd
+      - tapOn: "Entrar com email"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Email"
+      - inputText: "testbusiness@gmail.com"
+      - hideKeyboard
+      - tapOn:
+          text: "Senha"
+      - inputText: "TestBusiness2026"
+      - hideKeyboard
+      - tapOn: "Entrar"
+      - extendedWaitUntil:
+          visible: "Dashboard"
+          timeout: 10000
+
+# Navigate to Ofertas tab
+- tapOn: "Ofertas"
+- waitForAnimationToEnd
+
+# Verify offers screen renders
+- assertVisible: "Ofertas"

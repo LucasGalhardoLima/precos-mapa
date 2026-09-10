@@ -1,0 +1,54 @@
+# E2E: Consumer opens account tab, verifies profile and settings sections
+# Auth: testconsumer@gmail.com / TestConsumer2026 (consumer role)
+appId: com.poup.consumer
+---
+- launchApp
+
+# Dismiss Expo Dev Client modals if present
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Poup""
+    optional: true
+
+# Sign in if on onboarding
+- runFlow:
+    when:
+      visible: "Começar"
+    commands:
+      - tapOn: "Já tenho conta"
+      - waitForAnimationToEnd
+      - tapOn: "Entrar com email"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Email"
+      - inputText: "testconsumer@gmail.com"
+      - hideKeyboard
+      - tapOn:
+          text: "Senha"
+      - inputText: "TestConsumer2026"
+      - hideKeyboard
+      - tapOn: "Entrar"
+      - extendedWaitUntil:
+          visible: "Início"
+          timeout: 10000
+
+# Dismiss iOS "Save Password?" dialog if present
+- runFlow:
+    when:
+      visible: "Agora Não"
+    commands:
+      - tapOn: "Agora Não"
+      - waitForAnimationToEnd
+
+# The consumer app uses a floating tab bar — tap the profile/account tab
+# The account tab is accessible from the home screen
+- scrollToElement:
+    text: "Alertas de oferta"
+    optional: true
+
+# Verify key settings rows
+- assertVisible: "Alertas de oferta"
+- assertVisible: "Meus favoritos"
+- assertVisible: "Sair"

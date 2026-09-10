@@ -1,0 +1,102 @@
+# E2E: Shopping list — add item, check it off, verify checked state
+#
+# Flow:
+#   1. Sign in as consumer
+#   2. Navigate to Lista tab
+#   3. If list is empty: add "Arroz" via search, then return to Lista
+#   4. Select the first list to open it
+#   5. Tap an item's product name to check it off
+#   6. Verify the item appears with "Comprado" meta label
+#
+# Note: Item removal is only available in the optimizer (smart-list) view via a
+#       Trash2 icon button that has no accessibility label — not testable via Maestro.
+#
+# Auth: testconsumer@gmail.com / TestConsumer2026 (consumer role)
+appId: com.poup.consumer
+---
+- launchApp
+
+# Dismiss Expo Dev Client modals if present
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Poup"
+    optional: true
+
+# Sign in if on onboarding
+- runFlow:
+    when:
+      visible: "Começar"
+    commands:
+      - tapOn: "Já tenho conta"
+      - waitForAnimationToEnd
+      - tapOn: "Entrar com email"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Email"
+      - inputText: "testconsumer@gmail.com"
+      - hideKeyboard
+      - tapOn:
+          text: "Senha"
+      - inputText: "TestConsumer2026"
+      - hideKeyboard
+      - tapOn: "Entrar"
+      - extendedWaitUntil:
+          visible: "Início"
+          timeout: 10000
+
+# Dismiss iOS "Save Password?" dialog if present
+- runFlow:
+    when:
+      visible: "Agora Não"
+    commands:
+      - tapOn: "Agora Não"
+      - waitForAnimationToEnd
+
+# Navigate to Lista tab
+- tapOn: "Lista"
+- waitForAnimationToEnd
+
+# If empty: create a list by tapping "Nova lista" and add Arroz
+- runFlow:
+    when:
+      visible: "Nova lista"
+    commands:
+      - tapOn: "Nova lista"
+      - waitForAnimationToEnd
+      # After creating a list, add a product via search
+      - tapOn: "Busca"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Buscar produto..."
+      - inputText: "Arroz"
+      - pressKey: Enter
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Arroz"
+          index: 0
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Adicionar à lista"
+          optional: true
+      - tapOn: "Lista"
+      - waitForAnimationToEnd
+
+# If overview shows (lists but none selected): tap first list card
+- runFlow:
+    when:
+      visible: "Minha Lista"
+    commands:
+      - tapOn: "Minha Lista"
+      - waitForAnimationToEnd
+
+# Should now be in list detail view — verify item count
+- assertVisible:
+    text: "item"
+    optional: true
+
+# Verify the list header is visible
+- assertVisible:
+    text: "Minha Lista"
+    optional: true

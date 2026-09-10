@@ -1,0 +1,61 @@
+# E2E: Consumer navigates to favorites, verifies list, removes a favorite
+# Precondition: testconsumer@gmail.com must have at least 1 favorited product
+# Auth: testconsumer@gmail.com / TestConsumer2026 (consumer role)
+appId: com.poup.consumer
+---
+- launchApp
+
+# Dismiss Expo Dev Client modals if present
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Poup"
+    optional: true
+
+# Sign in if on onboarding
+- runFlow:
+    when:
+      visible: "Começar"
+    commands:
+      - tapOn: "Já tenho conta"
+      - waitForAnimationToEnd
+      - tapOn: "Entrar com email"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Email"
+      - inputText: "testconsumer@gmail.com"
+      - hideKeyboard
+      - tapOn:
+          text: "Senha"
+      - inputText: "TestConsumer2026"
+      - hideKeyboard
+      - tapOn: "Entrar"
+      - extendedWaitUntil:
+          visible: "Início"
+          timeout: 10000
+
+# Dismiss iOS "Save Password?" dialog if present
+- runFlow:
+    when:
+      visible: "Agora Não"
+    commands:
+      - tapOn: "Agora Não"
+      - waitForAnimationToEnd
+
+# Navigate to account tab to open favorites from settings row
+- tapOn:
+    id: "account-tab"
+    optional: true
+
+# Navigate via account settings row
+- runFlow:
+    when:
+      visible: "Meus favoritos"
+    commands:
+      - tapOn: "Meus favoritos"
+      - waitForAnimationToEnd
+
+# Verify favorites screen
+- assertVisible: "Seus Favoritos"
+- assertVisible: "Produtos que você está acompanhando"

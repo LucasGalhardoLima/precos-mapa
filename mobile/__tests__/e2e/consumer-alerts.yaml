@@ -1,0 +1,86 @@
+# E2E: Alert tab — empty state, create-alert CTA routes to search
+#
+# Flow:
+#   1. Sign in as consumer
+#   2. Navigate to Alertas tab
+#   3. Verify screen title is visible
+#   4. If empty state: verify "Criar primeiro alerta" CTA, tap it → lands on search tab
+#   5. If alerts exist: verify "Monitorando" section and "+ Novo" button are visible
+#
+# Note: Alert deletion is not available in the current UI (alerts can only be toggled
+#       on/off). Creating an alert routes through Search → Product Detail.
+#
+# Auth: testconsumer@gmail.com / TestConsumer2026 (consumer role)
+appId: com.poup.consumer
+---
+- launchApp
+
+# Dismiss Expo Dev Client modals if present
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Poup"
+    optional: true
+
+# Sign in if on onboarding
+- runFlow:
+    when:
+      visible: "Começar"
+    commands:
+      - tapOn: "Já tenho conta"
+      - waitForAnimationToEnd
+      - tapOn: "Entrar com email"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Email"
+      - inputText: "testconsumer@gmail.com"
+      - hideKeyboard
+      - tapOn:
+          text: "Senha"
+      - inputText: "TestConsumer2026"
+      - hideKeyboard
+      - tapOn: "Entrar"
+      - extendedWaitUntil:
+          visible: "Início"
+          timeout: 10000
+
+# Dismiss iOS "Save Password?" dialog if present
+- runFlow:
+    when:
+      visible: "Agora Não"
+    commands:
+      - tapOn: "Agora Não"
+      - waitForAnimationToEnd
+
+# Navigate to Alertas tab
+- tapOn: "Alertas"
+- waitForAnimationToEnd
+
+# Verify the alerts screen loaded
+- assertVisible: "Alertas"
+
+# Branch: empty state
+- runFlow:
+    when:
+      visible: "Criar primeiro alerta"
+    commands:
+      # Verify suggested products section
+      - assertVisible: "Sugestões perto de você"
+      # Tap the main CTA — should route to search tab
+      - tapOn: "Criar primeiro alerta"
+      - waitForAnimationToEnd
+      # Search tab should now be active
+      - assertVisible: "Buscar produto..."
+
+# Branch: alerts exist
+- runFlow:
+    when:
+      visible: "+ Novo"
+    commands:
+      # Verify list sections render
+      - assertVisible: "+ Novo"
+      # Tap "+ Novo" → also routes to search
+      - tapOn: "+ Novo"
+      - waitForAnimationToEnd
+      - assertVisible: "Buscar produto..."

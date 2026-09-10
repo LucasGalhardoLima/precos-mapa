@@ -1,0 +1,44 @@
+# E2E: Business user opens Loja (store profile) tab and verifies form fields
+# Auth: testbusiness@gmail.com / TestBusiness2026 (business role)
+appId: com.poup.consumer
+---
+- launchApp
+
+# Dismiss Expo Dev Client modals if present
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Poup"
+    optional: true
+
+# Sign in if on onboarding
+- runFlow:
+    when:
+      visible: "Começar"
+    commands:
+      - tapOn: "Já tenho conta"
+      - waitForAnimationToEnd
+      - tapOn: "Entrar com email"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Email"
+      - inputText: "testbusiness@gmail.com"
+      - hideKeyboard
+      - tapOn:
+          text: "Senha"
+      - inputText: "TestBusiness2026"
+      - hideKeyboard
+      - tapOn: "Entrar"
+      - extendedWaitUntil:
+          visible: "Dashboard"
+          timeout: 10000
+
+# Navigate to Loja tab
+- tapOn: "Loja"
+- waitForAnimationToEnd
+
+# Verify store profile form fields are present
+- assertVisible: "Nome da loja"
+- assertVisible: "Endereço"
+- assertVisible: "Cidade"
