@@ -37,7 +37,6 @@ const OLLAMA_URL = process.env.OLLAMA_URL ?? "http://localhost:11434";
 const MODEL = process.env.OLLAMA_MODEL ?? "phi4:14b";
 const FETCH_PAGE = 1000;
 const BATCH_SIZE = Number(process.env.LLM_BATCH_SIZE ?? 60);
-const WRITE_BATCH = 500;
 const DRY_RUN = process.argv.includes("--dry-run");
 const limitArg = process.argv.indexOf("--limit");
 const LIMIT = limitArg !== -1 ? Number(process.argv[limitArg + 1]) : undefined;
@@ -168,7 +167,13 @@ async function main() {
       }
     }
 
-    if (pending.length >= WRITE_BATCH) await flush();
+    // Flush after every LLM batch, not once WRITE_BATCH accumulates: this is a
+    // multi-hour unattended run, and it already got killed once by the host
+    // running low on memory mid-run — losing everything since the last flush
+    // (WRITE_BATCH=500 meant up to ~6,300 processed items of extraction could
+    // vanish unwritten). At most one batch's worth of work (60 items, ~2min)
+    // is now at risk instead.
+    await flush();
 
     const done = Math.min(i + BATCH_SIZE, products.length);
     console.log(`  ${done}/${products.length} processed — extracted ${extracted}, rejected ${rejected}, batch failures ${batchFailures}`);
