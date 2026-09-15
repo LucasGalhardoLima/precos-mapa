@@ -1,4 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import { parseProductSize } from "./parse-product-size";
 
 // `unidades?` must precede `un` in the alternation — "Unidades" would
 // otherwise satisfy the shorter `un` branch up to the `\b` check, which
@@ -181,6 +182,7 @@ export async function findOrCreateProduct(
   }
 
   // 3. No match — create new product
+  const size = parseProductSize(normalizedName);
   const { data, error } = await supabase
     .from("products")
     .insert({
@@ -188,6 +190,7 @@ export async function findOrCreateProduct(
       category_id: input.categoryId ?? (isProduce ? "cat_hortifruti" : "cat_alimentos"),
       brand: input.brand ?? null,
       reference_price: input.referencePrice,
+      ...(size ? { size_value: size.value, size_unit: size.unit } : {}),
     })
     .select("id")
     .single();
