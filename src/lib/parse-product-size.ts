@@ -81,6 +81,11 @@ const RAW_VALUE_CEILING = 99_999; // no real pack quantity is a 5+ digit number
 const MULTIPLIER_COUNT_CEILING = 1_000; // no SKU is "1,000x" anything
 const BASE_CEILINGS: Record<SizeUnit, number> = { g: 50_000, ml: 50_000, un: 5_000, m: 500 };
 
+/** Exported so other size extractors (e.g. an LLM pass) can validate against the same bounds instead of duplicating them. */
+export function isSaneSize(value: number, unit: SizeUnit): boolean {
+  return Number.isFinite(value) && value > 0 && value <= BASE_CEILINGS[unit];
+}
+
 function toBaseIfSane(rawValue: number, rawUnit: string): ParsedSize | null {
   if (rawValue > RAW_VALUE_CEILING) return null;
   const base = toBase(rawValue, rawUnit);
