@@ -226,6 +226,7 @@ interface ScrapedProduct {
   price: number;
   isPromo: boolean;
   originalPrice: number | null;
+  imageUrl: string | null;
 }
 
 /**
@@ -287,6 +288,11 @@ function parseProductPage(html: string): ScrapedProduct | null {
   const brandMatch = html.match(/Marca:\s*([^<]+)<\/li>/);
   const brand = brandMatch ? brandMatch[1].trim() : null;
 
+  // Main slide of the product's photo gallery — already present in the same
+  // page fetch used for name/price/EAN, so this costs no extra request.
+  const imageMatch = html.match(/<img src="(https:\/\/online\.grupoamarelinha\.com\.br\/product_picture\.php\?[^"]+)"/);
+  const imageUrl = imageMatch ? imageMatch[1] : null;
+
   return {
     ean,
     name: nameMatch[1].replace(/\s+/g, ' ').trim(),
@@ -294,6 +300,7 @@ function parseProductPage(html: string): ScrapedProduct | null {
     price,
     isPromo,
     originalPrice: originalPrice != null && Number.isFinite(originalPrice) && originalPrice > 0 ? originalPrice : null,
+    imageUrl,
   };
 }
 
@@ -437,6 +444,24 @@ async function main() {
               originalPrice: parsed.originalPrice,
               promoPrice: parsed.price,
             });
+          }
+        }
+
+        // Image is a free ride on the same page fetch already used for
+        // price — must never be able to take a price write down with it.
+        // Never overwrites an existing image_url (source priority is
+        // retailer > OFF; `.is('image_url', null)` enforces that at the
+        // query level), and any failure here is swallowed since every
+        // store_prices row above has already been written by this point.
+        if (parsed.imageUrl) {
+          try {
+            await supabase
+              .from('products')
+              .update({ image_url: parsed.imageUrl, image_source: 'amarelinha' })
+              .eq('id', productId)
+              .is('image_url', null);
+          } catch (imgErr) {
+            console.warn(`  [image_url write failed] ${url}: ${imgErr}`);
           }
         }
 
