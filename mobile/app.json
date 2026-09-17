@@ -19,7 +19,7 @@
       "bundleIdentifier": "com.poup.consumer",
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
-      "deploymentTarget": "13.0",
+      "deploymentTarget": "16.4",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Precisamos da sua localização para mostrar lojas e ofertas perto de você.",
         "ITSAppUsesNonExemptEncryption": false
@@ -91,13 +91,23 @@
         {
           "ios": {
             "extraPods": [
-              { "name": "AppCheckCore", "modular_headers": true },
-              { "name": "GoogleUtilities", "modular_headers": true },
-              { "name": "RecaptchaInterop", "modular_headers": true }
+              {
+                "name": "AppCheckCore",
+                "modular_headers": true
+              },
+              {
+                "name": "GoogleUtilities",
+                "modular_headers": true
+              },
+              {
+                "name": "RecaptchaInterop",
+                "modular_headers": true
+              }
             ]
           }
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "extra": {
       "router": {},
