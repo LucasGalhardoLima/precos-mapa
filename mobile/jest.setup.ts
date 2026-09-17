@@ -82,20 +82,6 @@ jest.mock('expo-constants', () => ({
   },
 }));
 
-// Mock react-native-purchases
-jest.mock('react-native-purchases', () => ({
-  Purchases: {
-    configure: jest.fn(),
-    logIn: jest.fn().mockResolvedValue({ customerInfo: {} }),
-    getCustomerInfo: jest.fn().mockResolvedValue({
-      entitlements: { active: {} },
-    }),
-    addCustomerInfoUpdateListener: jest.fn(() => ({ remove: jest.fn() })),
-    getOfferings: jest.fn().mockResolvedValue({ current: null }),
-  },
-  LOG_LEVEL: { DEBUG: 0, INFO: 1 },
-}));
-
 // Mock @react-native-google-signin/google-signin
 jest.mock('@react-native-google-signin/google-signin', () => ({
   GoogleSignin: {
