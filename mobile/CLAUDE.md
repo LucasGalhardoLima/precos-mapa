@@ -104,4 +104,4 @@ Pronto = typecheck limpo + testes de hook passando + screenshot conferido contra
 
 - Símbolo do app: usar `assets/poup-mark.svg` (via `react-native-svg`), ~200 px, sem fundo, sem wordmark. O `assets/poup-mark.png` é só referência.
 - Logos monocromáticos dos 4 mercados (SVG, 28 px) para o ONDE.
-- Foto de produto: só no cabeçalho da Resposta. Na lista, só quando a cobertura de `image_url` passar de 85% — hoje não passa; não implementar na lista.
+- Foto de produto: no cabeçalho da Resposta e na lista (Raiz e Resultado). Cobertura de `image_url` em 91,7% (cohort ≤14 dias, 17/09), acima do gate de 85%. Sem `image_url`: sem miniatura e sem quadrado cinza — a linha fecha o espaço. Fonte é só o varejista; OpenFoodFacts não entra no MLP.

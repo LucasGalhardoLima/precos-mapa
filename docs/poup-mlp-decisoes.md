@@ -63,7 +63,7 @@ Artefato: https://claude.ai/artifact/2iTFp1CFYKN3kVAtMr6p8C (design system + Rai
 
 O sócio aprovou o protótipo integralmente e pediu só visual. Os mockups que ele mandou como referência trazem features já descartadas (categorias no onboarding, ofertas, lista, semáforo, dicas, histórico) — tratados como tom, não como pedido de função. O que entrou:
 
-**Foto do produto.** Só no cabeçalho da Resposta no lançamento; sem placeholder (sem imagem, o título ocupa a largura). Na lista (Raiz/Resultado) entra quando a cobertura de `image_url` entre produtos com preço fresco (≤14 dias) passar de 85% — hoje 43,9% (9.542 de 21.745). Enrich rodando nos 12.203 sem imagem, EAN primeiro, com medição antes/depois.
+**Foto do produto.** No cabeçalho da Resposta e na lista (Raiz/Resultado). Gate de 85% de cobertura de `image_url` entre produtos com preço fresco (≤14 dias) cumprido em 17/09: 91,7% (43,9% → backfill por EAN Savegnago → imagem dos scrapers Amarelinha #44, Savegnago #45, Tenda #47). Sem imagem: sem placeholder, a linha fecha o espaço. OpenFoodFacts fora do MLP.
 
 **Logo do mercado.** Só no ONDE da Resposta e na folha "trocar": 28 px, monocromático em tinta (cinza quando "há N dias"), mesmo tratamento para os 4. Raiz e Resultado seguem só texto. Uso nominativo: uma linha nos termos; conversar com cada rede no B2B.
 
