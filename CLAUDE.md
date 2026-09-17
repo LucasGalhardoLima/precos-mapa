@@ -37,4 +37,5 @@ TypeScript 5.9 (strict mode): Follow standard conventions
 - 001-grocery-price-compare: Added TypeScript 5.9 (strict mode)
 
 <!-- MANUAL ADDITIONS START -->
+- **Mobile MLP**: leia `mobile/CLAUDE.md` antes de qualquer trabalho em `mobile/`. Decisões em `docs/poup-mlp-decisoes.md`.
 <!-- MANUAL ADDITIONS END -->
