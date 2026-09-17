@@ -527,6 +527,25 @@ async function main() {
           );
           if (upsertError) console.warn(`  [store_prices upsert failed] ${parsed.productId}: ${upsertError.message}`);
 
+          // Image is a free ride on data already fetched for the price (no
+          // extra request) — but it must never be able to take the price
+          // down with it. Never overwrites an existing image_url (source
+          // priority is retailer > OFF; `.is('image_url', null)` enforces
+          // that at the query level, same pattern as scrape-jauserve-prices.ts),
+          // and any failure here is swallowed so it can't affect the
+          // store_prices write above, which has already happened by now.
+          if (parsed.imageUrl) {
+            try {
+              await supabase
+                .from('products')
+                .update({ image_url: parsed.imageUrl, image_source: 'savegnago' })
+                .eq('id', productId)
+                .is('image_url', null);
+            } catch (imgErr) {
+              console.warn(`  [image_url write failed] ${parsed.productId}: ${imgErr}`);
+            }
+          }
+
           if (parsed.isPromo) {
             await syncCrawlerPromotion(supabase, {
               productId,
