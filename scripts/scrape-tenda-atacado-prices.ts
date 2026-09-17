@@ -246,6 +246,7 @@ interface TendaApiProduct {
   brand: string | null;
   availability: string | null;
   inventory?: TendaInventoryEntry[];
+  thumbnail?: string | null;
 }
 
 interface TendaCategoryResponse {
@@ -266,6 +267,7 @@ interface DiscoveredProduct {
   availability: string | null;
   mataoStock: number | null; // null = branch not found in inventory[] (unknown, not excluded)
   categoryId: string; // our internal categories.id, from the department this SKU was first seen under
+  thumbnail: string | null;
 }
 
 /**
@@ -416,6 +418,7 @@ async function discoverCatalog(cartId: string, branchId: string): Promise<Map<st
           availability: p.availability ?? null,
           mataoStock: mataoInventory ? mataoInventory.totalAvailable : null,
           categoryId: DEPARTMENT_TO_CATEGORY[dept.name] ?? 'cat_alimentos',
+          thumbnail: p.thumbnail ?? null,
         });
         deptNew++;
       }
@@ -559,6 +562,24 @@ async function main() {
           { onConflict: 'product_id,store_id' },
         );
         if (upsertError) console.warn(`  [store_prices upsert failed] sku=${p.sku}: ${upsertError.message}`);
+
+        // Image is a free ride on the category-listing response already
+        // fetched for price/stock — no extra request. Must never be able to
+        // take the price write above down with it. Never overwrites an
+        // existing image_url (source priority is retailer > OFF;
+        // `.is('image_url', null)` enforces that at the query level), and
+        // any failure here is swallowed.
+        if (p.thumbnail) {
+          try {
+            await supabase
+              .from('products')
+              .update({ image_url: p.thumbnail, image_source: 'tenda' })
+              .eq('id', productId)
+              .is('image_url', null);
+          } catch (imgErr) {
+            console.warn(`  [image_url write failed] sku=${p.sku}: ${imgErr}`);
+          }
+        }
       }
 
       reviewRows.push(
