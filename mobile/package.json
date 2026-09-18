@@ -64,7 +64,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
+    "@babel/generator": "^7.29.8",
     "@babel/plugin-transform-react-jsx": "^7.29.7",
+    "@babel/traverse": "^7.29.8",
+    "@babel/types": "^7.29.8",
     "@expo/config-plugins": "^57.0.9",
     "@react-native/assets-registry": "^0.86.3",
     "@react-native/jest-preset": "^0.86.3",
