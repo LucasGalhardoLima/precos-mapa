@@ -29,7 +29,7 @@ export function SearchField({ value, onChangeText, placeholder = 'buscar produto
         style={[styles.input, { color: focused ? colors.ink : colors.secondary }]}
       />
       {focused && value.length > 0 && (
-        <Pressable onPress={() => onChangeText('')} accessibilityRole="button" accessibilityLabel="Limpar busca">
+        <Pressable onPress={() => onChangeText('')} accessibilityRole="button" accessibilityLabel="Limpar busca" style={styles.clearTarget}>
           <X size={20} color={colors.absence} strokeWidth={2.2} />
         </Pressable>
       )}
@@ -51,6 +51,13 @@ const styles = StyleSheet.create({
   },
   focused: {
     borderColor: colors.brand,
+  },
+  clearTarget: {
+    width: targets.touch,
+    height: targets.touch,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -spacing.md, // touch target stays 44, icon stays 14 from the field's edge (mirrors the search icon)
   },
   input: {
     flex: 1,

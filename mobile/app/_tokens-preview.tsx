@@ -29,12 +29,15 @@ export default function TokensPreview() {
   const [selected, setSelected] = useState<Record<string, boolean>>({ Arroz: true, Detergente: false });
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: spacing.xl }}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{ padding: spacing.xl }}
+      automaticallyAdjustKeyboardInsets
+    >
       <Text style={{ ...typography.title, color: colors.ink, marginBottom: spacing.xl }}>Design system — preview</Text>
 
       <Section title="Botão preenchido (52 px)">
         <FilledButton label="Usar minha localização ›" onPress={() => {}} />
-        <FilledButton label="Desabilitado" onPress={() => {}} disabled />
       </Section>
 
       <Section title="Texto-link com chevron">
