@@ -49,6 +49,26 @@ function getCityStateFromGeocode(result: Location.LocationGeocodedAddress): City
   };
 }
 
+/**
+ * Reads the foreground location permission, showing the system dialog only
+ * when `prompt` is true. `definitive` is false for a prompt-free read of
+ * "undetermined": that means "never asked", not "denied", so callers must not
+ * record it as a refusal. Exported for unit tests (no react-test-renderer in
+ * this repo to render the hook).
+ */
+export async function readForegroundPermission(
+  prompt: boolean
+): Promise<{ granted: boolean; definitive: boolean }> {
+  const { status } = prompt
+    ? await Location.requestForegroundPermissionsAsync()
+    : await Location.getForegroundPermissionsAsync();
+
+  return {
+    granted: status === 'granted',
+    definitive: prompt || status !== 'undetermined',
+  };
+}
+
 export function calculateDistanceKm(
   lat1: number,
   lon1: number,
@@ -68,7 +88,20 @@ export function calculateDistanceKm(
   return Math.round(R * c * 10) / 10;
 }
 
-export function useLocation() {
+type UseLocationOptions = {
+  /**
+   * When false, mounting the hook never shows the system permission dialog:
+   * it only reads the permission status that already exists (and resolves the
+   * device location if that status is already "granted"). `requestPermission()`
+   * still prompts. Default true keeps the original behavior for every caller
+   * that doesn't pass options. Needed by screens that must ask with context
+   * first (the MLP onboarding) and by useAnalytics, which mounts this hook
+   * on every screen just to read the region.
+   */
+  autoRequest?: boolean;
+};
+
+export function useLocation({ autoRequest = true }: UseLocationOptions = {}) {
   const [location, setLocation] = useState({
     latitude: FALLBACK_LOCATION.latitude,
     longitude: FALLBACK_LOCATION.longitude,
@@ -90,11 +123,10 @@ export function useLocation() {
   // Shared by the initial mount effect and requestPermission() below — the
   // latter lets a screen re-prompt a user who skipped location during
   // onboarding, without duplicating the permission/geocode logic.
-  const resolveDeviceLocation = useCallback(async () => {
+  const resolveDeviceLocation = useCallback(async (prompt: boolean) => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      const granted = status === 'granted';
-      setPermissionGranted(granted);
+      const { granted, definitive } = await readForegroundPermission(prompt);
+      if (definitive) setPermissionGranted(granted);
 
       if (granted) {
         const pos = await Location.getCurrentPositionAsync({
@@ -135,7 +167,7 @@ export function useLocation() {
           }
         }
 
-        await resolveDeviceLocation();
+        await resolveDeviceLocation(autoRequest);
       } finally {
         setIsLoading(false);
       }
@@ -145,8 +177,10 @@ export function useLocation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Takes no arguments on purpose: legacy screens pass it straight to onPress,
+  // which would hand it a press event.
   const requestPermission = useCallback(async () => {
-    return resolveDeviceLocation();
+    return resolveDeviceLocation(true);
   }, [resolveDeviceLocation]);
 
   const setPreferredCity = useCallback(async (city: string, state: string) => {
