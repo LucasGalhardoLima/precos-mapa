@@ -75,6 +75,7 @@ Estas não são preferências. Uma PR que quebra qualquer uma volta.
 - **Instrumentação**: todo evento listado na decisão 15 é emitido via `use-analytics`, anônimo. Tela nova sem eventos não está pronta.
 - **Sem `legacy/`**: nenhum import, nenhum copy-paste de componente. Se precisa de algo de lá, reescreva com os tokens novos.
 - **Sem estado global novo** sem justificativa no PR. O app é dirigido por dados do servidor; Zustand só se realmente necessário.
+- **Pressable**: `style` sempre como array estático, nunca função `({pressed}) => …` (o NativeWind descarta o estilo); estado pressionado via `className` condicional ou opacity no filho.
 
 ## Ordem de construção
 
