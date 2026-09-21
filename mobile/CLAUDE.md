@@ -56,6 +56,8 @@ Renomeados para o vocabulário do MLP. Os antigos ficam em `legacy/hooks/` como 
 | `use-cities.ts` | `use-cities.ts` | "digitar minha cidade" no onboarding |
 | `use-haptics.ts` | `use-haptics.ts` | vibração na leitura do scanner |
 
+Folha 'escolher tipo' lê `products` direto (nome, tamanho, EAN); o RPC search_products_with_prices é só da Resultado.
+
 Não existe "favorito", "alerta" separado de item, "lista" ou "oferta" no vocabulário. Se um hook antigo usa esses nomes por dentro, adapte a interface pública; não vaze o termo para a UI.
 
 Scanner usa `react-native-vision-camera` (já instalado). Câmera é pedida no primeiro toque em "Escanear", nunca no onboarding.
