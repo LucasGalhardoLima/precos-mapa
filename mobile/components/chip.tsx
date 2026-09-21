@@ -10,7 +10,8 @@ interface ChipProps {
 
 // Onboarding step-2 category chips. Verified exactly on the artifact,
 // including the on/off color+weight pairing (own inline state logic, not a
-// design-system-page swatch).
+// design-system-page swatch). The ✓ comes AFTER the label (artifact 7b:
+// `{label}<svg check>`, stroke 3) — Etapa 2 had it before, fixed in Etapa 3.
 export function Chip({ label, selected, onToggle }: ChipProps) {
   return (
     <Pressable
@@ -19,10 +20,10 @@ export function Chip({ label, selected, onToggle }: ChipProps) {
       accessibilityRole="button"
       accessibilityState={{ selected }}
     >
-      {selected && <Check size={16} color={colors.brandInk} strokeWidth={2.5} />}
       <Text style={[styles.label, { color: selected ? colors.brandInk : colors.ink, fontFamily: selected ? fontFamily.bold : fontFamily.medium }]}>
         {label}
       </Text>
+      {selected && <Check size={16} color={colors.brandInk} strokeWidth={3} />}
     </Pressable>
   );
 }
