@@ -106,3 +106,7 @@ Pronto = typecheck limpo + testes de hook passando + screenshot conferido contra
 - Símbolo do app: usar `assets/poup-mark.svg` (via `react-native-svg`), ~200 px, sem fundo, sem wordmark. O `assets/poup-mark.png` é só referência.
 - Logos monocromáticos dos 4 mercados (SVG, 28 px) para o ONDE.
 - Foto de produto: no cabeçalho da Resposta e na lista (Raiz e Resultado). Cobertura de `image_url` em 91,7% (cohort ≤14 dias, 17/09), acima do gate de 85%. Sem `image_url`: sem miniatura e sem quadrado cinza — a linha fecha o espaço. Fonte é só o varejista; OpenFoodFacts não entra no MLP.
+
+## Pendências para a Etapa 4
+
+- **Texto do diálogo de permissão de localização** (exige rebuild nativo, por isso não foi feito na Etapa 3). Hoje, nos dois lugares do `mobile/app.json` — `ios.infoPlist.NSLocationWhenInUseUsageDescription` e a opção `locationWhenInUsePermission` do plugin `expo-location` — o texto é "Precisamos da sua localização para mostrar lojas e ofertas perto de você.", e "ofertas" está fora do vocabulário do MLP. Trocar por: "O Poup usa sua localização para saber qual mercado de Matão está mais perto de você."
