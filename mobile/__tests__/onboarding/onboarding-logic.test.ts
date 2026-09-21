@@ -10,6 +10,11 @@ import {
   isCovered,
   filterCities,
   ctaLabel,
+  parseDefaultSize,
+  formatSize,
+  displayProductName,
+  nameVariants,
+  isValidEmail,
   saveOnboarding,
   loadOnboarding,
   type CoveredCity,
@@ -81,8 +86,17 @@ describe('GENERIC_ITEMS', () => {
 describe('saveOnboarding / loadOnboarding', () => {
   beforeEach(() => AsyncStorage.clear());
 
-  it('round-trips the chosen items and area', async () => {
-    const result = { items: [GENERIC_ITEMS[0], GENERIC_ITEMS[2]], area: 'covered' as const };
+  it('round-trips generic and pinned items and the area', async () => {
+    const result = {
+      items: [
+        {
+          ...GENERIC_ITEMS[0],
+          product: { id: 'p1', name: 'Arroz Tio João Tipo 1', ean: '7896006711117', imageUrl: null, size: '5 kg' },
+        },
+        { ...GENERIC_ITEMS[2], product: null },
+      ],
+      area: 'covered' as const,
+    };
     await saveOnboarding(result);
     expect(await loadOnboarding()).toEqual(result);
   });
@@ -94,5 +108,87 @@ describe('saveOnboarding / loadOnboarding', () => {
   it('returns null for corrupt stored JSON instead of throwing', async () => {
     await AsyncStorage.setItem('poup:onboarding', '{not json');
     expect(await loadOnboarding()).toBeNull();
+  });
+});
+
+describe('parseDefaultSize', () => {
+  it.each([
+    ['5 kg', { value: 5000, unit: 'g' }],
+    ['1 kg', { value: 1000, unit: 'g' }],
+    ['500 g', { value: 500, unit: 'g' }],
+    ['1 L', { value: 1000, unit: 'ml' }],
+    ['2 L', { value: 2000, unit: 'ml' }],
+    ['900 ml', { value: 900, unit: 'ml' }],
+    ['30 un', { value: 30, unit: 'un' }],
+  ])('%s is stored as base units', (size, expected) => {
+    expect(parseDefaultSize(size)).toEqual(expected);
+  });
+
+  it('returns null where products.size_* has no counterpart, so no size is claimed', () => {
+    expect(parseDefaultSize('12 rolos')).toBeNull(); // not a unit the size parser knows
+    expect(parseDefaultSize('kg')).toBeNull(); // no number
+  });
+
+  it('covers every generic item without throwing', () => {
+    for (const item of GENERIC_ITEMS) expect(() => parseDefaultSize(item.size)).not.toThrow();
+  });
+});
+
+describe('formatSize', () => {
+  it('turns base units back into what a person reads', () => {
+    expect(formatSize(5000, 'g')).toBe('5 kg');
+    expect(formatSize(1500, 'g')).toBe('1,5 kg');
+    expect(formatSize(500, 'g')).toBe('500 g');
+    expect(formatSize(2000, 'ml')).toBe('2 L');
+    expect(formatSize(900, 'ml')).toBe('900 ml');
+    expect(formatSize(30, 'un')).toBe('30 un');
+  });
+});
+
+describe('displayProductName', () => {
+  it('drops a size the name already carries so the row does not show it twice', () => {
+    expect(displayProductName('Arroz Tio João Tipo 1 5kg', '5 kg')).toBe('Arroz Tio João Tipo 1');
+    expect(displayProductName('Arroz 5 KG Camil', '5 kg')).toBe('Arroz Camil');
+  });
+
+  it('leaves a name without the size untouched', () => {
+    expect(displayProductName('Arroz Camil Tipo 1', '5 kg')).toBe('Arroz Camil Tipo 1');
+    expect(displayProductName('Arroz Camil', null)).toBe('Arroz Camil');
+  });
+
+  it('does not strip a number that only looks like the size', () => {
+    expect(displayProductName('Arroz Tipo 15 kg', '5 kg')).toBe('Arroz Tipo 15 kg');
+  });
+
+  it('never returns an empty name', () => {
+    expect(displayProductName('5 kg', '5 kg')).toBe('5 kg');
+  });
+});
+
+describe('nameVariants', () => {
+  it('matches the accented and the plain spelling', () => {
+    expect(nameVariants('Feijão')).toEqual(['Feijão', 'Feijao']);
+    expect(nameVariants('Papel higiênico')).toEqual(['Papel higiênico', 'Papel higienico']);
+  });
+
+  it('a label without accents yields one variant', () => {
+    expect(nameVariants('Arroz')).toEqual(['Arroz']);
+  });
+});
+
+describe('isValidEmail', () => {
+  it.each(['ana@exemplo.com', ' ana@exemplo.com.br '])('accepts "%s"', (email) => {
+    expect(isValidEmail(email)).toBe(true);
+  });
+
+  it.each(['', 'ana', 'ana@', '@exemplo.com', 'ana@exemplo', 'ana @exemplo.com', 'a@b@c.com'])(
+    'rejects "%s"',
+    (email) => {
+      expect(isValidEmail(email)).toBe(false);
+    },
+  );
+
+  it('rejects an address over 254 characters', () => {
+    expect(isValidEmail(`${'a'.repeat(250)}@x.com`)).toBe(false);
   });
 });

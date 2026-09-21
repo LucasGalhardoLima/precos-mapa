@@ -1,27 +1,36 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { colors, typography, spacing, fontFamily, radii, borderWidth } from '../constants/tokens';
+import { colors, typography, spacing, fontFamily, radii, borderWidth, targets } from '../constants/tokens';
 import { FilledButton } from '../components/filled-button';
 import { TextLink } from '../components/text-link';
 import { ListRow } from '../components/list-row';
 import { SearchField } from '../components/search-field';
 import { Chip } from '../components/chip';
 import { BackLink } from '../components/back-link';
+import { TextField } from '../components/text-field';
+import { ProductSheet } from '../components/product-sheet';
 import { PoupMark } from '../components/poup-mark';
 import { useLocation } from '../hooks/use-location';
 import { useCities } from '../hooks/use-cities';
 import { useAnalytics } from '../hooks/use-analytics';
+import { saveCityInterest } from '../lib/city-interest';
 import {
   GENERIC_ITEMS,
   FALLBACK_COVERED_CITIES,
   isCovered,
   filterCities,
   ctaLabel,
+  displayProductName,
+  isValidEmail,
   saveOnboarding,
   type CoveredCity,
+  type GenericItem,
   type OnboardingArea,
+  type OnboardingItem,
+  type PinnedProduct,
 } from '../lib/onboarding';
 
 // Onboarding: passo 1 localização → passo 2 itens, com "Fora de Matão" e a
@@ -46,6 +55,13 @@ export default function Onboarding() {
   const [selected, setSelected] = useState<string[]>([]);
   const [attempt, setAttempt] = useState<'idle' | 'asking' | 'done'>('idle');
   const [granted, setGranted] = useState(false);
+  const [pins, setPins] = useState<Record<string, PinnedProduct>>({});
+  const [sheetItem, setSheetItem] = useState<GenericItem | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [emailNote, setEmailNote] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [leftEmail, setLeftEmail] = useState(false);
 
   const covered: readonly CoveredCity[] = cities.length > 0 ? cities : FALLBACK_COVERED_CITIES;
 
@@ -59,6 +75,12 @@ export default function Onboarding() {
       trackScreen(`onboarding_${step}`);
     }
   }, [step, outsideCity, track, trackScreen]);
+
+  useEffect(() => {
+    if (sheetOpen && sheetItem) {
+      track('screen_viewed', { metadata: { screen: 'onboarding_item_type', item: sheetItem.label } });
+    }
+  }, [sheetOpen, sheetItem, track]);
 
   const onUseLocation = useCallback(async () => {
     if (attempt === 'asking') return;
@@ -103,19 +125,81 @@ export default function Onboarding() {
     setStep('outside');
   }, []);
 
+  // Deselecting a chip also drops its pinned product (a pin only exists on a
+  // selected item, so the same updater is a no-op when selecting).
   const toggle = useCallback((label: string) => {
     setSelected((s) => (s.includes(label) ? s.filter((x) => x !== label) : [...s, label]));
+    setPins((p) => {
+      if (!(label in p)) return p;
+      const { [label]: _dropped, ...rest } = p;
+      return rest;
+    });
   }, []);
+
+  const openSheet = useCallback((item: GenericItem) => {
+    setSheetItem(item);
+    setSheetOpen(true);
+  }, []);
+
+  const onPickProduct = useCallback(
+    (product: PinnedProduct) => {
+      if (sheetItem) setPins((p) => ({ ...p, [sheetItem.label]: product }));
+      setSheetOpen(false);
+    },
+    [sheetItem],
+  );
+
+  // ✕ on an item-product: back to the generic item.
+  const unpin = useCallback((label: string) => {
+    setPins((p) => {
+      const { [label]: _dropped, ...rest } = p;
+      return rest;
+    });
+  }, []);
+
+  // The e-mail is optional ("se quiser aviso"): empty just continues. A typed
+  // one is saved first, and a failure stays on screen — never a silent "ok"
+  // for an address we did not keep.
+  const onContinueOutside = useCallback(async () => {
+    if (saving) return;
+    const address = email.trim();
+    if (address.length > 0) {
+      if (!isValidEmail(address)) {
+        setEmailNote('Confira o e-mail.');
+        return;
+      }
+      setSaving(true);
+      const ok = await saveCityInterest(outsideCity, address);
+      setSaving(false);
+      if (!ok) {
+        setEmailNote('Não conseguimos salvar agora. Tente de novo, ou apague o e-mail para seguir.');
+        return;
+      }
+      setLeftEmail(true);
+    }
+    setEmailNote(null);
+    setStep('items');
+  }, [saving, email, outsideCity]);
 
   // "Buscar agora" skips the step: nothing chosen is kept.
   const finish = useCallback(
     async (skipped: boolean) => {
-      const items = skipped ? [] : GENERIC_ITEMS.filter((i) => selected.includes(i.label));
+      const items: OnboardingItem[] = skipped
+        ? []
+        : GENERIC_ITEMS.filter((i) => selected.includes(i.label)).map((i) => ({ ...i, product: pins[i.label] ?? null }));
       await saveOnboarding({ items, area });
-      track('onboarding_completed', { metadata: { items_count: items.length, area, skipped } });
+      track('onboarding_completed', {
+        metadata: {
+          items_count: items.length,
+          pinned_count: items.filter((i) => i.product).length,
+          area,
+          skipped,
+          left_email: leftEmail,
+        },
+      });
       router.replace('/');
     },
-    [selected, area, track, router],
+    [selected, pins, area, leftEmail, track, router],
   );
 
   const matches = useMemo(() => filterCities(query, covered), [query, covered]);
@@ -199,40 +283,85 @@ export default function Onboarding() {
           </View>
           {selectedItems.length > 0 ? (
             <View style={styles.selectedBlock}>
-              {selectedItems.map((item) => (
-                <View key={item.label} style={styles.selectedRow}>
-                  <Text style={styles.selectedLabel}>
-                    {item.label}
-                    <Text style={styles.selectedSize}> · {item.size}</Text>
-                  </Text>
-                </View>
-              ))}
-              <Text style={styles.note}>Genérico já basta: mostramos o menor do tamanho padrão.</Text>
+              {selectedItems.map((item) => {
+                const pinned = pins[item.label];
+                if (pinned) {
+                  return (
+                    <View key={item.label} style={styles.selectedRow}>
+                      <Pressable
+                        onPress={() => unpin(item.label)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Voltar ${item.label} para genérico`}
+                        style={styles.unpinTarget}
+                      >
+                        <X size={20} color={colors.absence} strokeWidth={2.2} />
+                      </Pressable>
+                      <Text style={[styles.selectedLabel, styles.flex]} numberOfLines={2}>
+                        {displayProductName(pinned.name, pinned.size)}
+                        {pinned.size ? <Text style={styles.selectedSize}> · {pinned.size}</Text> : null}
+                      </Text>
+                    </View>
+                  );
+                }
+                return (
+                  <View key={item.label} style={styles.selectedRow}>
+                    <Text style={[styles.selectedLabel, styles.flex]}>
+                      {item.label}
+                      <Text style={styles.selectedSize}> · {item.size}</Text>
+                    </Text>
+                    <TextLink label="escolher tipo" onPress={() => openSheet(item)} />
+                  </View>
+                );
+              })}
+              <Text style={styles.note}>
+                Genérico já basta: mostramos o menor do tamanho padrão. &quot;Escolher tipo&quot; fixa marca e tamanho.
+              </Text>
             </View>
           ) : null}
         </ScrollView>
         <View style={styles.footer}>
           <FilledButton label={ctaLabel(selectedItems.length)} onPress={() => finish(false)} />
         </View>
+        <ProductSheet visible={sheetOpen} item={sheetItem} onClose={() => setSheetOpen(false)} onPick={onPickProduct} />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.screen}>
-      <View style={styles.headerWordmark}>
-        <Text style={styles.wordmark}>poup</Text>
-      </View>
-      <View style={styles.outsideBody}>
-        <Text style={styles.headline}>Ainda não estamos em {outsideCity}</Text>
-        <Text style={styles.lead}>Hoje o Poup compara preços só em Matão.</Text>
-      </View>
-      <View style={styles.footer}>
-        <FilledButton label="Ver preços de Matão mesmo assim ›" onPress={() => setStep('items')} />
-        <View style={styles.centered}>
-          <TextLink label="Digitar outra cidade" onPress={() => setStep('city')} />
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.headerWordmark}>
+          <Text style={styles.wordmark}>poup</Text>
         </View>
-      </View>
+        <ScrollView contentContainerStyle={styles.outsideBody} keyboardShouldPersistTaps="handled" bounces={false}>
+          <Text style={styles.headline}>Ainda não estamos em {outsideCity}</Text>
+          <Text style={styles.lead}>Hoje o Poup compara preços só em Matão.</Text>
+          <View style={styles.emailBlock}>
+            <TextField
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                setEmailNote(null);
+              }}
+              placeholder="seu e-mail, se quiser aviso"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="email"
+              textContentType="emailAddress"
+              accessibilityLabel="E-mail"
+            />
+            <Text style={styles.consent}>Só para avisar quando chegarmos na sua cidade. Nada mais.</Text>
+            {emailNote ? <Text style={styles.emailNote}>{emailNote}</Text> : null}
+          </View>
+        </ScrollView>
+        <View style={styles.footer}>
+          <FilledButton label="Ver preços de Matão mesmo assim ›" onPress={onContinueOutside} />
+          <View style={styles.centered}>
+            <TextLink label="Digitar outra cidade" onPress={() => setStep('city')} />
+          </View>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -241,6 +370,9 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
   },
   centered: {
     alignItems: 'center',
@@ -320,8 +452,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     marginBottom: spacing.sm,
   },
+  // A scroll view that grows to fill and centers its content: with the
+  // keyboard up (or a long error note) the content scrolls instead of
+  // overflowing upward onto the wordmark.
   outsideBody: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     gap: spacing.xl,
     paddingHorizontal: 24,
@@ -354,12 +489,36 @@ const styles = StyleSheet.create({
   },
   selectedRow: {
     minHeight: 56,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     backgroundColor: '#fff',
     borderWidth,
     borderColor: colors.border,
     borderRadius: radii.md,
     paddingHorizontal: spacing.lg,
+  },
+  // Same 44 px target and -12 margin as ListRow's leading ✕, so the icon sits
+  // 14 px from the row edge while the tap area stays 44.
+  unpinTarget: {
+    width: targets.touch,
+    height: targets.touch,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: -spacing.md,
+  },
+  emailBlock: {
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  consent: {
+    ...typography.note,
+    color: colors.secondary,
+  },
+  emailNote: {
+    ...typography.note,
+    fontFamily: fontFamily.semibold,
+    color: colors.ink,
   },
   selectedLabel: {
     fontFamily: fontFamily.semibold,
