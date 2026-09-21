@@ -60,6 +60,14 @@ export const typography = {
   // Not one of the doc's named scale steps, but verified directly on the
   // artifact's "ver todos os mercados ›" link text — its own distinct size.
   link: { fontFamily: fontFamily.semibold, fontSize: 15 },
+  // Onboarding (artifact 7a–7c) sizes that the doc's scale above doesn't list.
+  // Line heights are the artifact's ratios (1.1 / 1.45 / 1.4) in whole px.
+  headline: { fontFamily: fontFamily.extrabold, fontSize: 30, lineHeight: 33, letterSpacing: -0.6 },
+  headlineSm: { fontFamily: fontFamily.extrabold, fontSize: 28, lineHeight: 31, letterSpacing: -0.56 },
+  lead: { fontFamily: fontFamily.medium, fontSize: 16, lineHeight: 23 },
+  leadSm: { fontFamily: fontFamily.medium, fontSize: 15, lineHeight: 22 },
+  note: { fontFamily: fontFamily.medium, fontSize: 13, lineHeight: 18 },
+  wordmark: { fontFamily: fontFamily.extrabold, fontSize: 24, letterSpacing: -0.48 },
 } as const;
 
 export const radii = {

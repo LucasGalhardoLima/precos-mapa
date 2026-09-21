@@ -24,6 +24,7 @@ export function SearchField({ value, onChangeText, placeholder = 'buscar produto
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={colors.secondary}
+        selectionColor={colors.brand}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={[styles.input, { color: focused ? colors.ink : colors.secondary }]}

@@ -27,7 +27,10 @@ export function resolveTrackedRegion(hasResolvedLocation: boolean, locationLabel
 export function useAnalytics() {
   const session = useAuthStore((s) => s.session);
   const userId = session?.user?.id;
-  const { locationLabel, hasResolvedLocation } = useLocation();
+  // autoRequest: false — this hook is mounted on every screen, including the
+  // ones that must ask for location with context first (onboarding, decisão
+  // 10). It still picks up a location the user already granted or chose.
+  const { locationLabel, hasResolvedLocation } = useLocation({ autoRequest: false });
 
   // Fallback identity for logged-out users — without this, every event from
   // the (majority) unauthenticated traffic was silently dropped.
