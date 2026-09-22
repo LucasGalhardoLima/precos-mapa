@@ -10,6 +10,7 @@ App atual em React Native, 5 abas (Início, Busca, Mapa, Lista, Alertas), rankin
 
 1. **Sem veredito no lançamento.** Resposta, itens e alerta funcionam só com preço de hoje. Veredito bom/normal/caro acende por item quando cruza 14 dias de dado, com rótulo dizendo a faixa real ("abaixo do normal dos últimos 21 dias") até chegar em 90.
    - Alerta sem histórico: "avisar quando cair abaixo de R$ X", X sugerido = preço de hoje.
+   - `price_history` (migration 081) registra só mudança de preço, não uma linha por dia — datas ficam esparsas. "Normal" é a média ponderada pela duração de cada preço (dias que ele valeu), nunca a média simples das linhas gravadas: essa contaria mais os preços que mudam com frequência e menos os que ficam parados, invertendo o que "normal" deveria significar.
 2. **Frescor em 3 estados.** Atualizado na última rodada: sem rótulo. 2–3 dias: entra no ONDE com "há N dias" em cinza. Mais de 3 dias: "sem preço hoje", fora do ranking, só em "ver todos os mercados". Loja inteira falhou: faixa âmbar "X: preços de N dias atrás".
 3. **Identidade por EAN.** Comparação entre mercados só para produtos com EAN. Sem EAN: um mercado só, nunca casado por nome entre lojas.
 4. **Entrada: texto + código de barras.** Foto/reconhecimento de embalagem fora do MLP.
