@@ -2,6 +2,13 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { OnboardingItem } from '@/lib/onboarding';
 import { formatBRL, mapSearchRow, type RawSearchRow, type RawPriceEntry } from './use-search';
+import { pickGenericWinner } from '@/lib/raiz';
+
+// Wide enough that the label's actual category products (price-ordered
+// within their tier) are reliably present alongside any irrelevant
+// ingredient-mention matches ranked ahead of them by price — see
+// pickGenericWinner's comment for the concrete case this covers.
+const GENERIC_SEARCH_PAGE_SIZE = 15;
 
 export interface TrackedRow {
   key: string; // product id, or the generic label when unpinned — stable for list keys
@@ -70,9 +77,9 @@ export function useTrackedSummary(items: OnboardingItem[], userLat: number, user
             query: item.label,
             user_lat: userLat,
             user_lng: userLng,
-            page_size: 1,
+            page_size: GENERIC_SEARCH_PAGE_SIZE,
           });
-          const rawRow = ((data as RawSearchRow[] | null) ?? [])[0];
+          const rawRow = pickGenericWinner((data as RawSearchRow[] | null) ?? [], item.label);
           if (!rawRow) {
             return {
               key: item.label,
@@ -89,7 +96,13 @@ export function useTrackedSummary(items: OnboardingItem[], userLat: number, user
             key: item.label,
             productId: result.productId,
             name: result.name,
-            size: item.size,
+            // Not item.size here: that's the generic default (e.g. "5 kg"
+            // for any "Arroz"), and the resolved product is whichever size
+            // actually won today — appending the generic default produced
+            // "Arroz Branco Camil Tipo 1 1kg · 5 kg" (wrong number, not
+            // just redundant) when the winner wasn't the default size.
+            // The catalog name is trusted to carry its own size as-is.
+            size: null,
             hasPriceToday: result.hasPriceToday,
             priceLabel: result.hasPriceToday && result.price != null ? formatBRL(result.price) : '—',
             winnerStoreName: result.winnerStoreName,

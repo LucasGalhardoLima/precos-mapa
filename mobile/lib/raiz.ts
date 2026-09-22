@@ -1,4 +1,28 @@
 import type { TrackedRow } from '@/hooks/use-tracked-summary';
+import type { RawSearchRow } from '@/hooks/use-search';
+
+function normalize(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+// A generic item's category search (e.g. "Arroz") ranks by price tier, not
+// text relevance — verified live 2026-09-22: querying "Arroz" with a small
+// page returns dog food ("Dog Chow Cordeiro E Arroz") ahead of actual rice,
+// because "arroz" is a listed ingredient in the pet food's own name and it
+// happens to be cheaper. Every real rice result in that same response
+// (Arroz Branco Camil, Arroz Solito, ...) starts with the label; every false
+// positive doesn't. Requiring a name-starts-with match is a real filter, not
+// a guess — it's what actually distinguished them in the live data.
+// Returns null rather than a wrong product when nothing qualifies: an
+// honest "sem preço hoje" beats a confident wrong price.
+export function pickGenericWinner(rows: RawSearchRow[], label: string): RawSearchRow | null {
+  const target = normalize(label);
+  return rows.find((r) => normalize(r.product_name).startsWith(target)) ?? null;
+}
 
 export interface TitlePhrase {
   winner: string;
