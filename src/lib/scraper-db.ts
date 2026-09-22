@@ -76,12 +76,24 @@ export interface StorePriceRow {
   validUntil: string | null;
 }
 
+/** The only columns any scraper's guarded-once update ever touches. */
+export type ProductPatchColumn = 'ean' | 'image_url' | 'image_source';
+
 export interface ScraperDb {
   getStoreIdByName(namePattern: string): Promise<{ id: string; name: string } | null>;
+  /** Amarelinha only: one scraped price fans out to all 5 "Amarelinha Loja N" rows. */
+  getStoresByNamePattern(namePattern: string): Promise<{ id: string; name: string }[]>;
   findProductByEan(ean: string): Promise<{ id: string } | null>;
   findOrCreateProduct(input: FindOrCreateInput): Promise<FindOrCreateResult>;
-  /** Sets `column` on `productId` only when it is currently NULL — same guarded-once convention every scraper already uses for ean/image_url. */
-  updateProductIfNull(productId: string, column: 'ean' | 'image_url', value: string): Promise<void>;
+  /**
+   * Sets every column in `patch` on `productId`, only when `guardColumn` is
+   * currently NULL — the guarded-once convention every scraper uses so a
+   * later source can never clobber an earlier one (e.g. retailer image over
+   * OFF's, or vice versa). `guardColumn` is usually also a key of `patch`
+   * (setting `ean` guarded by `ean IS NULL`), but doesn't have to be:
+   * image_url + image_source are both set, guarded on image_url alone.
+   */
+  updateProductIfNull(productId: string, guardColumn: ProductPatchColumn, patch: Partial<Record<ProductPatchColumn, string>>): Promise<void>;
   upsertStorePrice(row: StorePriceRow): Promise<void>;
   syncCrawlerPromotion(input: SyncCrawlerPromotionInput): Promise<void>;
 }
@@ -100,6 +112,11 @@ export function createRestScraperDb(supabase: SupabaseClient): ScraperDb {
       return data ?? null;
     },
 
+    async getStoresByNamePattern(namePattern) {
+      const { data } = await supabase.from('stores').select('id, name').ilike('name', namePattern).eq('is_active', true);
+      return data ?? [];
+    },
+
     async findProductByEan(ean) {
       const { data } = await supabase.from('products').select('id').eq('ean', ean).maybeSingle();
       return data ?? null;
@@ -107,8 +124,8 @@ export function createRestScraperDb(supabase: SupabaseClient): ScraperDb {
 
     findOrCreateProduct: (input) => findOrCreateProductRest(supabase, input),
 
-    async updateProductIfNull(productId, column, value) {
-      await supabase.from('products').update({ [column]: value }).eq('id', productId).is(column, null);
+    async updateProductIfNull(productId, guardColumn, patch) {
+      await supabase.from('products').update(patch).eq('id', productId).is(guardColumn, null);
     },
 
     async upsertStorePrice(row) {
@@ -235,6 +252,14 @@ export function createDirectScraperDb(client: Client): ScraperDb {
       return rows[0] ?? null;
     },
 
+    async getStoresByNamePattern(namePattern) {
+      const { rows } = await client.query<{ id: string; name: string }>(
+        'select id, name from stores where name ilike $1 and is_active = true',
+        [namePattern],
+      );
+      return rows;
+    },
+
     async findProductByEan(ean) {
       const { rows } = await client.query<{ id: string }>('select id from products where ean = $1 limit 1', [ean]);
       return rows[0] ?? null;
@@ -242,10 +267,16 @@ export function createDirectScraperDb(client: Client): ScraperDb {
 
     findOrCreateProduct: findOrCreateProductDirect,
 
-    async updateProductIfNull(productId, column, value) {
-      // `column` is a TS union of two literal identifiers, never external
-      // input, so string-interpolating it into the statement is safe.
-      await client.query(`update products set ${column} = $1 where id = $2 and ${column} is null`, [value, productId]);
+    async updateProductIfNull(productId, guardColumn, patch) {
+      // Column names come only from ProductPatchColumn (a closed union of 3
+      // literals), never external input, so interpolating them is safe.
+      const columns = Object.keys(patch) as ProductPatchColumn[];
+      if (columns.length === 0) return;
+      const setClause = columns.map((col, i) => `${col} = $${i + 1}`).join(', ');
+      await client.query(
+        `update products set ${setClause} where id = $${columns.length + 1} and ${guardColumn} is null`,
+        [...columns.map((col) => patch[col]), productId],
+      );
     },
 
     async upsertStorePrice(row) {

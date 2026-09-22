@@ -59,17 +59,22 @@
  *
  * Usage:
  *   npx tsx --env-file=.env.local scripts/scrape-amarelinha-prices.ts
+ *   npx tsx --env-file=.env.local scripts/scrape-amarelinha-prices.ts --limit=5   (caps this run to N products — manual testing)
  *
  * Required env vars:
  *   NEXT_PUBLIC_SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
+ *
+ * Optional env var:
+ *   SCRAPER_DATABASE_URL — direct-Postgres bridge for when PostgREST itself
+ *   is unreachable; see src/lib/scraper-db.ts's file header for why and how.
  */
 
 import { createClient } from '@supabase/supabase-js';
+import type { Client } from 'pg';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { syncCrawlerPromotion } from '../src/lib/crawler-promotions';
-import { findOrCreateProduct } from '../src/lib/product-match';
+import { connectAsServiceRole, createDirectScraperDb, createRestScraperDb, type ScraperDb } from '../src/lib/scraper-db';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -304,22 +309,33 @@ function parseProductPage(html: string): ScrapedProduct | null {
   };
 }
 
+/** --limit=N caps this run to the first N pending URLs — manual/bridge testing only, unrelated to BATCH (the unattended-cron ceiling). */
+function limitArg(): number | undefined {
+  const raw = process.argv.find((a) => a.startsWith('--limit='))?.slice('--limit='.length);
+  return raw ? Number(raw) : undefined;
+}
+
 async function main() {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
     process.exit(1);
   }
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  const directUrl = process.env.SCRAPER_DATABASE_URL;
+  let directClient: Client | null = null;
+  let db: ScraperDb;
+  if (directUrl) {
+    directClient = await connectAsServiceRole(directUrl);
+    db = createDirectScraperDb(directClient);
+  } else {
+    db = createRestScraperDb(createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY));
+  }
+  console.log(`DB transport: ${directClient ? 'direct (SCRAPER_DATABASE_URL)' : 'REST (supabase-js)'}`);
 
-  const { data: stores, error: storesError } = await supabase
-    .from('stores')
-    .select('id, name')
-    .ilike('name', STORE_NAME_PATTERN)
-    .eq('is_active', true);
-
-  if (storesError || !stores || stores.length === 0) {
-    console.error(`No active stores found matching "${STORE_NAME_PATTERN}":`, storesError?.message);
+  const stores = await db.getStoresByNamePattern(STORE_NAME_PATTERN);
+  if (stores.length === 0) {
+    console.error(`No active stores found matching "${STORE_NAME_PATTERN}"`);
+    if (directClient) await directClient.end();
     process.exit(1);
   }
   console.log(`Stores (all get the same scraped price — see file header point 3):`);
@@ -334,7 +350,7 @@ async function main() {
   const processed = existsSync(CHECKPOINT_FILE)
     ? new Set<string>(JSON.parse(readFileSync(CHECKPOINT_FILE, 'utf-8')).processedUrls ?? [])
     : new Set<string>();
-  const pending = allUrls.filter((u) => !processed.has(u.url)).slice(0, BATCH);
+  const pending = allUrls.filter((u) => !processed.has(u.url)).slice(0, limitArg() ?? BATCH);
   console.log(`${processed.size} already processed in prior runs. Processing ${pending.length} this run (${DRY_RUN ? 'DRY RUN' : 'LIVE — writing to DB'}).\n`);
 
   const reviewRows: string[] = ['url,ean,brand,name,price,is_promo,matched_product_id,is_new_product'];
@@ -378,12 +394,12 @@ async function main() {
         let isNew = false;
 
         if (parsed.ean) {
-          const { data: existing } = await supabase.from('products').select('id').eq('ean', parsed.ean).maybeSingle();
+          const existing = await db.findProductByEan(parsed.ean);
           if (existing) {
             productId = existing.id;
             matchedByEan++;
           } else {
-            const result = await findOrCreateProduct(supabase, {
+            const result = await db.findOrCreateProduct({
               name: parsed.name,
               categoryId,
               brand: parsed.brand ?? undefined,
@@ -397,16 +413,15 @@ async function main() {
               created++;
               // Set the real, retailer-confirmed EAN directly — more
               // reliable than findOrCreateProduct's own best-effort Cosmos
-              // name-search. Guarded by .is('ean', null) same as Cosmos
-              // enrichment, so whichever write lands first wins without
-              // clobbering the other.
-              await supabase.from('products').update({ ean: parsed.ean }).eq('id', productId).is('ean', null);
+              // name-search. Guarded the same as Cosmos enrichment, so
+              // whichever write lands first wins without clobbering the other.
+              await db.updateProductIfNull(productId, 'ean', { ean: parsed.ean });
             } else {
               matchedByFuzzy++;
             }
           }
         } else {
-          const result = await findOrCreateProduct(supabase, {
+          const result = await db.findOrCreateProduct({
             name: parsed.name,
             categoryId,
             brand: parsed.brand ?? undefined,
@@ -422,23 +437,18 @@ async function main() {
         // Same price for all 5 stores — confirmed uniform across the whole
         // chain (see file header point 3), not just within Matão.
         for (const store of stores) {
-          const { error: upsertError } = await supabase.from('store_prices').upsert(
-            {
-              product_id: productId,
-              store_id: store.id,
-              price: parsed.price,
-              is_promo: parsed.isPromo,
-              source: 'crawler',
-              confidence: 1.0,
-              valid_until: null,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'product_id,store_id' },
-          );
-          if (upsertError) console.warn(`  [store_prices upsert failed] ${store.name} / ${url}: ${upsertError.message}`);
+          await db.upsertStorePrice({
+            productId,
+            storeId: store.id,
+            price: parsed.price,
+            isPromo: parsed.isPromo,
+            source: 'crawler',
+            confidence: 1.0,
+            validUntil: null,
+          });
 
           if (parsed.isPromo && parsed.originalPrice != null && parsed.originalPrice > parsed.price) {
-            await syncCrawlerPromotion(supabase, {
+            await db.syncCrawlerPromotion({
               productId,
               storeId: store.id,
               originalPrice: parsed.originalPrice,
@@ -450,16 +460,12 @@ async function main() {
         // Image is a free ride on the same page fetch already used for
         // price — must never be able to take a price write down with it.
         // Never overwrites an existing image_url (source priority is
-        // retailer > OFF; `.is('image_url', null)` enforces that at the
-        // query level), and any failure here is swallowed since every
-        // store_prices row above has already been written by this point.
+        // retailer > OFF; guarded on image_url IS NULL), and any failure
+        // here is swallowed since every store_prices row above has already
+        // been written by this point.
         if (parsed.imageUrl) {
           try {
-            await supabase
-              .from('products')
-              .update({ image_url: parsed.imageUrl, image_source: 'amarelinha' })
-              .eq('id', productId)
-              .is('image_url', null);
+            await db.updateProductIfNull(productId, 'image_url', { image_url: parsed.imageUrl, image_source: 'amarelinha' });
           } catch (imgErr) {
             console.warn(`  [image_url write failed] ${url}: ${imgErr}`);
           }
@@ -512,6 +518,7 @@ async function main() {
     console.log('Full catalog covered — checkpoint cleared so the next run does a fresh refresh.');
   }
   console.log('════════════════════════════════════');
+  if (directClient) await directClient.end();
 }
 
 main().catch((err) => {
