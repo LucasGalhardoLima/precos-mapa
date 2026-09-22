@@ -420,7 +420,7 @@ async function main() {
               // than findOrCreateProduct's own best-effort Cosmos name-search.
               // Guarded the same as Cosmos enrichment, so whichever write
               // lands first wins without clobbering the other.
-              await db.updateProductIfNull(productId, 'ean', parsed.ean);
+              await db.updateProductIfNull(productId, 'ean', { ean: parsed.ean });
             } else {
               matchedByFuzzy++;
             }
@@ -436,7 +436,7 @@ async function main() {
         if (parsed.imageUrl) {
           // Same guarded-once convention as the ean backfill above — never
           // overwrites an image another source already set.
-          await db.updateProductIfNull(productId, 'image_url', parsed.imageUrl);
+          await db.updateProductIfNull(productId, 'image_url', { image_url: parsed.imageUrl });
         }
 
         await db.upsertStorePrice({

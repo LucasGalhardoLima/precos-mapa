@@ -85,17 +85,22 @@
  *
  * Usage:
  *   npx tsx --env-file=.env.local scripts/scrape-savegnago-prices.ts
+ *   npx tsx --env-file=.env.local scripts/scrape-savegnago-prices.ts --limit=5   (caps this run to N products — manual testing)
  *
  * Required env vars:
  *   NEXT_PUBLIC_SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
+ *
+ * Optional env var:
+ *   SCRAPER_DATABASE_URL — direct-Postgres bridge for when PostgREST itself
+ *   is unreachable; see src/lib/scraper-db.ts's file header for why and how.
  */
 
 import { createClient } from '@supabase/supabase-js';
+import type { Client } from 'pg';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { findOrCreateProduct } from '../src/lib/product-match';
-import { syncCrawlerPromotion } from '../src/lib/crawler-promotions';
+import { connectAsServiceRole, createDirectScraperDb, createRestScraperDb, type ScraperDb } from '../src/lib/scraper-db';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -388,23 +393,33 @@ function saveCheckpoint(processed: Set<string>, completed: Set<number>): void {
   writeFileSync(CHECKPOINT_FILE, JSON.stringify(cp));
 }
 
+/** --limit=N caps this run to the first N pending products — manual/bridge testing only, unrelated to BATCH (the unattended-cron ceiling). */
+function limitArg(): number | undefined {
+  const raw = process.argv.find((a) => a.startsWith('--limit='))?.slice('--limit='.length);
+  return raw ? Number(raw) : undefined;
+}
+
 async function main() {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
     process.exit(1);
   }
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  const directUrl = process.env.SCRAPER_DATABASE_URL;
+  let directClient: Client | null = null;
+  let db: ScraperDb;
+  if (directUrl) {
+    directClient = await connectAsServiceRole(directUrl);
+    db = createDirectScraperDb(directClient);
+  } else {
+    db = createRestScraperDb(createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY));
+  }
+  console.log(`DB transport: ${directClient ? 'direct (SCRAPER_DATABASE_URL)' : 'REST (supabase-js)'}`);
 
-  const { data: store, error: storeError } = await supabase
-    .from('stores')
-    .select('id, name')
-    .ilike('name', STORE_NAME_PATTERN)
-    .eq('is_active', true)
-    .maybeSingle();
-
-  if (storeError || !store) {
-    console.error(`Store not found matching "${STORE_NAME_PATTERN}":`, storeError?.message);
+  const store = await db.getStoreIdByName(STORE_NAME_PATTERN);
+  if (!store) {
+    console.error(`Store not found matching "${STORE_NAME_PATTERN}"`);
+    if (directClient) await directClient.end();
     process.exit(1);
   }
   console.log(`Store: ${store.name} (${store.id})`);
@@ -420,8 +435,9 @@ async function main() {
   const checkpointData = loadCheckpoint();
   const processed = new Set<string>(checkpointData.processedProductIds);
   const completed = new Set<number>(checkpointData.completedCategoryIds);
+  const effectiveBatch = limitArg() ?? BATCH;
   console.log(`${processed.size} products already processed, ${completed.size}/${leaves.length} categories completed in prior runs.`);
-  console.log(`Running in ${DRY_RUN ? 'DRY RUN' : 'LIVE — writing to DB'} mode, up to ${BATCH} new products this run.\n`);
+  console.log(`Running in ${DRY_RUN ? 'DRY RUN' : 'LIVE — writing to DB'} mode, up to ${effectiveBatch} new products this run.\n`);
 
   const reviewRows: string[] = ['product_id,ean,name,brand,category_path,price,list_price,is_promo,matched_product_id,is_new_product'];
   let matchedByEan = 0;
@@ -432,7 +448,7 @@ async function main() {
 
   categoryLoop: for (const leaf of leaves) {
     if (completed.has(leaf.id)) continue;
-    if (processedThisRun >= BATCH) break;
+    if (processedThisRun >= effectiveBatch) break;
 
     let from = 0;
     let categoryProductCount = 0;
@@ -446,7 +462,7 @@ async function main() {
       for (const p of products) {
         categoryProductCount++;
         if (processed.has(p.productId)) continue;
-        if (processedThisRun >= BATCH) break;
+        if (processedThisRun >= effectiveBatch) break;
 
         const parsed = parseProduct(p);
         if (!parsed) {
@@ -476,12 +492,12 @@ async function main() {
           let isNew = false;
 
           if (parsed.ean) {
-            const { data: existing } = await supabase.from('products').select('id').eq('ean', parsed.ean).maybeSingle();
+            const existing = await db.findProductByEan(parsed.ean);
             if (existing) {
               productId = existing.id;
               matchedByEan++;
             } else {
-              const result = await findOrCreateProduct(supabase, {
+              const result = await db.findOrCreateProduct({
                 name: parsed.name,
                 categoryId: mapSavegnagoCategory(leaf.path),
                 brand: parsed.brand ?? undefined,
@@ -493,13 +509,13 @@ async function main() {
               isNew = result.isNew;
               if (result.isNew) {
                 created++;
-                await supabase.from('products').update({ ean: parsed.ean }).eq('id', productId).is('ean', null);
+                await db.updateProductIfNull(productId, 'ean', { ean: parsed.ean });
               } else {
                 matchedByFuzzy++;
               }
             }
           } else {
-            const result = await findOrCreateProduct(supabase, {
+            const result = await db.findOrCreateProduct({
               name: parsed.name,
               categoryId: mapSavegnagoCategory(leaf.path),
               brand: parsed.brand ?? undefined,
@@ -512,42 +528,33 @@ async function main() {
             else matchedByFuzzy++;
           }
 
-          const { error: upsertError } = await supabase.from('store_prices').upsert(
-            {
-              product_id: productId,
-              store_id: store.id,
-              price: parsed.price,
-              is_promo: parsed.isPromo,
-              source: 'crawler',
-              confidence: 1.0,
-              valid_until: null,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'product_id,store_id' },
-          );
-          if (upsertError) console.warn(`  [store_prices upsert failed] ${parsed.productId}: ${upsertError.message}`);
+          await db.upsertStorePrice({
+            productId,
+            storeId: store.id,
+            price: parsed.price,
+            isPromo: parsed.isPromo,
+            source: 'crawler',
+            confidence: 1.0,
+            validUntil: null,
+          });
 
           // Image is a free ride on data already fetched for the price (no
           // extra request) — but it must never be able to take the price
           // down with it. Never overwrites an existing image_url (source
-          // priority is retailer > OFF; `.is('image_url', null)` enforces
-          // that at the query level, same pattern as scrape-jauserve-prices.ts),
-          // and any failure here is swallowed so it can't affect the
-          // store_prices write above, which has already happened by now.
+          // priority is retailer > OFF; guarded on image_url IS NULL, same
+          // pattern as scrape-jauserve-prices.ts), and any failure here is
+          // swallowed so it can't affect the store_prices write above,
+          // which has already happened by now.
           if (parsed.imageUrl) {
             try {
-              await supabase
-                .from('products')
-                .update({ image_url: parsed.imageUrl, image_source: 'savegnago' })
-                .eq('id', productId)
-                .is('image_url', null);
+              await db.updateProductIfNull(productId, 'image_url', { image_url: parsed.imageUrl, image_source: 'savegnago' });
             } catch (imgErr) {
               console.warn(`  [image_url write failed] ${parsed.productId}: ${imgErr}`);
             }
           }
 
           if (parsed.isPromo) {
-            await syncCrawlerPromotion(supabase, {
+            await db.syncCrawlerPromotion({
               productId,
               storeId: store.id,
               originalPrice: parsed.listPrice,
@@ -580,7 +587,7 @@ async function main() {
       }
 
       saveCheckpoint(processed, completed);
-      if (processedThisRun >= BATCH) break categoryLoop;
+      if (processedThisRun >= effectiveBatch) break categoryLoop;
       if (products.length < PAGE_SIZE) break; // last page
       from += PAGE_SIZE;
     }
@@ -622,6 +629,7 @@ async function main() {
     console.log('All categories covered — checkpoint cleared so the next run does a fresh refresh.');
   }
   console.log('════════════════════════════════════');
+  if (directClient) await directClient.end();
 }
 
 main().catch((err) => {
