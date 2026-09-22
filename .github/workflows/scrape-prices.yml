@@ -39,3 +39,9 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Direct-Postgres bridge (see src/lib/scraper-db.ts) — bypasses
+          # PostgREST, which the 2026-09 Storage-quota restriction 402s for
+          # every request, reads included. Empty/unset falls back to REST
+          # automatically (each script's own `directUrl ? ... : ...` check),
+          # so this is safe to leave set even once the restriction lifts.
+          SCRAPER_DATABASE_URL: ${{ secrets.SCRAPER_DATABASE_URL }}
