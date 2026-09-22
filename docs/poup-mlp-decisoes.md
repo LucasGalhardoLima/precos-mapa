@@ -85,6 +85,23 @@ Posicionamento "autoridade de preços da região" (tom dos textos, não feature)
 - Parser de tamanho/unidade em batch (em construção).
 - Fila de limpeza: 2.103 produtos sem EAN (11,2%).
 
+## Infra (22/09) — decisões e restrições
+
+Supabase fica no plano Free (1 GB de Storage, 500 MB de banco; banco em 279 MB hoje). Decisão deliberada, não esquecimento — antes de subir de plano, aliviar o que ocupa espaço sem necessidade.
+
+**Incidente 17–22/09.** Os buckets de encarte (`pdf-imports`, `image-imports`) passaram de 1 GB, e o projeto entrou em restrição: REST e Storage responderam 402 (`exceed_storage_size_quota`) para toda chamada, leitura incluída — não só escrita. Os 4 scrapers pararam de gravar por 5 dias (17 a 22/09). O cron que enchia os buckets foi desligado (#55); a limpeza dos arquivos antigos está pronta (script do #54) e só falta a API do Storage voltar a responder para rodar.
+
+**Scrapers por conexão direta.** Bypassam a REST via uma conexão Postgres direta (role `scraper`, membro de `service_role`, pelo pooler em modo session — modo transaction não sustenta o `SET ROLE` entre queries). Connection string no secret `SCRAPER_DATABASE_URL` do GitHub Actions. PRs #56 (Jaú Serve) e #58 (Savegnago, Amarelinha, Tenda). Não ficou mais lento: a rodada completa da Tenda por conexão direta levou 1h36, contra 1h56 da rodada antiga por REST.
+
+**O app em si segue pela REST** e não funciona enquanto a restrição não cair — a ponte cobre só os scrapers.
+
+**Migration 079 aplicada, sem uso ainda.** A tabela do e-mail de "Fora de Matão" existe no banco (aplicada por conexão direta), mas o app não consegue gravar nela até a REST voltar.
+
+**Pendências:**
+- Retenção de 90 dias em `price_history` (ainda sem política).
+- Retenção em qualquer importação futura de encarte, para o incidente não se repetir.
+- Medir o tamanho do banco semanalmente.
+
 ## Próximo passo
 
 Alta fidelidade completa. Próximo: implementação em React Native a partir do artefato e deste doc (o CLAUDE.md do app deve apontar para ambos).
