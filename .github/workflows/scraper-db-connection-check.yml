@@ -32,7 +32,7 @@ jobs:
             await client.query('SET ROLE service_role');
             const who = await client.query('select current_user, session_user');
             const cnt = await client.query('select count(*) from store_prices');
-            const jau = await client.query(\"select max(updated_at) as most_recent from store_prices sp join stores s on s.id = sp.store_id where s.name = 'Jaú Serve'\");
+            const jau = await client.query(\"select max(sp.updated_at) as most_recent from store_prices sp join stores s on s.id = sp.store_id where s.name = 'Jaú Serve'\");
             console.log('current_user:', who.rows[0].current_user, '| session_user:', who.rows[0].session_user);
             console.log('store_prices count:', cnt.rows[0].count);
             console.log('Jaú Serve max(updated_at):', jau.rows[0].most_recent);
