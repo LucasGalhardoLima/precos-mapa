@@ -7,6 +7,9 @@ name: Scraper DB connection check (temporary)
 # secret. Read-only. Delete this workflow once verified.
 on:
   workflow_dispatch: {}
+  pull_request:
+    branches: [main]
+    paths: [".github/workflows/scraper-db-connection-check.yml"]
 
 jobs:
   check:
