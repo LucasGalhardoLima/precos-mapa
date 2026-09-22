@@ -1,0 +1,38 @@
+name: Scraper DB connection check (temporary)
+
+# One-off: confirms SCRAPER_DATABASE_URL_TEST (the `scraper` Postgres role,
+# via the Supabase pooler in session mode) is reachable and can SET ROLE
+# service_role from a GitHub Actions runner, not just from a dev machine —
+# before that connection string is trusted as the real SCRAPER_DATABASE_URL
+# secret. Read-only. Delete this workflow once verified.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Connect as scraper, SET ROLE service_role, read-only check
+        env:
+          SCRAPER_DATABASE_URL: ${{ secrets.SCRAPER_DATABASE_URL_TEST }}
+        run: |
+          node -e "
+          const { Client } = require('pg');
+          (async () => {
+            const client = new Client({ connectionString: process.env.SCRAPER_DATABASE_URL, ssl: { rejectUnauthorized: false } });
+            await client.connect();
+            await client.query('SET ROLE service_role');
+            const who = await client.query('select current_user, session_user');
+            const cnt = await client.query('select count(*) from store_prices');
+            const jau = await client.query(\"select max(updated_at) as most_recent from store_prices sp join stores s on s.id = sp.store_id where s.name = 'Jaú Serve'\");
+            console.log('current_user:', who.rows[0].current_user, '| session_user:', who.rows[0].session_user);
+            console.log('store_prices count:', cnt.rows[0].count);
+            console.log('Jaú Serve max(updated_at):', jau.rows[0].most_recent);
+            await client.end();
+          })().catch((e) => { console.error('FAILED:', e.message); process.exit(1); });
+          "
