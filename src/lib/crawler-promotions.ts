@@ -11,7 +11,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 // while staying far tighter than a PDF flyer's week-plus window.
 const ROLLING_WINDOW_DAYS = 3;
 
-interface SyncCrawlerPromotionInput {
+export interface SyncCrawlerPromotionInput {
   productId: string;
   storeId: string;
   originalPrice: number;

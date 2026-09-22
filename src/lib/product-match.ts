@@ -89,7 +89,7 @@ export function isEanCompatible(
   return queryEan.trim() === candidateEan.trim();
 }
 
-interface FindOrCreateInput {
+export interface FindOrCreateInput {
   name: string;
   categoryId?: string;
   brand?: string;
