@@ -82,6 +82,30 @@ describe('buildRespostaView — 3a: com EAN, "aqui" não vence', () => {
     const view = buildRespostaView(product({ sizeValue: null, sizeUnit: null }), [row()], NOW);
     expect(view.pricePerUnit).toBeNull();
   });
+
+  // Found live 2026-09-23 (Morango Bandeja 250G, 5 Amarelinha branches, all
+  // R$16,99): a chain with uniform pricing puts "aqui" at a different
+  // physical location than the winner while tying its price exactly.
+  it('never compares against a tied price — that reads as a fake "R$ 0,00 a menos" saving', () => {
+    const rows = [
+      row({ store_id: 's-loja21', store_name: 'Amarelinha Loja 21', price: 16.99, distance_km: 2.1 }),
+      row({ store_id: 's-loja17', store_name: 'Amarelinha Loja 17', price: 16.99, distance_km: 0.3 }), // nearest = "aqui", same price as winner
+      row({ store_id: 's-loja18', store_name: 'Amarelinha Loja 18', price: 16.99, distance_km: 0.7 }),
+    ];
+    const view = buildRespostaView(product(), rows, NOW);
+    expect(view.whereRows.find((r) => r.storeId === 's-loja17')?.isHere).toBe(true);
+    expect(view.comparison).toBeNull(); // every row ties at 16.99 — nothing genuinely cheaper to report
+  });
+
+  it('skips a tied "aqui" and compares against the first genuinely cheaper-elsewhere row', () => {
+    const rows = [
+      row({ store_id: 's-loja21', store_name: 'Amarelinha Loja 21', price: 16.99, distance_km: 2.1 }), // winner
+      row({ store_id: 's-loja17', store_name: 'Amarelinha Loja 17', price: 16.99, distance_km: 0.3 }), // "aqui", tied — skipped
+      row({ store_id: 's-tenda', store_name: 'Tenda', price: 18.5, distance_km: 3.0 }), // genuinely different price
+    ];
+    const view = buildRespostaView(product(), rows, NOW);
+    expect(view.comparison).toEqual({ amount: 1.51, storeName: 'Tenda', isHere: false });
+  });
 });
 
 describe('buildRespostaView — 3b: "aqui" vence, loja defasada, stale store excluded', () => {

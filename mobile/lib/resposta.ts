@@ -289,10 +289,20 @@ export function buildRespostaView(
   if (mode === 'comparison') {
     const hereRow = hereId ? fresh.find((r) => r.store_id === hereId) : undefined;
     // "sem 'aqui' ou se 'aqui' vence, compara com o 2º" (doc linha 34).
-    if (hereRow && hereRow.store_id !== winner.store_id) {
+    // Found live 2026-09-23: a chain with uniform pricing across branches
+    // (Amarelinha) can put "aqui" at a DIFFERENT physical location than the
+    // winner while tying its price exactly — comparing anyway prints "R$
+    // 0,00 a menos", a statement that claims a saving that doesn't exist.
+    // Treated the same as "aqui already won": fall through to the first row
+    // with a genuinely different (higher) price, not just position [1],
+    // which can tie too (same chain, several branches, same price).
+    if (hereRow && hereRow.store_id !== winner.store_id && hereRow.price !== winner.price) {
       comparison = { amount: Math.round((hereRow.price - winner.price) * 100) / 100, storeName: hereRow.store_name, isHere: true };
-    } else if (fresh[1]) {
-      comparison = { amount: Math.round((fresh[1].price - winner.price) * 100) / 100, storeName: fresh[1].store_name, isHere: false };
+    } else {
+      const nextDifferent = fresh.find((r) => r.store_id !== winner.store_id && r.price !== winner.price);
+      if (nextDifferent) {
+        comparison = { amount: Math.round((nextDifferent.price - winner.price) * 100) / 100, storeName: nextDifferent.store_name, isHere: false };
+      }
     }
   }
 
