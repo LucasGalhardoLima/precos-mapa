@@ -15,6 +15,7 @@ import { useMarketFreshness, MATAO_CHAIN_LABELS, MATAO_CHAIN_COUNT } from '../ho
 import { useAnalytics } from '../hooks/use-analytics';
 import { loadOnboarding, type OnboardingItem } from '../lib/onboarding';
 import { computeTitlePhrase, type TitlePhrase } from '../lib/raiz';
+import { searchFieldRef } from '../lib/search-focus';
 
 const RAIZ_TETO = 4;
 const RESULTADO_TETO_TECLADO = 5;
@@ -173,7 +174,7 @@ function SearchHeader({
   return (
     <View style={styles.searchRow}>
       <View style={styles.searchFieldFlex}>
-        <SearchField value={query} onChangeText={onChangeText} onFocus={onFocus} onBlur={onBlur} />
+        <SearchField ref={searchFieldRef} value={query} onChangeText={onChangeText} onFocus={onFocus} onBlur={onBlur} />
       </View>
       <Pressable style={styles.scanButton} onPress={onScan} accessibilityRole="button">
         <ScanLine size={20} color="#fff" strokeWidth={2.2} />

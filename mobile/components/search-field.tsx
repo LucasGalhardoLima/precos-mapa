@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 import { View, TextInput, Pressable, StyleSheet } from 'react-native';
 import { Search, X } from 'lucide-react-native';
 import { colors, fontFamily, radii, targets, borderWidth, spacing } from '../constants/tokens';
@@ -18,13 +18,21 @@ interface SearchFieldProps {
 // clear). Verified empty state on the artifact; focused state composes the
 // same tokens per the explicit spec ("borda verde e ✕") since the artifact's
 // static mockup only renders the empty state.
-export function SearchField({ value, onChangeText, placeholder = 'buscar produto', onFocus, onBlur }: SearchFieldProps) {
+//
+// forwardRef: app/scan.tsx's "Digitar o nome em vez disso" needs to focus
+// this field on the still-mounted root screen after going back — see
+// lib/search-focus.ts.
+export const SearchField = forwardRef<TextInput, SearchFieldProps>(function SearchField(
+  { value, onChangeText, placeholder = 'buscar produto', onFocus, onBlur },
+  ref,
+) {
   const [focused, setFocused] = useState(false);
 
   return (
     <View style={[styles.field, focused && styles.focused]}>
       <Search size={20} color={focused ? colors.secondary : colors.absence} strokeWidth={2.2} />
       <TextInput
+        ref={ref}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -47,7 +55,7 @@ export function SearchField({ value, onChangeText, placeholder = 'buscar produto
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   field: {

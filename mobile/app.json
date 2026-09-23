@@ -82,7 +82,7 @@
       [
         "react-native-vision-camera",
         {
-          "cameraPermissionText": "Acesse sua câmera para fotografar encartes, escanear código de barras e notas fiscais.",
+          "cameraPermissionText": "O Poup usa sua câmera para ler o código de barras do produto.",
           "enableCodeScanner": true
         }
       ],

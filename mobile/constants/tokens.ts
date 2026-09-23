@@ -28,6 +28,11 @@ export const colors = {
   borderDashed: '#C5CEC9', // dashed empty-state card border only, verified on the artifact
   amberText: '#9A5B00',
   amberBackground: '#FBF1DC',
+  // Scanner only (mobile/CLAUDE.md "Superfície escura só no scanner") — the
+  // laser-line color, given explicitly (spec 2026-09-23). The dark surface
+  // itself isn't a new token: app/scan.tsx reuses `ink` as its background,
+  // since the doc/artifact name no separate hex for it.
+  laser: '#7FD9C8',
 } as const;
 
 // RN ignores `fontWeight` on a custom-loaded font family (the weight is

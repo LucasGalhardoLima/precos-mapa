@@ -237,7 +237,13 @@ export type AnalyticsEventType =
   | 'map_pin_tapped'
   | 'onboarding_completed'
   | 'search_performed'
-  | 'screen_viewed';
+  | 'screen_viewed'
+  // Scanner (Etapa 6, decisão 15) — app/scan.tsx. scan_read carries
+  // metadata.result: 'hit' | 'miss'.
+  | 'scan_opened'
+  | 'scan_permission_denied'
+  | 'scan_read'
+  | 'scan_unknown_ean';
 
 export interface AnalyticsEvent {
   id: string;
