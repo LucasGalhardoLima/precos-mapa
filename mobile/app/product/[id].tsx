@@ -8,6 +8,7 @@ import { BlockLabel } from '../../components/block-label';
 import { AmberBanner } from '../../components/amber-banner';
 import { StoreRow } from '../../components/store-row';
 import { StorePickerSheet } from '../../components/store-picker-sheet';
+import { AcompanharSheet } from '../../components/acompanhar-sheet';
 import { TextLink } from '../../components/text-link';
 import { FilledButton } from '../../components/filled-button';
 import { Provenance } from '../../components/provenance';
@@ -21,6 +22,7 @@ import { useAnalytics } from '../../hooks/use-analytics';
 import { triggerHaptic, triggerNotification } from '../../hooks/use-haptics';
 import { formatBRL } from '../../hooks/use-search';
 import { freshnessLabel, formatSize, resolveSizeAlternatives } from '../../lib/resposta';
+import { trackedRowLabel } from '../../lib/tracked-items';
 import { getPreferredChain, setPreferredChain } from '../../lib/preferred-store';
 
 export default function ProductScreen() {
@@ -44,10 +46,11 @@ export default function ProductScreen() {
 
   const { view, product, isLoading, error, retry } = useProduct({ productId: id, userLat: latitude, userLng: longitude, preferredChain });
   const { stores: nearbyStores, isLoading: storesLoading } = useStores(latitude, longitude);
-  const { trackProduct, isTracking } = useTrackedItems();
+  const { trackedState, isSubmitting, trackWithAlert, trackWithoutAlert } = useTrackedItems(id);
   const { candidates: sizeCandidates } = useSizeAlternatives(product);
   const [expanded, setExpanded] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [acompanharVisible, setAcompanharVisible] = useState(false);
 
   useEffect(() => {
     trackScreen('resposta');
@@ -68,23 +71,39 @@ export default function ProductScreen() {
     setPickerVisible(false);
   }, []);
 
-  const handleAcompanhar = useCallback(async () => {
-    if (isTracking || !view) return;
+  // The winner is a chain now, not a single store — resolve one real branch
+  // of it (matching the chain's winning price) for the analytics store_id,
+  // rather than dropping it or attaching a fake chain-as-store id.
+  const winnerStoreId = view
+    ? (() => {
+        const winnerRow = view.whereRows.find((r) => r.isWinner);
+        return winnerRow ? view.branchRows.find((b) => b.chainLabel === winnerRow.chainLabel && b.price === winnerRow.price)?.storeId : undefined;
+      })()
+    : undefined;
+
+  const handleTrackWithAlert = useCallback(
+    async (targetPrice: number) => {
+      triggerHaptic();
+      const ok = await trackWithAlert(targetPrice);
+      if (ok) {
+        setAcompanharVisible(false);
+        trackListAdd(id, winnerStoreId);
+        trackAlertCreated(id, winnerStoreId);
+        triggerNotification();
+      }
+    },
+    [trackWithAlert, id, winnerStoreId, trackListAdd, trackAlertCreated],
+  );
+
+  const handleTrackWithoutAlert = useCallback(async () => {
     triggerHaptic();
-    // The winner is a chain now, not a single store — resolve one real
-    // branch of it (matching the chain's winning price) for the analytics
-    // store_id, rather than dropping it or attaching a fake chain-as-store id.
-    const winnerRow = view.whereRows.find((r) => r.isWinner);
-    const winnerStoreId = winnerRow
-      ? view.branchRows.find((b) => b.chainLabel === winnerRow.chainLabel && b.price === winnerRow.price)?.storeId
-      : undefined;
-    const ok = await trackProduct({ productId: id, targetPrice: view.price });
+    const ok = await trackWithoutAlert();
     if (ok) {
+      setAcompanharVisible(false);
       trackListAdd(id, winnerStoreId);
-      trackAlertCreated(id, winnerStoreId);
       triggerNotification();
     }
-  }, [isTracking, view, trackProduct, id, trackListAdd, trackAlertCreated]);
+  }, [trackWithoutAlert, id, winnerStoreId, trackListAdd]);
 
   if (isLoading || !view || !product) {
     // Reuses the exact offline pattern already shipped for Resultado
@@ -181,7 +200,14 @@ export default function ProductScreen() {
                 />
               ))}
           {!expanded && view.whereHasMore ? <TextLink label="ver todos os mercados" onPress={() => setExpanded(true)} /> : null}
-          <TextLink label="acompanhar este item" onPress={handleAcompanhar} />
+          {trackedState?.isTracked ? (
+            <View style={styles.trackedBlock}>
+              <Text style={styles.trackedLabel}>{trackedRowLabel(trackedState)}</Text>
+              <TextLink label="editar" onPress={() => setAcompanharVisible(true)} />
+            </View>
+          ) : (
+            <TextLink label="acompanhar este item" onPress={() => setAcompanharVisible(true)} />
+          )}
         </View>
 
         {qualTamanho && qualTamanho.kind !== 'none' ? (
@@ -207,6 +233,16 @@ export default function ProductScreen() {
         <Provenance>{view.footerNote}</Provenance>
       </ScrollView>
       <StorePickerSheet visible={pickerVisible} stores={nearbyStores} isLoading={storesLoading} onClose={() => setPickerVisible(false)} onPick={handleSwap} />
+      <AcompanharSheet
+        visible={acompanharVisible}
+        // Editando um item já acompanhado: o alvo já salvo vence sobre o
+        // preço de hoje (a sugestão original só vale na primeira vez).
+        suggestedPrice={trackedState?.isTracked && trackedState.targetPrice != null ? trackedState.targetPrice : view.price}
+        isSubmitting={isSubmitting}
+        onClose={() => setAcompanharVisible(false)}
+        onTrackWithAlert={handleTrackWithAlert}
+        onTrackWithoutAlert={handleTrackWithoutAlert}
+      />
     </SafeAreaView>
   );
 }
@@ -271,6 +307,15 @@ const styles = StyleSheet.create({
   },
   whereBlock: {
     gap: spacing.sm,
+  },
+  trackedBlock: {
+    gap: 2,
+  },
+  trackedLabel: {
+    ...typography.support,
+    color: colors.secondary,
+    height: targets.touch,
+    textAlignVertical: 'center',
   },
   stateHeadline: {
     fontFamily: fontFamily.bold,
