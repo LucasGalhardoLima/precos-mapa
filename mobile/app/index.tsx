@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Settings, ScanLine } from 'lucide-react-native';
 import { colors, fontFamily, typography, spacing, targets, radii } from '../constants/tokens';
@@ -8,7 +9,7 @@ import { ListRow } from '../components/list-row';
 import { FilledButton } from '../components/filled-button';
 import { TextLink } from '../components/text-link';
 import { useLocation } from '../hooks/use-location';
-import { useSearch } from '../hooks/use-search';
+import { useSearch, formatBRL } from '../hooks/use-search';
 import { useTrackedSummary } from '../hooks/use-tracked-summary';
 import { useMarketFreshness, MATAO_CHAIN_LABELS, MATAO_CHAIN_COUNT } from '../hooks/use-market-freshness';
 import { useAnalytics } from '../hooks/use-analytics';
@@ -89,7 +90,7 @@ export default function RaizScreen() {
   if (!checkedOnboarding) return null;
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen}>
       <Header router={router} />
       {resultadoActive ? (
         <>
@@ -136,7 +137,7 @@ export default function RaizScreen() {
           />
         </>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -320,7 +321,7 @@ function ResultadoBody({
             title={r.name}
             subtitle={r.hasPriceToday ? (r.singleStore ? `só no ${r.winnerStoreName}` : `menor no ${r.winnerStoreName}`) : 'sem preço hoje'}
             imageUrl={r.imageUrl}
-            value={r.hasPriceToday ? undefined : '—'}
+            value={r.hasPriceToday && r.price != null ? formatBRL(r.price) : '—'}
             muted={!r.hasPriceToday}
             chevron
             chevronColor={colors.brand}

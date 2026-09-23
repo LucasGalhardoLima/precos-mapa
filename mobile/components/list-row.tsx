@@ -40,9 +40,13 @@ export function ListRow({ title, subtitle, imageUrl, value, muted, chevron, chev
       )}
       {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.thumbnail} /> : null}
       <View style={styles.textColumn}>
-        <Text style={[styles.title, muted && styles.titleMuted]} numberOfLines={2}>
-          {title}
-        </Text>
+        {/* No numberOfLines cap: "nome quebra em 2 linhas, nunca reticências
+            — o tamanho distingue as linhas; altura da linha acompanha"
+            (docs/poup-mlp-decisoes.md, Resultado). Most names fit 2 lines,
+            but the row grows for the ones that don't rather than truncate —
+            real catalog names (e.g. "Refrigerante Coca Cola Pet Sem Açúcar
+            200ml") can run longer than the artifact's own examples. */}
+        <Text style={[styles.title, muted && styles.titleMuted]}>{title}</Text>
         {subtitle ? (
           <Text style={styles.subtitle} numberOfLines={1}>
             {subtitle}
