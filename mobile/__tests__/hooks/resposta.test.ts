@@ -1,6 +1,17 @@
 // mobile/__tests__/hooks/resposta.test.ts
 
-import { buildRespostaView, daysAgo, freshnessLabel, isStale, type ProductInfo, type RawStorePrice } from '@/lib/resposta';
+import {
+  buildRespostaView,
+  daysAgo,
+  freshnessLabel,
+  isStale,
+  formatSize,
+  normalizeBaseName,
+  resolveSizeAlternatives,
+  type ProductInfo,
+  type RawStorePrice,
+  type SizeCandidate,
+} from '@/lib/resposta';
 
 const NOW = new Date('2026-09-23T12:00:00Z');
 
@@ -177,5 +188,103 @@ describe('buildRespostaView — sem localização (no "aqui")', () => {
   it('has no comparison when only one fresh row exists', () => {
     const view = buildRespostaView(product(), [row({ distance_km: null })], NOW);
     expect(view.comparison).toBeNull();
+  });
+});
+
+describe('formatSize', () => {
+  it('converts grams to kg above 1000, trimming a whole-number decimal', () => {
+    expect(formatSize(5000, 'g')).toBe('5 kg');
+  });
+
+  it('keeps one decimal (comma) for a non-whole kg conversion', () => {
+    expect(formatSize(1500, 'g')).toBe('1,5 kg');
+  });
+
+  it('leaves sub-1000g values in grams', () => {
+    expect(formatSize(900, 'g')).toBe('900 g');
+  });
+
+  it('converts ml to L above 1000', () => {
+    expect(formatSize(1000, 'ml')).toBe('1 L');
+  });
+
+  it('passes through un/m unconverted', () => {
+    expect(formatSize(12, 'un')).toBe('12 un');
+  });
+});
+
+describe('normalizeBaseName — QUAL TAMANHO family match', () => {
+  it('strips a spaced size token and normalizes case/accents', () => {
+    expect(normalizeBaseName('Arroz Tio João Tipo 1 5 kg')).toBe('arroz tio joao tipo 1');
+  });
+
+  it('strips a glued size token (no space before the unit)', () => {
+    expect(normalizeBaseName('Óleo de Soja Liza 900ml')).toBe('oleo de soja liza');
+  });
+
+  it('strips a glued liter token', () => {
+    expect(normalizeBaseName('Leite Italac Integral 1l')).toBe('leite italac integral');
+  });
+
+  it('two sizes of the same product normalize to the same base name', () => {
+    expect(normalizeBaseName('Arroz Tio João Tipo 1 · 5 kg')).toBe(normalizeBaseName('Arroz Tio João Tipo 1 · 2kg'));
+  });
+
+  it('does not accidentally strip a real word starting with a unit letter', () => {
+    // "Leite" starts with 'l' but isn't preceded by a digit — must survive.
+    expect(normalizeBaseName('Leite Condensado')).toBe('leite condensado');
+  });
+});
+
+describe('resolveSizeAlternatives — QUAL TAMANHO', () => {
+  const current5kg = product({ name: 'Arroz Tio João tipo 1', sizeValue: 5000, sizeUnit: 'g' });
+  const currentPerUnit = 4.98; // R$24.90 / 5kg
+
+  function candidate(overrides: Partial<SizeCandidate> = {}): SizeCandidate {
+    return { id: 'c1', name: 'Arroz Tio João tipo 1', sizeValue: 2000, cheapestPriceToday: 9.49, cheapestStoreName: 'Tenda', ...overrides };
+  }
+
+  it('lists a candidate whose price/unit beats the current size', () => {
+    const result = resolveSizeAlternatives(current5kg, currentPerUnit, [candidate()]); // 9.49/2kg = 4.745/kg < 4.98
+    expect(result).toEqual({
+      kind: 'alternatives',
+      items: [{ productId: 'c1', name: 'Arroz Tio João tipo 1 · 2 kg', pricePerUnitLabel: expect.stringContaining('4,75'), storeName: 'Tenda' }],
+    });
+  });
+
+  it('caps at 3 alternatives, sorted ascending by price/unit', () => {
+    const candidates = [
+      candidate({ id: 'a', sizeValue: 1000, cheapestPriceToday: 4.5 }), // 4.50/kg
+      candidate({ id: 'b', sizeValue: 1000, cheapestPriceToday: 4.0 }), // 4.00/kg
+      candidate({ id: 'c', sizeValue: 1000, cheapestPriceToday: 4.9 }), // 4.90/kg
+      candidate({ id: 'd', sizeValue: 1000, cheapestPriceToday: 4.2 }), // 4.20/kg
+    ];
+    const result = resolveSizeAlternatives(current5kg, currentPerUnit, candidates);
+    expect(result.kind).toBe('alternatives');
+    expect(result.kind === 'alternatives' && result.items.map((i) => i.productId)).toEqual(['b', 'd', 'a']);
+  });
+
+  it('returns current-best with the exact mockup phrasing when nothing beats it', () => {
+    const result = resolveSizeAlternatives(current5kg, currentPerUnit, [candidate({ cheapestPriceToday: 30 })]); // way more expensive per kg
+    expect(result).toEqual({ kind: 'current-best', label: '5 kg é o melhor por kg' });
+  });
+
+  it('is "none" (bloco some) when no candidate has a price today', () => {
+    expect(resolveSizeAlternatives(current5kg, currentPerUnit, [candidate({ cheapestPriceToday: null })])).toEqual({ kind: 'none' });
+  });
+
+  it('is "none" when there are no candidates at all (family of one)', () => {
+    expect(resolveSizeAlternatives(current5kg, currentPerUnit, [])).toEqual({ kind: 'none' });
+  });
+
+  it('is "none" when the current product has no parsed size', () => {
+    const noSize = product({ sizeValue: null, sizeUnit: null });
+    expect(resolveSizeAlternatives(noSize, currentPerUnit, [candidate()])).toEqual({ kind: 'none' });
+  });
+
+  it('formats the "melhor por" phrase for liters', () => {
+    const current1L = product({ sizeValue: 1000, sizeUnit: 'ml' });
+    const result = resolveSizeAlternatives(current1L, 4.79, [candidate({ cheapestPriceToday: 100 })]);
+    expect(result).toEqual({ kind: 'current-best', label: '1 L é o melhor por litro' });
   });
 });

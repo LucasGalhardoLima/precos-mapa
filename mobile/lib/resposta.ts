@@ -101,11 +101,111 @@ const UNIT_LABEL: Record<NonNullable<ProductInfo['sizeUnit']>, string> = {
   m: 'm',
 };
 
+// price÷size_value, converted to the "big" unit (kg/L) when the stored unit
+// is the "small" one (g/ml) — shared by the header subphrase and QUAL
+// TAMANHO's own per-unit comparison, which must use the identical formula
+// to be comparable at all.
+function pricePerUnitValue(price: number, sizeValue: number, sizeUnit: NonNullable<ProductInfo['sizeUnit']>): number {
+  const factor = sizeUnit === 'g' || sizeUnit === 'ml' ? 1000 : 1;
+  return Math.round(((price / sizeValue) * factor) * 100) / 100;
+}
+
 function pricePerUnit(price: number, product: ProductInfo): RespostaView['pricePerUnit'] {
   if (product.sizeValue == null || product.sizeUnit == null) return null;
-  const factor = product.sizeUnit === 'g' || product.sizeUnit === 'ml' ? 1000 : 1;
-  const perUnit = (price / product.sizeValue) * factor;
-  return { value: Math.round(perUnit * 100) / 100, unit: UNIT_LABEL[product.sizeUnit] };
+  return { value: pricePerUnitValue(price, product.sizeValue, product.sizeUnit), unit: UNIT_LABEL[product.sizeUnit] };
+}
+
+// "5 kg é o melhor por kg" / "1 L é o melhor por litro" (QUAL TAMANHO's
+// fallback line, and the header subphrase's own size mention) — g/ml over
+// 1000 display as kg/L, matching pricePerUnitValue's own unit conversion so
+// the size shown next to a price always agrees with the unit that price is
+// per. Trailing ".0" dropped (5000g → "5 kg", not "5.0 kg"); 1500g → "1.5 kg".
+export function formatSize(value: number, unit: ProductInfo['sizeUnit']): string {
+  const trim = (n: number) => (n % 1 === 0 ? String(n) : n.toFixed(1).replace('.', ','));
+  if (unit === 'g' && value >= 1000) return `${trim(value / 1000)} kg`;
+  if (unit === 'ml' && value >= 1000) return `${trim(value / 1000)} L`;
+  return `${trim(value)} ${unit ?? ''}`.trim();
+}
+
+const UNIT_PHRASE: Record<NonNullable<ProductInfo['sizeUnit']>, string> = {
+  g: 'por kg',
+  ml: 'por litro',
+  un: 'por unidade',
+  m: 'por m',
+};
+
+// Strips accents, casing, and size tokens ("5 kg", "1l", "900ml", "2kg") so
+// two names that differ only by pack size compare equal — QUAL TAMANHO's
+// "mesmo nome-base" match. Deliberately simple (no stemming, no synonym
+// table): the family is already narrowed to the same brand + size_unit
+// before this ever runs, so a same-brand exact-base-name-minus-size match is
+// enough — the same "don't invent a fuzzy matcher, use what the live data
+// actually needs" lesson as pickGenericWinner (mobile/lib/raiz.ts).
+export function normalizeBaseName(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|un(?:idades?)?)\b/gi, '')
+    .replace(/[·\-–,]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// One candidate from the same brand+size_unit family (already queried and
+// name-matched by the caller — see hooks/use-size-alternatives.ts) with its
+// own cheapest fresh price already resolved (same "até 3 dias" rule as
+// ONDE). Null price = nothing fresh for that candidate today.
+export interface SizeCandidate {
+  id: string;
+  name: string;
+  sizeValue: number;
+  cheapestPriceToday: number | null;
+  cheapestStoreName: string | null;
+}
+
+export interface SizeAlternative {
+  productId: string;
+  name: string; // full name + size, e.g. "Arroz Tio João tipo 1 · 2 kg"
+  pricePerUnitLabel: string; // "R$ 4,75/kg"
+  storeName: string;
+}
+
+export type QualTamanhoResult =
+  | { kind: 'none' } // no size info on the current product, no candidates at all, or no candidate priced today — bloco some
+  | { kind: 'current-best'; label: string } // candidates exist and priced, none beats the current size
+  | { kind: 'alternatives'; items: SizeAlternative[] }; // teto 3, ascending by price/unit
+
+export function resolveSizeAlternatives(current: ProductInfo, currentPricePerUnit: number, candidates: SizeCandidate[]): QualTamanhoResult {
+  if (current.sizeValue == null || current.sizeUnit == null) return { kind: 'none' };
+  const unit = current.sizeUnit;
+
+  const priced = candidates
+    .filter((c): c is SizeCandidate & { cheapestPriceToday: number; cheapestStoreName: string } => c.cheapestPriceToday != null)
+    .map((c) => ({ ...c, perUnit: pricePerUnitValue(c.cheapestPriceToday, c.sizeValue, unit) }));
+
+  if (priced.length === 0) return { kind: 'none' };
+
+  const better = priced
+    .filter((c) => c.perUnit < currentPricePerUnit)
+    .sort((a, b) => a.perUnit - b.perUnit)
+    .slice(0, 3);
+
+  if (better.length === 0) return { kind: 'current-best', label: `${formatSize(current.sizeValue, unit)} é o melhor ${UNIT_PHRASE[unit]}` };
+
+  return {
+    kind: 'alternatives',
+    items: better.map((c) => ({
+      productId: c.id,
+      name: `${c.name} · ${formatSize(c.sizeValue, unit)}`,
+      pricePerUnitLabel: `${formatBRL(c.perUnit)}/${UNIT_LABEL[unit]}`,
+      storeName: c.cheapestStoreName,
+    })),
+  };
+}
+
+function formatBRL(value: number): string {
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 // Nearest store by distance_km — "'Você está aqui'. Mercado mais próximo

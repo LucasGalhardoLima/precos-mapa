@@ -11,14 +11,16 @@ import { StorePickerSheet } from '../../components/store-picker-sheet';
 import { TextLink } from '../../components/text-link';
 import { FilledButton } from '../../components/filled-button';
 import { Provenance } from '../../components/provenance';
+import { ListRow } from '../../components/list-row';
 import { useLocation } from '../../hooks/use-location';
 import { useProduct } from '../../hooks/use-product';
 import { useStores } from '../../hooks/use-stores';
 import { useTrackedItems } from '../../hooks/use-tracked-items';
+import { useSizeAlternatives } from '../../hooks/use-size-alternatives';
 import { useAnalytics } from '../../hooks/use-analytics';
 import { triggerHaptic, triggerNotification } from '../../hooks/use-haptics';
 import { formatBRL } from '../../hooks/use-search';
-import { freshnessLabel } from '../../lib/resposta';
+import { freshnessLabel, formatSize, resolveSizeAlternatives } from '../../lib/resposta';
 import { getPreferredChain, setPreferredChain } from '../../lib/preferred-store';
 
 const ONDE_TETO = 4;
@@ -45,6 +47,7 @@ export default function ProductScreen() {
   const { view, product, isLoading, error, retry } = useProduct({ productId: id, userLat: latitude, userLng: longitude, preferredChain });
   const { stores: nearbyStores, isLoading: storesLoading } = useStores(latitude, longitude);
   const { trackProduct, isTracking } = useTrackedItems();
+  const { candidates: sizeCandidates } = useSizeAlternatives(product);
   const [expanded, setExpanded] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
 
@@ -105,6 +108,7 @@ export default function ProductScreen() {
 
   const visibleWhere = expanded ? view.whereRows : view.whereRows.slice(0, ONDE_TETO);
   const nameLine = product.sizeValue != null ? `${product.name} · ${formatSize(product.sizeValue, product.sizeUnit)}` : product.name;
+  const qualTamanho = view.pricePerUnit ? resolveSizeAlternatives(product, view.pricePerUnit.value, sizeCandidates) : null;
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -153,10 +157,25 @@ export default function ProductScreen() {
           <TextLink label="acompanhar este item" onPress={handleAcompanhar} />
         </View>
 
-        {/* QUAL TAMANHO deliberately not built yet — "bate por unidade" has
-            no defined matching rule anywhere in the docs/artifact/schema
-            (asked Lucas, no answer yet as of this commit). See lib/resposta.ts
-            for what's already wired (pricePerUnit) and ready to plug in. */}
+        {qualTamanho && qualTamanho.kind !== 'none' ? (
+          <View style={styles.whereBlock}>
+            <BlockLabel>QUAL TAMANHO</BlockLabel>
+            {qualTamanho.kind === 'current-best' ? (
+              <ListRow title={qualTamanho.label} muted />
+            ) : (
+              qualTamanho.items.map((item) => (
+                <ListRow
+                  key={item.productId}
+                  title={item.name}
+                  subtitle={`${item.pricePerUnitLabel} · menor no ${item.storeName}`}
+                  chevron
+                  chevronColor={colors.brand}
+                  onPress={() => router.push(`/product/${item.productId}`)}
+                />
+              ))
+            )}
+          </View>
+        ) : null}
 
         <Provenance>{view.footerNote}</Provenance>
       </ScrollView>
@@ -171,12 +190,6 @@ function Header({ onBack }: { onBack: () => void }) {
       <BackLink onPress={onBack} />
     </View>
   );
-}
-
-function formatSize(value: number, unit: string | null): string {
-  if (unit === 'g' && value >= 1000) return `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)} kg`;
-  if (unit === 'ml' && value >= 1000) return `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)} L`;
-  return `${value} ${unit ?? ''}`.trim();
 }
 
 const styles = StyleSheet.create({
