@@ -109,9 +109,25 @@ function pricePerUnit(price: number, product: ProductInfo): RespostaView['priceP
 }
 
 // Nearest store by distance_km — "'Você está aqui'. Mercado mais próximo
-// pelo GPS" (doc decisão 5). Null when location is unavailable or no row
-// carries a distance at all.
-function findHereStoreId(rows: RawStorePrice[]): string | null {
+// pelo GPS, com um toque para trocar" (doc decisão 5). `preferredChain`
+// (from lib/preferred-store.ts, set via the "trocar" sheet) overrides GPS-
+// nearest when a row for that chain exists among these rows; a chain's
+// physical location is matched by name prefix ("Amarelinha Loja 21..."
+// startsWith "Amarelinha") since RawStorePrice only carries the specific
+// location's name, not a chain id. Null when location is unavailable, no
+// row carries a distance, and no preferred-chain row exists either.
+function findHereStoreId(rows: RawStorePrice[], preferredChain: string | null): string | null {
+  if (preferredChain) {
+    let bestInChain: RawStorePrice | null = null;
+    for (const r of rows) {
+      if (!r.store_name.startsWith(preferredChain)) continue;
+      if (!bestInChain || (r.distance_km != null && (bestInChain.distance_km == null || r.distance_km < bestInChain.distance_km))) {
+        bestInChain = r;
+      }
+    }
+    if (bestInChain) return bestInChain.store_id;
+  }
+
   let best: RawStorePrice | null = null;
   for (const r of rows) {
     if (r.distance_km == null) continue;
@@ -122,7 +138,12 @@ function findHereStoreId(rows: RawStorePrice[]): string | null {
 
 // The one function the Resposta screen actually calls. Everything above is
 // a building block kept separate for direct unit testing.
-export function buildRespostaView(product: ProductInfo, rawRows: RawStorePrice[], now: Date = new Date()): RespostaView {
+export function buildRespostaView(
+  product: ProductInfo,
+  rawRows: RawStorePrice[],
+  now: Date = new Date(),
+  preferredChain: string | null = null,
+): RespostaView {
   const withDays = rawRows.map((r) => ({ ...r, days: daysAgo(r.last_price_date, now) }));
   const fresh = withDays.filter((r) => !isStale(r.days));
   const stale = withDays.filter((r) => isStale(r.days));
@@ -131,7 +152,7 @@ export function buildRespostaView(product: ProductInfo, rawRows: RawStorePrice[]
   // as a flat, muted fact list — doc/artifact never rank or exclude here,
   // there's nothing to rank ("últimos preços vistos", not "menor preço").
   if (fresh.length === 0) {
-    const hereId = findHereStoreId(withDays);
+    const hereId = findHereStoreId(withDays, preferredChain);
     const whereRows: WhereRow[] = withDays.map((r) => ({
       storeId: r.store_id,
       storeName: r.store_name,
@@ -156,7 +177,7 @@ export function buildRespostaView(product: ProductInfo, rawRows: RawStorePrice[]
     };
   }
 
-  const hereId = findHereStoreId(fresh);
+  const hereId = findHereStoreId(fresh, preferredChain);
   const winner = fresh[0]; // RPC already sorts price ASC among search_priority-tied rows
   const hasEan = product.ean != null;
 

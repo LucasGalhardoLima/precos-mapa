@@ -130,6 +130,24 @@ describe('buildRespostaView — 3d: sem preço hoje', () => {
   });
 });
 
+describe('buildRespostaView — preferredChain (folha "trocar")', () => {
+  it('overrides GPS-nearest when a row for the preferred chain exists', () => {
+    const rows = [
+      row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', price: 24.9, distance_km: 0.2 }), // GPS-nearest, but not preferred
+      row({ store_id: 's-amarelinha', store_name: 'Amarelinha Loja 21 Flamboyant', price: 27.0, distance_km: 3.1 }),
+    ];
+    const view = buildRespostaView(product(), rows, NOW, 'Amarelinha');
+    expect(view.whereRows.find((r) => r.storeId === 's-amarelinha')?.isHere).toBe(true);
+    expect(view.whereRows.find((r) => r.storeId === 's-tenda')?.isHere).toBe(false);
+  });
+
+  it('falls back to GPS-nearest when no row matches the preferred chain', () => {
+    const rows = [row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', distance_km: 0.2 })];
+    const view = buildRespostaView(product(), rows, NOW, 'Amarelinha');
+    expect(view.whereRows[0]?.isHere).toBe(true);
+  });
+});
+
 describe('buildRespostaView — mais de 4 lojas frescas', () => {
   it('does not truncate whereRows itself, and flags whereHasMore for the screen to decide', () => {
     const rows = Array.from({ length: 5 }, (_, i) => row({ store_id: `s${i}`, store_name: `Loja ${i}`, price: 10 + i, distance_km: i }));

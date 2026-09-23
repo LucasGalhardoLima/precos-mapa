@@ -1,20 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View, Text, Image, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { colors, fontFamily, typography, spacing, targets, radii } from '../../constants/tokens';
 import { BackLink } from '../../components/back-link';
 import { BlockLabel } from '../../components/block-label';
 import { AmberBanner } from '../../components/amber-banner';
 import { StoreRow } from '../../components/store-row';
+import { StorePickerSheet } from '../../components/store-picker-sheet';
 import { TextLink } from '../../components/text-link';
 import { FilledButton } from '../../components/filled-button';
 import { Provenance } from '../../components/provenance';
 import { useLocation } from '../../hooks/use-location';
 import { useProduct } from '../../hooks/use-product';
+import { useStores } from '../../hooks/use-stores';
+import { useTrackedItems } from '../../hooks/use-tracked-items';
 import { useAnalytics } from '../../hooks/use-analytics';
+import { triggerHaptic, triggerNotification } from '../../hooks/use-haptics';
 import { formatBRL } from '../../hooks/use-search';
 import { freshnessLabel } from '../../lib/resposta';
+import { getPreferredChain, setPreferredChain } from '../../lib/preferred-store';
 
 const ONDE_TETO = 4;
 
@@ -22,9 +27,26 @@ export default function ProductScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { latitude, longitude } = useLocation({ autoRequest: false });
-  const { trackScreen, trackProductView } = useAnalytics();
-  const { view, product, isLoading, error, retry } = useProduct({ productId: id, userLat: latitude, userLng: longitude });
+  const { trackScreen, trackProductView, trackListAdd, trackAlertCreated } = useAnalytics();
+
+  const [preferredChain, setPreferredChainState] = useState<string | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      getPreferredChain().then((chain) => {
+        if (!cancelled) setPreferredChainState(chain);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
+
+  const { view, product, isLoading, error, retry } = useProduct({ productId: id, userLat: latitude, userLng: longitude, preferredChain });
+  const { stores: nearbyStores, isLoading: storesLoading } = useStores(latitude, longitude);
+  const { trackProduct, isTracking } = useTrackedItems();
   const [expanded, setExpanded] = useState(false);
+  const [pickerVisible, setPickerVisible] = useState(false);
 
   useEffect(() => {
     trackScreen('resposta');
@@ -36,6 +58,24 @@ export default function ProductScreen() {
     // trackProductView identity change (same pattern as Raiz's trackSearch).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, id]);
+
+  const handleSwap = useCallback(async (chainLabel: string) => {
+    await setPreferredChain(chainLabel);
+    setPreferredChainState(chainLabel);
+    setPickerVisible(false);
+  }, []);
+
+  const handleAcompanhar = useCallback(async () => {
+    if (isTracking || !view) return;
+    triggerHaptic();
+    const winnerStoreId = view.whereRows.find((r) => r.isWinner)?.storeId;
+    const ok = await trackProduct({ productId: id, targetPrice: view.price });
+    if (ok) {
+      trackListAdd(id, winnerStoreId);
+      trackAlertCreated(id, winnerStoreId);
+      triggerNotification();
+    }
+  }, [isTracking, view, trackProduct, id, trackListAdd, trackAlertCreated]);
 
   if (isLoading || !view || !product) {
     // Reuses the exact offline pattern already shipped for Resultado
@@ -106,22 +146,11 @@ export default function ProductScreen() {
               isHere={row.isHere}
               freshnessLabel={freshnessLabel(row.daysAgo)}
               muted={row.isStale}
-              // shortcut: "trocar" (pick a different home store than the
-              // GPS-nearest one) has no picker built yet anywhere in the
-              // app — same stub pattern already shipped for Resultado's
-              // "Ajustes de rede do aparelho". Upgrade: build the store-
-              // picker sheet mobile/CLAUDE.md's hook table promises for
-              // use-stores.ts once that hook is rebuilt for the MLP (it's
-              // currently pre-MLP dead code, see Etapa 5 investigation).
-              onSwap={() => {}}
+              onSwap={() => setPickerVisible(true)}
             />
           ))}
           {!expanded && view.whereHasMore ? <TextLink label="ver todos os mercados" onPress={() => setExpanded(true)} /> : null}
-          {/* shortcut: signInAnonymously()/notificação/insert em tracked_items
-              bloqueados até enable_anonymous_sign_ins ser ativado (pré-requisito
-              combinado com o Lucas). Upgrade: trocar este stub pelo fluxo real
-              assim que o toggle for confirmado. */}
-          <TextLink label="acompanhar este item" onPress={() => {}} />
+          <TextLink label="acompanhar este item" onPress={handleAcompanhar} />
         </View>
 
         {/* QUAL TAMANHO deliberately not built yet — "bate por unidade" has
@@ -131,6 +160,7 @@ export default function ProductScreen() {
 
         <Provenance>{view.footerNote}</Provenance>
       </ScrollView>
+      <StorePickerSheet visible={pickerVisible} stores={nearbyStores} isLoading={storesLoading} onClose={() => setPickerVisible(false)} onPick={handleSwap} />
     </SafeAreaView>
   );
 }

@@ -6,6 +6,7 @@ interface UseProductOptions {
   productId: string;
   userLat: number | null;
   userLng: number | null;
+  preferredChain: string | null;
 }
 
 interface UseProductResult {
@@ -23,7 +24,7 @@ interface UseProductResult {
 // ean/size_value/size_unit either) — see [[live_price_scrapers_status]]-style
 // investigation notes for why this wasn't invented as a new migration:
 // simplest fit for two already-existing, already-indexed reads.
-export function useProduct({ productId, userLat, userLng }: UseProductOptions): UseProductResult {
+export function useProduct({ productId, userLat, userLng, preferredChain }: UseProductOptions): UseProductResult {
   const [view, setView] = useState<RespostaView | null>(null);
   const [product, setProduct] = useState<ProductInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,14 +62,14 @@ export function useProduct({ productId, userLat, userLng }: UseProductOptions): 
       const rows = (pricesRes.data as RawStorePrice[] | null) ?? [];
 
       setProduct(p);
-      setView(buildRespostaView(p, rows));
+      setView(buildRespostaView(p, rows, new Date(), preferredChain));
       setIsLoading(false);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [productId, userLat, userLng, attempt]);
+  }, [productId, userLat, userLng, preferredChain, attempt]);
 
   return { view, product, isLoading, error, retry: () => setAttempt((a) => a + 1) };
 }

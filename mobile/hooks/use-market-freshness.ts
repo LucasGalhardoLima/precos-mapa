@@ -8,7 +8,10 @@ import { supabase } from '@/lib/supabase';
 // MLP was never built around. `chain` is null for the two single-location
 // entries (Savegnago, Jaú Serve), so this matches by name for those and by
 // chain for the two multi-location ones, rather than by city.
-const MATAO_CHAINS = [
+// Exported (not just the derived labels/count below) so use-stores.ts can
+// reuse the exact same 4-chain filter for the "trocar" store picker instead
+// of redefining it — single source of truth for "what are the 4 chains".
+export const MATAO_CHAINS = [
   { label: 'Savegnago', match: { name: 'Savegnago' } },
   { label: 'Jaú Serve', match: { name: 'Jaú Serve' } },
   { label: 'Tenda', match: { chain: 'Tenda Atacado' } },
