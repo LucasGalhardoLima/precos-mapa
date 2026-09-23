@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase-server";
 import { SectionHeader } from "@/features/panel/components/section-header";
 import { formatCurrency } from "@/features/shared/format";
 import { ModerationActions } from "./moderation-actions";
-import { ImportReviewCard } from "./import-review-card";
 
 export default async function SuperModerationPage() {
   await requirePermission("moderation:manage");
@@ -38,59 +37,6 @@ export default async function SuperModerationPage() {
       discount,
       reason,
       createdAt: p.created_at,
-    };
-  });
-
-  // Fetch imports needing review
-  const { data: pendingImports } = await supabase
-    .from("pdf_imports")
-    .select("id, filename, created_at, store_id, extraction_pass_1, extraction_pass_2, extraction_pass_3, stores:store_id(name)")
-    .eq("status", "needs_review")
-    .order("created_at", { ascending: false });
-
-  interface ExtractedProduct {
-    name: string;
-    price: number;
-    original_price?: number | null;
-    unit?: string;
-    category?: string;
-    validity?: string | null;
-  }
-
-  interface PassData {
-    products?: ExtractedProduct[];
-    error?: string;
-  }
-
-  const importItems = (pendingImports ?? []).map((imp) => {
-    const stores = Array.isArray(imp.stores) ? imp.stores[0] : imp.stores;
-    const buildPassSummary = (passData: PassData | null) => {
-      if (!passData || passData.error) {
-        return {
-          productCount: 0,
-          products: [] as ExtractedProduct[],
-          hasError: !!passData?.error,
-          errorMessage: passData?.error,
-        };
-      }
-      const products = passData.products ?? [];
-      return {
-        productCount: products.length,
-        products,
-        hasError: false,
-      };
-    };
-
-    return {
-      id: imp.id,
-      storeName: stores?.name ?? "Loja",
-      filename: imp.filename,
-      createdAt: imp.created_at,
-      passes: [
-        buildPassSummary(imp.extraction_pass_1),
-        buildPassSummary(imp.extraction_pass_2),
-        buildPassSummary(imp.extraction_pass_3),
-      ] as [ReturnType<typeof buildPassSummary>, ReturnType<typeof buildPassSummary>, ReturnType<typeof buildPassSummary>],
     };
   });
 
@@ -143,24 +89,6 @@ export default async function SuperModerationPage() {
 
               <ModerationActions promotionId={item.id} />
             </article>
-          ))}
-        </div>
-      )}
-
-      {/* Import review section */}
-      <SectionHeader
-        title="Importacoes automaticas"
-        subtitle="PDFs importados automaticamente que nao atingiram consenso entre as 3 extracoes."
-      />
-
-      {importItems.length === 0 ? (
-        <div className="rounded-2xl border border-[var(--color-line)] bg-white p-8 text-center shadow-[var(--shadow-soft)]">
-          <p className="text-sm text-[var(--color-muted)]">Nenhuma importacao pendente de revisao.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {importItems.map((item) => (
-            <ImportReviewCard key={item.id} item={item} />
           ))}
         </div>
       )}
