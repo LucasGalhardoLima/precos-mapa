@@ -72,6 +72,12 @@ O sócio aprovou o protótipo integralmente e pediu só visual. Os mockups que e
 
 Nada mais do mockup entrou: sem formas de fundo, gradiente, tagline, "dica", selo ou badge.
 
+## Implementação (23/09) — Resposta
+
+**ONDE agrupa por rede, não por filial.** O app promete "onde este produto está mais barato hoje, nos 4 mercados de Matão" — os 4 mercados são as 4 redes (Savegnago, Jaú Serve, Tenda, Amarelinha), não os endereços físicos (só a Amarelinha tem 5 lojas em Matão). Uma linha por rede: preço = menor preço de hoje entre as filiais daquela rede; distância = a filial mais próxima que tem esse preço. "Você está aqui" é a rede da filial fisicamente mais próxima — independe de frescor: se a filial mais próxima está com preço defasado, "aqui" continua sendo a rede dela, só que a linha sai do ONDE pra faixa âmbar. "ver todos os mercados ›" só aparece quando alguma rede fica de fora do ONDE (defasada); ao tocar, mostra as filiais individuais (não mais redes).
+
+**Folha "Acompanhar" (artefato seção 8).** Modal com puxador no topo e "fechar" à direita (diferente do padrão "‹ voltar" das outras folhas — esta é uma ação isolada, não um passo de fluxo). Rótulo "AVISAR QUANDO CAIR ABAIXO DE" + campo de preço, pré-preenchido com o menor preço de hoje (vazio, com "R$" cinza, quando não há preço hoje). Duas saídas: "Acompanhar e avisar ›" (signInAnonymously se ainda não há sessão → pedido de permissão do sistema → grava com o preço-alvo; permissão negada não bloqueia a gravação, só fica sem push até o usuário conceder depois) e "Acompanhar sem avisos ›" (grava sem alvo, nunca pede permissão). Depois de acompanhar, o texto "acompanhar este item ›" vira duas linhas: "acompanhando · avisar abaixo de R$ X" (ou só "acompanhando", sem alvo) em cinza, e "editar ›" reabrindo a mesma folha pra ajustar.
+
 ## Fora do MLP (lista consolidada)
 
 Veredito no lançamento · foto da embalagem · busca por departamento · ofertas por categoria · ranking de mercados por cesta · "quanto poupei" · aba Lista · favoritos · filtros · preço de/por · paywall · encartes/fotos de promoção (só o campo "fonte" no modelo de preço) · semáforo de 4 estados · apps nativos · histórico de leituras · barra de abas.
