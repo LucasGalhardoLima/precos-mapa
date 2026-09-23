@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { calculateDistanceKm } from '@/hooks/use-location';
-import { MATAO_CHAINS } from '@/hooks/use-market-freshness';
+import { MATAO_CHAINS } from '@/lib/chains';
 
 export interface NearbyStore {
   storeId: string;

@@ -4,6 +4,16 @@
 // (4a–4d)" spec (refined 17/09) and the artifact's 3a–3d annotations
 // (https://claude.ai/artifact/2iTFp1CFYKN3kVAtMr6p8C#t3) — see file header
 // comments below for the exact source of each rule.
+//
+// ONDE groups by chain (rede), not physical branch (Lucas, 2026-09-23,
+// after live testing surfaced a bug — see the comparison-tie note below).
+// mobile/CLAUDE.md's own framing is "onde este produto está mais barato
+// hoje, nos 4 mercados de Matão" — the "4 mercados" are the 4 chains, not
+// the ~9 physical locations (Amarelinha alone has 5). A branch-level ONDE
+// showed 4 different Amarelinha addresses as if they were 4 different
+// markets, which they aren't — same chain, same price, same market.
+
+import { chainLabelForStore } from './chains';
 
 // Raw shape of one row inside get_product_prices' jsonb array
 // (supabase/migrations/072_hide_promotions_from_consumer_app.sql). Already
@@ -55,19 +65,35 @@ export function freshnessLabel(days: number): string | null {
   return `há ${days} dia${days === 1 ? '' : 's'}`;
 }
 
+// One line of the default ONDE view — one per CHAIN, never a physical
+// branch. `distanceKm` is the nearest branch of this chain AMONG the ones
+// carrying `price` (its cheapest today), not necessarily the single
+// nearest branch overall — see aggregateChainPrice below.
 export interface WhereRow {
-  storeId: string;
-  storeName: string;
+  chainLabel: string;
   price: number;
   distanceKm: number | null;
   daysAgo: number;
   isWinner: boolean;
   isHere: boolean;
+  isStale: boolean; // only true in 3d's flat list — elsewhere a fully-stale chain routes to staleStores instead
+}
+
+// One physical location — only shown when "ver todos os mercados" expands
+// (doc/Lucas: "Filiais só em 'ver todos os mercados'"). Unfiltered: every
+// branch that returned a row at all, fresh or stale.
+export interface BranchRow {
+  storeId: string;
+  storeName: string;
+  chainLabel: string;
+  price: number;
+  distanceKm: number | null;
+  daysAgo: number;
   isStale: boolean;
 }
 
 export interface StaleStore {
-  storeName: string;
+  storeName: string; // chain label, despite the field name — kept to avoid touching every call site over a rename
   daysAgo: number;
 }
 
@@ -82,14 +108,14 @@ export interface RespostaView {
   // mas a subfrase de preço/unidade é uma linha própria — doc linha 34).
   pricePerUnit: { value: number; unit: string } | null;
   // "R$ Z a menos que no [aqui]" ou "...no [2º]" — null quando não há nada
-  // pra comparar (fact/no-price, ou só 1 loja fresca).
+  // pra comparar (fact/no-price, ou só 1 rede fresca).
   comparison: { amount: number; storeName: string; isHere: boolean } | null;
-  // Lista completa (não cortada) — a tela decide quanto mostrar (teto 4,
-  // "ver todos os mercados" expande em lugar, mesmo padrão do "ver mais N"
-  // do Resultado) em vez do lib cortar de antemão.
+  // Uma linha por rede (até 4, sempre — só existem 4). A tela decide se
+  // mostra "ver todos os mercados" com base em whereHasMore.
   whereRows: WhereRow[];
-  whereHasMore: boolean; // > 4 linhas frescas — "ver todos os mercados"
-  staleStores: StaleStore[]; // uma AmberBanner por item, só quando mode !== 'no-price'
+  whereHasMore: boolean; // alguma rede defasada (fora do ONDE) — "ver todos os mercados"
+  branchRows: BranchRow[]; // todas as filiais, sem filtro — só a expansão de "ver todos os mercados" usa isto
+  staleStores: StaleStore[]; // uma AmberBanner por rede totalmente defasada, só quando mode !== 'no-price'
   freshCount: number; // pro rodapé "N de 4 mercados" (comparison/fact) — irrelevante em no-price
   footerNote: string; // texto fixo do rodapé, já pronto pra renderizar
 }
@@ -161,14 +187,14 @@ export interface SizeCandidate {
   name: string;
   sizeValue: number;
   cheapestPriceToday: number | null;
-  cheapestStoreName: string | null;
+  cheapestStoreName: string | null; // physical branch name — converted to chain label at display time, same rule as ONDE
 }
 
 export interface SizeAlternative {
   productId: string;
   name: string; // full name + size, e.g. "Arroz Tio João tipo 1 · 2 kg"
   pricePerUnitLabel: string; // "R$ 4,75/kg"
-  storeName: string;
+  storeName: string; // chain label
 }
 
 export type QualTamanhoResult =
@@ -199,7 +225,7 @@ export function resolveSizeAlternatives(current: ProductInfo, currentPricePerUni
       productId: c.id,
       name: `${c.name} · ${formatSize(c.sizeValue, unit)}`,
       pricePerUnitLabel: `${formatBRL(c.perUnit)}/${UNIT_LABEL[unit]}`,
-      storeName: c.cheapestStoreName,
+      storeName: chainLabelForStore(c.cheapestStoreName) ?? c.cheapestStoreName,
     })),
   };
 }
@@ -208,32 +234,92 @@ function formatBRL(value: number): string {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-// Nearest store by distance_km — "'Você está aqui'. Mercado mais próximo
-// pelo GPS, com um toque para trocar" (doc decisão 5). `preferredChain`
-// (from lib/preferred-store.ts, set via the "trocar" sheet) overrides GPS-
-// nearest when a row for that chain exists among these rows; a chain's
-// physical location is matched by name prefix ("Amarelinha Loja 21..."
-// startsWith "Amarelinha") since RawStorePrice only carries the specific
-// location's name, not a chain id. Null when location is unavailable, no
-// row carries a distance, and no preferred-chain row exists either.
-function findHereStoreId(rows: RawStorePrice[], preferredChain: string | null): string | null {
-  if (preferredChain) {
-    let bestInChain: RawStorePrice | null = null;
-    for (const r of rows) {
-      if (!r.store_name.startsWith(preferredChain)) continue;
-      if (!bestInChain || (r.distance_km != null && (bestInChain.distance_km == null || r.distance_km < bestInChain.distance_km))) {
-        bestInChain = r;
-      }
-    }
-    if (bestInChain) return bestInChain.store_id;
+interface DatedRow extends RawStorePrice {
+  days: number;
+}
+
+interface ChainPrice {
+  chainLabel: string;
+  price: number;
+  distanceKm: number | null;
+  daysAgo: number;
+}
+
+// One row per chain, price = that chain's cheapest among `rows`, distance =
+// the nearest branch AMONG the ones tied at that cheapest price (Lucas:
+// "menor preço da rede, distância da filial mais próxima com esse preço").
+// Rows whose store_name doesn't match any of the 4 known chains are dropped
+// rather than crashing — defensive only, every real store_name seen live
+// has matched so far (see lib/chains.ts).
+function aggregateChainPrices(rows: DatedRow[]): ChainPrice[] {
+  const byChain = new Map<string, DatedRow[]>();
+  for (const r of rows) {
+    const chain = chainLabelForStore(r.store_name);
+    if (!chain) continue;
+    const arr = byChain.get(chain) ?? [];
+    arr.push(r);
+    byChain.set(chain, arr);
   }
 
-  let best: RawStorePrice | null = null;
+  const result: ChainPrice[] = [];
+  for (const [chainLabel, branches] of byChain) {
+    const minPrice = Math.min(...branches.map((b) => b.price));
+    let representative: DatedRow | null = null;
+    for (const b of branches) {
+      if (b.price !== minPrice) continue;
+      if (!representative || (b.distance_km != null && (representative.distance_km == null || b.distance_km < representative.distance_km))) {
+        representative = b;
+      }
+    }
+    result.push({ chainLabel, price: minPrice, distanceKm: representative!.distance_km, daysAgo: representative!.days });
+  }
+  return result;
+}
+
+// Same grouping, different representative pick: the MOST RECENT branch
+// (smallest days-stale, price as a tiebreak) rather than the cheapest —
+// used where the point is "last known data", not "who's winning": 3d's flat
+// list ("últimos preços vistos") and the amber band's one-line-per-chain
+// summary for a fully-stale chain.
+function aggregateChainMostRecent(rows: DatedRow[]): ChainPrice[] {
+  const byChain = new Map<string, DatedRow[]>();
+  for (const r of rows) {
+    const chain = chainLabelForStore(r.store_name);
+    if (!chain) continue;
+    const arr = byChain.get(chain) ?? [];
+    arr.push(r);
+    byChain.set(chain, arr);
+  }
+
+  const result: ChainPrice[] = [];
+  for (const [chainLabel, branches] of byChain) {
+    let representative = branches[0]!;
+    for (const b of branches.slice(1)) {
+      if (b.days < representative.days || (b.days === representative.days && b.price < representative.price)) representative = b;
+    }
+    result.push({ chainLabel, price: representative.price, distanceKm: representative.distance_km, daysAgo: representative.days });
+  }
+  return result;
+}
+
+// "'Você está aqui'. Mercado mais próximo pelo GPS, com um toque para
+// trocar" (doc decisão 5) — now resolved to a CHAIN, from the single
+// nearest physical branch overall (any chain, fresh or not: this is a
+// geography fact, independent of today's pricing data). `preferredChain`
+// (folha "trocar") overrides it outright when that chain has any row at
+// all among `rows`; otherwise falls back to GPS-nearest. Null when location
+// is unavailable and no preferred chain applies either.
+function findHereChain(rows: DatedRow[], preferredChain: string | null): string | null {
+  if (preferredChain && rows.some((r) => chainLabelForStore(r.store_name) === preferredChain)) {
+    return preferredChain;
+  }
+
+  let best: DatedRow | null = null;
   for (const r of rows) {
     if (r.distance_km == null) continue;
     if (!best || r.distance_km < best.distance_km!) best = r;
   }
-  return best?.store_id ?? null;
+  return best ? chainLabelForStore(best.store_name) : null;
 }
 
 // The one function the Resposta screen actually calls. Everything above is
@@ -244,23 +330,34 @@ export function buildRespostaView(
   now: Date = new Date(),
   preferredChain: string | null = null,
 ): RespostaView {
-  const withDays = rawRows.map((r) => ({ ...r, days: daysAgo(r.last_price_date, now) }));
+  const withDays: DatedRow[] = rawRows.map((r) => ({ ...r, days: daysAgo(r.last_price_date, now) }));
   const fresh = withDays.filter((r) => !isStale(r.days));
   const stale = withDays.filter((r) => isStale(r.days));
+  const hereChain = findHereChain(withDays, preferredChain);
+
+  const branchRows: BranchRow[] = withDays.map((r) => ({
+    storeId: r.store_id,
+    storeName: r.store_name,
+    chainLabel: chainLabelForStore(r.store_name) ?? r.store_name,
+    price: r.price,
+    distanceKm: r.distance_km,
+    daysAgo: r.days,
+    isStale: isStale(r.days),
+  }));
 
   // Nothing fresh anywhere: 3d. Everything available (even stale) renders
-  // as a flat, muted fact list — doc/artifact never rank or exclude here,
-  // there's nothing to rank ("últimos preços vistos", not "menor preço").
+  // as a flat, muted fact list, one row per chain — doc/artifact never rank
+  // or exclude here, there's nothing to rank ("últimos preços vistos", not
+  // "menor preço").
   if (fresh.length === 0) {
-    const hereId = findHereStoreId(withDays, preferredChain);
-    const whereRows: WhereRow[] = withDays.map((r) => ({
-      storeId: r.store_id,
-      storeName: r.store_name,
-      price: r.price,
-      distanceKm: r.distance_km,
-      daysAgo: r.days,
+    const chains = aggregateChainMostRecent(withDays);
+    const whereRows: WhereRow[] = chains.map((c) => ({
+      chainLabel: c.chainLabel,
+      price: c.price,
+      distanceKm: c.distanceKm,
+      daysAgo: c.daysAgo,
       isWinner: false,
-      isHere: r.store_id === hereId,
+      isHere: c.chainLabel === hereChain,
       isStale: true,
     }));
     return {
@@ -271,14 +368,15 @@ export function buildRespostaView(
       comparison: null,
       whereRows,
       whereHasMore: false,
+      branchRows,
       staleStores: [],
       freshCount: 0,
       footerNote: `últimos preços vistos · ${whereRows.length} de 4 mercados`,
     };
   }
 
-  const hereId = findHereStoreId(fresh, preferredChain);
-  const winner = fresh[0]; // RPC already sorts price ASC among search_priority-tied rows
+  const freshChains = aggregateChainPrices(fresh).sort((a, b) => a.price - b.price);
+  const winner = freshChains[0]!;
   const hasEan = product.ean != null;
 
   // "sem EAN: um mercado só, nunca casado por nome entre lojas" (doc decisão
@@ -287,50 +385,56 @@ export function buildRespostaView(
 
   let comparison: RespostaView['comparison'] = null;
   if (mode === 'comparison') {
-    const hereRow = hereId ? fresh.find((r) => r.store_id === hereId) : undefined;
-    // "sem 'aqui' ou se 'aqui' vence, compara com o 2º" (doc linha 34).
-    // Found live 2026-09-23: a chain with uniform pricing across branches
-    // (Amarelinha) can put "aqui" at a DIFFERENT physical location than the
-    // winner while tying its price exactly — comparing anyway prints "R$
-    // 0,00 a menos", a statement that claims a saving that doesn't exist.
-    // Treated the same as "aqui already won": fall through to the first row
-    // with a genuinely different (higher) price, not just position [1],
-    // which can tie too (same chain, several branches, same price).
-    if (hereRow && hereRow.store_id !== winner.store_id && hereRow.price !== winner.price) {
-      comparison = { amount: Math.round((hereRow.price - winner.price) * 100) / 100, storeName: hereRow.store_name, isHere: true };
+    const hereRow = hereChain ? freshChains.find((c) => c.chainLabel === hereChain) : undefined;
+    // "sem 'aqui' ou se 'aqui' vence, compara com o 2º" (doc linha 34). A
+    // tie in price between two DIFFERENT chains (rarer now that ONDE groups
+    // by chain, but still structurally possible) reads as a fake "R$ 0,00 a
+    // menos" if compared anyway — treated the same as "aqui already won":
+    // fall through to the first chain with a genuinely different (higher)
+    // price, not just position [1].
+    if (hereRow && hereRow.chainLabel !== winner.chainLabel && hereRow.price !== winner.price) {
+      comparison = { amount: Math.round((hereRow.price - winner.price) * 100) / 100, storeName: hereRow.chainLabel, isHere: true };
     } else {
-      const nextDifferent = fresh.find((r) => r.store_id !== winner.store_id && r.price !== winner.price);
+      const nextDifferent = freshChains.find((c) => c.chainLabel !== winner.chainLabel && c.price !== winner.price);
       if (nextDifferent) {
-        comparison = { amount: Math.round((nextDifferent.price - winner.price) * 100) / 100, storeName: nextDifferent.store_name, isHere: false };
+        comparison = { amount: Math.round((nextDifferent.price - winner.price) * 100) / 100, storeName: nextDifferent.chainLabel, isHere: false };
       }
     }
   }
 
-  const listedFresh = mode === 'fact' ? fresh.slice(0, 1) : fresh; // fact mode is always exactly 1 row anyway
-  const whereRows: WhereRow[] = listedFresh.map((r) => ({
-    storeId: r.store_id,
-    storeName: r.store_name,
-    price: r.price,
-    distanceKm: r.distance_km,
-    daysAgo: r.days,
-    isWinner: mode === 'comparison' && r.store_id === winner.store_id,
-    isHere: r.store_id === hereId,
+  const listedChains = mode === 'fact' ? freshChains.slice(0, 1) : freshChains; // fact mode is always exactly 1 chain anyway
+  const whereRows: WhereRow[] = listedChains.map((c) => ({
+    chainLabel: c.chainLabel,
+    price: c.price,
+    distanceKm: c.distanceKm,
+    daysAgo: c.daysAgo,
+    isWinner: mode === 'comparison' && c.chainLabel === winner.chainLabel,
+    isHere: c.chainLabel === hereChain,
     isStale: false,
   }));
 
+  // A chain routes to the amber band only when NONE of its branches made it
+  // into freshChains — a chain with at least one fresh branch already has
+  // its own ONDE row above, even if some of its other branches are stale.
+  const freshChainLabels = new Set(freshChains.map((c) => c.chainLabel));
+  const staleChains = aggregateChainMostRecent(stale).filter((c) => !freshChainLabels.has(c.chainLabel));
+
   return {
     mode,
-    title: mode === 'comparison' ? `Menor preço no ${winner.store_name}` : `Preço de hoje no ${winner.store_name}`,
+    title: mode === 'comparison' ? `Menor preço no ${winner.chainLabel}` : `Preço de hoje no ${winner.chainLabel}`,
     price: winner.price,
     pricePerUnit: mode === 'comparison' ? pricePerUnit(winner.price, product) : null,
     comparison,
     whereRows,
-    whereHasMore: mode === 'comparison' && fresh.length > 4,
-    staleStores: mode === 'comparison' ? stale.map((r) => ({ storeName: r.store_name, daysAgo: r.days })) : [],
-    freshCount: fresh.length,
+    // Only 4 chains ever exist, so freshChains.length > 4 can't happen in
+    // practice — kept as a defensive OR rather than assumed dead.
+    whereHasMore: mode === 'comparison' && (staleChains.length > 0 || freshChains.length > 4),
+    branchRows,
+    staleStores: mode === 'comparison' ? staleChains.map((c) => ({ storeName: c.chainLabel, daysAgo: c.daysAgo })) : [],
+    freshCount: freshChains.length,
     footerNote:
       mode === 'comparison'
-        ? `preços de hoje, 03:00 · ${fresh.length} de 4 mercados`
-        : `preço de hoje, 03:00 · ${winner.store_name}`,
+        ? `preços de hoje, 03:00 · ${freshChains.length} de 4 mercados`
+        : `preço de hoje, 03:00 · ${winner.chainLabel}`,
   };
 }

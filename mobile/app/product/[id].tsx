@@ -23,8 +23,6 @@ import { formatBRL } from '../../hooks/use-search';
 import { freshnessLabel, formatSize, resolveSizeAlternatives } from '../../lib/resposta';
 import { getPreferredChain, setPreferredChain } from '../../lib/preferred-store';
 
-const ONDE_TETO = 4;
-
 export default function ProductScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -56,7 +54,9 @@ export default function ProductScreen() {
   }, [trackScreen]);
 
   useEffect(() => {
-    if (view) trackProductView(id, view.whereRows.map((r) => r.storeId));
+    // Per-branch, not per-chain — the point is impression counts for the
+    // B2B pitch (decisão 15), which cares about the physical stores shown.
+    if (view) trackProductView(id, view.branchRows.map((b) => b.storeId));
     // Only re-fire when the resolved view itself changes, not on every
     // trackProductView identity change (same pattern as Raiz's trackSearch).
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -71,7 +71,13 @@ export default function ProductScreen() {
   const handleAcompanhar = useCallback(async () => {
     if (isTracking || !view) return;
     triggerHaptic();
-    const winnerStoreId = view.whereRows.find((r) => r.isWinner)?.storeId;
+    // The winner is a chain now, not a single store — resolve one real
+    // branch of it (matching the chain's winning price) for the analytics
+    // store_id, rather than dropping it or attaching a fake chain-as-store id.
+    const winnerRow = view.whereRows.find((r) => r.isWinner);
+    const winnerStoreId = winnerRow
+      ? view.branchRows.find((b) => b.chainLabel === winnerRow.chainLabel && b.price === winnerRow.price)?.storeId
+      : undefined;
     const ok = await trackProduct({ productId: id, targetPrice: view.price });
     if (ok) {
       trackListAdd(id, winnerStoreId);
@@ -106,9 +112,12 @@ export default function ProductScreen() {
     );
   }
 
-  const visibleWhere = expanded ? view.whereRows : view.whereRows.slice(0, ONDE_TETO);
   const nameLine = product.sizeValue != null ? `${product.name} · ${formatSize(product.sizeValue, product.sizeUnit)}` : product.name;
   const qualTamanho = view.pricePerUnit ? resolveSizeAlternatives(product, view.pricePerUnit.value, sizeCandidates) : null;
+  const nearestBranchId = view.branchRows.reduce<{ id: string; km: number } | null>((best, b) => {
+    if (b.distanceKm == null) return best;
+    return !best || b.distanceKm < best.km ? { id: b.storeId, km: b.distanceKm } : best;
+  }, null)?.id;
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -140,19 +149,37 @@ export default function ProductScreen() {
             <AmberBanner key={s.storeName}>{`${s.storeName}: preços de ${s.daysAgo} dias atrás`}</AmberBanner>
           ))}
           <BlockLabel>ONDE</BlockLabel>
-          {visibleWhere.map((row) => (
-            <StoreRow
-              key={row.storeId}
-              storeName={row.storeName}
-              distanceKm={row.distanceKm}
-              price={row.price}
-              isWinner={row.isWinner}
-              isHere={row.isHere}
-              freshnessLabel={freshnessLabel(row.daysAgo)}
-              muted={row.isStale}
-              onSwap={() => setPickerVisible(true)}
-            />
-          ))}
+          {expanded
+            ? // "Filiais só em 'ver todos os mercados'" — every physical
+              // location, unfiltered, no winner/chain-level badges (those are
+              // a chain concept). The single geographically nearest branch
+              // still gets isHere, informational only.
+              view.branchRows.map((branch) => (
+                <StoreRow
+                  key={branch.storeId}
+                  storeName={branch.storeName}
+                  distanceKm={branch.distanceKm}
+                  price={branch.price}
+                  isWinner={false}
+                  isHere={branch.storeId === nearestBranchId}
+                  freshnessLabel={freshnessLabel(branch.daysAgo)}
+                  muted={branch.isStale}
+                  onSwap={() => setPickerVisible(true)}
+                />
+              ))
+            : view.whereRows.map((row) => (
+                <StoreRow
+                  key={row.chainLabel}
+                  storeName={row.chainLabel}
+                  distanceKm={row.distanceKm}
+                  price={row.price}
+                  isWinner={row.isWinner}
+                  isHere={row.isHere}
+                  freshnessLabel={freshnessLabel(row.daysAgo)}
+                  muted={row.isStale}
+                  onSwap={() => setPickerVisible(true)}
+                />
+              ))}
           {!expanded && view.whereHasMore ? <TextLink label="ver todos os mercados" onPress={() => setExpanded(true)} /> : null}
           <TextLink label="acompanhar este item" onPress={handleAcompanhar} />
         </View>

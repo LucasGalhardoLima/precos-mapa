@@ -1,25 +1,11 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { MATAO_CHAINS, MATAO_CHAIN_LABELS, MATAO_CHAIN_COUNT } from '@/lib/chains';
 
-// The 4 documented Matão chains (docs/poup-mlp-decisoes.md: "4 redes em
-// Matão (Savegnago, Jaú Serve, Tenda, Amarelinha)"). Verified live 2026-09-22:
-// `stores` filtered to city='Matão' alone returns 13 rows, not 4 — it also
-// holds independents (Mortari, Paulista, Simoni, São Lucas, Milla's) this
-// MLP was never built around. `chain` is null for the two single-location
-// entries (Savegnago, Jaú Serve), so this matches by name for those and by
-// chain for the two multi-location ones, rather than by city.
-// Exported (not just the derived labels/count below) so use-stores.ts can
-// reuse the exact same 4-chain filter for the "trocar" store picker instead
-// of redefining it — single source of truth for "what are the 4 chains".
-export const MATAO_CHAINS = [
-  { label: 'Savegnago', match: { name: 'Savegnago' } },
-  { label: 'Jaú Serve', match: { name: 'Jaú Serve' } },
-  { label: 'Tenda', match: { chain: 'Tenda Atacado' } },
-  { label: 'Amarelinha', match: { chain: 'Amarelinha Supermercados' } },
-] as const;
-
-export const MATAO_CHAIN_LABELS = MATAO_CHAINS.map((c) => c.label);
-export const MATAO_CHAIN_COUNT = MATAO_CHAINS.length;
+// Re-exported for existing callers (app/index.tsx, use-stores.ts) — the
+// definition itself now lives in lib/chains.ts, the single source of truth
+// also used by lib/resposta.ts (ONDE groups by chain).
+export { MATAO_CHAINS, MATAO_CHAIN_LABELS, MATAO_CHAIN_COUNT };
 
 // "preços de hoje, 03:00 · N de 4 mercados" (Raiz, artifact 2a) — N is how
 // many of the 4 chains have a store_prices row from today, not from any

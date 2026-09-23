@@ -19,10 +19,13 @@ function product(overrides: Partial<ProductInfo> = {}): ProductInfo {
   return { id: 'p1', name: 'Arroz Tio João tipo 1', brand: 'Tio João', ean: '7891234567890', imageUrl: null, sizeValue: 5000, sizeUnit: 'g', ...overrides };
 }
 
+// store_name must be a real chain-matchable name (lib/chains.ts prefix-
+// matches against Savegnago/Jaú Serve/Tenda/Amarelinha) — ONDE groups by
+// chain now, so an unmatched name is silently dropped, same as production.
 function row(overrides: Partial<RawStorePrice> = {}): RawStorePrice {
   return {
     store_id: 's1',
-    store_name: 'Tenda',
+    store_name: 'Tenda Atacado - Matão',
     price: 24.9,
     distance_km: 1.8,
     last_price_date: NOW.toISOString(),
@@ -54,12 +57,71 @@ describe('daysAgo / isStale / freshnessLabel', () => {
   });
 });
 
-describe('buildRespostaView — 3a: com EAN, "aqui" não vence', () => {
-  it('titles by the winner, compares winner to the here-store, marks isHere/isWinner separately', () => {
+describe('buildRespostaView — ONDE agrupa por rede, não por filial (Lucas, 2026-09-23)', () => {
+  // The bug this whole redesign fixes: Morango Bandeja 250G had 5 Amarelinha
+  // branches, all R$16,99 — a branch-level ONDE showed 4 of them as if they
+  // were 4 different markets, and the nearest-but-not-winning branch made
+  // the subphrase print a fake "R$ 0,00 a menos".
+  it('collapses several branches of the same chain into one ONDE row, price = cheapest, distance = nearest AT that price', () => {
     const rows = [
-      row({ store_id: 's-tenda', store_name: 'Tenda', price: 24.9, distance_km: 1.8, last_price_date: NOW.toISOString() }),
-      row({ store_id: 's-savegnago', store_name: 'Savegnago', price: 27.0, distance_km: 0.6, last_price_date: NOW.toISOString() }),
-      row({ store_id: 's-jau', store_name: 'Jaú Serve', price: 27.49, distance_km: 2.4, last_price_date: NOW.toISOString() }),
+      row({ store_id: 's-loja21', store_name: 'Amarelinha Loja 21 Flamboyant', price: 16.99, distance_km: 2.1 }),
+      row({ store_id: 's-loja17', store_name: 'Amarelinha Loja 17', price: 16.99, distance_km: 0.3 }), // nearest at the winning price
+      row({ store_id: 's-loja18', store_name: 'Amarelinha Loja 18', price: 18.5, distance_km: 0.1 }), // nearer, but NOT at the winning price — ignored for distance
+    ];
+    const view = buildRespostaView(product({ ean: null }), rows, NOW);
+
+    expect(view.whereRows).toHaveLength(1);
+    expect(view.whereRows[0]).toMatchObject({ chainLabel: 'Amarelinha', price: 16.99, distanceKm: 0.3 });
+  });
+
+  it('"aqui" resolves to the nearest branch\'s CHAIN, even across chains', () => {
+    const rows = [
+      row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', price: 24.9, distance_km: 1.8 }),
+      row({ store_id: 's-savegnago', store_name: 'Savegnago', price: 27.0, distance_km: 0.4 }), // nearest overall
+    ];
+    const view = buildRespostaView(product(), rows, NOW);
+    expect(view.whereRows.find((r) => r.chainLabel === 'Savegnago')?.isHere).toBe(true);
+    expect(view.whereRows.find((r) => r.chainLabel === 'Tenda')?.isHere).toBe(false);
+  });
+
+  it('never compares a tied price between two chains — that reads as a fake "R$ 0,00 a menos"', () => {
+    const rows = [
+      row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', price: 16.99, distance_km: 2.1 }),
+      row({ store_id: 's-savegnago', store_name: 'Savegnago', price: 16.99, distance_km: 0.3 }), // "aqui", tied with the winner
+    ];
+    const view = buildRespostaView(product(), rows, NOW);
+    expect(view.comparison).toBeNull();
+  });
+
+  it('skips a tied "aqui" chain and compares against the first genuinely different price', () => {
+    const rows = [
+      row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', price: 16.99, distance_km: 2.1 }), // winner
+      row({ store_id: 's-savegnago', store_name: 'Savegnago', price: 16.99, distance_km: 0.3 }), // "aqui", tied — skipped
+      row({ store_id: 's-jau', store_name: 'Jaú Serve', price: 18.5, distance_km: 3.0 }), // genuinely different
+    ];
+    const view = buildRespostaView(product(), rows, NOW);
+    expect(view.comparison).toEqual({ amount: 1.51, storeName: 'Jaú Serve', isHere: false });
+  });
+
+  it('branchRows carries every physical location unfiltered, for "ver todos os mercados"', () => {
+    const rows = [
+      row({ store_id: 's-loja21', store_name: 'Amarelinha Loja 21 Flamboyant', price: 16.99, distance_km: 2.1 }),
+      row({ store_id: 's-loja17', store_name: 'Amarelinha Loja 17', price: 16.99, distance_km: 0.3 }),
+    ];
+    const view = buildRespostaView(product(), rows, NOW);
+    expect(view.whereRows).toHaveLength(1); // grouped
+    expect(view.branchRows).toHaveLength(2); // ungrouped
+    expect(view.branchRows.map((b) => b.storeName)).toEqual(['Amarelinha Loja 21 Flamboyant', 'Amarelinha Loja 17']);
+    expect(view.branchRows.every((b) => b.chainLabel === 'Amarelinha')).toBe(true);
+  });
+});
+
+describe('buildRespostaView — 3a: com EAN, "aqui" não vence', () => {
+  it('titles by the winning chain, compares winner to the here-chain, marks isHere/isWinner separately', () => {
+    const rows = [
+      row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', price: 24.9, distance_km: 1.8 }),
+      row({ store_id: 's-savegnago', store_name: 'Savegnago', price: 27.0, distance_km: 0.6 }),
+      row({ store_id: 's-jau', store_name: 'Jaú Serve', price: 27.49, distance_km: 2.4 }),
     ];
     const view = buildRespostaView(product(), rows, NOW);
 
@@ -67,9 +129,9 @@ describe('buildRespostaView — 3a: com EAN, "aqui" não vence', () => {
     expect(view.title).toBe('Menor preço no Tenda');
     expect(view.price).toBe(24.9);
     expect(view.comparison).toEqual({ amount: 2.1, storeName: 'Savegnago', isHere: true });
-    expect(view.whereRows.find((r) => r.storeId === 's-tenda')?.isWinner).toBe(true);
-    expect(view.whereRows.find((r) => r.storeId === 's-savegnago')?.isHere).toBe(true);
-    expect(view.whereRows.find((r) => r.storeId === 's-savegnago')?.isWinner).toBe(false);
+    expect(view.whereRows.find((r) => r.chainLabel === 'Tenda')?.isWinner).toBe(true);
+    expect(view.whereRows.find((r) => r.chainLabel === 'Savegnago')?.isHere).toBe(true);
+    expect(view.whereRows.find((r) => r.chainLabel === 'Savegnago')?.isWinner).toBe(false);
     expect(view.freshCount).toBe(3);
   });
 
@@ -82,53 +144,40 @@ describe('buildRespostaView — 3a: com EAN, "aqui" não vence', () => {
     const view = buildRespostaView(product({ sizeValue: null, sizeUnit: null }), [row()], NOW);
     expect(view.pricePerUnit).toBeNull();
   });
-
-  // Found live 2026-09-23 (Morango Bandeja 250G, 5 Amarelinha branches, all
-  // R$16,99): a chain with uniform pricing puts "aqui" at a different
-  // physical location than the winner while tying its price exactly.
-  it('never compares against a tied price — that reads as a fake "R$ 0,00 a menos" saving', () => {
-    const rows = [
-      row({ store_id: 's-loja21', store_name: 'Amarelinha Loja 21', price: 16.99, distance_km: 2.1 }),
-      row({ store_id: 's-loja17', store_name: 'Amarelinha Loja 17', price: 16.99, distance_km: 0.3 }), // nearest = "aqui", same price as winner
-      row({ store_id: 's-loja18', store_name: 'Amarelinha Loja 18', price: 16.99, distance_km: 0.7 }),
-    ];
-    const view = buildRespostaView(product(), rows, NOW);
-    expect(view.whereRows.find((r) => r.storeId === 's-loja17')?.isHere).toBe(true);
-    expect(view.comparison).toBeNull(); // every row ties at 16.99 — nothing genuinely cheaper to report
-  });
-
-  it('skips a tied "aqui" and compares against the first genuinely cheaper-elsewhere row', () => {
-    const rows = [
-      row({ store_id: 's-loja21', store_name: 'Amarelinha Loja 21', price: 16.99, distance_km: 2.1 }), // winner
-      row({ store_id: 's-loja17', store_name: 'Amarelinha Loja 17', price: 16.99, distance_km: 0.3 }), // "aqui", tied — skipped
-      row({ store_id: 's-tenda', store_name: 'Tenda', price: 18.5, distance_km: 3.0 }), // genuinely different price
-    ];
-    const view = buildRespostaView(product(), rows, NOW);
-    expect(view.comparison).toEqual({ amount: 1.51, storeName: 'Tenda', isHere: false });
-  });
 });
 
-describe('buildRespostaView — 3b: "aqui" vence, loja defasada, stale store excluded', () => {
-  it('compares the winner to 2nd place (not itself) when "aqui" is the winner, and pulls >3-day stores into staleStores', () => {
+describe('buildRespostaView — 3b: "aqui" vence, rede defasada', () => {
+  it('compares the winner to 2nd place (not itself) when "aqui" is the winner, and pulls a fully-stale chain into staleStores', () => {
     const rows = [
-      row({ store_id: 's-savegnago', store_name: 'Savegnago', price: 4.79, distance_km: 0.6, last_price_date: NOW.toISOString() }),
-      row({ store_id: 's-tenda', store_name: 'Tenda', price: 5.19, distance_km: 1.8, last_price_date: NOW.toISOString() }),
-      row({ store_id: 's-jau', store_name: 'Jaú Serve', price: 5.29, distance_km: 2.4, last_price_date: NOW.toISOString() }),
-      row({ store_id: 's-amarelinha', store_name: 'Amarelinha', price: 4.5, distance_km: 3.1, last_price_date: '2026-09-18T10:00:00Z' }), // 5 days stale, cheaper than the winner but excluded from ranking
+      row({ store_id: 's-savegnago', store_name: 'Savegnago', price: 4.79, distance_km: 0.6 }),
+      row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', price: 5.19, distance_km: 1.8 }),
+      row({ store_id: 's-jau', store_name: 'Jaú Serve', price: 5.29, distance_km: 2.4 }),
+      row({ store_id: 's-amarelinha', store_name: 'Amarelinha Loja 15', price: 4.5, distance_km: 3.1, last_price_date: '2026-09-18T10:00:00Z' }), // 5 days stale, cheaper than the winner but excluded from ranking
     ];
     const view = buildRespostaView(product({ sizeValue: 1000, sizeUnit: 'ml' }), rows, NOW);
 
     expect(view.title).toBe('Menor preço no Savegnago');
     expect(view.comparison).toEqual({ amount: 0.4, storeName: 'Tenda', isHere: false });
-    expect(view.whereRows.some((r) => r.storeId === 's-amarelinha')).toBe(false);
+    expect(view.whereRows.some((r) => r.chainLabel === 'Amarelinha')).toBe(false);
     expect(view.staleStores).toEqual([{ storeName: 'Amarelinha', daysAgo: 5 }]);
     expect(view.freshCount).toBe(3);
     expect(view.footerNote).toBe('preços de hoje, 03:00 · 3 de 4 mercados');
   });
+
+  it('a chain with one fresh AND one stale branch keeps its ONDE row — only a fully-stale chain goes to the amber band', () => {
+    const rows = [
+      row({ store_id: 's-loja21', store_name: 'Amarelinha Loja 21 Flamboyant', price: 16.99, distance_km: 2.1 }), // fresh
+      row({ store_id: 's-loja17', store_name: 'Amarelinha Loja 17', price: 15.0, distance_km: 0.3, last_price_date: '2026-09-18T10:00:00Z' }), // stale, would be cheaper
+      row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', price: 20.0, distance_km: 1.0 }),
+    ];
+    const view = buildRespostaView(product({ ean: null }), rows, NOW);
+    expect(view.whereRows.find((r) => r.chainLabel === 'Amarelinha')).toMatchObject({ price: 16.99 }); // only the fresh branch counts
+    expect(view.staleStores).toEqual([]); // Amarelinha still has a fresh branch, not fully stale
+  });
 });
 
 describe('buildRespostaView — 3c: sem EAN, fato de um mercado só', () => {
-  it('never compares, titles as a fact, shows a single un-badged row', () => {
+  it('never compares, titles as a fact, shows a single un-badged chain row', () => {
     const view = buildRespostaView(product({ ean: null, sizeValue: null, sizeUnit: null }), [row({ store_name: 'Jaú Serve', price: 16.9 })], NOW);
 
     expect(view.mode).toBe('fact');
@@ -141,9 +190,9 @@ describe('buildRespostaView — 3c: sem EAN, fato de um mercado só', () => {
 });
 
 describe('buildRespostaView — 3d: sem preço hoje', () => {
-  it('falls back to the flat muted list when nothing fresh exists, even with EAN', () => {
+  it('falls back to the flat muted list when nothing fresh exists, one row per chain, even with EAN', () => {
     const rows = [
-      row({ store_id: 's-tenda', store_name: 'Tenda', price: 8.49, distance_km: 1.8, last_price_date: '2026-09-17T10:00:00Z' }), // 6 days
+      row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', price: 8.49, distance_km: 1.8, last_price_date: '2026-09-17T10:00:00Z' }), // 6 days
       row({ store_id: 's-savegnago', store_name: 'Savegnago', price: 8.99, distance_km: 0.6, last_price_date: '2026-09-14T10:00:00Z' }), // 9 days
     ];
     const view = buildRespostaView(product(), rows, NOW);
@@ -157,6 +206,18 @@ describe('buildRespostaView — 3d: sem preço hoje', () => {
     expect(view.footerNote).toBe('últimos preços vistos · 2 de 4 mercados');
   });
 
+  it('picks the MOST RECENT branch per chain, not the cheapest — "últimos preços vistos" means recency, not price', () => {
+    // Both Amarelinha branches beyond 3 days (so buildRespostaView stays in
+    // 3d), different recency and different price.
+    const staleRows = [
+      row({ store_id: 's-loja21', store_name: 'Amarelinha Loja 21 Flamboyant', price: 20.0, last_price_date: '2026-09-17T10:00:00Z' }), // 6 days, cheaper
+      row({ store_id: 's-loja17', store_name: 'Amarelinha Loja 17', price: 25.0, last_price_date: '2026-09-19T10:00:00Z' }), // 4 days, more recent
+    ];
+    const view = buildRespostaView(product(), staleRows, NOW);
+    expect(view.whereRows).toHaveLength(1);
+    expect(view.whereRows[0]).toMatchObject({ price: 25.0, daysAgo: 4 }); // the more recent branch wins, not the cheaper one
+  });
+
   it('renders an empty ONDE, not an error, when there are zero rows at all', () => {
     const view = buildRespostaView(product(), [], NOW);
     expect(view.mode).toBe('no-price');
@@ -166,42 +227,50 @@ describe('buildRespostaView — 3d: sem preço hoje', () => {
 });
 
 describe('buildRespostaView — preferredChain (folha "trocar")', () => {
-  it('overrides GPS-nearest when a row for the preferred chain exists', () => {
+  it('overrides GPS-nearest when the preferred chain has a row', () => {
     const rows = [
       row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', price: 24.9, distance_km: 0.2 }), // GPS-nearest, but not preferred
       row({ store_id: 's-amarelinha', store_name: 'Amarelinha Loja 21 Flamboyant', price: 27.0, distance_km: 3.1 }),
     ];
     const view = buildRespostaView(product(), rows, NOW, 'Amarelinha');
-    expect(view.whereRows.find((r) => r.storeId === 's-amarelinha')?.isHere).toBe(true);
-    expect(view.whereRows.find((r) => r.storeId === 's-tenda')?.isHere).toBe(false);
+    expect(view.whereRows.find((r) => r.chainLabel === 'Amarelinha')?.isHere).toBe(true);
+    expect(view.whereRows.find((r) => r.chainLabel === 'Tenda')?.isHere).toBe(false);
   });
 
-  it('falls back to GPS-nearest when no row matches the preferred chain', () => {
+  it('falls back to GPS-nearest when the preferred chain has no row at all', () => {
     const rows = [row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', distance_km: 0.2 })];
     const view = buildRespostaView(product(), rows, NOW, 'Amarelinha');
     expect(view.whereRows[0]?.isHere).toBe(true);
   });
 });
 
-describe('buildRespostaView — mais de 4 lojas frescas', () => {
-  it('does not truncate whereRows itself, and flags whereHasMore for the screen to decide', () => {
-    const rows = Array.from({ length: 5 }, (_, i) => row({ store_id: `s${i}`, store_name: `Loja ${i}`, price: 10 + i, distance_km: i }));
+describe('buildRespostaView — mais de 4 linhas frescas não é mais possível (só 4 redes existem)', () => {
+  it('whereHasMore stays false with all 4 chains fresh — nothing to route to "ver todos"', () => {
+    const rows = [
+      row({ store_id: 's1', store_name: 'Tenda Atacado - Matão', price: 10, distance_km: 1 }),
+      row({ store_id: 's2', store_name: 'Savegnago', price: 11, distance_km: 2 }),
+      row({ store_id: 's3', store_name: 'Jaú Serve', price: 12, distance_km: 3 }),
+      row({ store_id: 's4', store_name: 'Amarelinha Loja 15', price: 13, distance_km: 4 }),
+    ];
     const view = buildRespostaView(product(), rows, NOW);
-    expect(view.whereRows).toHaveLength(5);
-    expect(view.whereHasMore).toBe(true);
+    expect(view.whereRows).toHaveLength(4);
+    expect(view.whereHasMore).toBe(false);
   });
 
-  it('whereHasMore is false at exactly 4', () => {
-    const rows = Array.from({ length: 4 }, (_, i) => row({ store_id: `s${i}`, store_name: `Loja ${i}`, price: 10 + i }));
+  it('whereHasMore is true when a chain is fully stale (excluded to the amber band)', () => {
+    const rows = [
+      row({ store_id: 's1', store_name: 'Tenda Atacado - Matão', price: 10, distance_km: 1 }),
+      row({ store_id: 's2', store_name: 'Savegnago', price: 11, distance_km: 2, last_price_date: '2026-09-17T10:00:00Z' }), // stale
+    ];
     const view = buildRespostaView(product(), rows, NOW);
-    expect(view.whereHasMore).toBe(false);
+    expect(view.whereHasMore).toBe(true);
   });
 });
 
 describe('buildRespostaView — sem localização (no "aqui")', () => {
   it('compares the winner to 2nd place when no row carries a distance', () => {
     const rows = [
-      row({ store_id: 's-tenda', store_name: 'Tenda', price: 24.9, distance_km: null }),
+      row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', price: 24.9, distance_km: null }),
       row({ store_id: 's-savegnago', store_name: 'Savegnago', price: 27.0, distance_km: null }),
     ];
     const view = buildRespostaView(product(), rows, NOW);
@@ -209,7 +278,7 @@ describe('buildRespostaView — sem localização (no "aqui")', () => {
     expect(view.whereRows.every((r) => !r.isHere)).toBe(true);
   });
 
-  it('has no comparison when only one fresh row exists', () => {
+  it('has no comparison when only one fresh chain exists', () => {
     const view = buildRespostaView(product(), [row({ distance_km: null })], NOW);
     expect(view.comparison).toBeNull();
   });
@@ -265,15 +334,20 @@ describe('resolveSizeAlternatives — QUAL TAMANHO', () => {
   const currentPerUnit = 4.98; // R$24.90 / 5kg
 
   function candidate(overrides: Partial<SizeCandidate> = {}): SizeCandidate {
-    return { id: 'c1', name: 'Arroz Tio João tipo 1', sizeValue: 2000, cheapestPriceToday: 9.49, cheapestStoreName: 'Tenda', ...overrides };
+    return { id: 'c1', name: 'Arroz Tio João tipo 1', sizeValue: 2000, cheapestPriceToday: 9.49, cheapestStoreName: 'Tenda Atacado - Matão', ...overrides };
   }
 
-  it('lists a candidate whose price/unit beats the current size', () => {
+  it('lists a candidate whose price/unit beats the current size, storeName shown as the chain', () => {
     const result = resolveSizeAlternatives(current5kg, currentPerUnit, [candidate()]); // 9.49/2kg = 4.745/kg < 4.98
     expect(result).toEqual({
       kind: 'alternatives',
       items: [{ productId: 'c1', name: 'Arroz Tio João tipo 1 · 2 kg', pricePerUnitLabel: expect.stringContaining('4,75'), storeName: 'Tenda' }],
     });
+  });
+
+  it('falls back to the raw branch name if it somehow matches no known chain', () => {
+    const result = resolveSizeAlternatives(current5kg, currentPerUnit, [candidate({ cheapestStoreName: 'Mercadinho Desconhecido' })]);
+    expect(result.kind === 'alternatives' && result.items[0]?.storeName).toBe('Mercadinho Desconhecido');
   });
 
   it('caps at 3 alternatives, sorted ascending by price/unit', () => {
