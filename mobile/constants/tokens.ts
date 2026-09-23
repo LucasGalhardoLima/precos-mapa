@@ -42,7 +42,11 @@ export const fontFamily = {
 
 // Apply to any Text showing a number (prices, counts, distances) so digits
 // keep a fixed width and don't jiggle at line breaks.
-export const tabularNums = { fontVariant: ['tabular-nums'] } as const;
+// Not `as const`: RN's TextStyle.fontVariant wants a mutable FontVariant[],
+// and `as const` would make this a readonly tuple TS then rejects on spread.
+export const tabularNums: { fontVariant: ('tabular-nums' | 'lining-nums' | 'oldstyle-nums' | 'proportional-nums')[] } = {
+  fontVariant: ['tabular-nums'],
+};
 
 export const typography = {
   title: { fontFamily: fontFamily.bold, fontSize: 26 },

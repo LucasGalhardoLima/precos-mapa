@@ -7,13 +7,18 @@ interface SearchFieldProps {
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
+  // Resultado's cap depends on keyboard visibility (5 with keyboard / 8
+  // without, mobile/CLAUDE.md "Tetos"), which the parent can't observe from
+  // internal focus state alone — forwarded in addition to it, not instead.
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 
 // States: vazio (empty, gray icon/text) and em foco (green border + ✕ to
 // clear). Verified empty state on the artifact; focused state composes the
 // same tokens per the explicit spec ("borda verde e ✕") since the artifact's
 // static mockup only renders the empty state.
-export function SearchField({ value, onChangeText, placeholder = 'buscar produto' }: SearchFieldProps) {
+export function SearchField({ value, onChangeText, placeholder = 'buscar produto', onFocus, onBlur }: SearchFieldProps) {
   const [focused, setFocused] = useState(false);
 
   return (
@@ -25,8 +30,14 @@ export function SearchField({ value, onChangeText, placeholder = 'buscar produto
         placeholder={placeholder}
         placeholderTextColor={colors.secondary}
         selectionColor={colors.brand}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        onFocus={() => {
+          setFocused(true);
+          onFocus?.();
+        }}
+        onBlur={() => {
+          setFocused(false);
+          onBlur?.();
+        }}
         style={[styles.input, { color: focused ? colors.ink : colors.secondary }]}
       />
       {focused && value.length > 0 && (

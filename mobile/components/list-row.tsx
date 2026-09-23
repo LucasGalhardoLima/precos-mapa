@@ -1,12 +1,24 @@
 import { View, Text, Image, Pressable, StyleSheet, type GestureResponderEvent } from 'react-native';
 import { ChevronRight, X } from 'lucide-react-native';
-import { colors, fontFamily, radii, targets, borderWidth, spacing } from '../constants/tokens';
+import { colors, fontFamily, radii, targets, borderWidth, spacing, tabularNums } from '../constants/tokens';
 
 interface ListRowProps {
   title: string;
   subtitle?: string;
   imageUrl?: string | null;
+  // Trailing price text (e.g. "R$ 24,90"), right-aligned, bold, tabular-nums.
+  // "—" + muted is the "sem preço hoje" rendering (2a/4a on the artifact).
+  value?: string;
+  // "sem preço hoje" treatment (verified on the artifact's own row markup):
+  // title drops to colors.secondary (subtitle is already that color), value
+  // and chevron drop further to colors.absence — two different mutes, not one.
+  muted?: boolean;
   chevron?: boolean; // fato nunca leva chevron — só linhas tocáveis
+  // Onboarding's city-picker row (already shipped) relies on the original
+  // brandInk default; Raiz/Resultado's price rows pass colors.brand
+  // explicitly (verified var(--brand) on their own artifact markup) rather
+  // than changing what every existing caller renders.
+  chevronColor?: string;
   onRemove?: (e: GestureResponderEvent) => void; // presence alone shows the leading ✕
   onPress?: (e: GestureResponderEvent) => void;
 }
@@ -15,8 +27,9 @@ interface ListRowProps {
 // Raiz/Resultado/Ajustes. No image_url → no thumbnail slot and no gray
 // placeholder square; the row just closes the gap (per the 91.7%-coverage
 // decision in docs/poup-mlp-decisoes.md).
-export function ListRow({ title, subtitle, imageUrl, chevron, onRemove, onPress }: ListRowProps) {
+export function ListRow({ title, subtitle, imageUrl, value, muted, chevron, chevronColor = colors.brandInk, onRemove, onPress }: ListRowProps) {
   const Container = onPress ? Pressable : View;
+  const resolvedChevronColor = muted ? colors.absence : chevronColor;
 
   return (
     <Container style={styles.row} onPress={onPress} accessibilityRole={onPress ? 'button' : undefined}>
@@ -27,16 +40,21 @@ export function ListRow({ title, subtitle, imageUrl, chevron, onRemove, onPress 
       )}
       {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.thumbnail} /> : null}
       <View style={styles.textColumn}>
-        <Text style={styles.title} numberOfLines={2}>
-          {title}
-        </Text>
+        {/* No numberOfLines cap: "nome quebra em 2 linhas, nunca reticências
+            — o tamanho distingue as linhas; altura da linha acompanha"
+            (docs/poup-mlp-decisoes.md, Resultado). Most names fit 2 lines,
+            but the row grows for the ones that don't rather than truncate —
+            real catalog names (e.g. "Refrigerante Coca Cola Pet Sem Açúcar
+            200ml") can run longer than the artifact's own examples. */}
+        <Text style={[styles.title, muted && styles.titleMuted]}>{title}</Text>
         {subtitle ? (
           <Text style={styles.subtitle} numberOfLines={1}>
             {subtitle}
           </Text>
         ) : null}
       </View>
-      {chevron && <ChevronRight size={20} color={colors.brandInk} strokeWidth={2.2} />}
+      {value ? <Text style={[styles.value, muted && styles.valueMuted]}>{value}</Text> : null}
+      {chevron && <ChevronRight size={18} color={resolvedChevronColor} strokeWidth={2.4} />}
     </Container>
   );
 }
@@ -80,5 +98,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.secondary,
     marginTop: 2,
+  },
+  value: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: 18,
+    color: colors.ink,
+    ...tabularNums,
+  },
+  titleMuted: {
+    color: colors.secondary,
+  },
+  valueMuted: {
+    color: colors.absence,
   },
 });
