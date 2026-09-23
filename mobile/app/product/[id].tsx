@@ -235,9 +235,13 @@ export default function ProductScreen() {
       <StorePickerSheet visible={pickerVisible} stores={nearbyStores} isLoading={storesLoading} onClose={() => setPickerVisible(false)} onPick={handleSwap} />
       <AcompanharSheet
         visible={acompanharVisible}
+        productName={product.name}
+        productSize={product.sizeValue != null ? formatSize(product.sizeValue, product.sizeUnit) : null}
         // Editando um item já acompanhado: o alvo já salvo vence sobre o
         // preço de hoje (a sugestão original só vale na primeira vez).
         suggestedPrice={trackedState?.isTracked && trackedState.targetPrice != null ? trackedState.targetPrice : view.price}
+        todayPrice={view.price}
+        todayStoreName={view.whereRows.find((r) => r.isWinner)?.chainLabel ?? null}
         isSubmitting={isSubmitting}
         onClose={() => setAcompanharVisible(false)}
         onTrackWithAlert={handleTrackWithAlert}

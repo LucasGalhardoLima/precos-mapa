@@ -1,19 +1,26 @@
 import { useEffect, useState } from 'react';
-import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
+import { Modal, View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, fontFamily, radii, spacing, targets } from '../constants/tokens';
+import { colors, fontFamily, typography, radii, spacing, targets, borderWidth, tabularNums } from '../constants/tokens';
 import { BlockLabel } from './block-label';
-import { TextField } from './text-field';
 import { FilledButton } from './filled-button';
 import { TextLink } from './text-link';
+import { formatBRL } from '../hooks/use-search';
 
 interface AcompanharSheetProps {
   visible: boolean;
+  productName: string;
+  productSize: string | null; // já formatado (ex. "750 ml") — bloco some do título se null
   // "8a com preço, 8b sem preço" — today's cheapest price pre-fills the
   // field; null (no price today) leaves it empty with a gray "R$" hint.
   // When editing an already-tracked item, its own target price wins over
   // today's price as the starting value (see app/product/[id].tsx).
   suggestedPrice: number | null;
+  // Fato de hoje, sempre — independe do valor-alvo (editável) acima. Linha
+  // de procedência abaixo do campo: "hoje: R$ 37,90 no Tenda" / "sem preço
+  // hoje" quando null.
+  todayPrice: number | null;
+  todayStoreName: string | null;
   isSubmitting: boolean;
   onClose: () => void;
   onTrackWithAlert: (targetPrice: number) => void;
@@ -25,9 +32,21 @@ interface AcompanharSheetProps {
 // com um puxador no topo e "fechar" à direita (essas duas telas usam
 // BackLink à esquerda; esta é uma folha de ação isolada, não um passo de
 // fluxo, daí o padrão diferente).
-export function AcompanharSheet({ visible, suggestedPrice, isSubmitting, onClose, onTrackWithAlert, onTrackWithoutAlert }: AcompanharSheetProps) {
+export function AcompanharSheet({
+  visible,
+  productName,
+  productSize,
+  suggestedPrice,
+  todayPrice,
+  todayStoreName,
+  isSubmitting,
+  onClose,
+  onTrackWithAlert,
+  onTrackWithoutAlert,
+}: AcompanharSheetProps) {
   const insets = useSafeAreaInsets();
   const [priceText, setPriceText] = useState('');
+  const [fieldFocused, setFieldFocused] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
@@ -36,6 +55,8 @@ export function AcompanharSheet({ visible, suggestedPrice, isSubmitting, onClose
 
   const parsedPrice = parseFloat(priceText.replace(',', '.'));
   const hasValidPrice = !Number.isNaN(parsedPrice) && parsedPrice > 0;
+  const title = `Acompanhar ${productName}${productSize ? ` · ${productSize}` : ''}`;
+  const provenance = todayPrice != null && todayStoreName ? `hoje: ${formatBRL(todayPrice)} no ${todayStoreName}` : 'sem preço hoje';
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -44,7 +65,7 @@ export function AcompanharSheet({ visible, suggestedPrice, isSubmitting, onClose
         <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.xl) }]}>
           <View style={styles.handle} />
           <View style={styles.header}>
-            <Text style={styles.title}>Acompanhar este item</Text>
+            <Text style={styles.title}>{title}</Text>
             <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Fechar" hitSlop={8} style={styles.closeTarget}>
               <Text style={styles.closeLabel}>fechar</Text>
             </Pressable>
@@ -52,13 +73,22 @@ export function AcompanharSheet({ visible, suggestedPrice, isSubmitting, onClose
 
           <View style={styles.field}>
             <BlockLabel>AVISAR QUANDO CAIR ABAIXO DE</BlockLabel>
-            <TextField
-              value={priceText}
-              onChangeText={setPriceText}
-              keyboardType="decimal-pad"
-              placeholder="R$"
-              editable={!isSubmitting}
-            />
+            <View style={[styles.priceField, fieldFocused && styles.priceFieldFocused]}>
+              <Text style={styles.pricePrefix}>R$</Text>
+              <TextInput
+                value={priceText}
+                onChangeText={setPriceText}
+                keyboardType="decimal-pad"
+                placeholder="0,00"
+                placeholderTextColor={colors.absence}
+                selectionColor={colors.brand}
+                editable={!isSubmitting}
+                onFocus={() => setFieldFocused(true)}
+                onBlur={() => setFieldFocused(false)}
+                style={styles.priceInput}
+              />
+            </View>
+            <Text style={styles.provenance}>{provenance}</Text>
           </View>
 
           <View style={styles.actions}>
@@ -71,9 +101,7 @@ export function AcompanharSheet({ visible, suggestedPrice, isSubmitting, onClose
                 if (!isSubmitting && hasValidPrice) onTrackWithAlert(parsedPrice);
               }}
             />
-            <View style={styles.centered}>
-              <TextLink label="Acompanhar sem avisos" onPress={() => !isSubmitting && onTrackWithoutAlert()} />
-            </View>
+            <TextLink label="Acompanhar sem avisos" onPress={() => !isSubmitting && onTrackWithoutAlert()} />
           </View>
         </View>
       </View>
@@ -113,19 +141,22 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    gap: spacing.md,
   },
   title: {
-    fontFamily: fontFamily.bold,
-    fontSize: 20,
+    ...typography.phrase,
     color: colors.ink,
+    flex: 1,
   },
   closeTarget: {
     height: targets.touch,
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
     marginRight: -spacing.sm,
+    marginTop: -spacing.xs,
+    flexShrink: 0,
   },
   closeLabel: {
     fontFamily: fontFamily.semibold,
@@ -135,10 +166,36 @@ const styles = StyleSheet.create({
   field: {
     gap: spacing.sm,
   },
+  priceField: {
+    height: targets.button,
+    backgroundColor: '#fff',
+    borderWidth,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.xl,
+  },
+  priceFieldFocused: {
+    borderColor: colors.brand,
+  },
+  pricePrefix: {
+    ...typography.price,
+    color: colors.absence,
+  },
+  priceInput: {
+    flex: 1,
+    ...typography.price,
+    color: colors.ink,
+    ...tabularNums,
+    padding: 0,
+  },
+  provenance: {
+    ...typography.provenance,
+    color: colors.secondary,
+  },
   actions: {
     gap: spacing.md - 2,
-  },
-  centered: {
-    alignItems: 'center',
   },
 });
