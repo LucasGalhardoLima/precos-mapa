@@ -2,7 +2,6 @@
 
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { EncarteResponse } from "@/lib/schemas";
 import { mockOffersByMarket } from "@/features/shared/mock-data";
 import { Offer, PromotionDraft } from "@/features/shared/types";
 
@@ -10,7 +9,6 @@ interface OffersStoreValue {
   offersByMarket: Record<string, Offer[]>;
   getOffers: (marketId: string) => Offer[];
   createManualOffer: (marketId: string, draft: PromotionDraft) => void;
-  publishImportedOffers: (marketId: string, payload: EncarteResponse) => number;
   toggleOfferStatus: (marketId: string, offerId: string) => void;
 }
 
@@ -48,30 +46,6 @@ function createOfferFromDraft(marketId: string, draft: PromotionDraft): Offer {
   };
 }
 
-function createOfferFromImporter(marketId: string, entry: EncarteResponse["products"][number]): Offer {
-  const now = new Date();
-  const listPrice = entry.original_price && entry.original_price > entry.price
-    ? entry.original_price
-    : Number((entry.price * 1.28).toFixed(2));
-  return {
-    id: `imp-${now.getTime()}-${Math.floor(Math.random() * 10000)}`,
-    marketId,
-    productName: entry.name,
-    brand: entry.market_origin ?? "Marca não identificada",
-    category: "Importadas",
-    unit: entry.unit,
-    price: entry.price,
-    listPrice,
-    discountPercent: calculateDiscount(entry.price, listPrice),
-    validUntil: entry.validity ?? now.toISOString().slice(0, 10),
-    verified: true,
-    status: "ativa",
-    source: "importador_ia",
-    createdAt: now.toISOString().slice(0, 10),
-    note: "Oferta importada via OCR + revisão humana",
-  };
-}
-
 const useOffersStoreBase = create<OffersStoreValue>()(
   persist(
     (set, get) => ({
@@ -87,18 +61,6 @@ const useOffersStoreBase = create<OffersStoreValue>()(
             },
           };
         });
-      },
-      publishImportedOffers: (marketId: string, payload: EncarteResponse) => {
-        const created = payload.products.map((entry) => createOfferFromImporter(marketId, entry));
-
-        set((state) => ({
-          offersByMarket: {
-            ...state.offersByMarket,
-            [marketId]: [...created, ...(state.offersByMarket[marketId] ?? [])],
-          },
-        }));
-
-        return created.length;
       },
       toggleOfferStatus: (marketId: string, offerId: string) => {
         set((state) => {

@@ -98,9 +98,10 @@ Supabase fica no plano Free (1 GB de Storage, 500 MB de banco; banco em 279 MB h
 
 **Migration 079 aplicada, sem uso ainda.** A tabela do e-mail de "Fora de Matão" existe no banco (aplicada por conexão direta), mas o app não consegue gravar nela até a REST voltar.
 
+**Pipeline de encartes removido do deploy em 23/09; código no histórico.** As rotas de crawl/extração/importação de PDF (`api/crawl`, `api/extract`, `api/extract-image`, `api/upload`, `api/cron/process-import`, `api/cron/process-single-pdf`) formavam um bundle de função de 109,7 MB no deploy de produção (sharp, @napi-rs/canvas, pdfjs-dist, puppeteer-core, @sparticuz/chromium) — encartes já estavam fora do MLP e o cron que alimentava a pipeline já tinha sido desligado (#55). Removido também: o painel "Importador IA" (`/painel/importador-ia`, `/demo`), "Fontes PDF" (`/painel/super/pdf-sources`), a seção "Importações automáticas" de `/painel/super/moderacao` (a "Fila de moderação" de ofertas continua), e os scripts `reextract-stuck-imports.ts`/`approve-recommended-noconsensus.ts`. Nada foi apagado do banco — `store_pdf_sources`, `pdf_imports`, `ai_import_logs` ficam órfãs, sem uso, mas intactas. Recuperável do histórico do git se a pipeline voltar a fazer sentido.
+
 **Pendências:**
 - Retenção de 90 dias em `price_history` (ainda sem política).
-- Retenção em qualquer importação futura de encarte, para o incidente não se repetir.
 - Medir o tamanho do banco semanalmente.
 
 ## Próximo passo

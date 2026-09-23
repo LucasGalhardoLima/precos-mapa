@@ -7,7 +7,6 @@ import {
   BarChart3,
   Building2,
   Crown,
-  FileText,
   LayoutDashboard,
   LogOut,
   ShieldCheck,
@@ -37,7 +36,6 @@ const marketNavItems: NavItem[] = [
   { href: "/painel/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/painel/ofertas", label: "Minhas Ofertas", icon: Tags },
   { href: "/painel/ofertas/nova", label: "Criar Oferta", icon: Sparkles },
-  { href: "/painel/importador-ia", label: "Importador IA", icon: ShieldCheck },
   { href: "/painel/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/painel/plano", label: "Plano", icon: Wallet },
 ];
@@ -45,7 +43,6 @@ const marketNavItems: NavItem[] = [
 // Super admin sees super nav + only these market items (no Dashboard/Criar Oferta/Analytics/Plano duplicates)
 const superMarketNavItems: NavItem[] = [
   { href: "/painel/ofertas", label: "Todas as Ofertas", icon: Tags },
-  { href: "/painel/importador-ia", label: "Importador IA", icon: ShieldCheck },
 ];
 
 const superNavItems: NavItem[] = [
@@ -56,7 +53,6 @@ const superNavItems: NavItem[] = [
   { href: "/painel/super/moderacao", label: "Moderacao", icon: ShieldCheck },
   { href: "/painel/super/indice", label: "Indice de Precos", icon: TrendingUp },
   { href: "/painel/super/qualidade", label: "Qualidade Dados", icon: AlertTriangle },
-  { href: "/painel/super/pdf-sources", label: "Fontes PDF", icon: FileText },
   { href: "/painel/super/engajamento", label: "Engajamento B2B", icon: BarChart3 },
 ];
 
