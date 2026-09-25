@@ -14,6 +14,7 @@ jest.mock('@poup/shared', () => ({
   useLocation: () => ({ locationLabel: '', hasResolvedLocation: false }),
 }));
 jest.mock('@/lib/supabase', () => ({ supabase: { from: jest.fn() } }));
+jest.mock('../../lib/inherited-session', () => ({ clearInheritedLoginOnce: jest.fn() }));
 
 import { resolveTrackedRegion, resolveEventIdentity } from '../../hooks/use-analytics';
 

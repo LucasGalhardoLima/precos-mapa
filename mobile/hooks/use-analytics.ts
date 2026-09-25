@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useLocation, getAnonymousId } from '@poup/shared';
+import { clearInheritedLoginOnce } from '../lib/inherited-session';
 import type { AnalyticsEventType } from '@poup/shared';
 
 interface TrackOptions {
@@ -60,10 +61,14 @@ export function useAnalytics() {
         // Identity is read now, not from render-time state: callers such as
         // scan.tsx fire from effects that captured an earlier `track`, and the
         // auth store is never filled in this app (only the legacy screens did).
+        await clearInheritedLoginOnce();
         const { data } = await supabase.auth.getSession();
         const anonymousId = data.session ? null : await getAnonymousId().catch(() => null);
         const identity = resolveEventIdentity(data.session?.user.id, anonymousId);
-        if (!identity) return;
+        if (!identity) {
+          if (__DEV__) console.warn('[analytics] dropped, no identity:', eventType);
+          return;
+        }
 
         // Build a dedup key from event type + store + product
         const dedupKey = `${eventType}:${options.storeId ?? ''}:${options.productId ?? ''}`;
@@ -84,8 +89,9 @@ export function useAnalytics() {
         // Never surfaced to the user, but not invisible in dev: a refused
         // insert (RLS) used to be swallowed and hid this for the whole rebuild.
         if (__DEV__ && error) console.warn('[analytics] insert refused:', eventType, error.message);
-      })().catch(() => {
-        // fire-and-forget
+      })().catch((e) => {
+        // fire-and-forget; visible in dev only
+        if (__DEV__) console.warn('[analytics] track failed:', eventType, e);
       });
     },
     [locationLabel, hasResolvedLocation],
