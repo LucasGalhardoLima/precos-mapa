@@ -38,12 +38,15 @@ export function StoreRow({ storeName, distanceKm, price, isWinner, isHere, fresh
             <Text style={styles.hereWinnerBadgeText}>◉ você está aqui · menor preço</Text>
           </View>
         ) : isHere ? (
-          <Text style={styles.hereLine}>
-            você está aqui ·{' '}
+          // A row of siblings, not a Pressable nested inside the Text: a View
+          // inside Text drops the parent's font size and sits off its baseline
+          // ("trocar ›" came out bigger and higher than the words before it).
+          <View style={styles.hereLine}>
+            <Text style={styles.hereText}>você está aqui ·</Text>
             <Pressable onPress={onSwap} hitSlop={8}>
               <Text style={styles.swapLink}>trocar ›</Text>
             </Pressable>
-          </Text>
+          </View>
         ) : isWinner ? (
           <View style={styles.winnerBadge}>
             <Text style={styles.winnerBadgeText}>menor preço</Text>
@@ -89,13 +92,20 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   hereLine: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
+    gap: 4,
+    marginTop: 4,
+  },
+  hereText: {
     fontFamily: fontFamily.medium,
     fontSize: 13,
     color: colors.secondary,
-    marginTop: 4,
   },
   swapLink: {
     fontFamily: fontFamily.semibold,
+    fontSize: 13,
     color: colors.brandInk,
   },
   winnerBadge: {
