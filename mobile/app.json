@@ -22,7 +22,18 @@
       "deploymentTarget": "16.4",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Precisamos da sua localização para mostrar lojas e ofertas perto de você.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIApplicationSceneManifest": {
+          "UIApplicationSupportsMultipleScenes": false,
+          "UISceneConfigurations": {
+            "UIWindowSceneSessionRoleApplication": [
+              {
+                "UISceneConfigurationName": "Default Configuration",
+                "UISceneDelegateClassName": "EXExpoAppSceneDelegate"
+              }
+            ]
+          }
+        }
       }
     },
     "android": {
@@ -63,13 +74,6 @@
         }
       ],
       "expo-secure-store",
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Acesse suas fotos para selecionar imagens de encartes.",
-          "cameraPermission": "Acesse sua câmera para fotografar encartes, escanear código de barras e notas fiscais."
-        }
-      ],
       "expo-dev-client",
       [
         "@react-native-google-signin/google-signin",
@@ -82,7 +86,7 @@
       [
         "react-native-vision-camera",
         {
-          "cameraPermissionText": "Acesse sua câmera para fotografar encartes, escanear código de barras e notas fiscais.",
+          "cameraPermissionText": "O Poup usa sua câmera para ler o código de barras do produto.",
           "enableCodeScanner": true
         }
       ],
@@ -107,7 +111,8 @@
           }
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      "./plugins/withIosSceneDelegate"
     ],
     "extra": {
       "router": {},
