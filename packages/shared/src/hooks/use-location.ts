@@ -49,6 +49,36 @@ function getCityStateFromGeocode(result: Location.LocationGeocodedAddress): City
   };
 }
 
+const PERMISSION_POLL_MS = 400;
+
+// On iOS the promise from requestForegroundPermissionsAsync() can stay pending
+// after the user taps Allow (expo/expo#28284) — the screen never moves on until
+// something else nudges it, and a second call resolves instantly because the
+// permission is already set. The real status doesn't have that hole:
+// "undetermined" means the dialog is still up, anything else means the user
+// answered. So race the request against a poll of the status.
+// shortcut: polling alongside the request — upgrade: drop it once expo-location's
+// iOS requester resolves reliably after the answer (check on the next SDK bump).
+async function requestForegroundStatus(): Promise<Location.LocationPermissionResponse> {
+  let timer: ReturnType<typeof setInterval> | undefined;
+  const answered = new Promise<Location.LocationPermissionResponse>((resolve) => {
+    timer = setInterval(async () => {
+      try {
+        const current = await Location.getForegroundPermissionsAsync();
+        if (current.status !== 'undetermined') resolve(current);
+      } catch {
+        // Keep polling; the request itself is the authority on real errors.
+      }
+    }, PERMISSION_POLL_MS);
+  });
+
+  try {
+    return await Promise.race([Location.requestForegroundPermissionsAsync(), answered]);
+  } finally {
+    clearInterval(timer);
+  }
+}
+
 /**
  * Reads the foreground location permission, showing the system dialog only
  * when `prompt` is true. `definitive` is false for a prompt-free read of
@@ -60,7 +90,7 @@ export async function readForegroundPermission(
   prompt: boolean
 ): Promise<{ granted: boolean; definitive: boolean }> {
   const { status } = prompt
-    ? await Location.requestForegroundPermissionsAsync()
+    ? await requestForegroundStatus()
     : await Location.getForegroundPermissionsAsync();
 
   return {
