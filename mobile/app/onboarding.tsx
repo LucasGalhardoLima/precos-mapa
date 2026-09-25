@@ -65,9 +65,8 @@ export default function Onboarding() {
 
   const covered: readonly CoveredCity[] = cities.length > 0 ? cities : FALLBACK_COVERED_CITIES;
 
-  // `track` is a no-op until the anonymous id has loaded and gets a new
-  // identity when it does, so it stays in the deps: the first screen's event
-  // would otherwise be dropped. The hook's own 2 s dedup absorbs the repeats.
+  // `track` changes identity when the resolved region does, so it stays in the
+  // deps; the hook's own 2 s dedup absorbs the repeats.
   useEffect(() => {
     if (step === 'outside') {
       track('screen_viewed', { metadata: { screen: 'onboarding_outside', city: outsideCity } });
