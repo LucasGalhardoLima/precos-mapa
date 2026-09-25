@@ -68,6 +68,16 @@ export default function ScanScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Back from Ajustes with the camera now granted. The vision-camera hook
+  // refreshes `hasPermission` on every app-state change, but the effect above
+  // reads it once, at mount. iOS usually kills the app when a permission
+  // changes in Ajustes (it then relaunches cold and never gets here), but when
+  // the process survives this reopens the camera instead of leaving the screen
+  // on "Sem acesso à câmera".
+  useEffect(() => {
+    if (phase === 'denied' && hasPermission) setPhase('scanning');
+  }, [phase, hasPermission, setPhase]);
+
   const goToSearch = useCallback(() => {
     router.back();
     // Lets the pop transition start before focusing — see lib/search-focus.ts.
