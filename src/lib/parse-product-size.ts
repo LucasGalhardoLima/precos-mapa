@@ -46,6 +46,24 @@ const MULTIPLIER_UNIT_ALT = [...Object.keys(MASS_UNITS), ...Object.keys(VOLUME_U
   .join("|");
 const MULTIPLIER_RE = new RegExp(`(\\d+)\\s*[xX]\\s*(${NUM})\\s*(${MULTIPLIER_UNIT_ALT})(?![a-zà-úçã])`, "gi");
 
+// Physical dimensions ("280x260cm", "1,88m x 0,88m x 30cm", "300x200x150mm")
+// are not a pack size: the simple-size matcher below would read the last
+// factor ("260cm" -> 2.6 m). Blank them out before matching. A chain counts as
+// dimensions when it carries a cm/mm unit, or a length unit on two or more
+// factors. "12x30m" (12 rolls x 30 m) has one bare-number "m" chain, so it is
+// left alone: there the 30 m per roll is the size this parser has always returned.
+const DIM_FACTOR = String.raw`${NUM}\s*(?:cm|mm|m(?![a-zà-úçã]))?`;
+const DIMENSIONS_RE = new RegExp(`${DIM_FACTOR}(?:\\s*[xX×]\\s*${DIM_FACTOR})+`, "gi");
+const LENGTH_UNIT_TOKEN_RE = /(cm|mm|m)(?![a-zà-úçã])/gi;
+
+function stripDimensions(name: string): string {
+  return name.replace(DIMENSIONS_RE, (chain) => {
+    const units = [...chain.matchAll(LENGTH_UNIT_TOKEN_RE)].map((m) => m[1].toLowerCase());
+    const isDimensions = units.length >= 2 || units.some((u) => u === "cm" || u === "mm");
+    return isDimensions ? " " : chain;
+  });
+}
+
 function toBase(value: number, rawUnit: string): ParsedSize {
   const unit = rawUnit.toLowerCase();
   if (unit in MASS_UNITS) return { value: value * MASS_UNITS[unit], unit: "g" };
@@ -114,7 +132,8 @@ function pickSaneMatch<T extends RegExpMatchArray>(matches: T[], toSize: (m: T) 
  *  3. Only if no mass/volume/length token exists at all, the last count
  *     match ("30 Un") — here the count genuinely is the size.
  */
-export function parseProductSize(name: string): ParsedSize | null {
+export function parseProductSize(rawName: string): ParsedSize | null {
+  const name = stripDimensions(rawName);
   const multiplierMatches = [...name.matchAll(MULTIPLIER_RE)];
   const multiplierResult = pickSaneMatch(multiplierMatches, ([, countRaw, qtyRaw, unitRaw]) => {
     const count = parseInt(countRaw, 10);

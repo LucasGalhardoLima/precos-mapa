@@ -83,6 +83,31 @@ describe("parseProductSize", () => {
     });
   });
 
+  describe("physical dimensions are not a pack size", () => {
+    it.each([
+      ["Kit Colcha King Burdays 280x260cm 3 Peças"], // was read as 2.6 m
+      ["Capa de Colchão Solteiro Sortido Homeland 1,88m x 0,88m x 30cm"], // was 0.3 m
+      ["Grelha Inox Utimil Moeda 37x48cm para Churrasco"],
+      ["Sacola Preta 23,5x31,5cm"],
+      ["Sacola Retornável Vinho CáPraLá 300x200x150mm"],
+      ["Toalha de Banho 70x140cm"],
+      ["Tapete 2,00m x 1,50m"],
+      ["Pistola Cola Quente 12x10cm"],
+    ])("%s -> null", (name) => {
+      expect(parseProductSize(name)).toBeNull();
+    });
+
+    it("still reads a real size next to the dimensions", () => {
+      expect(parseProductSize("Toalha de Banho 70x140cm Pacote 500g")).toEqual({ value: 500, unit: "g" });
+    });
+
+    it("keeps rolls x length and mass/volume multipacks as before", () => {
+      expect(parseProductSize("Papel Higiênico Folha Dupla 12X30M")).toEqual({ value: 30, unit: "m" });
+      expect(parseProductSize("Papel Higiênico Neve 4x30m")).toEqual({ value: 30, unit: "m" });
+      expect(parseProductSize("Refrigerante Lata 6x350ml")).toEqual({ value: 2100, unit: "ml" });
+    });
+  });
+
   it("reads a dot followed by exactly 3 digits as a thousands separator, not a decimal", () => {
     expect(parseProductSize("Carne Bovina Bucho Cry aprox. 1.050g")).toEqual({ value: 1050, unit: "g" });
     // still decimal when it's not a 3-digit group after the dot
