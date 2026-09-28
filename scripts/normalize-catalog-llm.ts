@@ -20,7 +20,8 @@
  *   npx tsx --env-file=.env.local scripts/normalize-catalog-llm.ts --ingest scripts/.scrape-normalize-<run>.json --dry-run
  *   npx tsx --env-file=.env.local scripts/normalize-catalog-llm.ts --ingest scripts/.scrape-normalize-<run>.json
  *
- * Env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY.
+ * Env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY, and
+ * ANTHROPIC_WORKSPACE_ID when the key is organization-level (not workspace-scoped).
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -111,7 +112,10 @@ const toCandidate = (p: FreshProduct): Candidate => ({
 });
 
 async function runBatch(candidates: Candidate[], categories: Category[]) {
-  const client = new Anthropic();
+  // An organization-level key (not scoped to a workspace) must say which workspace the
+  // request belongs to; that is also what makes the workspace's spend limit apply.
+  const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID;
+  const client = new Anthropic(workspaceId ? { defaultHeaders: { "anthropic-workspace-id": workspaceId } } : {});
   const system = buildSystemPrompt(categories);
   const schema = responseSchema(categories);
   const slugs = new Set(categories.map((c) => c.id));
