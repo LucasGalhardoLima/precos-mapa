@@ -10,8 +10,11 @@ const seeded = [
   ...migration.matchAll(/^\s*\('([a-z-]+)',\s*'(cat_[a-z]+)',\s*'[^']+',\s*\d+\)/gm),
 ].map((m) => ({ id: m[1], department: m[2] }));
 
+// Snapshot of the Savegnago leaf tree (scripts/.scrape-savegnago-categories.json
+// is a gitignored runtime cache, so CI never has it). Refresh it when the site
+// adds categories, then map the new leaves in the TSV.
 const leaves: { id: number; path: string }[] = JSON.parse(
-  read("scripts/.scrape-savegnago-categories.json"),
+  read("scripts/savegnago-leaf-tree.snapshot.json"),
 );
 
 const [, ...lines] = read("scripts/savegnago-leaf-category-map.tsv").trimEnd().split("\n");
