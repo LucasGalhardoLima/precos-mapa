@@ -94,6 +94,12 @@ export interface ScraperDb {
    * image_url + image_source are both set, guarded on image_url alone.
    */
   updateProductIfNull(productId: string, guardColumn: ProductPatchColumn, patch: Partial<Record<ProductPatchColumn, string>>): Promise<void>;
+  /**
+   * Writes the Savegnago-tree category (category_l2 + provenance) unless the
+   * row already has a normalized_by — an earlier pass is never overwritten
+   * without `force` (catalog normalization: docs/poup-prd-normalizacao-catalogo.md).
+   */
+  setCategoryL2FromTree(productId: string, slug: string, opts?: { force?: boolean }): Promise<void>;
   upsertStorePrice(row: StorePriceRow): Promise<void>;
   syncCrawlerPromotion(input: SyncCrawlerPromotionInput): Promise<void>;
 }
@@ -126,6 +132,14 @@ export function createRestScraperDb(supabase: SupabaseClient): ScraperDb {
 
     async updateProductIfNull(productId, guardColumn, patch) {
       await supabase.from('products').update(patch).eq('id', productId).is(guardColumn, null);
+    },
+
+    async setCategoryL2FromTree(productId, slug, opts) {
+      const q = supabase
+        .from('products')
+        .update({ category_l2: slug, normalized_by: 'savegnago_tree', normalized_at: new Date().toISOString() })
+        .eq('id', productId);
+      await (opts?.force ? q : q.is('normalized_by', null));
     },
 
     async upsertStorePrice(row) {
@@ -276,6 +290,14 @@ export function createDirectScraperDb(client: Client): ScraperDb {
       await client.query(
         `update products set ${setClause} where id = $${columns.length + 1} and ${guardColumn} is null`,
         [...columns.map((col) => patch[col]), productId],
+      );
+    },
+
+    async setCategoryL2FromTree(productId, slug, opts) {
+      await client.query(
+        `update products set category_l2 = $1, normalized_by = 'savegnago_tree', normalized_at = now()
+         where id = $2 ${opts?.force ? '' : 'and normalized_by is null'}`,
+        [slug, productId],
       );
     },
 
