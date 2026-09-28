@@ -1,0 +1,462 @@
+leaf_id	path	category_l2	reason_if_null
+15468	Padaria > Pães > Pão Artesanal	paes	
+15469	Padaria > Pães > Pão De Alho	paes	
+15470	Padaria > Pães > Pão De Forma	paes	
+15471	Padaria > Pães > Torradas	paes	
+15472	Padaria > Pães > Outros Pães	paes	
+15473	Padaria > Bolos E Confeitaria > Doces	bolos-confeitaria	
+15474	Padaria > Bolos E Confeitaria > Bolos	bolos-confeitaria	
+15475	Padaria > Bolos E Confeitaria > Petit Four	bolos-confeitaria	
+17668	Padaria > Rotisserie > Pratos Frios	sopas-pratos-prontos	
+17669	Padaria > Rotisserie > Pratos Quentes	sopas-pratos-prontos	
+15480	Flores E Plantas > Floricultura > Flores	outros	
+15481	Flores E Plantas > Floricultura > Plantas	outros	
+15540	Flores E Plantas > Jardinagem > Jardinagem	outros	
+15494	Bazar E Utilidades > Material Escolar > Cadernos E Agendas	outros	
+15495	Bazar E Utilidades > Material Escolar > Canetas E Lápis	outros	
+15496	Bazar E Utilidades > Material Escolar > Papelaria	outros	
+15497	Bazar E Utilidades > Material Escolar > Mochilas E Estojos	outros	
+17141	Bazar E Utilidades > Material Escolar > Outros Materiais Escolare	outros	
+17142	Bazar E Utilidades > Material Escolar > Fitas Adesivas E Papéis	outros	
+17143	Bazar E Utilidades > Material Escolar > Colas E Tesouras	outros	
+15498	Bazar E Utilidades > Brinquedos > Bonecas E Bonecos	outros	
+15499	Bazar E Utilidades > Brinquedos > Carrinhos	outros	
+15500	Bazar E Utilidades > Brinquedos > Outros Brinquedos	outros	
+15501	Bazar E Utilidades > Calçados > Chinelos E Sandálias	outros	
+15502	Bazar E Utilidades > Churrasco E Acessórios > Acessórios Para Churrasco	outros	
+15503	Bazar E Utilidades > Churrasco E Acessórios > Churrasqueiras	outros	
+15504	Bazar E Utilidades > Churrasco E Acessórios > Carvão	outros	
+15505	Bazar E Utilidades > Velas E Fósforos > Velas	outros	
+15506	Bazar E Utilidades > Velas E Fósforos > Fósforos E Isqueiros	outros	
+15507	Bazar E Utilidades > Elétricos E Ferramentas > Pilhas	outros	
+15508	Bazar E Utilidades > Elétricos E Ferramentas > Lâmpadas	outros	
+15509	Bazar E Utilidades > Elétricos E Ferramentas > Mais Produtos Elétricos	outros	
+15510	Bazar E Utilidades > Elétricos E Ferramentas > Ferramentas	outros	
+15542	Bazar E Utilidades > Cama, Mesa E Banho > Cama	outros	
+15543	Bazar E Utilidades > Cama, Mesa E Banho > Toalhas	outros	
+15511	Bazar E Utilidades > Utilidades De Cozinha > Assadeiras E Formas	utensilios	
+15512	Bazar E Utilidades > Utilidades De Cozinha > Saladeiras E Travessas	utensilios	
+15513	Bazar E Utilidades > Utilidades De Cozinha > Utilidades Plásticas	utensilios	
+15514	Bazar E Utilidades > Utilidades De Cozinha > Utilidades De Inox	utensilios	
+15515	Bazar E Utilidades > Utilidades De Cozinha > Talheres E Facas	utensilios	
+15516	Bazar E Utilidades > Utilidades De Cozinha > Pratos	utensilios	
+15517	Bazar E Utilidades > Utilidades De Cozinha > Copos E Taças	utensilios	
+15518	Bazar E Utilidades > Utilidades De Cozinha > Panelas E Frigideiras	utensilios	
+15519	Bazar E Utilidades > Utilidades De Cozinha > Xícaras E Canecas	utensilios	
+15520	Bazar E Utilidades > Utilidades De Cozinha > Garrafas E Jarras	utensilios	
+15521	Bazar E Utilidades > Utilidades De Cozinha > Outras Utilidades Cozinha	utensilios	
+15522	Bazar E Utilidades > Utensílios De Lavanderia > Baldes E Cestos	outros	
+15523	Bazar E Utilidades > Utensílios De Lavanderia > Lixeiras	outros	
+15524	Bazar E Utilidades > Utensílios De Lavanderia > Tábua De Passar E Varal	outros	
+15525	Bazar E Utilidades > Utensílios De Lavanderia > Outros Itens Lavanderia	outros	
+15527	Bazar E Utilidades > Eletrodomésticos > Outros Eletrodomésticos	outros	
+15528	Bazar E Utilidades > Descartáveis E Art Festa > Copo, Prato E Talher	descartaveis	
+15529	Bazar E Utilidades > Descartáveis E Art Festa > Papel Toalha E Guardanapo	descartaveis	
+15530	Bazar E Utilidades > Descartáveis E Art Festa > Papel Alumínio E Filme	descartaveis	
+15531	Bazar E Utilidades > Descartáveis E Art Festa > Filtro De Papel	descartaveis	
+15532	Bazar E Utilidades > Descartáveis E Art Festa > Outros Descartáveis	descartaveis	
+15533	Bazar E Utilidades > Descartáveis E Art Festa > Artigos De Festa	outros	
+16442	Bazar E Utilidades > Eletroportáteis > Máquina De Café	outros	
+16957	Bazar E Utilidades > Bolsas E Sacolas > Lancheiras	outros	
+16958	Bazar E Utilidades > Bolsas E Sacolas > Sacolas	outros	
+16963	Bazar E Utilidades > Bolsas E Sacolas > Malas	outros	
+16964	Bazar E Utilidades > Bolsas E Sacolas > Mochilas E Lancheiras	outros	
+16959	Bazar E Utilidades > Entretenimento > Livros	outros	
+16954	Bazar E Utilidades > Lazer > Poltronas E Banquetas	outros	
+16955	Bazar E Utilidades > Lazer > Recipiente Térmico	outros	
+16956	Bazar E Utilidades > Lazer > Caixa Térmica	outros	
+16960	Bazar E Utilidades > Lazer > Poltronas E Banquetas	outros	
+16961	Bazar E Utilidades > Lazer > Recipiente Térmico	outros	
+16962	Bazar E Utilidades > Lazer > Caixa Térmica	outros	
+16970	Bazar E Utilidades > Lazer > Bóias	outros	
+16971	Bazar E Utilidades > Lazer > Colchões Infláveis	outros	
+16972	Bazar E Utilidades > Lazer > Guarda-Chuva E Guarda-Sol	outros	
+16973	Bazar E Utilidades > Lazer > Piscinas	outros	
+16974	Bazar E Utilidades > Lazer > Poltronas E Banquetas	outros	
+16969	Bazar E Utilidades > Decoração > Relógios	outros	
+17095	Bazar E Utilidades > Pneu > Pneu	outros	
+17676	Bazar E Utilidades > Produtos Automotivos > Limpeza Automotiva	outros	
+17677	Bazar E Utilidades > Produtos Automotivos > Neutralizador De Odores	outros	
+17678	Bazar E Utilidades > Produtos Automotivos > Cera Automotiva	outros	
+17682	Bazar E Utilidades > Produtos Automotivos > Acessórios Automotivos	outros	
+17683	Bazar E Utilidades > Produtos Automotivos > Cera Automotiva	outros	
+17684	Bazar E Utilidades > Produtos Automotivos > Limpeza Automotiva	outros	
+17685	Bazar E Utilidades > Produtos Automotivos > Manutenção Automotiva	outros	
+17686	Bazar E Utilidades > Produtos Automotivos > Neutralizador De Odores	outros	
+17687	Bazar E Utilidades > Produtos Automotivos > Pneus	outros	
+15699	Laticínios > Queijos > Muçarela	queijos	
+15700	Laticínios > Queijos > Queijo Branco	queijos	
+15701	Laticínios > Queijos > Queijos Especiais	queijos	
+15702	Laticínios > Queijos > Queijo Ralado	queijos	
+15703	Laticínios > Iogurte E Leite Fermentad > Iogurtes	iogurte-fermentado	
+15704	Laticínios > Iogurte E Leite Fermentad > Leite Fermentado	iogurte-fermentado	
+15705	Laticínios > Lácteos E Cremes > Manteigas	manteiga-margarina	
+15706	Laticínios > Lácteos E Cremes > Margarinas	manteiga-margarina	
+15707	Laticínios > Lácteos E Cremes > Requeijão	requeijao-creme-leite	
+15708	Laticínios > Lácteos E Cremes > Creme Leite E Chantilly	requeijao-creme-leite	
+15709	Laticínios > Lácteos E Cremes > Cremes De Queijo	requeijao-creme-leite	
+15710	Laticínios > Lácteos E Cremes > Gordura Vegetal E Banha		ambígua: gordura vegetal/banha não cabe em manteiga-margarina nem em óleos
+15711	Laticínios > Sorvetes E Açai > Açaí	sorvete-acai	
+15712	Laticínios > Sorvetes E Açai > Sorvetes	sorvete-acai	
+15720	Frios e Congelados > Pratos Prontos E Pizzas > Pizza	prontos-congelados	
+15721	Frios e Congelados > Pratos Prontos E Pizzas > Lasanha	prontos-congelados	
+15722	Frios e Congelados > Pratos Prontos E Pizzas > Sanduíches	prontos-congelados	
+15723	Frios e Congelados > Pratos Prontos E Pizzas > Demais Pratos Prontos	prontos-congelados	
+15724	Frios e Congelados > Legumes E Vegetais Congel > Batata Congelada	vegetais-polpas	
+15725	Frios e Congelados > Legumes E Vegetais Congel > Demais Vegetais Congelado	vegetais-polpas	
+15726	Frios e Congelados > Polpa De Frutas > Frutas Congeladas	vegetais-polpas	
+15727	Frios e Congelados > Polpa De Frutas > Polpa De Frutas Congelada	vegetais-polpas	
+15728	Frios e Congelados > Pão De Queijo > Pão De Queijo Congelado	prontos-congelados	
+15729	Frios e Congelados > Hamburguer E Empanados > Empanados	prontos-congelados	
+15730	Frios e Congelados > Hamburguer E Empanados > Hambúrguer	prontos-congelados	
+15731	Frios e Congelados > Hamburguer E Empanados > Aperitivos	prontos-congelados	
+15732	Frios e Congelados > Frios > Bacon	frios-embutidos	
+15733	Frios e Congelados > Frios > Linguiças E Salsichas	frios-embutidos	
+15734	Frios e Congelados > Frios > Salames E Mortadelas	frios-embutidos	
+15735	Frios e Congelados > Frios > Presuntos E Apresuntados	frios-embutidos	
+15736	Frios e Congelados > Frios > Peito De Peru E Frango	frios-embutidos	
+15737	Frios e Congelados > Frios > Demais Embutidos	frios-embutidos	
+13269	Pet Shop > Higiene Animal > Areia E Tapete Higiênico	higiene-acessorios-pet	
+13274	Pet Shop > Higiene Animal > Condicionador Pet	higiene-acessorios-pet	
+13276	Pet Shop > Higiene Animal > Elimina Odor	higiene-acessorios-pet	
+13284	Pet Shop > Higiene Animal > Shampoo Pet	higiene-acessorios-pet	
+13270	Pet Shop > Acessórios Pet > Brinquedos Pet	higiene-acessorios-pet	
+13273	Pet Shop > Acessórios Pet > Comedouro	higiene-acessorios-pet	
+13279	Pet Shop > Acessórios Pet > Guias E Coleiras	higiene-acessorios-pet	
+13271	Pet Shop > Rações E Alimentos > Cachorro	racao	
+13278	Pet Shop > Rações E Alimentos > Gato	racao	
+13280	Pet Shop > Rações E Alimentos > Pássaros	racao	
+15209	Carnes > Peixes E Frutos Do Mar > Bacalhau	peixes-frutos-do-mar	
+15210	Carnes > Peixes E Frutos Do Mar > Salmão	peixes-frutos-do-mar	
+15211	Carnes > Peixes E Frutos Do Mar > Peixes Congelados	peixes-frutos-do-mar	
+15212	Carnes > Peixes E Frutos Do Mar > Peixes Frescos	peixes-frutos-do-mar	
+15213	Carnes > Peixes E Frutos Do Mar > Camarão	peixes-frutos-do-mar	
+15214	Carnes > Peixes E Frutos Do Mar > Outros Frutos Do Mar	peixes-frutos-do-mar	
+15215	Carnes > Bovinas > Acém	bovina	
+15216	Carnes > Bovinas > Alcatra E Maminha	bovina	
+15217	Carnes > Bovinas > Contra Filé	bovina	
+15218	Carnes > Bovinas > Costela	bovina	
+15219	Carnes > Bovinas > Coxão Duro	bovina	
+15220	Carnes > Bovinas > Coxão Mole	bovina	
+15221	Carnes > Bovinas > Cupim	bovina	
+15222	Carnes > Bovinas > Filé Mignon	bovina	
+15223	Carnes > Bovinas > Lagarto	bovina	
+15224	Carnes > Bovinas > Paleta	bovina	
+15225	Carnes > Bovinas > Miúdos	bovina	
+15226	Carnes > Bovinas > Patinho	bovina	
+15227	Carnes > Bovinas > Picanha	bovina	
+15228	Carnes > Bovinas > Carne Temperada	bovina	
+15229	Carnes > Bovinas > Carne Seca	bovina	
+15230	Carnes > Bovinas > Carne Premium	bovina	
+15231	Carnes > Bovinas > Outros Cortes	bovina	
+15232	Carnes > Aves > Frango A Passarinho	aves	
+15233	Carnes > Aves > Asa De Frango	aves	
+15234	Carnes > Aves > Coxa E Sobrecoxa	aves	
+15235	Carnes > Aves > Frango	aves	
+15236	Carnes > Aves > Miúdos De Frango	aves	
+15237	Carnes > Aves > Peito De Frango	aves	
+15238	Carnes > Aves > Peru	aves	
+15239	Carnes > Aves > Chester	aves	
+15240	Carnes > Aves > Outros Cortes	aves	
+15241	Carnes > Exóticas > Avestruz	aves	
+15242	Carnes > Exóticas > Cabrito	outras-carnes	
+15243	Carnes > Exóticas > Capivara	outras-carnes	
+15244	Carnes > Exóticas > Cateto	outras-carnes	
+15245	Carnes > Exóticas > Codorna	aves	
+15246	Carnes > Exóticas > Coelho	outras-carnes	
+15247	Carnes > Exóticas > Cordeiro	outras-carnes	
+15248	Carnes > Exóticas > Cutia	outras-carnes	
+15249	Carnes > Exóticas > Faisão	aves	
+15250	Carnes > Exóticas > Jacaré	outras-carnes	
+15251	Carnes > Exóticas > Javali	outras-carnes	
+15252	Carnes > Exóticas > Pato	aves	
+15253	Carnes > Exóticas > Rã	outras-carnes	
+15255	Carnes > Exóticas > Vitelo	bovina	
+15262	Carnes > Suínas > Lombo Suíno	suina	
+15263	Carnes > Suínas > Miudos Suíno	suina	
+15264	Carnes > Suínas > Pernil Suíno	suina	
+15265	Carnes > Suínas > Carne Temperada Suína	suina	
+15266	Carnes > Suínas > Carnes Salgadas Suínas	suina	
+15267	Carnes > Suínas > Leitoa	suina	
+15268	Carnes > Suínas > Outros Cortes Suíno	suina	
+15269	Carnes > Suínas > Costela Suína	suina	
+15742	Carnes > Suínas > Tender	suina	
+15380	Mercearia > Açúcar E Adoçantes > Adoçantes	acucar-adocantes	
+15381	Mercearia > Açúcar E Adoçantes > Açúcar Cristal	acucar-adocantes	
+15382	Mercearia > Açúcar E Adoçantes > Outros Açúcares	acucar-adocantes	
+15383	Mercearia > Açúcar E Adoçantes > Açúcar Refinado	acucar-adocantes	
+15384	Mercearia > Açúcar E Adoçantes > Açúcar Orgânico	acucar-adocantes	
+15385	Mercearia > Balas E Doces > Balas	doces-chocolates	
+15386	Mercearia > Balas E Doces > Bala De Goma	doces-chocolates	
+15387	Mercearia > Balas E Doces > Goma De Mascar	doces-chocolates	
+15388	Mercearia > Balas E Doces > Pastilhas	doces-chocolates	
+15389	Mercearia > Balas E Doces > Pirulitos	doces-chocolates	
+15390	Mercearia > Balas E Doces > Doces De Compota	doces-chocolates	
+15391	Mercearia > Chocolates > Bombons	doces-chocolates	
+15392	Mercearia > Chocolates > Chocolates Finos	doces-chocolates	
+15393	Mercearia > Chocolates > Barra De Chocolate	doces-chocolates	
+15394	Mercearia > Chocolates > Ovos De Páscoa	doces-chocolates	
+15395	Mercearia > Chocolates > Tablete De Chocolate	doces-chocolates	
+15396	Mercearia > Chocolates > Caixa De Bombom	doces-chocolates	
+15397	Mercearia > Chocolates > Confeitos De Chocolate	doces-chocolates	
+15398	Mercearia > Biscoitos E Snacks > Biscoitos Salgados	biscoitos	
+15399	Mercearia > Biscoitos E Snacks > Biscoitos Doces	biscoitos	
+15400	Mercearia > Biscoitos E Snacks > Batata Palha	salgadinhos-snacks	
+15401	Mercearia > Biscoitos E Snacks > Salgadinhos	salgadinhos-snacks	
+15402	Mercearia > Conservas > Azeitonas E Palmitos	conservas	
+15403	Mercearia > Conservas > Ervilha E Milho	conservas	
+15404	Mercearia > Conservas > Patês E Antepastos	conservas	
+15405	Mercearia > Conservas > Atum E Sardinha	conservas	
+15406	Mercearia > Conservas > Pimenta	conservas	
+15407	Mercearia > Conservas > Feijoada		ambígua: feijoada enlatada (pronto) ou kit para feijoada
+15408	Mercearia > Conservas > Demais Conservas	conservas	
+15409	Mercearia > Temperos E Especiarias > Temperos Em Pó	temperos	
+15410	Mercearia > Temperos E Especiarias > Temperos Em Pasta	temperos	
+15411	Mercearia > Temperos E Especiarias > Molhos De Pimenta	molhos-condimentos	
+15412	Mercearia > Temperos E Especiarias > Molhos Variados	molhos-condimentos	
+15413	Mercearia > Temperos E Especiarias > Sal	temperos	
+15414	Mercearia > Temperos E Especiarias > Vinagre	molhos-condimentos	
+15415	Mercearia > Temperos E Especiarias > Alho Processado	temperos	
+15416	Mercearia > Temperos E Especiarias > Tempero Caldo	temperos	
+15417	Mercearia > Temperos E Especiarias > Ervas E Especiarias	temperos	
+15418	Mercearia > Maionese, Mostarda, Ketch > Maionese	molhos-condimentos	
+15419	Mercearia > Maionese, Mostarda, Ketch > Mostarda	molhos-condimentos	
+15420	Mercearia > Maionese, Mostarda, Ketch > Ketchup	molhos-condimentos	
+15421	Mercearia > Azeites E Óleos > Óleos	oleos-azeites	
+15422	Mercearia > Azeites E Óleos > Azeites	oleos-azeites	
+15423	Mercearia > Grãos E Cereais > Arroz	arroz	
+15424	Mercearia > Grãos E Cereais > Farinhas	farinhas-fermentos	
+15425	Mercearia > Grãos E Cereais > Farofas	farinhas-fermentos	
+15426	Mercearia > Grãos E Cereais > Feijão	feijao-graos	
+15427	Mercearia > Grãos E Cereais > Fubá	farinhas-fermentos	
+15428	Mercearia > Grãos E Cereais > Outros Grãos	feijao-graos	
+15429	Mercearia > Grãos E Cereais > Milho De Pipoca	feijao-graos	
+15430	Mercearia > Grãos E Cereais > Demais Farináceos	farinhas-fermentos	
+15431	Mercearia > Massas E Molhos > Macarrão	massas	
+15432	Mercearia > Massas E Molhos > Massa Fresca	massas	
+15433	Mercearia > Massas E Molhos > Molho De Tomate	molhos-condimentos	
+15434	Mercearia > Massas E Molhos > Extrato De Tomate	molhos-condimentos	
+15435	Mercearia > Massas E Molhos > Outros Tipos De Molho	molhos-condimentos	
+15436	Mercearia > Sopas E Cremes > Sopas	sopas-pratos-prontos	
+15437	Mercearia > Sopas E Cremes > Cremes	sopas-pratos-prontos	
+15438	Mercearia > Cafés E Achocolatados > Achocolatado Em Pó	matinais	
+15439	Mercearia > Cafés E Achocolatados > Cafés	cafe	
+15440	Mercearia > Cafés E Achocolatados > Complementos Alimentar Ad	saudaveis-suplementos	
+15441	Mercearia > Cafés E Achocolatados > Cápsulas	cafe	
+15442	Mercearia > Cereais E Aveias > Cereais	matinais	
+15443	Mercearia > Cereais E Aveias > Aveias	matinais	
+15447	Mercearia > Geléias, Mel E Cremes > Geléias	matinais	
+15448	Mercearia > Geléias, Mel E Cremes > Cremes	matinais	
+15449	Mercearia > Geléias, Mel E Cremes > Mel	matinais	
+15450	Mercearia > Cestas Básicas E Comemor > Cestas Básicas		cesta mista de vários produtos
+15451	Mercearia > Cestas Básicas E Comemor > Cestas Comemorativas		cesta mista de vários produtos
+15452	Mercearia > Nutrição Infantil > Alimentos Infantis	alimentacao-infantil	
+15453	Mercearia > Nutrição Infantil > Complemento Alimentar Inf	alimentacao-infantil	
+15454	Mercearia > Nutrição Infantil > Fórmula E Composto Lácteo	alimentacao-infantil	
+15547	Mercearia > Produtos Orientais > Produtos Orientais		grupo heterogêneo de produtos orientais
+15455	Mercearia > Sobremesas E Preparos > Chocolate Em Pó	sobremesas-preparos	
+15456	Mercearia > Sobremesas E Preparos > Cobertura Para Sorvete	sobremesas-preparos	
+15457	Mercearia > Sobremesas E Preparos > Creme De Leite	requeijao-creme-leite	
+15458	Mercearia > Sobremesas E Preparos > Leite Condensado	sobremesas-preparos	
+15459	Mercearia > Sobremesas E Preparos > Fermentos	farinhas-fermentos	
+15460	Mercearia > Sobremesas E Preparos > Preparos Para Sobremesa	sobremesas-preparos	
+15461	Mercearia > Sobremesas E Preparos > Leite De Coco E Coco Rala	sobremesas-preparos	
+15462	Mercearia > Sobremesas E Preparos > Mistura Para Bolos E Sorv	sobremesas-preparos	
+15739	Mercearia > Alimentação Saudável > Cereais Alimentação Saudá		atributo transversal (light/diet/orgânico/saudável); a categoria depende do produto
+15740	Mercearia > Alimentação Saudável > Light, Diet E Zero		atributo transversal (light/diet/orgânico/saudável); a categoria depende do produto
+15741	Mercearia > Alimentação Saudável > Orgânicos, Sem Glúten E		atributo transversal (light/diet/orgânico/saudável); a categoria depende do produto
+17338	Mercearia > Suplementos Alimentares > Proteína	saudaveis-suplementos	
+17339	Mercearia > Suplementos Alimentares > Carboidrato	saudaveis-suplementos	
+17340	Mercearia > Suplementos Alimentares > Creatina	saudaveis-suplementos	
+17341	Mercearia > Suplementos Alimentares > Hipercalórico	saudaveis-suplementos	
+15292	Bebidas > Águas > Água De Coco		ambígua: água de coco entre agua e suco
+15293	Bebidas > Águas > Água Mineral Com Gás	agua	
+15294	Bebidas > Águas > Água Mineral Sem Gás	agua	
+15295	Bebidas > Águas > Água Tônica	refrigerante	
+15296	Bebidas > Águas > Água Saborizada	agua	
+15297	Bebidas > Chás > Chá Pronto	cha	
+15298	Bebidas > Chás > Chá Infusão	cha	
+15299	Bebidas > Energéticos E Isotônicos > Energéticos	energetico-isotonico	
+15300	Bebidas > Energéticos E Isotônicos > Isotônicos	energetico-isotonico	
+15301	Bebidas > Cervejas > Cerveja Escura	cerveja	
+15302	Bebidas > Cervejas > Cerveja Especial	cerveja	
+15304	Bebidas > Cervejas > Cerveja Sem Álcool	cerveja	
+16450	Bebidas > Cervejas > Cerveja Pilsen	cerveja	
+16451	Bebidas > Cervejas > Cerveja Premium	cerveja	
+16452	Bebidas > Cervejas > Cerveja Puro Malte	cerveja	
+16453	Bebidas > Cervejas > Chopp	cerveja	
+15306	Bebidas > Refrigerantes > Cola	refrigerante	
+15307	Bebidas > Refrigerantes > Guaraná	refrigerante	
+15308	Bebidas > Refrigerantes > Outros Sabores	refrigerante	
+15309	Bebidas > Sucos > Suco Com Soja	suco	
+15310	Bebidas > Sucos > Suco Concentrado	suco	
+15311	Bebidas > Sucos > Suco Pronto	suco	
+15312	Bebidas > Sucos > Suco Em Pó	suco	
+15313	Bebidas > Sucos > Suco Fresco	suco	
+15314	Bebidas > Sucos > Suco Integral	suco	
+17144	Bebidas > Sucos > Suco Orgânco	suco	
+15315	Bebidas > Vinhos > Vinhos Nacionais	vinho-espumante	
+15316	Bebidas > Vinhos > Vinhos Importados	vinho-espumante	
+15317	Bebidas > Whisky E Destilados > Whisky	destilados	
+15318	Bebidas > Whisky E Destilados > Conhaques	destilados	
+15321	Bebidas > Whisky E Destilados > Gin	destilados	
+15322	Bebidas > Whisky E Destilados > Run	destilados	
+15323	Bebidas > Whisky E Destilados > Sake		sake é fermentado, não destilado; sem categoria equivalente
+15324	Bebidas > Whisky E Destilados > Tequila	destilados	
+15325	Bebidas > Whisky E Destilados > Vodka	destilados	
+15326	Bebidas > Whisky E Destilados > Cachaça	destilados	
+15327	Bebidas > Whisky E Destilados > Outros Destilados	destilados	
+15328	Bebidas > Champagnes E Espumantes > Champagnes	vinho-espumante	
+15329	Bebidas > Champagnes E Espumantes > Espumantes	vinho-espumante	
+15330	Bebidas > Licor E Aperitivos > Licor	destilados	
+15331	Bebidas > Licor E Aperitivos > Batidas	destilados	
+15332	Bebidas > Licor E Aperitivos > Coquetel	destilados	
+15333	Bebidas > Licor E Aperitivos > Catuaba	destilados	
+15334	Bebidas > Licor E Aperitivos > Vermouth		vermute (vinho fortificado) e "ice" (malta/vodka pronto): sem categoria equivalente
+15335	Bebidas > Licor E Aperitivos > Ice		vermute (vinho fortificado) e "ice" (malta/vodka pronto): sem categoria equivalente
+15336	Bebidas > Licor E Aperitivos > Outros Aperitivos	destilados	
+15358	Bebidas > Leite,Beb Lactea,Cereais > Leites	leite	
+15359	Bebidas > Leite,Beb Lactea,Cereais > Bebidas Lácteas		ambígua: bebida láctea/de cereais não é leite nem iogurte
+15360	Bebidas > Leite,Beb Lactea,Cereais > Bebidas De Cereais		ambígua: bebida láctea/de cereais não é leite nem iogurte
+15901	Bebidas > Leite,Beb Lactea,Cereais > Leite Semidesnatado	leite	
+16409	Bebidas > Drinks Prontos > Drinks Prontos		drink pronto: alcoólico ou não, depende do produto
+12858	Hortifruti > Especiarias > Alho		ambígua: alho fresco (legumes) ou desidratado (temperos); camomila é chá ou tempero
+12875	Hortifruti > Especiarias > Camomila		ambígua: alho fresco (legumes) ou desidratado (temperos); camomila é chá ou tempero
+12876	Hortifruti > Especiarias > Canela	temperos	
+12885	Hortifruti > Especiarias > Chumichurri	temperos	
+12889	Hortifruti > Especiarias > Colorífico	temperos	
+12892	Hortifruti > Especiarias > Cravo	temperos	
+12896	Hortifruti > Especiarias > Demais	temperos	
+12927	Hortifruti > Especiarias > Orégano	temperos	
+12934	Hortifruti > Especiarias > Pimenta Do Reino	temperos	
+12945	Hortifruti > Especiarias > Salsa Desidratada	temperos	
+12908	Hortifruti > Tudo Pronto > Kits		kit misto, sem categoria única
+12933	Hortifruti > Tudo Pronto > Picadinhos	legumes-verduras	
+12944	Hortifruti > Tudo Pronto > Saladas	legumes-verduras	
+13659	Hortifruti > Orgânicos > Frutas Orgânicas	frutas	
+13660	Hortifruti > Orgânicos > Legumes Orgânicos	legumes-verduras	
+13661	Hortifruti > Orgânicos > Verduras Orgânicas	legumes-verduras	
+15141	Hortifruti > Frutas Secas > Caju	castanhas-frutas-secas	
+15142	Hortifruti > Frutas Secas > Macadâmia	castanhas-frutas-secas	
+15143	Hortifruti > Frutas Secas > Castanhas	castanhas-frutas-secas	
+15144	Hortifruti > Frutas Secas > Uva Passa	castanhas-frutas-secas	
+15145	Hortifruti > Frutas Secas > Ameixa Seca	castanhas-frutas-secas	
+15146	Hortifruti > Frutas Secas > Frutas Cristalizadas	castanhas-frutas-secas	
+15147	Hortifruti > Frutas Secas > Frutas Secas	castanhas-frutas-secas	
+15548	Hortifruti > Frutas Secas > Amendoim	castanhas-frutas-secas	
+15148	Hortifruti > Frutas > Abacaxi	frutas	
+15149	Hortifruti > Frutas > Banana	frutas	
+15150	Hortifruti > Frutas > Laranja	frutas	
+15154	Hortifruti > Frutas > Manga	frutas	
+15156	Hortifruti > Frutas > Melancia	frutas	
+15158	Hortifruti > Frutas > Morango	frutas	
+15160	Hortifruti > Frutas > Uva	frutas	
+15161	Hortifruti > Frutas > Outras Frutas	frutas	
+15197	Hortifruti > Frutas > Limão	frutas	
+15198	Hortifruti > Frutas > Maçã	frutas	
+15199	Hortifruti > Frutas > Mamão	frutas	
+15200	Hortifruti > Frutas > Maracujá	frutas	
+15201	Hortifruti > Frutas > Melão	frutas	
+15202	Hortifruti > Frutas > Pêra	frutas	
+17079	Hortifruti > Frutas > Abacate	frutas	
+17080	Hortifruti > Frutas > Tangerina	frutas	
+15163	Hortifruti > Legumes > Alho	legumes-verduras	
+15164	Hortifruti > Legumes > Batatas	legumes-verduras	
+15165	Hortifruti > Legumes > Berinjela	legumes-verduras	
+15166	Hortifruti > Legumes > Beterraba	legumes-verduras	
+15167	Hortifruti > Legumes > Cebola	legumes-verduras	
+15168	Hortifruti > Legumes > Cenoura	legumes-verduras	
+15169	Hortifruti > Legumes > Pimentão	legumes-verduras	
+15170	Hortifruti > Legumes > Tomate	legumes-verduras	
+15171	Hortifruti > Legumes > Vagem	legumes-verduras	
+15172	Hortifruti > Legumes > Mandioca	legumes-verduras	
+15173	Hortifruti > Legumes > Mandioquinha	legumes-verduras	
+15174	Hortifruti > Legumes > Outros Legumes	legumes-verduras	
+15203	Hortifruti > Legumes > Abóboras	legumes-verduras	
+17081	Hortifruti > Legumes > Chuchu	legumes-verduras	
+17082	Hortifruti > Legumes > Milho Verde	legumes-verduras	
+17083	Hortifruti > Legumes > Pepino	legumes-verduras	
+17084	Hortifruti > Legumes > Cogumelos	legumes-verduras	
+15175	Hortifruti > Ovos > Ovos De Codorna	ovos	
+15176	Hortifruti > Ovos > Ovos De Galinha	ovos	
+15278	Hortifruti > Ovos > Ovos De Pata	ovos	
+15177	Hortifruti > Verduras > Acelga	legumes-verduras	
+15178	Hortifruti > Verduras > Agrião	legumes-verduras	
+15179	Hortifruti > Verduras > Alface	legumes-verduras	
+15180	Hortifruti > Verduras > Brócolis	legumes-verduras	
+15181	Hortifruti > Verduras > Chicória	legumes-verduras	
+15182	Hortifruti > Verduras > Couve	legumes-verduras	
+15183	Hortifruti > Verduras > Couve Flor	legumes-verduras	
+15184	Hortifruti > Verduras > Repolho	legumes-verduras	
+15185	Hortifruti > Verduras > Rúcula	legumes-verduras	
+15186	Hortifruti > Verduras > Outras Verduras	legumes-verduras	
+17085	Hortifruti > Verduras > Espinafre	legumes-verduras	
+17086	Hortifruti > Verduras > Almeirão	legumes-verduras	
+15188	Hortifruti > Temperos Naturais > Alecrim	legumes-verduras	
+15189	Hortifruti > Temperos Naturais > Cheiro Verde	legumes-verduras	
+15190	Hortifruti > Temperos Naturais > Coentro	legumes-verduras	
+15191	Hortifruti > Temperos Naturais > Louro		ambígua: erva fresca (legumes-verduras) ou seca (temperos)
+15192	Hortifruti > Temperos Naturais > Manjericão	legumes-verduras	
+15193	Hortifruti > Temperos Naturais > Pimenta		ambígua: erva fresca (legumes-verduras) ou seca (temperos)
+15194	Hortifruti > Temperos Naturais > Salsinha	legumes-verduras	
+15195	Hortifruti > Temperos Naturais > Outros Temperos Naturais		ambígua: erva fresca (legumes-verduras) ou seca (temperos)
+15196	Hortifruti > Temperos Naturais > Hortelã	legumes-verduras	
+15666	Limpeza > Limpadores E Desinfetante > Limpeza Para Banheiro	limpeza-geral	
+15667	Limpeza > Limpadores E Desinfetante > Limpadores Multi Uso	limpeza-geral	
+15668	Limpeza > Limpadores E Desinfetante > Limpeza Pesada	limpeza-geral	
+15669	Limpeza > Limpadores E Desinfetante > Álcool E Limpa Vidros	limpeza-geral	
+15670	Limpeza > Limpadores E Desinfetante > Limpa Pisos E Removedores	limpeza-geral	
+15671	Limpeza > Limpadores E Desinfetante > Ceras E Lustra Móveis	limpeza-geral	
+15672	Limpeza > Limpadores E Desinfetante > Desinfetante	limpeza-geral	
+15673	Limpeza > Limpadores E Desinfetante > Água Sanitária	limpeza-geral	
+15674	Limpeza > Limpadores E Desinfetante > Blocos E Pedras Sanitária	limpeza-geral	
+15675	Limpeza > Limpeza De Cozinha > Detergentes	louca	
+15676	Limpeza > Limpeza De Cozinha > Limpa Metal E Alumínio	limpeza-geral	
+15677	Limpeza > Limpeza De Cozinha > Esponjas E Lã De Aço	utilidades-limpeza	
+15678	Limpeza > Limpeza De Cozinha > Desengordurantes	limpeza-geral	
+15679	Limpeza > Limpeza De Cozinha > Sabão		ambígua: sabão pode ser de louça ou de roupa
+15680	Limpeza > Inseticidas E Odorizador > Inseticidas	inseticidas-odorizadores	
+15681	Limpeza > Inseticidas E Odorizador > Odorizadores	inseticidas-odorizadores	
+15682	Limpeza > Cuidados Com A Roupa > Lava Roupas	roupa	
+15683	Limpeza > Cuidados Com A Roupa > Alvejantes E Tira Manchas	roupa	
+15684	Limpeza > Cuidados Com A Roupa > Amaciante	roupa	
+15685	Limpeza > Produtos Automotivos > Ceras	outros	
+15686	Limpeza > Produtos Automotivos > Limpadores	outros	
+15688	Limpeza > Produtos Automotivos > Desodorizador	outros	
+15689	Limpeza > Produtos Automotivos > Outros Produtos Para Carr	outros	
+15690	Limpeza > Utilidades Para Limpeza > Panos De Limpeza	utilidades-limpeza	
+15691	Limpeza > Utilidades Para Limpeza > Vassouras, Rodos E Mops	utilidades-limpeza	
+15692	Limpeza > Utilidades Para Limpeza > Sacos De Lixo	utilidades-limpeza	
+15693	Limpeza > Utilidades Para Limpeza > Outras Utilidades De Limp	utilidades-limpeza	
+15575	Perfumaria E Beleza > Cuidados Para O Corpo > Desodorantes	corpo-banho	
+15576	Perfumaria E Beleza > Cuidados Para O Corpo > Sabonete	corpo-banho	
+15577	Perfumaria E Beleza > Cuidados Para O Corpo > Hidratante Corporal	corpo-banho	
+15578	Perfumaria E Beleza > Cuidados Para O Corpo > Protetor E Bronzeador Sol	corpo-banho	
+15579	Perfumaria E Beleza > Cuidados Para O Corpo > Barbear E Depilar	corpo-banho	
+15580	Perfumaria E Beleza > Cuidados Para O Corpo > Algodão, Hastes Flexíveis		ambígua: algodão/hastes não cabe em corpo-banho nem em outra categoria
+15581	Perfumaria E Beleza > Cuidados Para O Corpo > Esponjas De Banho	corpo-banho	
+15582	Perfumaria E Beleza > Cuidados Para O Corpo > Esmaltes E Acessórios	beleza-maquiagem	
+15583	Perfumaria E Beleza > Cabelos > Shampoo	cabelo	
+15584	Perfumaria E Beleza > Cabelos > Condicionador	cabelo	
+15585	Perfumaria E Beleza > Cabelos > Creme De Tratamento	cabelo	
+15586	Perfumaria E Beleza > Cabelos > Acessórios De Cabelo	cabelo	
+15587	Perfumaria E Beleza > Cabelos > Tinturas De Cabelo	cabelo	
+15588	Perfumaria E Beleza > Cabelos > Gel E Fixadores	cabelo	
+15589	Perfumaria E Beleza > Perfumaria Infantil > Fralda Descartável	fraldas	
+15590	Perfumaria E Beleza > Perfumaria Infantil > Acessórios Infantis		ambígua: acessório infantil (mamadeira, chupeta) não é higiene
+15591	Perfumaria E Beleza > Perfumaria Infantil > Lenço Umedecido	higiene-infantil	
+15592	Perfumaria E Beleza > Perfumaria Infantil > Cuidados Infantil	higiene-infantil	
+15593	Perfumaria E Beleza > Higiene Íntima > Absorventes	higiene-intima-absorventes	
+15594	Perfumaria E Beleza > Higiene Íntima > Fralda Adultos		fralda geriátrica: "Fraldas" da taxonomia é de bebê
+15595	Perfumaria E Beleza > Higiene Íntima > Sabonete E Lenço Íntimo	higiene-intima-absorventes	
+15596	Perfumaria E Beleza > Higiene Íntima > Papel Higiênico	papel-higienico-lencos	
+15597	Perfumaria E Beleza > Beleza Facial > Hidratante Facial	beleza-maquiagem	
+15598	Perfumaria E Beleza > Beleza Facial > Cuidado Facial	beleza-maquiagem	
+15599	Perfumaria E Beleza > Beleza Facial > Maquiagem	beleza-maquiagem	
+15600	Perfumaria E Beleza > Saúde Bucal > Escova Dental	saude-bucal	
+15601	Perfumaria E Beleza > Saúde Bucal > Fio Dental	saude-bucal	
+15602	Perfumaria E Beleza > Saúde Bucal > Creme Dental	saude-bucal	
+15603	Perfumaria E Beleza > Saúde Bucal > Enxaguante Bucal	saude-bucal	
+16967	Brindes > Brindes > Brindes	outros	
+17674	Rotisserie > Pratos Quentes > Pratos Quentes	sopas-pratos-prontos	
+17673	Rotisserie > Pratos Frios > Pratos Frios	sopas-pratos-prontos	
