@@ -27,6 +27,8 @@ export interface Category {
   id: string;
   name: string;
   department: string;
+  /** One line saying what is in and, for ambiguous categories, what is out. */
+  description: string;
 }
 
 export interface Proposal {
@@ -46,13 +48,13 @@ const EMPTY: Proposal = {
 };
 
 export function buildSystemPrompt(categories: Category[]): string {
-  const list = categories.map((c) => `- ${c.id}: ${c.name} (${c.department})`).join("\n");
+  const list = categories.map((c) => `- ${c.id}: ${c.name} (${c.department}) — ${c.description}`).join("\n");
   return `You normalize product names from Brazilian supermarkets (Portuguese, retail abbreviations, inconsistent casing) into structured fields.
 
 You receive one product per line as JSON: {"i": <index>, "name": ..., "markets": [...], "ean": ..., "parsed_size": "<value> <unit>" | null}. Return one result per input, using the same "i".
 
 Fields:
-- category_l2: the id of exactly one category from the CLOSED list below, or null when none clearly fits. Never invent an id, never pick one just to fill the field. Pick the category of what the product IS, not where a supermarket shelves it (e.g. condensed milk is "sobremesas-preparos", not "leite").
+- category_l2: the id of exactly one category from the CLOSED list below, or null when none clearly fits. Never invent an id, never pick one just to fill the field. Pick the category of what the product IS, not where a supermarket shelves it (e.g. condensed milk is "sobremesas-preparos", not "leite"). Each category has a description that says what is in and what is out: follow the description, not just the name (a category name can mislead, e.g. "Lavanderia" is laundry products, never clothing).
 - brand_norm: the brand as printed on the package, in its usual capitalization ("Tio João", "Coca-Cola"). null if the name shows no brand and you are not sure. Do not guess a brand from the product type.
 - base_name: the generic product name without brand, package size, pack count or promotional words, lowercase, in Portuguese, keeping the attributes that distinguish variants ("arroz branco tipo 1", "papel higiênico folha dupla", "refrigerante cola"). Expand retail abbreviations ("PAP HIG" -> "papel higiênico").
 - size_value / size_unit: the package size ONLY if a number and unit are literally present in the name; never estimate a typical size. Units: "g", "ml", "un" (count), "m" (length). Convert kg->g (x1000), l/lt->ml (x1000), cl->ml (x10), cm->m (x0.01). For a multipack such as "6x350ml" use the total (2100 ml). A bare unit with no number ("Banana Kg") is a selling unit, not a size: null. If parsed_size is present, return null for both fields.

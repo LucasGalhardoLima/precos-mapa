@@ -85,13 +85,13 @@ interface ResultsFile {
 async function fetchCategories(): Promise<Category[]> {
   const { data, error } = await supabase
     .from("product_categories")
-    .select("id, name, categories(name)")
+    .select("id, name, description, categories(name)")
     .order("department_id")
     .order("sort_order");
   if (error) throw new Error(`product_categories: ${error.message}`);
   return (data ?? []).map((r) => {
     const dep = r.categories as unknown as { name: string } | { name: string }[] | null;
-    return { id: r.id, name: r.name, department: (Array.isArray(dep) ? dep[0]?.name : dep?.name) ?? "" };
+    return { id: r.id, name: r.name, description: r.description, department: (Array.isArray(dep) ? dep[0]?.name : dep?.name) ?? "" };
   });
 }
 

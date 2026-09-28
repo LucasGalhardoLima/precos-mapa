@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  batchCostUsd, buildUserMessage, responseSchema, seededShuffle, validateBatchResponse,
+  batchCostUsd, buildSystemPrompt, buildUserMessage, responseSchema, seededShuffle, validateBatchResponse,
   type Candidate, type Category,
 } from "../catalog-normalization";
 
@@ -74,9 +74,16 @@ describe("prompt inputs", () => {
   });
 
   it("closes the category enum to the given list", () => {
-    const cats: Category[] = [{ id: "arroz", name: "Arroz", department: "Mercearia" }];
+    const cats: Category[] = [{ id: "arroz", name: "Arroz", department: "Mercearia", description: "Arroz de qualquer tipo." }];
     const schema = responseSchema(cats);
     expect(schema.properties.results.items.properties.category_l2.anyOf[0]).toEqual({ type: "string", enum: ["arroz"] });
+  });
+});
+
+describe("buildSystemPrompt", () => {
+  it("gives the model each category's name, department and description", () => {
+    const prompt = buildSystemPrompt([{ id: "roupa", name: "Lavanderia", department: "Limpeza", description: "Produtos para LAVAR roupa." }]);
+    expect(prompt).toContain("- roupa: Lavanderia (Limpeza) — Produtos para LAVAR roupa.");
   });
 });
 
