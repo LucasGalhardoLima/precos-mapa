@@ -100,123 +100,26 @@ import { createClient } from '@supabase/supabase-js';
 import type { Client } from 'pg';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import {
+  DELAY_MS, MATAO_POSTAL_CODE, PAGE_SIZE, MAX_RESULTS_PER_CATEGORY,
+  buildVtexSegmentCookie, fetchCategoryPage, fetchLeafCategories, isValidEan, resolveSellerId, sleep,
+  type VtexProduct,
+} from '../src/lib/savegnago-vtex';
+import { loadLeafCategoryMap, resolveCategoryL2 } from '../src/lib/savegnago-leaf-category';
 import { connectAsServiceRole, createDirectScraperDb, createRestScraperDb, type ScraperDb } from '../src/lib/scraper-db';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const STORE_NAME_PATTERN = '%savegnago%';
-const BASE = 'https://www.savegnago.com.br';
 
-// Identifying UA (courtesy convention shared by this project's scrapers) —
-// deliberately does NOT contain the substring "Bot": Savegnago's WAF
-// bot-classifies and 429s any UA containing it (confirmed live, see header
-// comment). Keep the email so the site owner can identify/contact us.
-const USER_AGENT = 'Mozilla/5.0 (compatible; PoupPriceCompare/1.0; +lima.galhardo@gmail.com)';
-
-const DELAY_MS = 400;
-const PAGE_SIZE = 50; // VTEX legacy search API hard cap — confirmed via live 400 response
-const MAX_RESULTS_PER_CATEGORY = 2500; // VTEX search backend cap (task brief, not directly re-tested)
 const BATCH = 20000; // deliberately >> catalog size (~15.2k) — clears everything in one run; doesn't change request volume/rate against the site, only how many invocations it takes
 
-// Matão store's registered CEP (stores.id = 'd5912ae4-2aa3-44e6-bcf6-9d6503c57bfe',
-// "R. São Lourenço, 1170 - Centro, Matão - SP, 15990-005"), digits only.
-const MATAO_POSTAL_CODE = '15990005';
-
-const CATEGORY_CACHE_FILE = resolve(process.cwd(), 'scripts/.scrape-savegnago-categories.json');
 const CHECKPOINT_FILE = resolve(process.cwd(), 'scripts/.scrape-savegnago-checkpoint.json');
 const REVIEW_FILE = resolve(process.cwd(), 'scripts/.scrape-savegnago-review.csv');
 
 // Set to false only after reviewing a sample run's output.
 const DRY_RUN = false;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-async function fetchWithRetry(url: string, headers: Record<string, string>, tries = 5, timeoutMs = 20000): Promise<Response> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt < tries; attempt++) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const res = await fetch(url, { headers, signal: controller.signal });
-      clearTimeout(timer);
-      if (res.status === 429) {
-        const wait = 1500 * (attempt + 1);
-        console.warn(`  [429] ${url} — retrying in ${wait}ms`);
-        await sleep(wait);
-        continue;
-      }
-      return res;
-    } catch (err) {
-      clearTimeout(timer);
-      lastErr = err;
-      await sleep(1000 * (attempt + 1));
-    }
-  }
-  throw lastErr instanceof Error ? lastErr : new Error(`fetchWithRetry exhausted for ${url}`);
-}
-
-// ─── vtex_segment cookie ────────────────────────────────────────────────
-
-interface SegmentFields {
-  campaigns: null;
-  channel: string;
-  priceTables: null;
-  regionId: string;
-  utm_campaign: null;
-  utm_source: null;
-  utmi_campaign: null;
-  currencyCode: string;
-  currencySymbol: string;
-  countryCode: string;
-  cultureInfo: string;
-  channelPrivacy: string;
-}
-
-function buildVtexSegmentCookie(sellerId: string): string {
-  const regionId = Buffer.from(`SW#${sellerId}`).toString('base64');
-  const fields: SegmentFields = {
-    campaigns: null,
-    channel: '1',
-    priceTables: null,
-    regionId,
-    utm_campaign: null,
-    utm_source: null,
-    utmi_campaign: null,
-    currencyCode: 'BRL',
-    currencySymbol: 'R$',
-    countryCode: 'BRA',
-    cultureInfo: 'pt-BR',
-    channelPrivacy: 'public',
-  };
-  return Buffer.from(JSON.stringify(fields)).toString('base64');
-}
-
-async function resolveSellerId(postalCode: string): Promise<string> {
-  const url = `${BASE}/api/checkout/pub/regions?country=BRA&postalCode=${postalCode}&sc=1`;
-  const res = await fetchWithRetry(url, { 'User-Agent': USER_AGENT });
-  if (!res.ok) throw new Error(`regions lookup failed: HTTP ${res.status}`);
-  const body = (await res.json()) as Array<{ id: string; sellers?: Array<{ id: string }> }>;
-  const sellerId = body?.[0]?.sellers?.[0]?.id;
-  if (!sellerId) throw new Error(`regions response had no seller id: ${JSON.stringify(body)}`);
-  return sellerId;
-}
-
-// ─── Category tree discovery ────────────────────────────────────────────
-
-interface CategoryTreeNode {
-  id: number;
-  name: string;
-  children?: CategoryTreeNode[];
-}
-
-interface LeafCategory {
-  id: number;
-  idPath: number[]; // full ancestor chain incl. self — required for fq=C:/a/b/c/
-  path: string; // human-readable, for the review CSV
-}
 
 // Maps a leaf's top-level path segment to our internal categories.id
 // taxonomy (12 rows — see the `categories` table). "Frios e Congelados" is
@@ -249,56 +152,9 @@ function mapSavegnagoCategory(path: string): string {
   return TOP_LEVEL_CATEGORY_MAP[segments[0]] ?? 'cat_alimentos';
 }
 
-function collectLeaves(nodes: CategoryTreeNode[], idPath: number[] = [], namePath: string[] = []): LeafCategory[] {
-  let leaves: LeafCategory[] = [];
-  for (const n of nodes) {
-    const nextIdPath = [...idPath, n.id];
-    const nextNamePath = [...namePath, n.name];
-    if (n.children && n.children.length > 0) {
-      leaves = leaves.concat(collectLeaves(n.children, nextIdPath, nextNamePath));
-    } else {
-      leaves.push({ id: n.id, idPath: nextIdPath, path: nextNamePath.join(' > ') });
-    }
-  }
-  return leaves;
-}
-
-async function fetchLeafCategories(): Promise<LeafCategory[]> {
-  if (existsSync(CATEGORY_CACHE_FILE)) {
-    console.log('Loading cached category tree...');
-    return JSON.parse(readFileSync(CATEGORY_CACHE_FILE, 'utf-8'));
-  }
-  console.log('Fetching category tree (first run — cached afterwards)...');
-  const res = await fetchWithRetry(`${BASE}/api/catalog_system/pub/category/tree/3`, { 'User-Agent': USER_AGENT });
-  if (!res.ok) throw new Error(`category tree fetch failed: HTTP ${res.status}`);
-  const tree = (await res.json()) as CategoryTreeNode[];
-  const leaves = collectLeaves(tree);
-  writeFileSync(CATEGORY_CACHE_FILE, JSON.stringify(leaves));
-  console.log(`Discovered ${leaves.length} leaf categories.\n`);
-  return leaves;
-}
 
 // ─── Product search + parsing ───────────────────────────────────────────
 
-interface CommertialOffer {
-  Price: number;
-  ListPrice: number;
-  AvailableQuantity: number;
-  IsAvailable: boolean;
-}
-
-interface VtexItem {
-  ean?: string;
-  images?: Array<{ imageUrl: string }>;
-  sellers?: Array<{ commertialOffer: CommertialOffer }>;
-}
-
-interface VtexProduct {
-  productId: string;
-  productName: string;
-  brand?: string;
-  items?: VtexItem[];
-}
 
 interface ParsedProduct {
   productId: string;
@@ -311,30 +167,6 @@ interface ParsedProduct {
   imageUrl: string | null;
 }
 
-/**
- * Validates the GTIN check digit for any GS1 length (EAN-8/UPC-12/EAN-13/GTIN-14) by
- * walking right-to-left from the digit adjacent to the check digit, alternating weights
- * 3,1,3,1,... — equivalent to zero-padding to GTIN-14 and applying the standard
- * fixed-position algorithm, but without needing to know which of the 4 lengths this is.
- * Same algorithm scrape-tenda-atacado-prices.ts's isValidEan13 uses, generalized past 13.
- */
-function hasValidGtinCheckDigit(code: string): boolean {
-  const digits = code.split('').map(Number);
-  const checkDigit = digits[digits.length - 1];
-  let sum = 0;
-  let weight = 3;
-  for (let i = digits.length - 2; i >= 0; i--) {
-    sum += digits[i] * weight;
-    weight = weight === 3 ? 1 : 3;
-  }
-  return (10 - (sum % 10)) % 10 === checkDigit;
-}
-
-function isValidEan(ean: string | undefined | null): ean is string {
-  if (!ean) return false;
-  if (!/^\d{8,14}$/.test(ean) || /^0+$/.test(ean)) return false;
-  return hasValidGtinCheckDigit(ean);
-}
 
 function parseProduct(p: VtexProduct): ParsedProduct | null {
   // shortcut: returns the first available item/offer and ignores any
@@ -361,20 +193,6 @@ function parseProduct(p: VtexProduct): ParsedProduct | null {
   return null; // no item/seller available at this store
 }
 
-async function fetchCategoryPage(idPath: number[], from: number, to: number, cookie: string): Promise<VtexProduct[]> {
-  const fq = `C:/${idPath.join('/')}/`;
-  const url = `${BASE}/api/catalog_system/pub/products/search?fq=${encodeURIComponent(fq)}&_from=${from}&_to=${to}`;
-  const res = await fetchWithRetry(url, { 'User-Agent': USER_AGENT, Cookie: `vtex_segment=${cookie}` });
-  if (res.status === 206 || res.status === 200) {
-    return (await res.json()) as VtexProduct[];
-  }
-  if (res.status === 400) {
-    // Past the 2500-result backend cap for this category — stop paginating it.
-    return [];
-  }
-  console.warn(`  [HTTP ${res.status}] ${url}`);
-  return [];
-}
 
 // ─── Main ────────────────────────────────────────────────────────────────
 
@@ -431,6 +249,7 @@ async function main() {
   console.log(`  vtex_segment cookie (decoded): ${Buffer.from(cookie, 'base64').toString('utf-8')}\n`);
 
   const leaves = await fetchLeafCategories();
+  const leafCategoryMap = loadLeafCategoryMap();
 
   const checkpointData = loadCheckpoint();
   const processed = new Set<string>(checkpointData.processedProductIds);
@@ -444,6 +263,8 @@ async function main() {
   let matchedByFuzzy = 0;
   let created = 0;
   let skippedUnavailable = 0;
+  let categoryAssigned = 0;
+  const categoryNotAssigned = { conflict: 0, unmapped: 0, unknown_leaf: 0 };
   let processedThisRun = 0;
 
   categoryLoop: for (const leaf of leaves) {
@@ -553,6 +374,21 @@ async function main() {
             }
           }
 
+          // Category from the leaf tree (normalization phase B). Like the image
+          // above, it must never take the price write down with it, and it
+          // never overwrites a row a previous pass already normalized.
+          try {
+            const decision = resolveCategoryL2(p.categoriesIds, leafCategoryMap);
+            if (decision.slug !== null) {
+              await db.setCategoryL2FromTree(productId, decision.slug);
+              categoryAssigned++;
+            } else {
+              categoryNotAssigned[decision.reason]++;
+            }
+          } catch (catErr) {
+            console.warn(`  [category_l2 write failed] ${parsed.productId}: ${catErr}`);
+          }
+
           if (parsed.isPromo) {
             await db.syncCrawlerPromotion({
               productId,
@@ -613,6 +449,7 @@ async function main() {
   console.log(`  Matched by fuzzy name: ${matchedByFuzzy}`);
   console.log(`  New products created: ${created}`);
   console.log(`  Skipped (unavailable at this store): ${skippedUnavailable}`);
+  console.log(`  category_l2 from leaf tree: ${categoryAssigned} assigned, not assigned: ${JSON.stringify(categoryNotAssigned)}`);
   console.log(`Total processed across all runs: ${processed.size}`);
   console.log(`Categories completed: ${completed.size} / ${leaves.length}`);
   console.log(`Review file: ${REVIEW_FILE}`);
