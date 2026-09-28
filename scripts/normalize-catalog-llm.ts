@@ -134,6 +134,10 @@ async function runBatch(candidates: Candidate[], categories: Category[]) {
   });
   console.log(`Batch ${batch.id} submitted: ${groups.length} requests, ${candidates.length} products.`);
 
+  // shortcut: one process submits and polls until the batch ends (Batches finish
+  // within 24h, usually well under 1h; a killed process loses the wait, not the
+  // batch — it can still be read by id). upgrade: split submit/collect into two
+  // workflow steps if the daily job's wait ever nears the Actions timeout.
   let status = batch;
   while (status.processing_status !== "ended") {
     await new Promise((r) => setTimeout(r, POLL_MS));
@@ -141,6 +145,9 @@ async function runBatch(candidates: Candidate[], categories: Category[]) {
     console.log(`  ${status.processing_status}: ${JSON.stringify(status.request_counts)}`);
   }
 
+  // shortcut: a failed/expired batch request is not retried — its products get
+  // invalid_reason "batch_request_failed" and stay unassigned until the next run.
+  // upgrade: resubmit failed custom_ids once before giving up (matters for the daily job).
   const proposals: Proposal[][] = groups.map((g) =>
     g.map(() => ({ category_l2: null, brand_norm: null, base_name: null, size_value: null, size_unit: null, confidence: null, invalid_reason: "batch_request_failed" })),
   );
