@@ -4,9 +4,9 @@
 -- Haiku batch) will fill. Nothing here assigns a value — this migration only
 -- creates the slots.
 --
--- The rows below are the PRD's "Taxonomia proposta" table verbatim. The PRD
--- prose says 57 categories, but the table lists 61 (17+8+6+4+3+3+2+5+5+3+2+3);
--- the table is what was seeded. Slugs are ASCII kebab-case and are the ids the
+-- The rows below are the PRD's "Taxonomia proposta" table: 61 rows (the PRD's
+-- "57" was a miscount) plus three added in the phase A review — castanhas-
+-- frutas-secas, outras-carnes, beleza-maquiagem — for 64. Slugs are ASCII kebab-case and are the ids the
 -- Savegnago leaf mapping (scripts/savegnago-leaf-category-map.tsv) refers to.
 
 create table public.product_categories (
@@ -43,6 +43,7 @@ insert into public.product_categories (id, department_id, name, sort_order) valu
   ('sobremesas-preparos',      'cat_alimentos',  'Sobremesas e preparos',       15),
   ('sopas-pratos-prontos',     'cat_alimentos',  'Sopas e pratos prontos',      16),
   ('saudaveis-suplementos',    'cat_alimentos',  'Saudáveis e suplementos',     17),
+  ('castanhas-frutas-secas',   'cat_alimentos',  'Castanhas e frutas secas',    18),
   -- Bebidas
   ('agua',                     'cat_bebidas',    'Água',                         1),
   ('refrigerante',             'cat_bebidas',    'Refrigerante',                 2),
@@ -64,6 +65,7 @@ insert into public.product_categories (id, department_id, name, sort_order) valu
   ('aves',                     'cat_carnes',     'Aves',                         2),
   ('suina',                    'cat_carnes',     'Suína',                        3),
   ('peixes-frutos-do-mar',     'cat_carnes',     'Peixes e frutos do mar',       4),
+  ('outras-carnes',            'cat_carnes',     'Outras carnes',                5),
   -- Congelados
   ('prontos-congelados',       'cat_congelados', 'Prontos congelados',           1),
   ('sorvete-acai',             'cat_congelados', 'Sorvete e açaí',               2),
@@ -87,6 +89,7 @@ insert into public.product_categories (id, department_id, name, sort_order) valu
   ('corpo-banho',              'cat_higiene',    'Corpo e banho',                3),
   ('saude-bucal',              'cat_higiene',    'Saúde bucal',                  4),
   ('higiene-intima-absorventes','cat_higiene',   'Higiene íntima e absorventes', 5),
+  ('beleza-maquiagem',         'cat_higiene',    'Beleza e maquiagem',           6),
   -- Bebê
   ('fraldas',                  'cat_bebes',      'Fraldas',                      1),
   ('alimentacao-infantil',     'cat_bebes',      'Alimentação infantil',         2),

@@ -21,9 +21,9 @@ const map = lines.map((l) => {
 });
 
 describe("product_categories seed (migration 085)", () => {
-  it("seeds the 61 rows of the PRD table, with unique ids", () => {
-    expect(seeded).toHaveLength(61);
-    expect(new Set(seeded.map((c) => c.id)).size).toBe(61);
+  it("seeds the 64 rows (61 of the PRD table + 3 from the phase A review), with unique ids", () => {
+    expect(seeded).toHaveLength(64);
+    expect(new Set(seeded.map((c) => c.id)).size).toBe(64);
   });
 
   it("puts every category under one of the 12 existing departments", () => {

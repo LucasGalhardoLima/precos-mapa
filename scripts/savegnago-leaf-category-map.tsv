@@ -7,8 +7,8 @@ leaf_id	path	category_l2	reason_if_null
 15473	Padaria > Bolos E Confeitaria > Doces	bolos-confeitaria	
 15474	Padaria > Bolos E Confeitaria > Bolos	bolos-confeitaria	
 15475	Padaria > Bolos E Confeitaria > Petit Four	bolos-confeitaria	
-17668	Padaria > Rotisserie > Pratos Frios		prato pronto fresco da rotisserie; nenhuma categoria equivalente
-17669	Padaria > Rotisserie > Pratos Quentes		prato pronto fresco da rotisserie; nenhuma categoria equivalente
+17668	Padaria > Rotisserie > Pratos Frios	sopas-pratos-prontos	
+17669	Padaria > Rotisserie > Pratos Quentes	sopas-pratos-prontos	
 15480	Flores E Plantas > Floricultura > Flores	outros	
 15481	Flores E Plantas > Floricultura > Plantas	outros	
 15540	Flores E Plantas > Jardinagem > Jardinagem	outros	
@@ -45,10 +45,10 @@ leaf_id	path	category_l2	reason_if_null
 15519	Bazar E Utilidades > Utilidades De Cozinha > Xícaras E Canecas	utensilios	
 15520	Bazar E Utilidades > Utilidades De Cozinha > Garrafas E Jarras	utensilios	
 15521	Bazar E Utilidades > Utilidades De Cozinha > Outras Utilidades Cozinha	utensilios	
-15522	Bazar E Utilidades > Utensílios De Lavanderia > Baldes E Cestos		ambígua: utilidades-limpeza ou utensilios
-15523	Bazar E Utilidades > Utensílios De Lavanderia > Lixeiras		ambígua: utilidades-limpeza ou utensilios
-15524	Bazar E Utilidades > Utensílios De Lavanderia > Tábua De Passar E Varal		ambígua: utilidades-limpeza ou utensilios
-15525	Bazar E Utilidades > Utensílios De Lavanderia > Outros Itens Lavanderia		ambígua: utilidades-limpeza ou utensilios
+15522	Bazar E Utilidades > Utensílios De Lavanderia > Baldes E Cestos	outros	
+15523	Bazar E Utilidades > Utensílios De Lavanderia > Lixeiras	outros	
+15524	Bazar E Utilidades > Utensílios De Lavanderia > Tábua De Passar E Varal	outros	
+15525	Bazar E Utilidades > Utensílios De Lavanderia > Outros Itens Lavanderia	outros	
 15527	Bazar E Utilidades > Eletrodomésticos > Outros Eletrodomésticos	outros	
 15528	Bazar E Utilidades > Descartáveis E Art Festa > Copo, Prato E Talher	descartaveis	
 15529	Bazar E Utilidades > Descartáveis E Art Festa > Papel Toalha E Guardanapo	descartaveis	
@@ -159,18 +159,18 @@ leaf_id	path	category_l2	reason_if_null
 15239	Carnes > Aves > Chester	aves	
 15240	Carnes > Aves > Outros Cortes	aves	
 15241	Carnes > Exóticas > Avestruz	aves	
-15242	Carnes > Exóticas > Cabrito		carne exótica; taxonomia não tem categoria própria nem espécie equivalente
-15243	Carnes > Exóticas > Capivara		carne exótica; taxonomia não tem categoria própria nem espécie equivalente
-15244	Carnes > Exóticas > Cateto		carne exótica; taxonomia não tem categoria própria nem espécie equivalente
+15242	Carnes > Exóticas > Cabrito	outras-carnes	
+15243	Carnes > Exóticas > Capivara	outras-carnes	
+15244	Carnes > Exóticas > Cateto	outras-carnes	
 15245	Carnes > Exóticas > Codorna	aves	
-15246	Carnes > Exóticas > Coelho		carne exótica; taxonomia não tem categoria própria nem espécie equivalente
-15247	Carnes > Exóticas > Cordeiro		carne exótica; taxonomia não tem categoria própria nem espécie equivalente
-15248	Carnes > Exóticas > Cutia		carne exótica; taxonomia não tem categoria própria nem espécie equivalente
+15246	Carnes > Exóticas > Coelho	outras-carnes	
+15247	Carnes > Exóticas > Cordeiro	outras-carnes	
+15248	Carnes > Exóticas > Cutia	outras-carnes	
 15249	Carnes > Exóticas > Faisão	aves	
-15250	Carnes > Exóticas > Jacaré		carne exótica; taxonomia não tem categoria própria nem espécie equivalente
-15251	Carnes > Exóticas > Javali		carne exótica; taxonomia não tem categoria própria nem espécie equivalente
+15250	Carnes > Exóticas > Jacaré	outras-carnes	
+15251	Carnes > Exóticas > Javali	outras-carnes	
 15252	Carnes > Exóticas > Pato	aves	
-15253	Carnes > Exóticas > Rã		carne exótica; taxonomia não tem categoria própria nem espécie equivalente
+15253	Carnes > Exóticas > Rã	outras-carnes	
 15255	Carnes > Exóticas > Vitelo	bovina	
 15262	Carnes > Suínas > Lombo Suíno	suina	
 15263	Carnes > Suínas > Miudos Suíno	suina	
@@ -245,9 +245,9 @@ leaf_id	path	category_l2	reason_if_null
 15441	Mercearia > Cafés E Achocolatados > Cápsulas	cafe	
 15442	Mercearia > Cereais E Aveias > Cereais	matinais	
 15443	Mercearia > Cereais E Aveias > Aveias	matinais	
-15447	Mercearia > Geléias, Mel E Cremes > Geléias		geleia, mel e cremes de untar: taxonomia não tem categoria equivalente
-15448	Mercearia > Geléias, Mel E Cremes > Cremes		geleia, mel e cremes de untar: taxonomia não tem categoria equivalente
-15449	Mercearia > Geléias, Mel E Cremes > Mel		geleia, mel e cremes de untar: taxonomia não tem categoria equivalente
+15447	Mercearia > Geléias, Mel E Cremes > Geléias	matinais	
+15448	Mercearia > Geléias, Mel E Cremes > Cremes	matinais	
+15449	Mercearia > Geléias, Mel E Cremes > Mel	matinais	
 15450	Mercearia > Cestas Básicas E Comemor > Cestas Básicas		cesta mista de vários produtos
 15451	Mercearia > Cestas Básicas E Comemor > Cestas Comemorativas		cesta mista de vários produtos
 15452	Mercearia > Nutrição Infantil > Alimentos Infantis	alimentacao-infantil	
@@ -336,14 +336,14 @@ leaf_id	path	category_l2	reason_if_null
 13659	Hortifruti > Orgânicos > Frutas Orgânicas	frutas	
 13660	Hortifruti > Orgânicos > Legumes Orgânicos	legumes-verduras	
 13661	Hortifruti > Orgânicos > Verduras Orgânicas	legumes-verduras	
-15141	Hortifruti > Frutas Secas > Caju		fruta seca/castanha/amendoim: taxonomia só tem fruta in natura (lacuna da taxonomia)
-15142	Hortifruti > Frutas Secas > Macadâmia		fruta seca/castanha/amendoim: taxonomia só tem fruta in natura (lacuna da taxonomia)
-15143	Hortifruti > Frutas Secas > Castanhas		fruta seca/castanha/amendoim: taxonomia só tem fruta in natura (lacuna da taxonomia)
-15144	Hortifruti > Frutas Secas > Uva Passa		fruta seca/castanha/amendoim: taxonomia só tem fruta in natura (lacuna da taxonomia)
-15145	Hortifruti > Frutas Secas > Ameixa Seca		fruta seca/castanha/amendoim: taxonomia só tem fruta in natura (lacuna da taxonomia)
-15146	Hortifruti > Frutas Secas > Frutas Cristalizadas		fruta seca/castanha/amendoim: taxonomia só tem fruta in natura (lacuna da taxonomia)
-15147	Hortifruti > Frutas Secas > Frutas Secas		fruta seca/castanha/amendoim: taxonomia só tem fruta in natura (lacuna da taxonomia)
-15548	Hortifruti > Frutas Secas > Amendoim		fruta seca/castanha/amendoim: taxonomia só tem fruta in natura (lacuna da taxonomia)
+15141	Hortifruti > Frutas Secas > Caju	castanhas-frutas-secas	
+15142	Hortifruti > Frutas Secas > Macadâmia	castanhas-frutas-secas	
+15143	Hortifruti > Frutas Secas > Castanhas	castanhas-frutas-secas	
+15144	Hortifruti > Frutas Secas > Uva Passa	castanhas-frutas-secas	
+15145	Hortifruti > Frutas Secas > Ameixa Seca	castanhas-frutas-secas	
+15146	Hortifruti > Frutas Secas > Frutas Cristalizadas	castanhas-frutas-secas	
+15147	Hortifruti > Frutas Secas > Frutas Secas	castanhas-frutas-secas	
+15548	Hortifruti > Frutas Secas > Amendoim	castanhas-frutas-secas	
 15148	Hortifruti > Frutas > Abacaxi	frutas	
 15149	Hortifruti > Frutas > Banana	frutas	
 15150	Hortifruti > Frutas > Laranja	frutas	
@@ -433,9 +433,9 @@ leaf_id	path	category_l2	reason_if_null
 15577	Perfumaria E Beleza > Cuidados Para O Corpo > Hidratante Corporal	corpo-banho	
 15578	Perfumaria E Beleza > Cuidados Para O Corpo > Protetor E Bronzeador Sol	corpo-banho	
 15579	Perfumaria E Beleza > Cuidados Para O Corpo > Barbear E Depilar	corpo-banho	
-15580	Perfumaria E Beleza > Cuidados Para O Corpo > Algodão, Hastes Flexíveis		algodão/hastes e esmaltes: sem categoria equivalente
+15580	Perfumaria E Beleza > Cuidados Para O Corpo > Algodão, Hastes Flexíveis		ambígua: algodão/hastes não cabe em corpo-banho nem em outra categoria
 15581	Perfumaria E Beleza > Cuidados Para O Corpo > Esponjas De Banho	corpo-banho	
-15582	Perfumaria E Beleza > Cuidados Para O Corpo > Esmaltes E Acessórios		algodão/hastes e esmaltes: sem categoria equivalente
+15582	Perfumaria E Beleza > Cuidados Para O Corpo > Esmaltes E Acessórios	beleza-maquiagem	
 15583	Perfumaria E Beleza > Cabelos > Shampoo	cabelo	
 15584	Perfumaria E Beleza > Cabelos > Condicionador	cabelo	
 15585	Perfumaria E Beleza > Cabelos > Creme De Tratamento	cabelo	
@@ -450,13 +450,13 @@ leaf_id	path	category_l2	reason_if_null
 15594	Perfumaria E Beleza > Higiene Íntima > Fralda Adultos		fralda geriátrica: "Fraldas" da taxonomia é de bebê
 15595	Perfumaria E Beleza > Higiene Íntima > Sabonete E Lenço Íntimo	higiene-intima-absorventes	
 15596	Perfumaria E Beleza > Higiene Íntima > Papel Higiênico	papel-higienico-lencos	
-15597	Perfumaria E Beleza > Beleza Facial > Hidratante Facial		beleza facial/maquiagem: taxonomia não tem categoria (lacuna da taxonomia)
-15598	Perfumaria E Beleza > Beleza Facial > Cuidado Facial		beleza facial/maquiagem: taxonomia não tem categoria (lacuna da taxonomia)
-15599	Perfumaria E Beleza > Beleza Facial > Maquiagem		beleza facial/maquiagem: taxonomia não tem categoria (lacuna da taxonomia)
+15597	Perfumaria E Beleza > Beleza Facial > Hidratante Facial	beleza-maquiagem	
+15598	Perfumaria E Beleza > Beleza Facial > Cuidado Facial	beleza-maquiagem	
+15599	Perfumaria E Beleza > Beleza Facial > Maquiagem	beleza-maquiagem	
 15600	Perfumaria E Beleza > Saúde Bucal > Escova Dental	saude-bucal	
 15601	Perfumaria E Beleza > Saúde Bucal > Fio Dental	saude-bucal	
 15602	Perfumaria E Beleza > Saúde Bucal > Creme Dental	saude-bucal	
 15603	Perfumaria E Beleza > Saúde Bucal > Enxaguante Bucal	saude-bucal	
-16967	Brindes > Brindes > Brindes		brinde promocional; não é categoria de produto
-17674	Rotisserie > Pratos Quentes > Pratos Quentes		prato pronto fresco da rotisserie; nenhuma categoria equivalente
-17673	Rotisserie > Pratos Frios > Pratos Frios		prato pronto fresco da rotisserie; nenhuma categoria equivalente
+16967	Brindes > Brindes > Brindes	outros	
+17674	Rotisserie > Pratos Quentes > Pratos Quentes	sopas-pratos-prontos	
+17673	Rotisserie > Pratos Frios > Pratos Frios	sopas-pratos-prontos	

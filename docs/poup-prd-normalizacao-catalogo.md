@@ -8,9 +8,9 @@ O catálogo tem ~49 mil produtos com nomes como vêm dos varejistas ("PAP HIG FO
 
 ## Objetivos
 
-1. Tamanho parseado em ≥ 90% do cohort fresco (hoje ~60%).
+1. Tamanho parseado em ≥ 90% do cohort fresco (medido em 29/09: 87,5%).
 2. Categoria atribuída em ≥ 95% do cohort fresco, com precisão ≥ 95% numa auditoria amostral.
-3. Reduzir a taxa de busca sem resultado e subir "buscas que chegam à Resposta" (métrica de decisão 15), medidas contra a linha de base de antes do passe.
+3. Melhorar a relevância da busca num conjunto fixo de consultas de referência (ver Métricas); a linha de base com usuários reais não existe (31 eventos de busca em 5 meses).
 4. Custo recorrente abaixo de R$ 20/mês e nenhuma mudança de plano no Supabase.
 
 ## Fora do escopo
@@ -79,7 +79,8 @@ Na prática, embeddings obrigam o Supabase Pro (US$ 25/mês ≈ R$ 130/mês), qu
 ## Métricas
 
 - **Leading:** cobertura de tamanho e de categoria no cohort fresco (query no banco, logo após o passe); precisão da auditoria.
-- **Lagging (4 semanas):** taxa de busca sem resultado e "buscas que chegam à Resposta", via `use-analytics`, contra a linha de base das 2 semanas anteriores ao passe.
+- **Relevância offline:** 50 consultas de referência (os 12 chips do onboarding + os produtos mais buscados/comuns), top-5 julgado certo/errado antes e depois da Fase D. Meta: ≥ 90% de top-5 relevante depois.
+- **Com usuários (quando existirem):** taxa de busca sem resultado e buscas que chegam à Resposta, contando só a consulta final (≥ 3 letras, última antes de navegar), com `search_id` ligando busca → Resposta.
 
 ## Perguntas em aberto
 
@@ -107,20 +108,20 @@ As 12 categorias atuais do POUP (`categories`) equivalem a esse primeiro nível.
 
 | Nível 1 | Nível 2 |
 |---|---|
-| Mercearia | Arroz · Feijão e grãos · Massas · Molhos e condimentos · Óleos e azeites · Açúcar e adoçantes · Café · Matinais (achocolatado, cereal, aveia) · Farinhas e fermentos · Conservas · Temperos · Biscoitos · Salgadinhos e snacks · Doces e chocolates · Sobremesas e preparos · Sopas e pratos prontos · Saudáveis e suplementos |
+| Mercearia | Arroz · Feijão e grãos · Massas · Molhos e condimentos · Óleos e azeites · Açúcar e adoçantes · Café · Matinais (achocolatado, cereal, aveia) · Farinhas e fermentos · Conservas · Temperos · Biscoitos · Salgadinhos e snacks · Doces e chocolates · Sobremesas e preparos · Sopas e pratos prontos · Saudáveis e suplementos · Castanhas e frutas secas |
 | Bebidas | Água · Refrigerante · Suco · Cerveja · Vinho e espumante · Destilados · Energético e isotônico · Chá |
 | Laticínios e frios | Leite · Iogurte e fermentado · Queijos · Manteiga e margarina · Requeijão e creme de leite · Frios e embutidos |
-| Carnes | Bovina · Aves · Suína · Peixes e frutos do mar |
+| Carnes | Bovina · Aves · Suína · Peixes e frutos do mar · Outras carnes |
 | Congelados | Prontos congelados · Sorvete e açaí · Vegetais e polpas |
 | Hortifruti | Frutas · Legumes e verduras · Ovos |
 | Padaria | Pães · Bolos e confeitaria |
 | Limpeza | Roupa · Louça · Limpeza geral · Utilidades de limpeza · Inseticidas e odorizadores |
-| Higiene | Papel higiênico e lenços · Cabelo · Corpo e banho · Saúde bucal · Higiene íntima e absorventes |
+| Higiene | Papel higiênico e lenços · Cabelo · Corpo e banho · Saúde bucal · Higiene íntima e absorventes · Beleza e maquiagem |
 | Bebê | Fraldas · Alimentação infantil · Higiene infantil |
 | Pet | Ração · Higiene e acessórios pet |
 | Bazar | Descartáveis · Utensílios · Outros |
 
-São 12 departamentos e 57 categorias. Os 12 chips do onboarding caem em categorias próprias: Arroz, Feijão, Leite, Óleo, Açúcar, Café, Ovos, Frango (Aves), Papel higiênico, Sabão em pó (Roupa), Detergente (Louça) e Refrigerante.
+São 12 departamentos e 61 categorias (a contagem de 57 estava errada), mais 3 adicionadas na revisão da Fase A: Castanhas e frutas secas (Mercearia), Outras carnes (Carnes), Beleza e maquiagem (Higiene). Total: 64. Geleias, mel e cremes de untar vão para Matinais; pratos prontos da rotisserie vão para Sopas e pratos prontos; folhas de bazar não alimentares vão para Bazar > Outros (não null). Os 12 chips do onboarding caem em categorias próprias: Arroz, Feijão, Leite, Óleo, Açúcar, Café, Ovos, Frango (Aves), Papel higiênico, Sabão em pó (Roupa), Detergente (Louça) e Refrigerante.
 
 ### Atribuição sem LLM primeiro
 
