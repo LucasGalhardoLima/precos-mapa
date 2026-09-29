@@ -1,0 +1,46 @@
+# Catalog normalization, phase C (docs/poup-prd-normalizacao-catalogo.md): sends every
+# unassigned fresh-cohort product through the Haiku 4.5 Batch API, lands the proposals in
+# product_normalization_staging, and reports what publishing would do.
+#
+# Manual only (workflow_dispatch). Publishing to `products` is behind the explicit
+# `publish` input, off by default: a run without it stops after the dry-run counts.
+# The daily schedule (after the 03:00 scrape) is a separate change.
+name: Normalize catalog (LLM)
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish the run to products (normalized_by = llm). Off: staging + dry-run counts only."
+        type: boolean
+        default: false
+
+jobs:
+  normalize:
+    name: Normalize unassigned fresh products
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Batch, staging, publish dry-run
+        run: |
+          set -euo pipefail
+          npx tsx scripts/normalize-catalog-llm.ts --full
+          FILE=$(ls scripts/.scrape-normalize-full-*.json | head -1)
+          RUN=$(basename "$FILE" .json | sed 's/^\.scrape-normalize-//')
+          echo "run_id=$RUN"
+          npx tsx scripts/normalize-catalog-llm.ts --ingest "$FILE" --dry-run
+          npx tsx scripts/normalize-catalog-llm.ts --ingest "$FILE"
+          npx tsx scripts/normalize-catalog-llm.ts --publish "$RUN" --dry-run
+          if [ "${{ inputs.publish }}" = "true" ]; then
+            npx tsx scripts/normalize-catalog-llm.ts --publish "$RUN"
+          fi
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

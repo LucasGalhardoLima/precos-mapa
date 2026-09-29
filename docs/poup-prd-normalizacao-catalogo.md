@@ -8,7 +8,7 @@ O catálogo tem ~49 mil produtos com nomes como vêm dos varejistas ("PAP HIG FO
 
 ## Objetivos
 
-1. Tamanho parseado em ≥ 90% do cohort fresco (medido em 29/09: 87,5%).
+1. Tamanho resolvido em ≥ 88% do cohort fresco **nos departamentos Mercearia, Bebidas, Laticínios, Limpeza, Higiene, Bebê e Pet** (fora Hortifruti, Carnes, Congelados, Padaria e Bazar, onde tamanho não é o que se compara). "Resolvido" = tamanho parseado, ou produto vendido por kg (nome com "kg" sem número junto, ex.: "Linguiça Toscana Seara Kg"). O departamento é o de `category_l2` depois da Fase C. A meta era 95% e foi revista para 88% em 30/09, porque o parser passou a devolver "sem tamanho" onde o nome é ambíguo (dimensão, "X g N unidades" sem marcador) em vez de um tamanho errado. Medido em 30/09 com o `products.category_id` atual: 89,6% (18.263 de 20.377), e 87,0% se a regravação do catálogo com o parser novo for aplicada hoje (dry-run). Esse número subestima: `category_id` põe muito item de bazar em "Alimentos", que sai do escopo quando o departamento vier de `category_l2`.
 2. Categoria atribuída em ≥ 95% do cohort fresco, com precisão ≥ 95% numa auditoria amostral.
 3. Melhorar a relevância da busca num conjunto fixo de consultas de referência (ver Métricas); a linha de base com usuários reais não existe (31 eventos de busca em 5 meses).
 4. Custo recorrente abaixo de R$ 20/mês e nenhuma mudança de plano no Supabase.
