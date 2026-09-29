@@ -1,13 +1,14 @@
 # shortcut: each scrape-*.ts script assumes it clears its entire catalog
 # within a single job run — checkpoint/discovery-cache files are local to
 # the runner and don't survive across days. If a retailer's site ever slows
-# down enough that a run doesn't finish (measured live 2026-09-07: Savegnago
-# ~40min, Amarelinha ~20-25min, Tenda ~25-40min, Jaú Serve the long pole at
-# ~2.4h — all comfortably under the timeout below), that day's tail of the
-# catalog silently goes unrefreshed and the next day's run starts over from
-# scratch (self-healing, not data loss). Upgrade: persist checkpoint /
-# discovery-cache state to a Supabase table keyed by retailer if this
-# actually starts happening.
+# down enough that a run doesn't finish (per-job durations measured from the
+# Actions history 2026-09-26..29: Savegnago 91-131min, Amarelinha 46-69min,
+# Tenda 88-102min, Jaú Serve the long pole at 169-181min, i.e. up to ~75% of
+# the 240min timeout below — the 2026-09-07 figures of ~40/20-25/25-40min/2.4h
+# no longer hold), that day's tail of the catalog silently goes unrefreshed and
+# the next day's run starts over from scratch (self-healing, not data loss).
+# Upgrade: persist checkpoint / discovery-cache state to a Supabase table keyed
+# by retailer if this actually starts happening.
 name: Scrape retailer prices
 
 on:
