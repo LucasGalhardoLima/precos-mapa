@@ -65,6 +65,11 @@ Consistency rules (they decide these cases the same way every time, and win over
 - Coconut water ("água de coco"): "suco", never "agua".
 - Bouillon and stock (caldo Maggi, Knorr, tablets, powder): "temperos", never "molhos-condimentos".
 - Potato chips and shoestring potato ("batata chips", "batata palha", "batata lisa" snack bags): "salgadinhos-snacks", never "legumes-verduras".
+- Paper towels ("toalha de papel", "papel toalha"): "papel-higienico-lencos", never "descartaveis".
+- Vermouth ("vermute"): "destilados", never "vinho-espumante".
+- Garden or agricultural pesticides ("defensivo"): "inseticidas-odorizadores".
+- Hydrogen peroxide for hair colouring ("água oxigenada"): "cabelo".
+- A Higiene product (papel-higienico-lencos, cabelo, corpo-banho, saude-bucal, higiene-intima-absorventes, beleza-maquiagem) with "bebê", "baby" or "infantil" in the name: "higiene-infantil". The fragrance brand "Giovanna Baby" is not a baby product.
 
 When unsure about a field, return null for that field.
 

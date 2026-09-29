@@ -92,6 +92,11 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toMatch(/Coconut water[^\n]*"suco"/);
     expect(prompt).toMatch(/Bouillon and stock[^\n]*"temperos"/);
     expect(prompt).toMatch(/Potato chips[^\n]*"salgadinhos-snacks"/);
+    expect(prompt).toMatch(/Paper towels[^\n]*"papel-higienico-lencos"/);
+    expect(prompt).toMatch(/Vermouth[^\n]*"destilados"/);
+    expect(prompt).toMatch(/pesticides[^\n]*"inseticidas-odorizadores"/);
+    expect(prompt).toMatch(/Hydrogen peroxide[^\n]*"cabelo"/);
+    expect(prompt).toMatch(/"bebê", "baby" or "infantil"[^\n]*"higiene-infantil"/);
   });
 });
 

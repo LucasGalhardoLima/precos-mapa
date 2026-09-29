@@ -15,8 +15,19 @@
  *              Loads a results file into product_normalization_staging (never
  *              into products). --dry-run prints what it would insert.
  *
+ *   --full     Runs every unassigned fresh-cohort product through the batch (one
+ *              batch, 50 per request) and writes only the local results file. No DB
+ *              writes. Then: --ingest (staging) and --publish (products), each with
+ *              --dry-run first.
+ *   --publish <run_id> [--dry-run]
+ *              Calls publish_normalization(run_id): copies that staging run into
+ *              products where normalized_by IS NULL (normalized_by = 'llm'), size only
+ *              where the product has none. With --dry-run it only reports the counts.
+ *
  * Usage (Node 20+):
  *   npx tsx --env-file=.env.local scripts/normalize-catalog-llm.ts --sample [--llm 200] [--tree 100] [--seed 1]
+ *   npx tsx --env-file=.env.local scripts/normalize-catalog-llm.ts --full
+ *   npx tsx --env-file=.env.local scripts/normalize-catalog-llm.ts --publish <run_id> --dry-run
  *   npx tsx --env-file=.env.local scripts/normalize-catalog-llm.ts --ingest scripts/.scrape-normalize-<run>.json --dry-run
  *   npx tsx --env-file=.env.local scripts/normalize-catalog-llm.ts --ingest scripts/.scrape-normalize-<run>.json
  *
@@ -253,12 +264,43 @@ async function ingest(file: string) {
   console.log("Done. products was not touched.");
 }
 
+async function full() {
+  const runId = `full-${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "")}`;
+  const [categories, fresh] = await Promise.all([fetchCategories(), fetchFreshProducts()]);
+  const unassigned = fresh.filter((p) => p.normalized_by === null);
+  console.log(`Fresh cohort: ${fresh.length} · unassigned ${unassigned.length} → all go through the batch (${Math.ceil(unassigned.length / BATCH_SIZE)} requests).`);
+
+  const { batchId, proposals, usage, failed } = await runBatch(unassigned.map(toCandidate), categories);
+  const rows: SampleRow[] = unassigned.map((product, i): SampleRow => ({ origin: "llm", product, proposal: proposals[i] }));
+  const results: ResultsFile = {
+    run_id: runId, seed: 0, model: NORMALIZATION_MODEL, batch_id: batchId, usage, cost_usd: batchCostUsd(usage), failed_requests: failed, rows,
+  };
+  const jsonFile = resolve(process.cwd(), `scripts/.scrape-normalize-${runId}.json`);
+  writeFileSync(jsonFile, JSON.stringify(results));
+
+  const p = rows.map((r) => r.proposal!);
+  console.log("\nResults file:", jsonFile);
+  console.log(`Usage: ${usage.input_tokens} in / ${usage.output_tokens} out tokens · cost US$ ${results.cost_usd.toFixed(4)} (computed from the returned usage) · failed requests ${failed}`);
+  console.log(`Products: ${p.length} · category set ${p.filter((x) => x.category_l2).length} · size set ${p.filter((x) => x.size_unit).length} · with invalid_reason ${p.filter((x) => x.invalid_reason).length}`);
+}
+
+async function publish(runId: string) {
+  const dryRun = flag("--dry-run");
+  const { data, error } = await supabase.rpc("publish_normalization", { p_run_id: runId, p_dry_run: dryRun });
+  if (error) throw new Error(`publish_normalization: ${error.message}`);
+  const c = (data as { eligible: number; with_category: number; with_size: number; written: number }[])[0];
+  console.log(`${dryRun ? "DRY RUN — would publish" : "Published"} run ${runId}: eligible ${c.eligible} · with category ${c.with_category} · with size ${c.with_size} · rows written ${c.written}`);
+}
+
 async function main() {
   const ingestFile = arg("--ingest");
+  const publishRun = arg("--publish");
   if (flag("--sample")) await sample();
+  else if (flag("--full")) await full();
+  else if (publishRun) await publish(publishRun);
   else if (ingestFile) await ingest(ingestFile);
   else {
-    console.error("Usage: --sample [--llm N] [--tree N] [--seed N]  |  --ingest <results.json> [--dry-run]");
+    console.error("Usage: --sample [--llm N] [--tree N] [--seed N]  |  --full  |  --ingest <results.json> [--dry-run]  |  --publish <run_id> [--dry-run]");
     process.exit(1);
   }
 }
