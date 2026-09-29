@@ -47,27 +47,3 @@ export function resolveCategoryL2(categoriesIds: string[] | undefined, map: Leaf
   if (slugs.size === 1) return { slug: [...slugs][0] };
   return { slug: null, reason: sawLeaf ? "unmapped" : "unknown_leaf" };
 }
-
-// Slugs of the Higiene department (product_categories.department_id = 'cat_higiene').
-const HIGIENE_SLUGS = new Set([
-  "papel-higienico-lencos", "cabelo", "corpo-banho", "saude-bucal", "higiene-intima-absorventes", "beleza-maquiagem",
-]);
-
-// A JS \b does not treat "ê" as a word character, so the boundary is spelled out.
-const BABY_RE = /(?<![a-zà-ú])(?:beb[êe]s?|baby|infantil)(?![a-zà-ú])/i;
-
-/**
- * Name-based corrections applied on top of a leaf's category (the tree only knows the
- * shelf, not what the product is). PM decisions from the audit of the sample:
- *  - a Higiene product with bebê / baby / infantil in the name is "higiene-infantil";
- *  - paper towels ("toalha de papel", "papel toalha") are "papel-higienico-lencos", even
- *    though Savegnago shelves them with disposables;
- *  - "defensivo" (garden pesticide, shelved under Jardinagem) is "inseticidas-odorizadores".
- */
-export function refineCategoryL2(slug: string, name: string): string {
-  if (/(?<![a-zà-ú])defensivo(?![a-zà-ú])/i.test(name)) return "inseticidas-odorizadores";
-  if (/toalhas?\s+(?:de\s+)?papel|papel\s+toalha/i.test(name)) return "papel-higienico-lencos";
-  // "Giovanna Baby" is a fragrance brand (deodorants, body splash), not a baby product.
-  if (HIGIENE_SLUGS.has(slug) && BABY_RE.test(name.replace(/giovanna\s+baby/gi, " "))) return "higiene-infantil";
-  return slug;
-}

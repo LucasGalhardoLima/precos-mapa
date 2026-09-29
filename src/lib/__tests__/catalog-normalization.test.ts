@@ -41,6 +41,20 @@ describe("validateBatchResponse", () => {
     expect(half.invalid_reason).toBe("size_invalid");
   });
 
+  it("applies the name-based category corrections to the model's answer", () => {
+    const slugsAll = new Set(["saude-bucal", "higiene-infantil", "salgadinhos-snacks", "outros", "corpo-banho"]);
+    const out = validateBatchResponse(
+      respond(
+        item({ i: 0, category_l2: "saude-bucal" }),
+        item({ i: 1, category_l2: "salgadinhos-snacks" }),
+        item({ i: 2, category_l2: "corpo-banho" }),
+      ),
+      [cand({ name: "Creme Dental Infantil Colgate Tandy 50g" }), cand({ name: "Batatas Fritas Voadoras For Kids" }), cand({ name: "Desodorante Giovanna Baby 150ml" })],
+      slugsAll,
+    );
+    expect(out.map((p) => p.category_l2)).toEqual(["higiene-infantil", "outros", "corpo-banho"]);
+  });
+
   it("accepts null size fields without complaint", () => {
     const [p] = validateBatchResponse(respond(item({ size_value: null, size_unit: null })), [cand()], slugs);
     expect(p.invalid_reason).toBeNull();
