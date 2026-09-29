@@ -85,6 +85,14 @@ describe("buildSystemPrompt", () => {
     const prompt = buildSystemPrompt([{ id: "roupa", name: "Lavanderia", department: "Limpeza", description: "Produtos para LAVAR roupa." }]);
     expect(prompt).toContain("- roupa: Lavanderia (Limpeza) — Produtos para LAVAR roupa.");
   });
+
+  it("states the consistency rules for the cases the pre-audit found inconsistent", () => {
+    const prompt = buildSystemPrompt([]);
+    expect(prompt).toMatch(/Cappuccino[^\n]*"cafe"/);
+    expect(prompt).toMatch(/Coconut water[^\n]*"suco"/);
+    expect(prompt).toMatch(/Bouillon and stock[^\n]*"temperos"/);
+    expect(prompt).toMatch(/Potato chips[^\n]*"salgadinhos-snacks"/);
+  });
 });
 
 describe("batchCostUsd / seededShuffle", () => {

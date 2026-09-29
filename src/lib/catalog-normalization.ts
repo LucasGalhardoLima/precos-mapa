@@ -60,6 +60,12 @@ Fields:
 - size_value / size_unit: the package size ONLY if a number and unit are literally present in the name; never estimate a typical size. Units: "g", "ml", "un" (count), "m" (length). Convert kg->g (x1000), l/lt->ml (x1000), cl->ml (x10), cm->m (x0.01). For a multipack such as "6x350ml" use the total (2100 ml). A bare unit with no number ("Banana Kg") is a selling unit, not a size: null. If parsed_size is present, return null for both fields.
 - confidence: your confidence from 0 to 1 that category_l2, brand_norm and base_name are all right.
 
+Consistency rules (they decide these cases the same way every time, and win over any category description that says otherwise):
+- Cappuccino, in any form (powder, sachet, capsule): "cafe".
+- Coconut water ("água de coco"): "suco", never "agua".
+- Bouillon and stock (caldo Maggi, Knorr, tablets, powder): "temperos", never "molhos-condimentos".
+- Potato chips and shoestring potato ("batata chips", "batata palha", "batata lisa" snack bags): "salgadinhos-snacks", never "legumes-verduras".
+
 When unsure about a field, return null for that field.
 
 Categories:
