@@ -89,7 +89,7 @@ function perUnitSize(name: string): ParsedSize | null {
 
 // A bare length ("Tampa 24cm", "Rodo 60cm", "Prato 15cm") is a physical
 // dimension, not a pack size — except for goods actually sold by length.
-const LENGTH_SOLD_RE = /\b(?:filme|papel|fio|fios|saco|sacos|sacola|sacolas|rolo|rolos|fita|fitas|barbante|corda|mangueira)\b/i;
+const LENGTH_SOLD_RE = /\b(?:filme|papel|fio|fios|saco|sacos|sacola|sacolas|rolo|rolos|fita|fitas|barbante|corda|mangueira|el[aá]stico|folha\s+de\s+alum[ií]nio)\b/i;
 
 // "3 Unidades de 25g", "144 sachês de 7g": N packs of X, so the total is N x X.
 const COUNT_OF_UNITS = "unidades|unidade|unid|und|un|pacotes|pacote|pct|sachês|sachê|saches|sache";
@@ -102,6 +102,20 @@ const COUNT_OF_RE = new RegExp(
 // "cada", "N x", "N unidades de") "X g N unidades" gets no size, see parseStripped.
 const SINGLE_SERVE_RE = new RegExp(
   `(?:sach[êe]s?|sticks?|pouch(?:es)?|monodoses?|ampolas?)\\s+(?:[^\\s\\d]+\\s+){0,3}(${NUM})\\s*(${MULTIPLIER_UNIT_ALT})\\s+(?:com\\s+|c/\\s*)?(\\d+)\\s*(?:unidades|unidade|unid|und|un)(?![a-zà-úçã])`,
+  "i",
+);
+
+export interface ParseOptions {
+  /** products.category_l2, when known. For goods counted rather than measured, a pack count is the size. */
+  categoryL2?: string | null;
+}
+
+// Goods sold by the piece: "Copo 50ml C/10" is 10 cups, not 500 ml of anything.
+const COUNT_SIZED_CATEGORIES = new Set(["utilidades-limpeza", "descartaveis", "utensilios"]);
+
+// "com 18 unidades", "c/3", "C/ 12": the pack-count marker after a mass/volume size.
+const WITH_COUNT_RE = new RegExp(
+  `(?:\\bcom\\s+0?(\\d+)\\s*(?:unidades|unidade|unid|und|un)|\\bc\\/\\s*0?(\\d+))(?![a-zà-úçã0-9])`,
   "i",
 );
 
@@ -167,15 +181,17 @@ function pickSaneMatch<T extends RegExpMatchArray>(matches: T[], toSize: (m: T) 
  * Priority when a name has more than one size-like token:
  *  1. A multiplier pattern ("6x350ml") — most explicit, always wins.
  *  2. The last mass/volume/length match — unless the name also has a pack
- *     count of 2 or more with no marker ("Pacote 284g 2 Unidades": 284 g may
- *     be the whole pack or each of two), which gets no size.
+ *     count of 2 or more. "com N unidades" / "c/N" is a multipack marker (N x X);
+ *     for counted goods (options.categoryL2) the size is the count; any other
+ *     "Pacote 284g 2 Unidades" is ambiguous (284 g may be the whole pack or each
+ *     of two) and gets no size.
  *  3. Only if no mass/volume/length token exists at all, the last count
  *     match ("30 Un") — here the count genuinely is the size.
  */
-export function parseProductSize(rawName: string): ParsedSize | null {
+export function parseProductSize(rawName: string, options: ParseOptions = {}): ParsedSize | null {
   const withoutDimensions = stripDimensions(rawName);
   const perUnit = perUnitSize(withoutDimensions);
-  const result = parseStripped(stripNoise(withoutDimensions), perUnit !== null);
+  const result = parseStripped(stripNoise(withoutDimensions), perUnit !== null, options);
   // "12 Unidades 350ml Cada": no explicit total, so the size is N x X. With an explicit
   // total ("510g 6 Unidades 85g Cada") the mass/volume above already won.
   if (perUnit && (!result || result.unit === "un")) {
@@ -185,7 +201,7 @@ export function parseProductSize(rawName: string): ParsedSize | null {
   return result;
 }
 
-function parseStripped(name: string, hasPerUnitMarker: boolean): ParsedSize | null {
+function parseStripped(name: string, hasPerUnitMarker: boolean, options: ParseOptions): ParsedSize | null {
   const multiplierMatches = [...name.matchAll(MULTIPLIER_RE), ...name.matchAll(COUNT_OF_RE)];
   const multiplierResult = pickSaneMatch(multiplierMatches, ([, countRaw, qtyRaw, unitRaw]) => {
     const count = parseInt(countRaw, 10);
@@ -219,12 +235,28 @@ function parseStripped(name: string, hasPerUnitMarker: boolean): ParsedSize | nu
   const physical = simpleMatches.filter(([, , unitRaw]) => !COUNT_UNITS.includes(unitRaw.toLowerCase()));
   const physicalResult = pickSaneMatch(physical, ([, qtyRaw, unitRaw]) => toBaseIfSane(parseNum(qtyRaw), unitRaw));
   if (physicalResult && physicalResult.unit !== "m" && !hasPerUnitMarker) {
-    // "X g N unidades" with no marker (cada, sachê/stick, "N x", "N unidades de"): X can be the
-    // whole pack or one item and the name alone doesn't say which, so no size rather than a guess.
-    const packCount = simpleMatches.some(
-      ([, qtyRaw, unitRaw]) => COUNT_UNITS.includes(unitRaw.toLowerCase()) && parseNum(qtyRaw) >= 2,
+    // A pack count next to a mass/volume ("Pacote 284g 2 Unidades", "Detergente 500ml com 6 unidades").
+    const withCount = name.match(WITH_COUNT_RE);
+    const markedCount = withCount ? parseInt(withCount[1] ?? withCount[2], 10) : 0;
+    const looseCount = Math.max(
+      0,
+      ...simpleMatches
+        .filter(([, , unitRaw]) => COUNT_UNITS.includes(unitRaw.toLowerCase()))
+        .map(([, qtyRaw]) => parseNum(qtyRaw)),
     );
-    if (packCount) return null;
+    const packCount = markedCount >= 2 ? markedCount : looseCount;
+    if (packCount >= 2) {
+      // Counted goods (cups, bags, pots): the size is the piece count.
+      if (options.categoryL2 && COUNT_SIZED_CATEGORIES.has(options.categoryL2)) return { value: packCount, unit: "un" };
+      // "com N unidades" / "c/N" is an explicit multipack marker: N x X.
+      if (markedCount >= 2) {
+        const total = round2(physicalResult.value * markedCount);
+        return total <= BASE_CEILINGS[physicalResult.unit] ? { value: total, unit: physicalResult.unit } : null;
+      }
+      // Any other "X g N unidades": X can be the whole pack or each of N and the name
+      // doesn't say which, so no size rather than a guess.
+      return null;
+    }
   }
   if (physicalResult) return physicalResult;
 
