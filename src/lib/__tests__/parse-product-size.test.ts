@@ -64,14 +64,16 @@ describe("parseProductSize", () => {
     expect(parseProductSize("Filtro De Cafe 103 Reutilizavel Pacaembu 30 Un")?.value).toBe(30);
   });
 
-  it("prefers a mass/volume match over a trailing bundling count", () => {
-    // real catalog case: "284g" is the actual pack content, "2 Unidades" is
-    // packaging (2 packs bundled) — picking the count here silently drops
-    // the real size.
-    expect(parseProductSize("Torrada Tradicional Adria Pacote 284g 2 Unidades Emb Econôm")).toEqual({
-      value: 284,
-      unit: "g",
-    });
+  it("gives no size for 'X g N unidades' with no marker, instead of guessing per item or total", () => {
+    // real catalog case: 284 g may be the whole pack or each of the 2 units, and the name
+    // does not say which. It used to return 284 g (per item); the PM decision is no size.
+    expect(parseProductSize("Torrada Tradicional Adria Pacote 284g 2 Unidades Emb Econôm")).toBeNull();
+    expect(parseProductSize("Sabonete Dove 90g 6 Unidades")).toBeNull();
+  });
+
+  it("still reads a lone mass/volume, and a count of 1 does not make it ambiguous", () => {
+    expect(parseProductSize("Torrada Tradicional Adria Pacote 284g")).toEqual({ value: 284, unit: "g" });
+    expect(parseProductSize("Sabonete Dove 90g 1 Unidade")).toEqual({ value: 90, unit: "g" });
   });
 
   it("does not treat an AxBcm dimension as a pack multiplier", () => {
@@ -80,6 +82,96 @@ describe("parseProductSize", () => {
     expect(parseProductSize("Pistola Cola Quente 20w127/220 Volts 12x10cm Ydh")).not.toEqual({
       value: 1.2,
       unit: "m",
+    });
+  });
+
+  describe("physical dimensions are not a pack size", () => {
+    it.each([
+      ["Kit Colcha King Burdays 280x260cm 3 Peças"], // was read as 2.6 m
+      ["Capa de Colchão Solteiro Sortido Homeland 1,88m x 0,88m x 30cm"], // was 0.3 m
+      ["Grelha Inox Utimil Moeda 37x48cm para Churrasco"],
+      ["Sacola Preta 23,5x31,5cm"],
+      ["Sacola Retornável Vinho CáPraLá 300x200x150mm"],
+      ["Toalha de Banho 70x140cm"],
+      ["Tapete 2,00m x 1,50m"],
+      ["Pistola Cola Quente 12x10cm"],
+    ])("%s -> null", (name) => {
+      expect(parseProductSize(name)).toBeNull();
+    });
+
+    it("still reads a real size next to the dimensions", () => {
+      expect(parseProductSize("Toalha de Banho 70x140cm Pacote 500g")).toEqual({ value: 500, unit: "g" });
+    });
+
+    it("keeps rolls x length and mass/volume multipacks as before", () => {
+      expect(parseProductSize("Papel Higiênico Folha Dupla 12X30M")).toEqual({ value: 30, unit: "m" });
+      expect(parseProductSize("Papel Higiênico Neve 4x30m")).toEqual({ value: 30, unit: "m" });
+      expect(parseProductSize("Refrigerante Lata 6x350ml")).toEqual({ value: 2100, unit: "ml" });
+    });
+  });
+
+  describe("audit findings (lines of docs/poup-normalizacao-auditoria-preaudit.csv)", () => {
+    it("line 0 / 207: NxM and 'A x B x C' dimensions give no size", () => {
+      expect(parseProductSize("Kit Colcha King Burdays 280x260cm 3 Peças")).toBeNull();
+      expect(parseProductSize("Capa de Colchão Solteiro Sortido Homeland 1,88m x 0,88m x 30cm")).toBeNull();
+    });
+
+    it("line 64: a bare cm/m dimension outside length-sold goods is not a size", () => {
+      expect(parseProductSize("Tampa de Vidro Temperado para Panela Uni Lar 24cm")).toBeNull();
+      expect(parseProductSize("Prato para Vaso Redondo Preto Bella Fiore 22cm")).toBeNull();
+      // and the count next to it is still read
+      expect(parseProductSize("Prato Descartável Bompack Amarelo 15cm Com 10 Unidades")).toEqual({ value: 10, unit: "un" });
+      expect(parseProductSize("Rodo Plástico Select 60cm 1 Unidade")).toEqual({ value: 1, unit: "un" });
+    });
+
+    it("keeps lengths for goods sold by length (film, paper, dental floss, bags)", () => {
+      expect(parseProductSize("Filme PVC Biodegradável Facilita & Pronto Eco Pacote 30m")).toEqual({ value: 30, unit: "m" });
+      expect(parseProductSize("Fio Dental Colgate 50m")).toEqual({ value: 50, unit: "m" });
+    });
+
+    it("line 150: 'N unidades de X g' is the pack total", () => {
+      expect(parseProductSize("Biscoito BelVita Leite E Aveia Multipack 75g com 3 Unidades de 25g")).toEqual({ value: 75, unit: "g" });
+      expect(parseProductSize("Suco Pacote com 6 Unidades de 200ml")).toEqual({ value: 1200, unit: "ml" });
+    });
+
+    it("line 163: after a single-serve noun the trailing count multiplies", () => {
+      expect(parseProductSize("Maionese Tradicional Predilecta Sachê 7g 144 Unidades")).toEqual({ value: 1008, unit: "g" });
+    });
+
+    it("the single-serve noun may be followed by a brand before the size", () => {
+      expect(parseProductSize("Molho Barbecue Sachê Predilecta 7g 144 Unidades")).toEqual({ value: 1008, unit: "g" });
+    });
+
+    it("line 199: an explicit total wins over the per-unit 'X g cada'", () => {
+      expect(
+        parseProductSize("Iogurte Parcialmente Desnatado Morango Chambinho Nestlé Bandeja 510g 6 Unidades 85g Cada"),
+      ).toEqual({ value: 510, unit: "g" });
+      expect(
+        parseProductSize("Pack Sabonete Barra Perfumado Rosas Brancas e Avelã Flor de Ypê Envoltório 340g 4 Unidades 85g Cada"),
+      ).toEqual({ value: 340, unit: "g" });
+    });
+
+    it("line 294: 'suporta até X kg' is a capacity, not a size", () => {
+      expect(parseProductSize("Gancho Pequeno Branco com Tira Adesiva Suporta até 0,5kg Scotch C/4 Unidades")).toEqual({ value: 4, unit: "un" });
+    });
+
+    it("without an explicit total, 'N Unidades X g Cada' is N x X", () => {
+      expect(parseProductSize("Pack Cerveja Pilsen Skol Lata 12 Unidades 350ml Cada")).toEqual({ value: 4200, unit: "ml" });
+      expect(parseProductSize("Pack Creme Dental Extra Fresh Oral-B Caixa 3 Unidades 70g Cada Família")).toEqual({ value: 210, unit: "g" });
+    });
+
+    it("keeps width x length for goods sold by length (film, tape, foil)", () => {
+      expect(parseProductSize("Filme PVC Bompack 28cm x 15m")).toEqual({ value: 15, unit: "m" });
+      expect(parseProductSize("Fita Isolante FOXLUX Preta 10m x 19mm")).toEqual({ value: 10, unit: "m" });
+      expect(parseProductSize("Papel alumínio Bompack 30cm x 4m")).toEqual({ value: 4, unit: "m" });
+    });
+
+    it("does not read the abbreviation '350m' (ml) as 350 metres", () => {
+      expect(parseProductSize("Refrig Sprite 350m")).toBeNull();
+    });
+
+    it("'Pacote 284g 2 Unidades' has no clear marker: no size (unlike sachê/stick, cada, N x)", () => {
+      expect(parseProductSize("Pacote 284g 2 Unidades")).toBeNull();
     });
   });
 
