@@ -46,6 +46,7 @@ interface Row {
   name: string;
   size_value: number | null;
   size_unit: string | null;
+  category_l2: string | null;
 }
 
 const fmt = (s: { value: number; unit: string } | null) => (s ? `${s.value} ${s.unit}` : "");
@@ -58,7 +59,7 @@ async function main() {
 
   const rows: Row[] = [];
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase.from("products").select("id, name, size_value, size_unit").order("id").range(from, from + PAGE - 1);
+    const { data, error } = await supabase.from("products").select("id, name, size_value, size_unit, category_l2").order("id").range(from, from + PAGE - 1);
     if (error) throw new Error(`read products: ${error.message}`);
     rows.push(...(data as Row[]));
     if (data.length < PAGE) break;
@@ -73,19 +74,20 @@ async function main() {
       if (stored) notRegexDerived++; // e.g. filled by the LLM pass: not ours to redo
       continue;
     }
-    const next = parseProductSize(row.name);
+    const next = parseProductSize(row.name, { categoryL2: row.category_l2 });
     if (!same(stored, next)) changes.push({ row, old: stored, next });
   }
 
   const kind = (c: (typeof changes)[number]) => (!c.next ? "size -> no size" : !c.old ? "no size -> size" : c.old.unit !== c.next.unit ? "unit changed" : "value changed");
   const byKind = new Map<string, number>();
   for (const c of changes) byKind.set(kind(c), (byKind.get(kind(c)) ?? 0) + 1);
+  const withCategory = changes.filter((c) => c.row.category_l2).length;
 
   const csv = ["id,name,old,new", ...changes.map((c) => [c.row.id, `"${c.row.name.replace(/"/g, '""')}"`, fmt(c.old), fmt(c.next)].join(","))];
   const file = resolve(process.cwd(), `scripts/.scrape-reparse-size-${DRY_RUN ? "dryrun" : "backup"}.csv`);
   writeFileSync(file, csv.join("\n"));
 
-  console.log(`${rows.length} products · ${notRegexDerived} with a stored size that is not the old parser's (left alone) · ${changes.length} would change`);
+  console.log(`${rows.length} products · ${notRegexDerived} with a stored size that is not the old parser's (left alone) · ${changes.length} would change (${withCategory} with a category_l2, ${changes.length - withCategory} without)`);
   for (const [k, n] of byKind) console.log(`  ${n}  ${k}`);
   console.log(`${DRY_RUN ? "Diff" : "Old values"}: ${file}`);
   if (DRY_RUN) return;

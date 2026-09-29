@@ -178,6 +178,35 @@ describe("parseProductSize", () => {
       expect(parseProductSize("Refrig Sprite 350m")).toBeNull();
     });
 
+    it("'com N unidades' and 'c/N' are multipack markers: N x X", () => {
+      expect(parseProductSize("Cerveja Brahma lata 350ml com 18 unidades")).toEqual({ value: 6300, unit: "ml" });
+      expect(parseProductSize("Detergente líquido Ypê 500ml com 6 unidades")).toEqual({ value: 3000, unit: "ml" });
+      expect(parseProductSize("Creme Dental Colgate 70g C/3")).toEqual({ value: 210, unit: "g" });
+      expect(parseProductSize("Sabonete Dove 90g c/ 6 un")).toEqual({ value: 540, unit: "g" });
+    });
+
+    it("'com 2 divisões' is not a pack marker", () => {
+      expect(parseProductSize("Marmita Térmica 1,4L com 2 divisões")).toEqual({ value: 1400, unit: "ml" });
+    });
+
+    it("counted goods (utilidades-limpeza, descartaveis, utensilios) are sized by the piece count", () => {
+      const cases: [string, string, number][] = [
+        ["Saco de Lixo Kid Roll 30l Rolo C/20 Unidades", "utilidades-limpeza", 20],
+        ["Copo para Brigadeiro Cristal Valves Festas 50ml C/10 Unidades", "descartaveis", 10],
+        ["Pote e Tampa Cristal Descartável Strawplast 10un 180ml", "descartaveis", 10],
+        ["Jogo Taça Vidro Kayra 480ml Com 6 Unidades", "utensilios", 6],
+      ];
+      for (const [name, categoryL2, n] of cases) {
+        expect(parseProductSize(name, { categoryL2 }), name).toEqual({ value: n, unit: "un" });
+      }
+    });
+
+    it("without a counted-goods category the same names fall back to N x X or no size", () => {
+      expect(parseProductSize("Copo para Brigadeiro Cristal Valves Festas 50ml C/10 Unidades")).toEqual({ value: 500, unit: "ml" });
+      expect(parseProductSize("Pote e Tampa Cristal Descartável Strawplast 10un 180ml")).toBeNull();
+      expect(parseProductSize("Copo Estela 460ml C/6", { categoryL2: "cerveja" })).toEqual({ value: 2760, unit: "ml" });
+    });
+
     it("'Pacote 284g 2 Unidades' has no clear marker: no size (unlike sachê/stick, cada, N x)", () => {
       expect(parseProductSize("Pacote 284g 2 Unidades")).toBeNull();
     });
