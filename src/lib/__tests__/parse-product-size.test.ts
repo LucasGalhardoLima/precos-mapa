@@ -166,6 +166,14 @@ describe("parseProductSize", () => {
       expect(parseProductSize("Papel alumínio Bompack 30cm x 4m")).toEqual({ value: 4, unit: "m" });
     });
 
+    it("keeps the length of aluminium foil and elastic, sold by the metre", () => {
+      expect(parseProductSize("Folha de Alumínio Wyda R30 7,5m")).toEqual({ value: 7.5, unit: "m" });
+      expect(parseProductSize("Folha De Alumínio Paraná 45Cm C/ 4M")).toEqual({ value: 4, unit: "m" });
+      expect(parseProductSize("Elastico Real 10mm 10m Nº14")).toEqual({ value: 10, unit: "m" });
+      // an aluminium pan is not sold by length
+      expect(parseProductSize("Panela de Alumínio Tramontina 24cm")).toBeNull();
+    });
+
     it("does not read the abbreviation '350m' (ml) as 350 metres", () => {
       expect(parseProductSize("Refrig Sprite 350m")).toBeNull();
     });

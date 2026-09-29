@@ -89,7 +89,7 @@ function perUnitSize(name: string): ParsedSize | null {
 
 // A bare length ("Tampa 24cm", "Rodo 60cm", "Prato 15cm") is a physical
 // dimension, not a pack size — except for goods actually sold by length.
-const LENGTH_SOLD_RE = /\b(?:filme|papel|fio|fios|saco|sacos|sacola|sacolas|rolo|rolos|fita|fitas|barbante|corda|mangueira)\b/i;
+const LENGTH_SOLD_RE = /\b(?:filme|papel|fio|fios|saco|sacos|sacola|sacolas|rolo|rolos|fita|fitas|barbante|corda|mangueira|el[aá]stico|folha\s+de\s+alum[ií]nio)\b/i;
 
 // "3 Unidades de 25g", "144 sachês de 7g": N packs of X, so the total is N x X.
 const COUNT_OF_UNITS = "unidades|unidade|unid|und|un|pacotes|pacote|pct|sachês|sachê|saches|sache";
