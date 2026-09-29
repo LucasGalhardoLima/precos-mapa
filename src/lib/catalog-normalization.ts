@@ -5,6 +5,7 @@
  */
 
 import { z } from "zod";
+import { refineCategoryL2 } from "./category-refinement";
 import { isSaneSize, type SizeUnit } from "./parse-product-size";
 
 export const NORMALIZATION_MODEL = "claude-haiku-4-5";
@@ -167,6 +168,10 @@ export function validateBatchResponse(rawText: string, batch: Candidate[], categ
       category = null;
       reasons.push("category_not_in_list");
     }
+
+    // Name-based corrections (bebê/baby/infantil, for kids, paper towels, defensivo) decided
+    // by the PM, applied here so staging, publishing and the daily job all see them.
+    if (category !== null) category = refineCategoryL2(category, candidate.name);
 
     let sizeValue: number | null = item.size_value ?? null;
     let sizeUnit: SizeUnit | null = SIZE_UNITS.includes(item.size_unit as SizeUnit) ? (item.size_unit as SizeUnit) : null;

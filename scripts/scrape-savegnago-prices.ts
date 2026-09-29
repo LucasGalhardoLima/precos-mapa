@@ -105,7 +105,8 @@ import {
   buildVtexSegmentCookie, fetchCategoryPage, fetchLeafCategories, isValidEan, resolveSellerId, sleep,
   type VtexProduct,
 } from '../src/lib/savegnago-vtex';
-import { loadLeafCategoryMap, refineCategoryL2, resolveCategoryL2 } from '../src/lib/savegnago-leaf-category';
+import { refineCategoryL2 } from '../src/lib/category-refinement';
+import { loadLeafCategoryMap, resolveCategoryL2 } from '../src/lib/savegnago-leaf-category';
 import { connectAsServiceRole, createDirectScraperDb, createRestScraperDb, type ScraperDb } from '../src/lib/scraper-db';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;

@@ -9,7 +9,7 @@
  *      without an EAN are left for the LLM pass.
  *   1b. refine: name-based corrections on top of the leaf (refineCategoryL2: baby
  *      Higiene products, paper towels, defensivo). --refine-only re-applies them to
- *      the rows already written by savegnago_tree, without walking the site.
+ *      the rows already written by savegnago_tree or llm, without walking the site.
  *   2. ean_inherit: a product with no category whose EAN equals a
  *      tree-assigned product's EAN after zero-padding to 14 digits (products.ean
  *      is unique, so the same EAN can only be a *different row* when the
@@ -30,7 +30,8 @@ import {
   DELAY_MS, MATAO_POSTAL_CODE, MAX_RESULTS_PER_CATEGORY, PAGE_SIZE,
   buildVtexSegmentCookie, fetchCategoryPage, fetchLeafCategories, isValidEan, resolveSellerId, sleep,
 } from "../src/lib/savegnago-vtex";
-import { loadLeafCategoryMap, refineCategoryL2, resolveCategoryL2 } from "../src/lib/savegnago-leaf-category";
+import { refineCategoryL2 } from "../src/lib/category-refinement";
+import { loadLeafCategoryMap, resolveCategoryL2 } from "../src/lib/savegnago-leaf-category";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -184,14 +185,14 @@ interface TreeRow {
   category_l2: string;
 }
 
-/** Applies refineCategoryL2 to rows already written by savegnago_tree. Keeps a CSV of the old values. */
+/** Applies refineCategoryL2 to rows already written by savegnago_tree or llm. Keeps a CSV of the old values. */
 async function refineExistingTreeRows(): Promise<void> {
   const rows: TreeRow[] = [];
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabase
       .from("products")
       .select("id, name, category_l2")
-      .eq("normalized_by", "savegnago_tree")
+      .in("normalized_by", ["savegnago_tree", "llm"])
       .not("category_l2", "is", null)
       .order("id")
       .range(from, from + 999);
@@ -225,7 +226,7 @@ async function refineExistingTreeRows(): Promise<void> {
         .from("products")
         .update({ category_l2: slug, normalized_at: new Date().toISOString() })
         .in("id", part)
-        .eq("normalized_by", "savegnago_tree")
+        .in("normalized_by", ["savegnago_tree", "llm"])
         .select("id");
       if (error) throw new Error(`refine ${slug}: ${error.message}`);
       written += data?.length ?? 0;
