@@ -7,6 +7,9 @@
  *      src/lib/savegnago-leaf-category.ts; conflicting leaves assign nothing).
  *      Products are matched to our catalog by exact EAN; Savegnago items
  *      without an EAN are left for the LLM pass.
+ *   1b. refine: name-based corrections on top of the leaf (refineCategoryL2: baby
+ *      Higiene products, paper towels, defensivo). --refine-only re-applies them to
+ *      the rows already written by savegnago_tree, without walking the site.
  *   2. ean_inherit: a product with no category whose EAN equals a
  *      tree-assigned product's EAN after zero-padding to 14 digits (products.ean
  *      is unique, so the same EAN can only be a *different row* when the
@@ -27,7 +30,7 @@ import {
   DELAY_MS, MATAO_POSTAL_CODE, MAX_RESULTS_PER_CATEGORY, PAGE_SIZE,
   buildVtexSegmentCookie, fetchCategoryPage, fetchLeafCategories, isValidEan, resolveSellerId, sleep,
 } from "../src/lib/savegnago-vtex";
-import { loadLeafCategoryMap, resolveCategoryL2 } from "../src/lib/savegnago-leaf-category";
+import { loadLeafCategoryMap, refineCategoryL2, resolveCategoryL2 } from "../src/lib/savegnago-leaf-category";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -37,6 +40,7 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 }
 
 const DRY_RUN = process.argv.includes("--dry-run");
+const REFINE_ONLY = process.argv.includes("--refine-only");
 const FORCE = process.argv.includes("--force");
 const CHUNK = 200;
 const REVIEW_FILE = resolve(process.cwd(), "scripts/.scrape-category-l2-review.csv");
@@ -82,8 +86,9 @@ async function walkTree(): Promise<{ bySlug: Map<string, Set<string>>; stats: Re
         const decision = resolveCategoryL2(p.categoriesIds, leafMap);
         if (decision.slug !== null) {
           stats.assigned++;
-          if (!bySlug.has(decision.slug)) bySlug.set(decision.slug, new Set());
-          bySlug.get(decision.slug)!.add(ean);
+          const slug = refineCategoryL2(decision.slug, p.productName);
+          if (!bySlug.has(slug)) bySlug.set(slug, new Set());
+          bySlug.get(slug)!.add(ean);
         } else {
           stats[decision.reason]++;
           review.push([ean, `"${p.productName.replace(/"/g, '""')}"`, decision.reason, `"${(p.categoriesIds ?? []).join(" ")}"`].join(","));
@@ -173,8 +178,68 @@ async function inheritByPaddedEan(): Promise<{ groups: number; written: number }
   return { groups: matched, written };
 }
 
+interface TreeRow {
+  id: string;
+  name: string;
+  category_l2: string;
+}
+
+/** Applies refineCategoryL2 to rows already written by savegnago_tree. Keeps a CSV of the old values. */
+async function refineExistingTreeRows(): Promise<void> {
+  const rows: TreeRow[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from("products")
+      .select("id, name, category_l2")
+      .eq("normalized_by", "savegnago_tree")
+      .not("category_l2", "is", null)
+      .order("id")
+      .range(from, from + 999);
+    if (error) throw new Error(`read tree rows: ${error.message}`);
+    rows.push(...(data as TreeRow[]));
+    if (data.length < 1000) break;
+  }
+
+  const idsBySlug = new Map<string, string[]>();
+  const changes: string[] = ["id,name,old_category_l2,new_category_l2"];
+  const moves = new Map<string, number>();
+  for (const r of rows) {
+    const next = refineCategoryL2(r.category_l2, r.name);
+    if (next === r.category_l2) continue;
+    idsBySlug.set(next, [...(idsBySlug.get(next) ?? []), r.id]);
+    changes.push([r.id, `"${r.name.replace(/"/g, '""')}"`, r.category_l2, next].join(","));
+    const key = `${r.category_l2} -> ${next}`;
+    moves.set(key, (moves.get(key) ?? 0) + 1);
+  }
+
+  const file = resolve(process.cwd(), `scripts/.scrape-refine-${DRY_RUN ? "dryrun" : "backup"}.csv`);
+  writeFileSync(file, changes.join("\n"));
+  console.log(`refine: ${rows.length} tree rows read, ${changes.length - 1} would change. ${DRY_RUN ? "Diff" : "Old values"}: ${file}`);
+  for (const [key, n] of [...moves].sort((a, b) => b[1] - a[1])) console.log(`  ${n}  ${key}`);
+  if (DRY_RUN) return;
+
+  let written = 0;
+  for (const [slug, ids] of idsBySlug) {
+    for (const part of chunks(ids, CHUNK)) {
+      const { data, error } = await supabase
+        .from("products")
+        .update({ category_l2: slug, normalized_at: new Date().toISOString() })
+        .in("id", part)
+        .eq("normalized_by", "savegnago_tree")
+        .select("id");
+      if (error) throw new Error(`refine ${slug}: ${error.message}`);
+      written += data?.length ?? 0;
+    }
+  }
+  console.log(`refine: ${written} rows updated.`);
+}
+
 async function main() {
   console.log(`${DRY_RUN ? "DRY RUN — no writes" : FORCE ? "LIVE --force" : "LIVE"}\n`);
+  if (REFINE_ONLY) {
+    await refineExistingTreeRows();
+    return;
+  }
   const { bySlug, stats, review } = await walkTree();
   writeFileSync(REVIEW_FILE, review.join("\n"));
   console.log("Tree walk:", stats, `\nUnassigned-product review: ${REVIEW_FILE}`);
