@@ -312,7 +312,7 @@ leaf_id	path	category_l2	reason_if_null
 15331	Bebidas > Licor E Aperitivos > Batidas	destilados	
 15332	Bebidas > Licor E Aperitivos > Coquetel	destilados	
 15333	Bebidas > Licor E Aperitivos > Catuaba	destilados	
-15334	Bebidas > Licor E Aperitivos > Vermouth		vermute (vinho fortificado) e "ice" (malta/vodka pronto): sem categoria equivalente
+15334	Bebidas > Licor E Aperitivos > Vermouth	destilados	
 15335	Bebidas > Licor E Aperitivos > Ice		vermute (vinho fortificado) e "ice" (malta/vodka pronto): sem categoria equivalente
 15336	Bebidas > Licor E Aperitivos > Outros Aperitivos	destilados	
 15358	Bebidas > Leite,Beb Lactea,Cereais > Leites	leite	

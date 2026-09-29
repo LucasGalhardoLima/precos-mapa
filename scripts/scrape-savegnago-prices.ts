@@ -105,7 +105,7 @@ import {
   buildVtexSegmentCookie, fetchCategoryPage, fetchLeafCategories, isValidEan, resolveSellerId, sleep,
   type VtexProduct,
 } from '../src/lib/savegnago-vtex';
-import { loadLeafCategoryMap, resolveCategoryL2 } from '../src/lib/savegnago-leaf-category';
+import { loadLeafCategoryMap, refineCategoryL2, resolveCategoryL2 } from '../src/lib/savegnago-leaf-category';
 import { connectAsServiceRole, createDirectScraperDb, createRestScraperDb, type ScraperDb } from '../src/lib/scraper-db';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -380,7 +380,7 @@ async function main() {
           try {
             const decision = resolveCategoryL2(p.categoriesIds, leafCategoryMap);
             if (decision.slug !== null) {
-              await db.setCategoryL2FromTree(productId, decision.slug);
+              await db.setCategoryL2FromTree(productId, refineCategoryL2(decision.slug, parsed.name));
               categoryAssigned++;
             } else {
               categoryNotAssigned[decision.reason]++;
