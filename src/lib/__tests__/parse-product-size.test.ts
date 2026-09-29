@@ -64,14 +64,16 @@ describe("parseProductSize", () => {
     expect(parseProductSize("Filtro De Cafe 103 Reutilizavel Pacaembu 30 Un")?.value).toBe(30);
   });
 
-  it("prefers a mass/volume match over a trailing bundling count", () => {
-    // real catalog case: "284g" is the actual pack content, "2 Unidades" is
-    // packaging (2 packs bundled) — picking the count here silently drops
-    // the real size.
-    expect(parseProductSize("Torrada Tradicional Adria Pacote 284g 2 Unidades Emb Econôm")).toEqual({
-      value: 284,
-      unit: "g",
-    });
+  it("gives no size for 'X g N unidades' with no marker, instead of guessing per item or total", () => {
+    // real catalog case: 284 g may be the whole pack or each of the 2 units, and the name
+    // does not say which. It used to return 284 g (per item); the PM decision is no size.
+    expect(parseProductSize("Torrada Tradicional Adria Pacote 284g 2 Unidades Emb Econôm")).toBeNull();
+    expect(parseProductSize("Sabonete Dove 90g 6 Unidades")).toBeNull();
+  });
+
+  it("still reads a lone mass/volume, and a count of 1 does not make it ambiguous", () => {
+    expect(parseProductSize("Torrada Tradicional Adria Pacote 284g")).toEqual({ value: 284, unit: "g" });
+    expect(parseProductSize("Sabonete Dove 90g 1 Unidade")).toEqual({ value: 90, unit: "g" });
   });
 
   it("does not treat an AxBcm dimension as a pack multiplier", () => {
@@ -136,6 +138,10 @@ describe("parseProductSize", () => {
       expect(parseProductSize("Maionese Tradicional Predilecta Sachê 7g 144 Unidades")).toEqual({ value: 1008, unit: "g" });
     });
 
+    it("the single-serve noun may be followed by a brand before the size", () => {
+      expect(parseProductSize("Molho Barbecue Sachê Predilecta 7g 144 Unidades")).toEqual({ value: 1008, unit: "g" });
+    });
+
     it("line 199: an explicit total wins over the per-unit 'X g cada'", () => {
       expect(
         parseProductSize("Iogurte Parcialmente Desnatado Morango Chambinho Nestlé Bandeja 510g 6 Unidades 85g Cada"),
@@ -164,8 +170,8 @@ describe("parseProductSize", () => {
       expect(parseProductSize("Refrig Sprite 350m")).toBeNull();
     });
 
-    it("leaves 'Pacote 284g 2 Unidades' per-item (count = packaging), unlike single-serve nouns", () => {
-      expect(parseProductSize("Pacote 284g 2 Unidades")).toEqual({ value: 284, unit: "g" });
+    it("'Pacote 284g 2 Unidades' has no clear marker: no size (unlike sachê/stick, cada, N x)", () => {
+      expect(parseProductSize("Pacote 284g 2 Unidades")).toBeNull();
     });
   });
 

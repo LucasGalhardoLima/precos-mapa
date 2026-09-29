@@ -98,10 +98,10 @@ const COUNT_OF_RE = new RegExp(
   "gi",
 );
 // "Sachê 7g 144 Unidades": after a single-serve noun the trailing count is how
-// many single-serve packs there are, so the size is X x N (a "Pacote 284g 2 Unidades"
-// stays per-item: there the count is packaging, see parseProductSize).
+// many single-serve packs there are, so the size is X x N. Without such a noun (or
+// "cada", "N x", "N unidades de") "X g N unidades" gets no size, see parseStripped.
 const SINGLE_SERVE_RE = new RegExp(
-  `(?:sach[êe]s?|sticks?|pouch(?:es)?|monodoses?|ampolas?)\\s+(${NUM})\\s*(${MULTIPLIER_UNIT_ALT})\\s+(?:com\\s+|c/\\s*)?(\\d+)\\s*(?:unidades|unidade|unid|und|un)(?![a-zà-úçã])`,
+  `(?:sach[êe]s?|sticks?|pouch(?:es)?|monodoses?|ampolas?)\\s+(?:[^\\s\\d]+\\s+){0,3}(${NUM})\\s*(${MULTIPLIER_UNIT_ALT})\\s+(?:com\\s+|c/\\s*)?(\\d+)\\s*(?:unidades|unidade|unid|und|un)(?![a-zà-úçã])`,
   "i",
 );
 
@@ -166,19 +166,18 @@ function pickSaneMatch<T extends RegExpMatchArray>(matches: T[], toSize: (m: T) 
  *
  * Priority when a name has more than one size-like token:
  *  1. A multiplier pattern ("6x350ml") — most explicit, always wins.
- *  2. The last mass/volume/length match. Names often trail a real content
- *     size with a secondary bundling count ("Pacote 284g 2 Unidades" — two
- *     284g packs) — the mass/volume is the actual per-item content size,
- *     the count is packaging, so it must win even though it appears first.
+ *  2. The last mass/volume/length match — unless the name also has a pack
+ *     count of 2 or more with no marker ("Pacote 284g 2 Unidades": 284 g may
+ *     be the whole pack or each of two), which gets no size.
  *  3. Only if no mass/volume/length token exists at all, the last count
  *     match ("30 Un") — here the count genuinely is the size.
  */
 export function parseProductSize(rawName: string): ParsedSize | null {
   const withoutDimensions = stripDimensions(rawName);
-  const result = parseStripped(stripNoise(withoutDimensions));
+  const perUnit = perUnitSize(withoutDimensions);
+  const result = parseStripped(stripNoise(withoutDimensions), perUnit !== null);
   // "12 Unidades 350ml Cada": no explicit total, so the size is N x X. With an explicit
   // total ("510g 6 Unidades 85g Cada") the mass/volume above already won.
-  const perUnit = perUnitSize(withoutDimensions);
   if (perUnit && (!result || result.unit === "un")) {
     const total = round2(perUnit.value * (result?.value ?? 1));
     if (total <= BASE_CEILINGS[perUnit.unit]) return { value: total, unit: perUnit.unit };
@@ -186,7 +185,7 @@ export function parseProductSize(rawName: string): ParsedSize | null {
   return result;
 }
 
-function parseStripped(name: string): ParsedSize | null {
+function parseStripped(name: string, hasPerUnitMarker: boolean): ParsedSize | null {
   const multiplierMatches = [...name.matchAll(MULTIPLIER_RE), ...name.matchAll(COUNT_OF_RE)];
   const multiplierResult = pickSaneMatch(multiplierMatches, ([, countRaw, qtyRaw, unitRaw]) => {
     const count = parseInt(countRaw, 10);
@@ -219,6 +218,14 @@ function parseStripped(name: string): ParsedSize | null {
 
   const physical = simpleMatches.filter(([, , unitRaw]) => !COUNT_UNITS.includes(unitRaw.toLowerCase()));
   const physicalResult = pickSaneMatch(physical, ([, qtyRaw, unitRaw]) => toBaseIfSane(parseNum(qtyRaw), unitRaw));
+  if (physicalResult && physicalResult.unit !== "m" && !hasPerUnitMarker) {
+    // "X g N unidades" with no marker (cada, sachê/stick, "N x", "N unidades de"): X can be the
+    // whole pack or one item and the name alone doesn't say which, so no size rather than a guess.
+    const packCount = simpleMatches.some(
+      ([, qtyRaw, unitRaw]) => COUNT_UNITS.includes(unitRaw.toLowerCase()) && parseNum(qtyRaw) >= 2,
+    );
+    if (packCount) return null;
+  }
   if (physicalResult) return physicalResult;
 
   return pickSaneMatch(simpleMatches, ([, qtyRaw, unitRaw]) => toBaseIfSane(parseNum(qtyRaw), unitRaw));
