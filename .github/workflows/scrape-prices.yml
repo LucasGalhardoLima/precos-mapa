@@ -5,7 +5,8 @@
 # Actions history 2026-09-26..29: Savegnago 91-131min, Amarelinha 46-69min,
 # Tenda 88-102min, Jaú Serve the long pole at 169-181min against its 330min
 # timeout below (240min for the others) — the 2026-09-07 figures of
-# ~40/20-25/25-40min/2.4h no longer hold), that day's tail of the catalog silently goes unrefreshed and
+# ~40/20-25/25-40min/2.4h no longer hold), that day's tail of the catalog silently
+# goes unrefreshed and
 # the next day's run starts over from scratch (self-healing, not data loss).
 # Upgrade: persist checkpoint / discovery-cache state to a Supabase table keyed
 # by retailer if this actually starts happening.
