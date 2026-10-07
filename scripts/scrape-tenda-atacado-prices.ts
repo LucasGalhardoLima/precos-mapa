@@ -289,7 +289,7 @@ interface DiscoveredProduct {
  * the 500 pattern specifically and re-run this warmup mid-script instead of
  * aborting the whole run.
  */
-async function warmupMatao(): Promise<{ cartId: string; branchId: string }> {
+async function warmupMataoOnce(): Promise<{ cartId: string; branchId: string }> {
   const browser = await chromium.launch({ headless: true });
   try {
     const context = await browser.newContext({ userAgent: USER_AGENT, viewport: { width: 1280, height: 900 } });
@@ -325,6 +325,24 @@ async function warmupMatao(): Promise<{ cartId: string; branchId: string }> {
     return { cartId, branchId };
   } finally {
     await browser.close();
+  }
+}
+
+/**
+ * The Clique & Retire click intermittently times out on the GitHub runner
+ * (2026-10-07: failed once, passed on rerun with no code change), and a
+ * failed warmup costs the whole ~3h run. Each attempt launches a fresh
+ * browser, so a bad page state never carries over.
+ */
+async function warmupMatao(maxAttempts = 3): Promise<{ cartId: string; branchId: string }> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await warmupMataoOnce();
+    } catch (err) {
+      if (attempt >= maxAttempts) throw err;
+      console.warn(`Warmup attempt ${attempt}/${maxAttempts} failed: ${err instanceof Error ? err.message.split('\n')[0] : err}; retrying...`);
+      await sleep(3000 * attempt);
+    }
   }
 }
 
