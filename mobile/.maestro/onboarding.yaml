@@ -1,0 +1,22 @@
+# Onboarding pelo caminho "digitar minha cidade" (não depende do diálogo de localização do iOS).
+appId: com.poup.consumer
+---
+- runFlow: _launch.yaml
+- takeScreenshot: onboarding-1-localizacao
+- tapOn: "Digitar minha cidade.*"
+- assertVisible: "Qual é a sua cidade?"
+- tapOn: "digite sua cidade"
+- inputText: "Matão"
+- assertVisible: "Matão, SP"
+- tapOn: "Matão, SP"
+- assertVisible: "O que você compra sempre?"
+- takeScreenshot: onboarding-2-itens
+- tapOn: "Leite"
+- tapOn: "Arroz"
+# O rótulo acompanha a contagem (plural certo): é parte do que se verifica.
+- assertVisible: "Ver preços de hoje · 2 itens.*"
+- tapOn: "Ver preços de hoje · 2 itens.*"
+- extendedWaitUntil:
+    visible: "SEUS ITENS"
+    timeout: 20000
+- takeScreenshot: raiz-com-itens
