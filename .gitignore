@@ -87,3 +87,6 @@ scripts/.scrape-*
 .trae
 .windsurf
 .zencoder
+
+# Screenshots soltos (ex.: gerados pelo Maestro MCP no diretório do projeto)
+/*.png
