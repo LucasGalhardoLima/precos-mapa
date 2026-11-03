@@ -1,0 +1,20 @@
+# Sub-flow compartilhado: app zerado (onboarding de novo) conectado ao Metro.
+# Dev client: o clearState apaga também o servidor lembrado, então reconecta por link.
+# Metro precisa estar de pé: `npx expo start --dev-client`.
+appId: com.poup.consumer
+---
+- launchApp:
+    clearState: true
+- openLink: "exp+poup://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+# O aviso "menu de desenvolvedor" só aparece na primeira abertura do dev client.
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+      # O menu abre em seguida e cobre a tela; o ✕ não tem rótulo de acessibilidade.
+      - tapOn:
+          point: "90%,48%"
+- extendedWaitUntil:
+    visible: "Digitar minha cidade.*"
+    timeout: 60000
