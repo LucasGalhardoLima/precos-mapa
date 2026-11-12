@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Switch, Linking, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, Switch, Linking, StyleSheet, AccessibilityInfo, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
@@ -23,6 +23,8 @@ import {
   visibleItems,
   hasMoreItems,
   undoText,
+  undoAnnouncement,
+  BLOCKED_SWITCH_VALUE,
   resolveHereStore,
   hereSubtitle,
   cityLabel,
@@ -47,6 +49,14 @@ export default function SettingsScreen() {
   useEffect(() => {
     trackScreen('ajustes');
   }, [trackScreen]);
+
+  const undoId = undo?.item.id ?? null;
+  const undoName = undo?.item.name ?? null;
+  useEffect(() => {
+    if (undoName && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(undoAnnouncement(undoName));
+    // Keyed on the item, so a second removal re-announces but a re-render doesn't.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [undoId]);
 
   useEffect(() => {
     return () => {
@@ -132,6 +142,7 @@ export default function SettingsScreen() {
                 title={item.name}
                 chevron={!!item.productId}
                 chevronColor={colors.brand}
+                compact // no subtitle here → 56 tall on the artifact (7a)
                 onRemove={() => handleRemove(item)}
                 // A generic item with no product pinned has no Resposta to open.
                 onPress={
@@ -203,6 +214,8 @@ export default function SettingsScreen() {
             </View>
             <Switch
               accessibilityLabel="Avisar quando um item baixar"
+              // Locked is announced as a value, not just a dimmed control.
+              accessibilityValue={blocked ? { text: BLOCKED_SWITCH_VALUE } : undefined}
               value={notificationUi?.kind === 'on'}
               disabled={blocked || notificationUi === null}
               onValueChange={handleToggle}
@@ -224,14 +237,20 @@ export default function SettingsScreen() {
         </View>
       </ScrollView>
 
-      {undo && (
-        <View style={styles.undoBar}>
-          <Text style={styles.undoText}>{undoText(undo.item.name)}</Text>
-          <Pressable onPress={handleUndo} accessibilityRole="button" style={styles.undoAction}>
-            <Text style={styles.undoActionLabel}>desfazer</Text>
-          </Pressable>
-        </View>
-      )}
+      {/* Android announces content that changes inside a live region that already
+          exists (a region mounted already filled is often silent), so the wrapper
+          stays mounted and only the bar comes and goes. iOS ignores the region and
+          gets the announceForAccessibility effect above instead. */}
+      <View style={styles.undoSlot} accessibilityLiveRegion="polite" pointerEvents="box-none">
+        {undo && (
+          <View style={styles.undoBar}>
+            <Text style={styles.undoText}>{undoText(undo.item.name)}</Text>
+            <Pressable onPress={handleUndo} accessibilityRole="button" style={styles.undoAction}>
+              <Text style={styles.undoActionLabel}>desfazer</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
 
       <StorePickerSheet visible={pickerVisible} stores={stores} isLoading={storesLoading} onClose={() => setPickerVisible(false)} onPick={handlePick} />
     </SafeAreaView>
@@ -270,11 +289,13 @@ const styles = StyleSheet.create({
   spacer: { flex: 1 },
   footer: { flexDirection: 'row', justifyContent: 'center', gap: spacing.lg },
   footerText: { fontFamily: fontFamily.semibold, fontSize: 14, color: colors.secondary },
-  undoBar: {
+  undoSlot: {
     position: 'absolute',
     left: spacing.xl,
     right: spacing.xl,
     bottom: spacing.xl,
+  },
+  undoBar: {
     minHeight: targets.button,
     flexDirection: 'row',
     alignItems: 'center',
