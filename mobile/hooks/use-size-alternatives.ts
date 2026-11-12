@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { daysAgo, isStale, normalizeBaseName, type ProductInfo, type SizeCandidate } from '@/lib/resposta';
+import { daysAgo, isStale, selectSizeFamily, type ProductInfo, type SizeCandidate } from '@/lib/resposta';
 
 // QUAL TAMANHO's data side (rule from Lucas, 2026-09-23): same brand + same
 // normalized base name (size tokens stripped) + same size_unit, excluding
@@ -23,13 +23,12 @@ export function useSizeAlternatives(product: ProductInfo | null) {
     (async () => {
       const { data: siblings } = await supabase
         .from('products')
-        .select('id, name, size_value')
+        .select('id, name, brand, size_value, size_unit')
         .eq('brand', product.brand)
         .eq('size_unit', product.sizeUnit)
         .neq('id', product.id);
 
-      const targetBase = normalizeBaseName(product.name);
-      const matched = (siblings ?? []).filter((s) => s.size_value != null && normalizeBaseName(s.name) === targetBase);
+      const matched = selectSizeFamily(product, siblings ?? []);
 
       if (matched.length === 0) {
         if (!cancelled) {

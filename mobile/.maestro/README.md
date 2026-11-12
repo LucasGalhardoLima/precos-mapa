@@ -20,6 +20,7 @@ maestro --device <udid> test mobile/.maestro/ajustes.yaml
 | `onboarding.yaml` | passo 1 → cidade → passo 2 (plural do botão) → raiz com itens |
 | `busca-e-resposta.yaml` | busca → Resultado → toque na linha → Resposta (bloco ONDE) |
 | `ajustes.yaml` | raiz → engrenagem → Ajustes (seções, rodapé) → folha "trocar" → volta. Sem escrita em produção |
+| `qual-tamanho.yaml` | busca → Resposta → bloco QUAL TAMANHO (depende de dados; não rodado) |
 | `_launch.yaml` | sub-fluxo: app zerado conectado ao Metro (não rodar sozinho) |
 
 ## Armadilhas
