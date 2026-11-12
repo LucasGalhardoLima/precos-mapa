@@ -13,13 +13,13 @@ import { triggerNotification } from '../hooks/use-haptics';
 import { useAnalytics } from '../hooks/use-analytics';
 import { useMarketFreshness, MATAO_CHAIN_COUNT } from '../hooks/use-market-freshness';
 import { useScanLookup } from '../hooks/use-scan-lookup';
-import { shouldProcessScan, type ScanGateState } from '../lib/scan';
+import { shouldProcessScan, resolveScanSurface, type ScanGateState, type ScanPhase } from '../lib/scan';
 import { searchFieldRef } from '../lib/search-focus';
 
 const FRAME_SIZE = 260;
 const READ_PAUSE_MS = 300; // "moldura fecha em verde ~300 ms" before navigating
 
-type Phase = 'checking' | 'denied' | 'scanning' | 'reading' | 'unknown';
+type Phase = ScanPhase;
 
 // Scanner (Etapa 6, decisão 6a–6c / artefato seção 5). Permissão de câmera é
 // pedida aqui — nunca antes — porque esta rota só é alcançada pelo toque em
@@ -124,8 +124,14 @@ export default function ScanScreen() {
     },
   });
 
-  if (phase === 'denied') {
-    return <DeniedState onBuscar={goToSearch} onSettings={() => Linking.openSettings()} />;
+  const surface = resolveScanSurface(phase, !!device);
+  if (surface === 'denied') {
+    return <DeniedState headline="Sem acesso à câmera" linkLabel="Abrir Ajustes do aparelho" onBuscar={goToSearch} onLink={() => Linking.openSettings()} />;
+  }
+  // No camera hardware (the iOS Simulator always lands here). Ajustes cannot
+  // help, so the text exit is the typed search again, in other words.
+  if (surface === 'no-camera') {
+    return <DeniedState headline="Sem câmera neste aparelho" linkLabel="Digitar o nome em vez disso" onBuscar={goToSearch} onLink={goToSearch} />;
   }
 
   const frameState = phase === 'reading' ? 'success' : phase === 'unknown' ? 'muted' : 'idle';
@@ -137,10 +143,6 @@ export default function ScanScreen() {
       {showCameraLayer && (
         <Camera style={StyleSheet.absoluteFill} device={device!} isActive codeScanner={codeScanner} />
       )}
-      {/* shortcut: no `device` (always true in the iOS Simulator, which has
-          no camera hardware) falls back to the plain dark surface below with
-          no feed — this is the only case not named by the artifact's 5a/5b/5c
-          states. Upgrade: none needed — every real iPhone has a back camera. */}
       <View style={styles.scrim} pointerEvents="none" />
 
       <View style={[styles.topBar, { paddingTop: insets.top + spacing.sm }]}>
@@ -196,16 +198,16 @@ function ScanFrame({ state }: { state: 'idle' | 'success' | 'muted' }) {
   );
 }
 
-function DeniedState({ onBuscar, onSettings }: { onBuscar: () => void; onSettings: () => void }) {
+function DeniedState({ headline, linkLabel, onBuscar, onLink }: { headline: string; linkLabel: string; onBuscar: () => void; onLink: () => void }) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.deniedScreen, { paddingTop: insets.top + spacing.xl, paddingBottom: Math.max(insets.bottom, spacing.xl) }]}>
       {/* Ausência em cinza, sem ícone — mesmo tratamento do "Nenhum produto
           com ..." em app/index.tsx: um fato, não um erro visual. */}
-      <Text style={styles.deniedHeadline}>Sem acesso à câmera</Text>
+      <Text style={styles.deniedHeadline}>{headline}</Text>
       <View style={styles.stateActions}>
         <FilledButton label="Buscar pelo nome ›" onPress={onBuscar} />
-        <TextLink label="Abrir Ajustes do aparelho" onPress={onSettings} />
+        <TextLink label={linkLabel} onPress={onLink} />
       </View>
     </View>
   );

@@ -64,6 +64,11 @@ export type RaizBodyState = 'items' | 'loading' | 'sync-pending' | 'read-failed'
 
 export function raizBodyState(input: { rowCount: number; isLoading: boolean; syncFailed: boolean; readFailed: boolean }): RaizBodyState {
   if (input.rowCount > 0) return 'items';
-  if (input.isLoading || input.syncFailed || input.readFailed) return 'loading';
+  // Failures outrank loading: a retry flips isLoading back on, and the failure
+  // message must not flash back to a blank body while it runs. Sync first:
+  // with the sync pending there is nothing for the read to find yet.
+  if (input.syncFailed) return 'sync-pending';
+  if (input.readFailed) return 'read-failed';
+  if (input.isLoading) return 'loading';
   return 'dia-zero';
 }

@@ -4,6 +4,7 @@ import { useLocation, getAnonymousId } from '@poup/shared';
 import { clearInheritedLoginOnce } from '../lib/inherited-session';
 import type { AnalyticsEventType } from '@poup/shared';
 import type { AjustesEventType } from '../lib/ajustes';
+import type { RespostaEventType } from '../lib/resposta';
 
 interface TrackOptions {
   storeId?: string;
@@ -55,7 +56,7 @@ export function useAnalytics() {
   const recentEvents = useRef<Set<string>>(new Set());
 
   const track = useCallback(
-    (eventType: AnalyticsEventType | AjustesEventType, options: TrackOptions = {}) => {
+    (eventType: AnalyticsEventType | AjustesEventType | RespostaEventType, options: TrackOptions = {}) => {
       const region = resolveTrackedRegion(hasResolvedLocation, locationLabel);
 
       (async () => {

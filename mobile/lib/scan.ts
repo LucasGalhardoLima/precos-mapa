@@ -28,5 +28,6 @@ export type ScanSurface = 'denied' | 'no-camera' | 'camera';
 // camera (hardware absent) is its own state once the permission check is over.
 export function resolveScanSurface(phase: ScanPhase, hasDevice: boolean): ScanSurface {
   if (phase === 'denied') return 'denied';
+  if (phase !== 'checking' && !hasDevice) return 'no-camera';
   return 'camera';
 }
