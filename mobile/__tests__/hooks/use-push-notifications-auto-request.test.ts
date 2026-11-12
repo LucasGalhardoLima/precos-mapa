@@ -11,7 +11,6 @@ const mockFrom = jest.fn(() => ({ update: mockUpdate }));
 jest.mock('@poup/shared/lib/supabase', () => ({
   supabase: { from: (...a: unknown[]) => mockFrom(...(a as [])), auth: { getSession: () => mockGetSession() } },
 }));
-jest.mock('@poup/shared/store/auth-store', () => ({ useAuthStore: () => null }));
 
 import { registerForPushToken } from '@poup/shared/hooks/use-push-notifications';
 

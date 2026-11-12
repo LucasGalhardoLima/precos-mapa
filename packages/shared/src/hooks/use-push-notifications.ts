@@ -3,7 +3,6 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
-import { useAuthStore } from '../store/auth-store';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -36,6 +35,11 @@ interface UsePushNotificationsOptions {
 
 // Exported for direct unit testing (no react-test-renderer in this repo to
 // render the hook) — same convention as useLocation's readForegroundPermission.
+//
+// Saves the token against whatever supabase session exists *now*, read from
+// supabase.auth rather than useAuthStore: the MLP never fills the auth store
+// (its only session is the anonymous one use-tracked-items creates), so a
+// store-gated write meant the server never had a token to push to.
 export async function registerForPushToken(prompt: boolean): Promise<string | null> {
   if (!Device.isDevice) return null;
 
@@ -57,7 +61,15 @@ export async function registerForPushToken(prompt: boolean): Promise<string | nu
   }
 
   const tokenData = await Notifications.getExpoPushTokenAsync();
-  return tokenData.data;
+  const token = tokenData.data;
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (session?.user?.id) {
+    await supabase.from('profiles').update({ push_token: token }).eq('id', session.user.id);
+  }
+  return token;
 }
 
 export function usePushNotifications(options?: UsePushNotificationsOptions) {
@@ -67,24 +79,15 @@ export function usePushNotifications(options?: UsePushNotificationsOptions) {
   const notificationListener = useRef<Notifications.EventSubscription>(null);
   const responseListener = useRef<Notifications.EventSubscription>(null);
   const onTapRef = useRef(options?.onNotificationTap);
-  const session = useAuthStore((s) => s.session);
 
   // Keep callback ref up to date without re-subscribing
   onTapRef.current = options?.onNotificationTap;
 
-  const register = useCallback(
-    async (prompt: boolean) => {
-      const token = await registerForPushToken(prompt);
-      if (token) {
-        setExpoPushToken(token);
-        if (session?.user?.id) {
-          await supabase.from('profiles').update({ push_token: token }).eq('id', session.user.id);
-        }
-      }
-      return token;
-    },
-    [session?.user?.id],
-  );
+  const register = useCallback(async (prompt: boolean) => {
+    const token = await registerForPushToken(prompt);
+    if (token) setExpoPushToken(token);
+    return token;
+  }, []);
 
   useEffect(() => {
     register(autoRequest);
@@ -106,8 +109,7 @@ export function usePushNotifications(options?: UsePushNotificationsOptions) {
       notificationListener.current?.remove();
       responseListener.current?.remove();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id]);
+  }, [register, autoRequest]);
 
   // Imperative re-request for autoRequest:false callers — takes no
   // arguments on purpose, same convention as useLocation's requestPermission
