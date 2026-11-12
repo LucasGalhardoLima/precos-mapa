@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { anonymousSignInArgs } from '@/lib/e2e';
 import { usePushNotifications } from '@poup/shared';
 import { readTrackedState, saveTrackedItem, type TrackedReadDeps, type TrackedSaveDeps } from '@/lib/tracked-items';
 
@@ -35,7 +36,7 @@ const readDeps: TrackedReadDeps = {
 const saveDeps: TrackedSaveDeps = {
   getUserId: readDeps.getUserId,
   async signInAnonymously() {
-    const { data, error } = await supabase.auth.signInAnonymously();
+    const { data, error } = await supabase.auth.signInAnonymously(...anonymousSignInArgs);
     return error ? null : (data.session?.user.id ?? null);
   },
   selectExisting: (userId, productId) =>

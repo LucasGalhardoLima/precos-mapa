@@ -82,30 +82,6 @@ jest.mock('expo-constants', () => ({
   },
 }));
 
-// Mock @react-native-google-signin/google-signin
-jest.mock('@react-native-google-signin/google-signin', () => ({
-  GoogleSignin: {
-    configure: jest.fn(),
-    signIn: jest.fn().mockResolvedValue({ data: { idToken: 'mock-google-id-token' } }),
-    signOut: jest.fn().mockResolvedValue(null),
-    hasPlayServices: jest.fn().mockResolvedValue(true),
-  },
-}));
-
-// Mock expo-apple-authentication
-jest.mock('expo-apple-authentication', () => ({
-  signInAsync: jest.fn().mockResolvedValue({
-    identityToken: 'mock-apple-identity-token',
-    fullName: { givenName: 'Test', familyName: 'User' },
-    email: 'test@example.com',
-  }),
-  AppleAuthenticationScope: {
-    FULL_NAME: 0,
-    EMAIL: 1,
-  },
-  isAvailableAsync: jest.fn().mockResolvedValue(true),
-}));
-
 // Mock react-native-reanimated
 jest.mock('react-native-reanimated', () => {
   const Reanimated = require('react-native-reanimated/mock');

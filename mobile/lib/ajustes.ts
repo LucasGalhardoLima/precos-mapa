@@ -48,6 +48,14 @@ export function undoText(name: string): string {
   return `${name} removido`;
 }
 
+// What a screen reader says when the undo bar appears: the bar's text plus its
+// action, since the bar vanishes after UNDO_MS and can't be explored by touch.
+export function undoAnnouncement(name: string): string {
+  return `${undoText(name)}. Toque em desfazer para voltar.`;
+}
+
+export const BLOCKED_SWITCH_VALUE = 'bloqueado nos ajustes do aparelho';
+
 // Ajustes never creates an anonymous session just to be looked at, so "no
 // session" is a real, empty list — but a failed read is NOT empty (judgment
 // question 1/2 in the Personal CLAUDE.md): it must not render "Nenhum ainda".
