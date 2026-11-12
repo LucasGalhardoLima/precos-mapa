@@ -18,23 +18,50 @@ Os fluxos rodam contra o Supabase de produção. O que escreve só pode rodar co
 ## Rodar
 ```
 export JAVA_HOME=$(/usr/libexec/java_home -v 21)
-maestro --device <udid> test mobile/.maestro/onboarding.yaml
-maestro --device <udid> test mobile/.maestro/busca-e-resposta.yaml
-maestro --device <udid> test mobile/.maestro/ajustes.yaml
+cd $(mktemp -d)   # takeScreenshot grava no diretório corrente
+~/.maestro/bin/maestro --device <udid> test <repo>/mobile/.maestro/<fluxo>.yaml
 ```
+Fluxos só de leitura: Metro normal (`npx expo start --dev-client`). Atenção: o app emite `analytics_events` anônimos mesmo nos fluxos "só leitura"; só o Metro e2e (`EXPO_PUBLIC_E2E=1 npx expo start --dev-client --clear`) os marca. Prefira rodar a suíte inteira com o Metro e2e.
 
-| Fluxo | Cobre |
-|---|---|
-| `onboarding.yaml` | passo 1 → cidade → passo 2 (plural do botão) → raiz com itens → Ajustes com os mesmos 2 itens. **Só com build e2e** (cria usuário anônimo + 2 linhas em tracked_items em produção, todos marcados) |
-| `busca-e-resposta.yaml` | busca → Resultado → toque na linha → Resposta (bloco ONDE). Sem escrita em produção (não escolhe item no onboarding) |
-| `ajustes.yaml` | raiz → engrenagem → Ajustes (seções, rodapé) → folha "trocar" → volta. Sem escrita em produção |
-| `qual-tamanho.yaml` | busca → Resposta → bloco QUAL TAMANHO. Sem escrita em produção. Rodado em 12/11/2026: **não passa** — o primeiro "arroz" não tem família de tamanhos com preço de hoje (ver comentário no arquivo) |
-| `_launch.yaml` | sub-fluxo: app zerado conectado ao Metro (não rodar sozinho) |
+## Estado da suíte (iOS, rodada de 12/11/2026, iPhone 17 Pro, iOS 26.5, build de `main` 58813200)
+
+| Fluxo | Cobre | Lê/escreve | Resultado |
+|---|---|---|---|
+| `raiz-dia-zero.yaml` | Raiz dia zero (frase-fato, procedência, sem SEUS ITENS) | lê | passa |
+| `resultado-lista.yaml` | Resultado: contador, teto 8 sem teclado (`ver mais` = total − 8, assertado), sem preço hoje no fim; teto 5 com teclado só por screenshot | lê | passa |
+| `resultado-vazio.yaml` | "zzzzqq": título, botão + texto, saída "Escanear o código" | lê | passa |
+| `resposta-com-ean.yaml` | Resposta com EAN (Patéko 1 kg): título, ONDE, rodapé | lê | passa |
+| `resposta-sem-preco-hoje.yaml` | Camil 1 kg achado pela busca (fim da lista) → "Sem preço hoje" | lê | passa |
+| `resposta-inexistente.yaml` | id inexistente: "Não achamos esse produto", 2 saídas | lê | passa |
+| `resposta-aqui-paridade.yaml` | #94: "você está aqui" na Resposta = "mais perto" em Ajustes; rede mais perto sem o produto → sem "aqui" | lê | passa |
+| `qual-tamanho.yaml` | QUAL TAMANHO: alternativas (Fanta 220 ml) e fallback "é o melhor por kg" (Lasanha Sadia) | lê | passa |
+| `ajustes-vazio.yaml` | Ajustes vazio, folha "trocar" (4 mercados), rodapé sobre/termos | lê | passa |
+| `scanner.yaml` | Scanner no simulador = "Sem câmera neste aparelho" + 2 saídas | lê | passa |
+| `notificacao.yaml` + `notificacao.sh` | push → toque → Resposta | lê | **pendente do #84** (não conta como falha); o banner nem aparece sem permissão de notificação |
+| `escreve/onboarding.yaml` | onboarding completo + Raiz×Ajustes com a mesma lista (#85) | **escreve** | **bloqueado** (ver abaixo) |
+| `escreve/acompanhar.yaml` | acompanhar com alvo → editar → Ajustes → ✕ → desfazer | **escreve** | **nunca executado** (mesmo bloqueio) |
+
+Sub-fluxos: `_launch.yaml` (app zerado + Metro; trata a corrida do "Open in Poup?"), `_abrir.yaml` (deep link, mesma corrida), `_ate-raiz.yaml` (onboarding sem itens até a Raiz). Screenshots (`*.png` é gitignored aqui) ficam só locais; as da rodada de 12/11/2026 estão em `screenshots/` na máquina de quem rodou. O antigo `busca-e-resposta.yaml` foi substituído por `resultado-lista`/`resposta-*`.
+
+### Fluxos que escrevem: bloqueados
+Ficam em `escreve/` de propósito: `maestro test .maestro/` não desce em subpastas, então rodar a suíte inteira nunca escreve em produção por acidente. Rode-os um a um, só com Metro e2e.
+
+O Supabase de produção está com `external_anonymous_users_enabled: false` (Management API, leitura). `signInAnonymously` falha, nenhum usuário (marcado ou não) é criado, e concluir o onboarding com 2 itens termina na Raiz em "Sem conexão / Seus itens aparecem aqui assim que a rede voltar." A marca e2e dos **eventos** funciona (5 `analytics_events` marcados); a do **usuário** não pôde ser confirmada (0 usuários criados), então a suíte parou aí. `acompanhar.yaml` e a parte Raiz×Ajustes de `onboarding.yaml` ficam escritos e sem validação até a opção ser ligada no projeto (decisão de Lucas).
+
+### Não coberto (e por quê)
+- Rede caída, erro de leitura, ErrorBoundary: o simulador não derruba só o app sem mexer na rede da máquina; não forçado.
+- Scanner 5b "Sem acesso à câmera": o simulador não tem câmera e cai antes, em "Sem câmera neste aparelho", mesmo com `simctl privacy revoke camera`. Leitura real de código e 5b só no aparelho.
+- Permissão de notificação: `simctl privacy` não tem serviço de notificação; o diálogo só aparece no primeiro "acompanhar".
+- Toque na engrenagem da Raiz: coberto pelo botão "Tools" do dev client (entra por `poup://settings`).
+- Links sobre/termos/privacidade escondidos com URL placeholder: em `main` "sobre · termos" são texto simples sem destino e não há "privacidade"; os links são do #91 (não mergeado). `ajustes-vazio.yaml` assere o estado atual.
+- Teto 5 com teclado: só por screenshot (a lista rola sob o teclado; não há como contar linhas por assertiva).
 
 ## Armadilhas
 - Texto com chevron ("Buscar agora ›"): casar com regex `Buscar agora.*`.
 - No dev client o botão flutuante "Tools" cobre o canto superior direito (ex.: link "Buscar agora"). Só existe em dev.
 - Cada linha de resultado é um elemento único: `"<nome>, menor no <loja>, R$ <preço>"`.
-- No dev client o botão "Tools" cobre a engrenagem inteira da raiz (toque por ponto na borda também abre o menu de dev): `ajustes.yaml` entra por `poup://settings`, então o toque na engrenagem fica sem cobertura E2E.
-- O iOS pergunta "Open in Poup?" ao abrir links de esquema; `_launch.yaml` e `ajustes.yaml` tocam em "Open" quando aparece (é uma corrida: se o diálogo aparecer depois, o próximo passo falha).
+- No dev client o botão "Tools" cobre a engrenagem inteira da raiz (toque por ponto na borda também abre o menu de dev): `ajustes-vazio.yaml` entra por `poup://settings`, então o toque na engrenagem fica sem cobertura E2E.
+- O iOS pergunta "Open in Poup?" ao abrir links de esquema, às vezes tarde ou nunca: `_launch.yaml` e `_abrir.yaml` esperam (com `optional`) antes de decidir tocar em "Open". Um `when: visible` direto avalia cedo demais.
+- Link de rodapé/ação com chevron no texto ("Escanear o código ›"): use regex `.*` no fim, sempre.
+- zsh/macOS: `sed -i` exige `-i ''`; `echo == x` expande.
 - Asserção frouxa (`.*`) passa em tela em branco. Confira o screenshot.

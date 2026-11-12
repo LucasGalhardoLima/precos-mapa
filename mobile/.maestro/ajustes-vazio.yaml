@@ -1,0 +1,40 @@
+# Ajustes sem itens + folha "trocar" (os 4 mercados) + rodapé. Só leitura e
+# navegação: não toca em "acompanhar" (isso criaria usuário anônimo e linha em
+# produção). Depende de rede (os 4 mercados da folha vêm do Supabase).
+# No dev client o botão flutuante "Tools" cobre a engrenagem inteira da raiz (nem a
+# borda fica livre), então entra por deep link; o toque na engrenagem fica sem
+# cobertura E2E enquanto for dev client.
+appId: com.poup.consumer
+---
+- runFlow: _ate-raiz.yaml
+- runFlow:
+    file: _abrir.yaml
+    env:
+      URL: "poup://settings"
+- extendedWaitUntil:
+    visible: "ITENS ACOMPANHADOS.*"
+    timeout: 20000
+- assertVisible: "Nenhum ainda.*"
+- assertVisible: "LOCALIZAÇÃO"
+- assertVisible: "Matão.*"
+- assertVisible: "NOTIFICAÇÕES"
+- assertVisible: "Avisar quando um item baixar"
+# Rodapé: em main "sobre" e "termos" são texto simples (sem destino). A política de
+# privacidade (#91, ainda não mergeado) os transforma em links e mostra
+# "privacidade"; enquanto a URL for placeholder, nada disso pode virar link morto.
+- assertVisible: "sobre"
+- assertVisible: "termos"
+- assertNotVisible: "privacidade"
+- takeScreenshot: ajustes-vazio
+# Folha "trocar" (os 4 mercados) abre e fecha sem mudar nada.
+- tapOn: "trocar.*"
+- extendedWaitUntil:
+    visible: "Trocar mercado"
+    timeout: 20000
+- assertVisible: "Savegnago.*"
+- assertVisible: "Jaú Serve.*"
+- assertVisible: "Tenda.*"
+- assertVisible: "Amarelinha.*"
+- takeScreenshot: ajustes-trocar-folha
+- tapOn: "voltar"
+- assertVisible: "LOCALIZAÇÃO"

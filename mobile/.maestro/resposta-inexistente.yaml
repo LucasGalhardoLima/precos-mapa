@@ -1,0 +1,23 @@
+# Resposta com id que não existe (deep link velho): fato sobre o produto, não erro
+# de conexão. Duas saídas: botão "Buscar pelo nome ›" + texto "Escanear o código".
+# Só leitura.
+appId: com.poup.consumer
+---
+- runFlow: _ate-raiz.yaml
+- runFlow:
+    file: _abrir.yaml
+    env:
+      URL: "poup://product/00000000-0000-0000-0000-000000000000"
+- extendedWaitUntil:
+    visible: "Não achamos esse produto"
+    timeout: 20000
+- assertVisible: "Buscar pelo nome.*"
+- assertVisible: "Escanear o código.*"
+- assertNotVisible: "Sem conexão"
+- takeScreenshot: resposta-inexistente
+# Saída 1: Raiz com a busca em foco.
+- tapOn: "Buscar pelo nome.*"
+- extendedWaitUntil:
+    visible: "Preços de hoje nos 4 mercados de Matão"
+    timeout: 20000
+- takeScreenshot: resposta-inexistente-saida-buscar

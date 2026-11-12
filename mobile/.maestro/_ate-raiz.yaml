@@ -1,0 +1,16 @@
+# Sub-flow: app zerado → onboarding passo 1 (cidade digitada) → "Ver preços de hoje"
+# sem escolher item → Raiz dia zero. NÃO escreve em produção: sem item, concluir o
+# onboarding não cria usuário anônimo nem linha em tracked_items.
+# Não usa o link "Buscar agora": no dev client o botão flutuante "Tools" cobre o
+# canto superior direito e o toque abre o menu de dev.
+appId: com.poup.consumer
+---
+- runFlow: _launch.yaml
+- tapOn: "Digitar minha cidade.*"
+- tapOn: "digite sua cidade"
+- inputText: "Matão"
+- tapOn: "Matão, SP"
+- tapOn: "Ver preços de hoje.*"
+- extendedWaitUntil:
+    visible: "Preços de hoje nos 4 mercados de Matão"
+    timeout: 20000

@@ -1,0 +1,16 @@
+# Sub-flow: abre um deep link no app já rodando. Uso:
+#   - runFlow: { file: _abrir.yaml, env: { URL: "poup://settings" } }
+# Trata a corrida do aviso "Open in Poup?" (ver _launch.yaml): espera o aviso por
+# até 5 s, sem falhar se ele não vier, e só então toca em "Open".
+appId: com.poup.consumer
+---
+- openLink: ${URL}
+- extendedWaitUntil:
+    visible: "Open in.*"
+    timeout: 5000
+    optional: true
+- runFlow:
+    when:
+      visible: "Open in.*"
+    commands:
+      - tapOn: "Open"
