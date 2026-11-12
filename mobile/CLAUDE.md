@@ -111,4 +111,5 @@ Pronto = typecheck limpo + testes de hook passando + screenshot conferido contra
 
 ## Pendências para a Etapa 4
 
-- **Texto do diálogo de permissão de localização** (exige rebuild nativo, por isso não foi feito na Etapa 3). Hoje, nos dois lugares do `mobile/app.json` — `ios.infoPlist.NSLocationWhenInUseUsageDescription` e a opção `locationWhenInUsePermission` do plugin `expo-location` — o texto é "Precisamos da sua localização para mostrar lojas e ofertas perto de você.", e "ofertas" está fora do vocabulário do MLP. Trocar por: "O Poup usa sua localização para saber qual mercado de Matão está mais perto de você."
+- ~~**Texto do diálogo de permissão de localização**~~ **Resolvido.** `ios.infoPlist.NSLocationWhenInUseUsageDescription` e a opção `locationWhenInUsePermission` do plugin `expo-location` em `mobile/app.json` agora dizem "O Poup usa sua localização para saber qual mercado de Matão está mais perto de você.". **Só vale após rebuild nativo** (texto de permissão vai para o Info.plist do binário; OTA/Metro não o atualiza).
+- **Paywall/RevenueCat (decisão 13)**: fora de `legacy/`, não há mais uso. `react-native-purchases` já não está em `package.json`/lockfile, e as chaves `EXPO_PUBLIC_RC_*` foram removidas do `eas.json` (só `legacy/lib/revenue-cat.ts` as lia). Sem efeito no binário nativo.
