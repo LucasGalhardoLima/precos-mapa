@@ -57,3 +57,13 @@ export function computeTitlePhrase(rows: TrackedRow[]): TitlePhrase | null {
 
   return winner ? { winner, count: winnerCount, total: rows.length } : null;
 }
+
+// What Raiz renders below the header. A failed sync or a failed read with no
+// rows is NOT "dia zero": the empty list is our gap, not the user's.
+export type RaizBodyState = 'items' | 'loading' | 'sync-pending' | 'read-failed' | 'dia-zero';
+
+export function raizBodyState(input: { rowCount: number; isLoading: boolean; syncFailed: boolean; readFailed: boolean }): RaizBodyState {
+  if (input.rowCount > 0) return 'items';
+  if (input.isLoading || input.syncFailed || input.readFailed) return 'loading';
+  return 'dia-zero';
+}

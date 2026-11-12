@@ -223,6 +223,7 @@ export interface SizeCandidate {
 export interface SizeAlternative {
   productId: string;
   name: string; // full name + size, e.g. "Arroz Tio João tipo 1 · 2 kg"
+  sizeLabel: string; // the size alone, e.g. "2 kg" (analytics to_size)
   pricePerUnitLabel: string; // "R$ 4,75/kg"
   storeName: string; // chain label
 }
@@ -254,6 +255,7 @@ export function resolveSizeAlternatives(current: ProductInfo, currentPricePerUni
     items: better.map((c) => ({
       productId: c.id,
       name: `${c.name} · ${formatSize(c.sizeValue, unit)}`,
+      sizeLabel: '',
       pricePerUnitLabel: `${formatBRL(c.perUnit)}/${UNIT_LABEL[unit]}`,
       storeName: chainLabelForStore(c.cheapestStoreName) ?? c.cheapestStoreName,
     })),
@@ -467,4 +469,25 @@ export function buildRespostaView(
         ? `preços de hoje, 03:00 · ${freshChains.length} de 4 mercados`
         : `preço de hoje, 03:00 · ${winner.chainLabel}`,
   };
+}
+
+// What a failed/empty load of the Resposta means. Only a network-ish failure is
+// "Sem conexão"; a product that does not exist (unknown id, malformed uuid) is
+// a different fact and must not be told as a connection problem.
+export type ProductLoadOutcome = 'ok' | 'not-found' | 'error';
+
+export interface PgLikeError {
+  code?: string | null;
+  message?: string | null;
+}
+
+export function classifyProductLoad(input: { productData: unknown | null; productError: PgLikeError | null; pricesError: PgLikeError | null }): ProductLoadOutcome {
+  if (input.productError || input.pricesError) return 'error';
+  return 'ok';
+}
+
+// Event payload for a tap on a QUAL TAMANHO row. productId is the size being
+// opened (the destination); the origin travels in metadata.
+export function sizeOptionTappedPayload(current: ProductInfo, item: SizeAlternative): { productId: string; metadata: { from_product_id: string; from_size: string; to_size: string } } {
+  return { productId: item.productId, metadata: { from_product_id: current.id, from_size: '', to_size: '' } };
 }
