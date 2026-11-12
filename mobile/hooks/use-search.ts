@@ -65,6 +65,11 @@ export function mapSearchRow(row: RawSearchRow): SearchResult {
   return { ...base, hasPriceToday: true, price: winner.price, winnerStoreName: winner.store_name, singleStore: fresh.length <= 1 };
 }
 
+// STUB (red-test commit): real ordering lands in the fix commit.
+export function sortPricedFirst(results: SearchResult[]): SearchResult[] {
+  return results;
+}
+
 export function formatBRL(value: number): string {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }

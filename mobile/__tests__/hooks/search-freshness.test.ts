@@ -11,7 +11,7 @@
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('@/lib/supabase',() => ({ supabase: { rpc: jest.fn() } }));
 
-import { mapSearchRow, type RawSearchRow, type RawPriceEntry } from '@/hooks/use-search';
+import { mapSearchRow, sortPricedFirst, type RawSearchRow, type RawPriceEntry } from '@/hooks/use-search';
 import { resolveTrackedRow } from '@/lib/tracked-summary';
 
 const NOW = new Date('2026-11-12T15:00:00Z');
@@ -81,5 +81,32 @@ describe('resolveTrackedRow — generic item shares the same rule', () => {
     expect(out.hasPriceToday).toBe(false);
     expect(out.priceLabel).toBe('—');
     expect(out.winnerStoreName).toBeNull();
+  });
+});
+
+// "Sem preço hoje: fim da lista" (docs/poup-mlp-decisoes.md, Resultado 5a–5c).
+// The RPC orders by tier on rows that may only be stale, so after freshness
+// filtering a no-price-today row can sit above priced ones.
+describe('sortPricedFirst', () => {
+  const r = (productId: string, hasPriceToday: boolean) => ({
+    productId,
+    name: productId,
+    brand: null,
+    imageUrl: null,
+    hasPriceToday,
+    price: hasPriceToday ? 1 : null,
+    winnerStoreName: hasPriceToday ? 'Tenda' : null,
+    singleStore: true,
+  });
+
+  it('moves sem-preço-hoje rows to the end, keeping the RPC order inside each group', () => {
+    const out = sortPricedFirst([r('a', false), r('b', true), r('c', false), r('d', true)]);
+    expect(out.map((x) => x.productId)).toEqual(['b', 'd', 'a', 'c']);
+  });
+
+  it('does not mutate its input', () => {
+    const input = [r('a', false), r('b', true)];
+    sortPricedFirst(input);
+    expect(input.map((x) => x.productId)).toEqual(['a', 'b']);
   });
 });
