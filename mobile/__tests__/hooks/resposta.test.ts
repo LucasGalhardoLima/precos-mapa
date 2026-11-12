@@ -14,6 +14,8 @@ import {
   type RawStorePrice,
   type SizeCandidate,
 } from '@/lib/resposta';
+import { resolveHereStore } from '@/lib/ajustes';
+import type { NearbyStore } from '@/hooks/use-stores';
 
 const NOW = new Date('2026-09-23T12:00:00Z');
 
@@ -453,5 +455,56 @@ describe('selectSizeFamily — o que conta como "tamanho alternativo"', () => {
   it('is empty when the current product has no brand or no size unit', () => {
     expect(selectSizeFamily(product({ brand: null }), [fam()])).toEqual([]);
     expect(selectSizeFamily(product({ sizeValue: null, sizeUnit: null }), [fam()])).toEqual([]);
+  });
+});
+
+// Ajustes and Resposta must agree on the one "aqui" chain: the nearest branch
+// among ALL active stores (useStores), not among the chains that happen to have
+// a price row for this product. Resposta used to derive it from `rows` and
+// marked Jaú Serve (1,2 km) as "você está aqui" while Ajustes said Amarelinha
+// (0,4 km) — it asserted "aqui" for a chain that is not the closest.
+describe('buildRespostaView — "aqui" é a mesma rede de Ajustes (universo = todas as lojas ativas)', () => {
+  function nearby(chainLabel: string, distanceKm: number | null): NearbyStore {
+    return { storeId: `n-${chainLabel}`, chainLabel, storeName: chainLabel, distanceKm };
+  }
+  const stores = [nearby('Amarelinha', 0.4), nearby('Jaú Serve', 1.2), nearby('Tenda', 1.8), nearby('Savegnago', 2.4)];
+  // Product has no Amarelinha row at all.
+  const rowsWithoutAmarelinha = [
+    row({ store_id: 's-jau', store_name: 'Jaú Serve', price: 25.0, distance_km: 1.2 }),
+    row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', price: 24.9, distance_km: 1.8 }),
+    row({ store_id: 's-sav', store_name: 'Savegnago', price: 27.0, distance_km: 2.4 }),
+  ];
+  const hereFromStores = (preferred: string | null) => resolveHereStore(stores, preferred)?.chainLabel ?? null;
+
+  it('does not mark Jaú Serve as "aqui" when the nearest chain (Amarelinha) has no price row; no "aqui" row in ONDE', () => {
+    const here = hereFromStores(null);
+    expect(here).toBe('Amarelinha');
+    const view = buildRespostaView(product(), rowsWithoutAmarelinha, NOW, here);
+    expect(view.whereRows.some((r) => r.isHere)).toBe(false);
+    expect(view.whereRows.find((r) => r.chainLabel === 'Jaú Serve')?.isHere).toBe(false);
+    // "sem aqui": compares the winner (Tenda) with the next chain, not flagged as "onde você está"
+    expect(view.comparison).toMatchObject({ storeName: 'Jaú Serve', isHere: false });
+  });
+
+  it.each([null, 'Savegnago'])('parity with resolveHereStore (preferredChain=%s)', (preferred) => {
+    const here = hereFromStores(preferred);
+    const view = buildRespostaView(product(), rowsWithoutAmarelinha, NOW, here);
+    const marked = view.whereRows.filter((r) => r.isHere).map((r) => r.chainLabel);
+    // marked chain is the resolved one when it has a row, otherwise nothing
+    const expected = rowsWithoutAmarelinha.some((r) => r.store_name.startsWith(here ?? '\0')) ? [here] : [];
+    expect(marked).toEqual(expected);
+    expect(here).toBe(preferred ?? 'Amarelinha');
+  });
+
+  it('control: when the nearest chain HAS a price row it is still "aqui"', () => {
+    const rows = [...rowsWithoutAmarelinha, row({ store_id: 's-amar', store_name: 'Amarelinha Loja 17', price: 26.0, distance_km: 0.4 })];
+    const view = buildRespostaView(product(), rows, NOW, hereFromStores(null));
+    expect(view.whereRows.find((r) => r.chainLabel === 'Amarelinha')?.isHere).toBe(true);
+    expect(view.whereRows.filter((r) => r.isHere)).toHaveLength(1);
+  });
+
+  it('keeps the per-chain distance from the priced rows (nearest branch WITH a price)', () => {
+    const view = buildRespostaView(product(), rowsWithoutAmarelinha, NOW, hereFromStores(null));
+    expect(view.whereRows.find((r) => r.chainLabel === 'Jaú Serve')?.distanceKm).toBe(1.2);
   });
 });
