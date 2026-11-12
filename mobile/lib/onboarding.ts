@@ -162,10 +162,19 @@ export interface OnboardingResult {
 }
 
 const STORAGE_KEY = 'poup:onboarding';
+// "Onboarding concluído" has its own key: the old guard inferred it from
+// STORAGE_KEY existing, which ties a navigation decision to the payload that
+// is about to become a one-shot migration source. Devices that finished
+// onboarding before this key existed still have STORAGE_KEY, so
+// isOnboardingDone() treats either as done (nobody is sent back through it).
+const DONE_KEY = 'poup:onboarding-done';
+// Set only after the chosen items are confirmed in tracked_items (or there was
+// nothing to write). Absent = the sync still has to run, which is what makes a
+// failed write at the end of onboarding retry on the next opening.
+const MIGRATED_KEY = 'poup:onboarding-migrated';
 
-// shortcut: the chosen generic items and coverage area are stored raw in
-// AsyncStorage and read by nobody yet (the root screen is Etapa 4). Upgrade:
-// use-tracked-items owns tracked items from Etapa 4 and migrates this key.
+// STORAGE_KEY keeps `area` (not part of tracked_items) and, until migrated,
+// the pending items.
 export async function saveOnboarding(result: OnboardingResult): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(result));
 }
@@ -176,5 +185,30 @@ export async function loadOnboarding(): Promise<OnboardingResult | null> {
     return raw ? (JSON.parse(raw) as OnboardingResult) : null;
   } catch {
     return null;
+  }
+}
+
+export async function markOnboardingDone(): Promise<void> {
+  await AsyncStorage.setItem(DONE_KEY, '1');
+}
+
+export async function isOnboardingDone(): Promise<boolean> {
+  try {
+    if ((await AsyncStorage.getItem(DONE_KEY)) != null) return true;
+    return (await AsyncStorage.getItem(STORAGE_KEY)) != null;
+  } catch {
+    return false;
+  }
+}
+
+export async function markItemsMigrated(): Promise<void> {
+  await AsyncStorage.setItem(MIGRATED_KEY, '1');
+}
+
+export async function areItemsMigrated(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(MIGRATED_KEY)) != null;
+  } catch {
+    return false;
   }
 }
