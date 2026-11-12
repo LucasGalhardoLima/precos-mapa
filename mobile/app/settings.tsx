@@ -27,6 +27,9 @@ import {
   hereSubtitle,
   cityLabel,
 } from '../lib/ajustes';
+import { PRIVACY_URL, policyLinkUrl, type PolicyLink } from '../lib/privacy-url';
+
+const FOOTER_LINKS: readonly PolicyLink[] = ['sobre', 'termos', 'privacidade'];
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -109,6 +112,15 @@ export default function SettingsScreen() {
     track('settings_notifications_blocked_link');
     Linking.openSettings();
   }, [track]);
+
+  const openPolicyLink = useCallback(
+    (link: PolicyLink) => {
+      if (!PRIVACY_URL) return;
+      track('settings_link_opened', { metadata: { link } });
+      Linking.openURL(policyLinkUrl(PRIVACY_URL, link)).catch(() => {});
+    },
+    [track],
+  );
 
   const here = resolveHereStore(stores, preferredChain);
   const subtitle = hereSubtitle(here);
@@ -215,13 +227,18 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.spacer} />
-        {/* Plain text on purpose: the artifact draws no destination for these
-            two, and a fact carries no chevron. */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>sobre</Text>
-          <Text style={[styles.footerText, { color: colors.absence }]}>·</Text>
-          <Text style={styles.footerText}>termos</Text>
-        </View>
+        {/* Hidden, not dead, while the build has no real policy URL: a link
+            that opens a placeholder would be a broken promise. */}
+        {PRIVACY_URL ? (
+          <View style={styles.footer}>
+            {FOOTER_LINKS.map((link, i) => (
+              <View key={link} style={styles.footerItem}>
+                {i > 0 ? <Text style={styles.footerDot}>·</Text> : null}
+                <TextLink label={link} onPress={() => openPolicyLink(link)} />
+              </View>
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
 
       {undo && (
@@ -268,8 +285,9 @@ const styles = StyleSheet.create({
   deviceLinkLabel: { fontFamily: fontFamily.semibold, fontSize: 13, color: colors.brandInk },
   switchLocked: { opacity: 0.55 },
   spacer: { flex: 1 },
-  footer: { flexDirection: 'row', justifyContent: 'center', gap: spacing.lg },
-  footerText: { fontFamily: fontFamily.semibold, fontSize: 14, color: colors.secondary },
+  footer: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap' },
+  footerItem: { flexDirection: 'row', alignItems: 'center' },
+  footerDot: { fontFamily: fontFamily.semibold, fontSize: 14, color: colors.absence, paddingHorizontal: spacing.xs },
   undoBar: {
     position: 'absolute',
     left: spacing.xl,

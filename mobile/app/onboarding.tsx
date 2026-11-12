@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, KeyboardAvoidingView, Platform, Linking, StyleSheet } from 'react-native';
 import { X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -17,6 +17,9 @@ import { useLocation } from '../hooks/use-location';
 import { useCities } from '../hooks/use-cities';
 import { useAnalytics } from '../hooks/use-analytics';
 import { saveCityInterest } from '../lib/city-interest';
+import { PRIVACY_URL, policyLinkUrl } from '../lib/privacy-url';
+
+const POLICY_URL = PRIVACY_URL ? policyLinkUrl(PRIVACY_URL, 'privacidade') : null;
 import { syncWithin } from '../lib/onboarding-sync';
 import { supabaseSyncDeps } from '../lib/onboarding-sync-deps';
 import {
@@ -366,6 +369,13 @@ export default function Onboarding() {
               accessibilityLabel="E-mail"
             />
             <Text style={styles.consent}>Só para avisar quando chegarmos na sua cidade. Nada mais.</Text>
+            {/* Next to the consent line, where the e-mail is asked; hidden
+                while the build carries no real policy URL. */}
+            {POLICY_URL ? (
+              <View style={styles.policyLink}>
+                <TextLink label="Política de privacidade" onPress={() => Linking.openURL(POLICY_URL).catch(() => {})} />
+              </View>
+            ) : null}
             {emailNote ? <Text style={styles.emailNote}>{emailNote}</Text> : null}
           </View>
         </ScrollView>
@@ -528,6 +538,12 @@ const styles = StyleSheet.create({
   consent: {
     ...typography.note,
     color: colors.secondary,
+  },
+  // TextLink carries its own 44 px target; pull it up so it reads as part of
+  // the consent line rather than a separate block.
+  policyLink: {
+    alignItems: 'flex-start',
+    marginTop: -spacing.md,
   },
   emailNote: {
     ...typography.note,
