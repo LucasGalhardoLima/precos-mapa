@@ -8,7 +8,9 @@ import {
   formatSize,
   normalizeBaseName,
   resolveSizeAlternatives,
+  selectSizeFamily,
   type ProductInfo,
+  type SizeFamilyRow,
   type RawStorePrice,
   type SizeCandidate,
 } from '@/lib/resposta';
@@ -384,5 +386,72 @@ describe('resolveSizeAlternatives — QUAL TAMANHO', () => {
     const current1L = product({ sizeValue: 1000, sizeUnit: 'ml' });
     const result = resolveSizeAlternatives(current1L, 4.79, [candidate({ cheapestPriceToday: 100 })]);
     expect(result).toEqual({ kind: 'current-best', label: '1 L é o melhor por litro' });
+  });
+});
+
+describe('resolveSizeAlternatives — um ou vários, empate, outras unidades', () => {
+  const current5kg = product({ name: 'Arroz Tio João tipo 1', sizeValue: 5000, sizeUnit: 'g' });
+  const cand = (overrides: Partial<SizeCandidate> = {}): SizeCandidate => ({
+    id: 'c1', name: 'Arroz Tio João tipo 1', sizeValue: 1000, cheapestPriceToday: 4, cheapestStoreName: 'Tenda Atacado - Matão', ...overrides,
+  });
+
+  it('a single better alternative yields exactly one item', () => {
+    const r = resolveSizeAlternatives(current5kg, 4.98, [cand()]);
+    expect(r.kind === 'alternatives' && r.items).toHaveLength(1);
+  });
+
+  it('a candidate with the SAME price per unit does not count as better', () => {
+    expect(resolveSizeAlternatives(current5kg, 4.98, [cand({ cheapestPriceToday: 4.98 })])).toEqual({ kind: 'current-best', label: '5 kg é o melhor por kg' });
+  });
+
+  it('only the candidates that beat the current one are listed; worse ones are dropped', () => {
+    const r = resolveSizeAlternatives(current5kg, 4.98, [cand({ id: 'good', cheapestPriceToday: 4 }), cand({ id: 'bad', cheapestPriceToday: 6 })]);
+    expect(r.kind === 'alternatives' && r.items.map((i) => i.productId)).toEqual(['good']);
+  });
+
+  it('un: per-unit is price per piece and the phrase says "por unidade"', () => {
+    const current12 = product({ name: 'Ovos Branco', sizeValue: 12, sizeUnit: 'un' });
+    const better = resolveSizeAlternatives(current12, 1, [cand({ sizeValue: 30, cheapestPriceToday: 24 })]); // 0,80/un
+    expect(better.kind === 'alternatives' && better.items[0]?.pricePerUnitLabel).toMatch(/0,80\/un/);
+    expect(resolveSizeAlternatives(current12, 1, [cand({ sizeValue: 30, cheapestPriceToday: 45 })])).toEqual({ kind: 'current-best', label: '12 un é o melhor por unidade' });
+  });
+
+  it('a pack under 1 kg keeps grams in the name but compares per kg', () => {
+    const current500 = product({ sizeValue: 500, sizeUnit: 'g' });
+    const r = resolveSizeAlternatives(current500, 10, [cand({ sizeValue: 1000, cheapestPriceToday: 8 })]);
+    expect(r.kind === 'alternatives' && r.items[0]?.name).toBe('Arroz Tio João tipo 1 · 1 kg');
+    expect(resolveSizeAlternatives(current500, 10, [cand({ sizeValue: 1000, cheapestPriceToday: 20 })])).toEqual({ kind: 'current-best', label: '500 g é o melhor por kg' });
+  });
+});
+
+describe('selectSizeFamily — o que conta como "tamanho alternativo"', () => {
+  const current = product({ id: 'cur', name: 'Arroz Tio João tipo 1 5kg', brand: 'Tio João', sizeValue: 5000, sizeUnit: 'g' });
+  const fam = (overrides: Partial<SizeFamilyRow> = {}): SizeFamilyRow => ({
+    id: 'x', name: 'Arroz Tio João tipo 1 1kg', brand: 'Tio João', size_value: 1000, size_unit: 'g', ...overrides,
+  });
+
+  it('keeps same brand + same unit + same base name', () => {
+    expect(selectSizeFamily(current, [fam()]).map((r) => r.id)).toEqual(['x']);
+  });
+
+  it('never includes the product itself', () => {
+    expect(selectSizeFamily(current, [fam({ id: 'cur' })])).toEqual([]);
+  });
+
+  it('drops a different unit (g vs un vs ml): price per unit would not be comparable', () => {
+    expect(selectSizeFamily(current, [fam({ size_unit: 'un' }), fam({ size_unit: 'ml' })])).toEqual([]);
+  });
+
+  it('drops a row without a parsed size (or a zero size)', () => {
+    expect(selectSizeFamily(current, [fam({ size_value: null }), fam({ size_value: 0 })])).toEqual([]);
+  });
+
+  it('drops a different brand and a different base name (no cross-product guessing)', () => {
+    expect(selectSizeFamily(current, [fam({ brand: 'Camil' }), fam({ brand: null }), fam({ name: 'Arroz Tio João tipo 2 1kg' })])).toEqual([]);
+  });
+
+  it('is empty when the current product has no brand or no size unit', () => {
+    expect(selectSizeFamily(product({ brand: null }), [fam()])).toEqual([]);
+    expect(selectSizeFamily(product({ sizeValue: null, sizeUnit: null }), [fam()])).toEqual([]);
   });
 });
