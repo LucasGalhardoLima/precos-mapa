@@ -3,6 +3,7 @@ import { useRouter, type Href } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '@/lib/supabase';
 import { routeForNotification } from '@/lib/notification-route';
+import { registerForPushToken } from '@poup/shared/hooks/use-push-notifications';
 
 // getLastNotificationResponseAsync keeps returning the same response for the
 // whole process, and Raiz can remount (back from onboarding) — remember what was
@@ -31,8 +32,17 @@ export function useNotificationTap(ready: boolean) {
       if (handled.has(key)) return;
       handled.add(key);
       const route = await routeForNotification(response.notification.request.content.data, productExists);
-      if (route && !cancelled) router.push(route as Href);
+      // Unmounted mid-lookup: forget it so the next mount can still open it.
+      if (cancelled) {
+        handled.delete(key);
+        return;
+      }
+      if (route) router.push(route as Href);
     };
+
+    // Re-save the push token on every launch (no prompt): it can change after a
+    // reinstall, and otherwise only the Resposta/Ajustes screens refresh it.
+    registerForPushToken(false).catch(() => {});
 
     // Cold start: the tap that launched the app.
     Notifications.getLastNotificationResponseAsync()

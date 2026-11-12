@@ -22,3 +22,26 @@ comment on column public.tracked_items.notified_price is
   'Last price pushed by notify-tracked-price while at/below target_price; null = armed.';
 comment on column public.tracked_items.notified_at is
   'When notify-tracked-price last pushed for this item (max 1 per day).';
+
+-- Editing the target (folha "Acompanhar" → "editar ›") makes the next
+-- at/below-target price a first crossing again: pushed at R$ 9 with target 10,
+-- then raised to 12 while still at 9, the user should hear about it. Done
+-- here rather than in the client so the app never writes a column that only
+-- exists after this migration. notified_at is kept: it is only consulted for
+-- resends, never for a first crossing.
+create or replace function public.tracked_items_rearm_on_target_change()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.target_price is distinct from old.target_price then
+    new.notified_price := null;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_tracked_items_rearm_on_target_change
+  before update of target_price on public.tracked_items
+  for each row execute function public.tracked_items_rearm_on_target_change();
