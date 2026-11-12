@@ -178,6 +178,36 @@ export function normalizeBaseName(name: string): string {
     .trim();
 }
 
+// A row of `products` as the family query returns it (snake_case, straight
+// from Supabase).
+export interface SizeFamilyRow {
+  id: string;
+  name: string;
+  brand: string | null;
+  size_value: number | null;
+  size_unit: string | null;
+}
+
+// The definition of "tamanho alternativo": same brand + same size_unit (so
+// price/unit is comparable — g with g, ml with ml, never g with un) + same
+// base name once size tokens are stripped, excluding the product itself. A row
+// without a parsed size never qualifies (decision 14: nothing is compared
+// without size). The hook narrows by brand/unit server-side for cost; this
+// re-checks everything so the rule lives (and is tested) in one pure place.
+export function selectSizeFamily(current: ProductInfo, rows: SizeFamilyRow[]): SizeFamilyRow[] {
+  if (current.brand == null || current.sizeUnit == null) return [];
+  const targetBase = normalizeBaseName(current.name);
+  return rows.filter(
+    (r) =>
+      r.id !== current.id &&
+      r.brand === current.brand &&
+      r.size_unit === current.sizeUnit &&
+      r.size_value != null &&
+      r.size_value > 0 &&
+      normalizeBaseName(r.name) === targetBase,
+  );
+}
+
 // One candidate from the same brand+size_unit family (already queried and
 // name-matched by the caller — see hooks/use-size-alternatives.ts) with its
 // own cheapest fresh price already resolved (same "até 3 dias" rule as

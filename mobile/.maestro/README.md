@@ -18,6 +18,7 @@ maestro --device <udid> test mobile/.maestro/busca-e-resposta.yaml
 |---|---|
 | `onboarding.yaml` | passo 1 → cidade → passo 2 (plural do botão) → raiz com itens |
 | `busca-e-resposta.yaml` | busca → Resultado → toque na linha → Resposta (bloco ONDE) |
+| `qual-tamanho.yaml` | busca → Resposta → bloco QUAL TAMANHO (depende de dados; não rodado) |
 | `_launch.yaml` | sub-fluxo: app zerado conectado ao Metro (não rodar sozinho) |
 
 ## Armadilhas
