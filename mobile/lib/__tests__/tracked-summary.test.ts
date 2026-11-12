@@ -20,13 +20,13 @@ const searchRow = (name: string): RawSearchRow => ({
   image_url: null,
   has_active_price: true,
   cheapest_price: 4,
-  prices: [{ store_id: 's1', store_name: 'Tenda', price: 4 }],
+  prices: [{ store_id: 's1', store_name: 'Tenda', price: 4, last_price_date: new Date().toISOString() }],
 });
 
 function deps(over: Partial<SummaryDeps> = {}): SummaryDeps {
   return {
     listTracked: async () => [productRec, genericRec],
-    productPrices: async () => [{ store_id: 's1', store_name: 'Savegnago', price: 5 }],
+    productPrices: async () => [{ store_id: 's1', store_name: 'Savegnago', price: 5, last_price_date: new Date().toISOString() }],
     genericSearch: async () => [searchRow('Dog Chow Arroz'), searchRow('Arroz Camil 1kg')],
     ...over,
   };
