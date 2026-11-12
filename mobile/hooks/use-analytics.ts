@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useLocation, getAnonymousId } from '@poup/shared';
 import { clearInheritedLoginOnce } from '../lib/inherited-session';
 import type { AnalyticsEventType } from '@poup/shared';
+import type { AjustesEventType } from '../lib/ajustes';
 
 interface TrackOptions {
   storeId?: string;
@@ -54,7 +55,7 @@ export function useAnalytics() {
   const recentEvents = useRef<Set<string>>(new Set());
 
   const track = useCallback(
-    (eventType: AnalyticsEventType, options: TrackOptions = {}) => {
+    (eventType: AnalyticsEventType | AjustesEventType, options: TrackOptions = {}) => {
       const region = resolveTrackedRegion(hasResolvedLocation, locationLabel);
 
       (async () => {
@@ -71,7 +72,7 @@ export function useAnalytics() {
         }
 
         // Build a dedup key from event type + store + product
-        const dedupKey = `${eventType}:${options.storeId ?? ''}:${options.productId ?? ''}`;
+        const dedupKey = `${eventType}:${options.storeId ?? ''}:${options.productId ?? ''}:${options.metadata ? JSON.stringify(options.metadata) : ''}`;
 
         // Skip if we already logged this exact event in the last 2 seconds
         if (recentEvents.current.has(dedupKey)) return;

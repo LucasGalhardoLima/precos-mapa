@@ -12,12 +12,14 @@ Rodam no iOS Simulator, sem aparelho físico. Dados são reais (Supabase), entã
 export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 maestro --device <udid> test mobile/.maestro/onboarding.yaml
 maestro --device <udid> test mobile/.maestro/busca-e-resposta.yaml
+maestro --device <udid> test mobile/.maestro/ajustes.yaml
 ```
 
 | Fluxo | Cobre |
 |---|---|
 | `onboarding.yaml` | passo 1 → cidade → passo 2 (plural do botão) → raiz com itens |
 | `busca-e-resposta.yaml` | busca → Resultado → toque na linha → Resposta (bloco ONDE) |
+| `ajustes.yaml` | raiz → engrenagem → Ajustes (seções, rodapé) → folha "trocar" → volta. Sem escrita em produção |
 | `qual-tamanho.yaml` | busca → Resposta → bloco QUAL TAMANHO (depende de dados; não rodado) |
 | `_launch.yaml` | sub-fluxo: app zerado conectado ao Metro (não rodar sozinho) |
 
