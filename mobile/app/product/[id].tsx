@@ -136,8 +136,9 @@ export default function ProductScreen() {
 
   const nameLine = product.sizeValue != null ? `${product.name} · ${formatSize(product.sizeValue, product.sizeUnit)}` : product.name;
   const qualTamanho = view.pricePerUnit ? resolveSizeAlternatives(product, view.pricePerUnit.value, sizeCandidates) : null;
+  // Nearest priced branch OF the 'aqui' chain only (none if it has no price row).
   const nearestBranchId = view.branchRows.reduce<{ id: string; km: number } | null>((best, b) => {
-    if (b.distanceKm == null) return best;
+    if (b.distanceKm == null || b.chainLabel !== hereChain) return best;
     return !best || b.distanceKm < best.km ? { id: b.storeId, km: b.distanceKm } : best;
   }, null)?.id;
 
@@ -183,7 +184,7 @@ export default function ProductScreen() {
                   distanceKm={branch.distanceKm}
                   price={branch.price}
                   isWinner={false}
-                  isHere={branch.chainLabel === hereChain && branch.storeId === nearestBranchId}
+                  isHere={branch.storeId === nearestBranchId}
                   freshnessLabel={freshnessLabel(branch.daysAgo)}
                   muted={branch.isStale}
                   onSwap={() => setPickerVisible(true)}
