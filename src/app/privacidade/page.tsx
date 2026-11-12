@@ -13,8 +13,9 @@
  * packages/shared use-location (coordenadas só na consulta; reverse geocode
  * do sistema), migrations 079 (city_interest, sem id de usuário), 084
  * (tracked_items), 049 (eventos anônimos); use-push-notifications
- * (getExpoPushTokenAsync). PostHog está no package.json mas nada o importa —
- * por isso não aparece aqui.
+ * (getExpoPushTokenAsync). PostHog está no package.json e no env de produção
+ * do eas.json, mas nada em mobile/app, hooks ou lib o importa (só legacy/,
+ * fora do app) — por isso não aparece aqui. Se voltar a ser usado, entra aqui.
  *
  * Se o que o app coleta mudar, esta página muda no mesmo PR.
  */
@@ -102,7 +103,7 @@ export default function PrivacidadePage() {
               <strong>Eventos de uso.</strong> Registramos o que é feito no app, ligado a esse
               identificador anônimo: buscas (incluindo o texto digitado), códigos de barras lidos,
               telas e produtos abertos, mercados exibidos, o mercado escolhido como &quot;onde você
-              está&quot;, itens acompanhados e preço-alvo, e mudanças nos ajustes de aviso. Cada evento
+              está&quot;, itens abertos ou removidos em Ajustes, e mudanças nos ajustes de aviso. Cada evento
               leva a data e a hora e, quando conhecida, a cidade (por exemplo, &quot;Matão, SP&quot;).
             </p>
             <p>
@@ -138,8 +139,8 @@ export default function PrivacidadePage() {
               data e hora.
             </p>
             <p>
-              Algumas escolhas, como o mercado que você marcou como &quot;onde você está&quot; e a
-              preferência de avisos, ficam só no seu aparelho.
+              O mercado que você marcou como &quot;onde você está&quot; e a preferência de avisos são
+              guardados no seu aparelho; a mudança em si entra nos eventos de uso descritos acima.
             </p>
           </Secao>
 
@@ -238,10 +239,11 @@ export default function PrivacidadePage() {
             </p>
             <p>
               Sem precisar falar conosco, você também pode: negar ou retirar as permissões de
-              localização e notificação nos ajustes do aparelho, a qualquer momento; e apagar o app,
-              o que remove do aparelho o identificador anônimo e as preferências guardadas nele (os
-              dados já enviados ao servidor continuam lá até o prazo do item 7 ou até um pedido de
-              eliminação).
+              localização e notificação nos ajustes do aparelho, a qualquer momento; e remover itens
+              acompanhados em Ajustes. Apagar o app remove as preferências guardadas nele, mas no
+              iPhone o identificador anônimo e a conta anônima ficam guardados no Keychain do
+              aparelho e voltam se o app for reinstalado. Os dados já enviados ao servidor continuam
+              lá até o prazo do item 7 ou até um pedido de eliminação.
             </p>
             <p>
               Você também pode reclamar à Autoridade Nacional de Proteção de Dados (ANPD).
