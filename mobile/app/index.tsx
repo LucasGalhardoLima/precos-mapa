@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Settings, ScanLine } from 'lucide-react-native';
@@ -16,7 +16,7 @@ import { useAnalytics } from '../hooks/use-analytics';
 import { isOnboardingDone } from '../lib/onboarding';
 import { syncWithin } from '../lib/onboarding-sync';
 import { supabaseSyncDeps } from '../lib/onboarding-sync-deps';
-import { computeTitlePhrase, type TitlePhrase } from '../lib/raiz';
+import { computeTitlePhrase, raizBodyState, type RaizBodyState, type TitlePhrase } from '../lib/raiz';
 import { searchFieldRef } from '../lib/search-focus';
 
 const RAIZ_TETO = 4;
@@ -43,6 +43,14 @@ export default function RaizScreen() {
   // body stays blank instead of stating dia zero.
   const [syncFailed, setSyncFailed] = useState(false);
 
+  const runSync = useCallback(async (isCancelled: () => boolean) => {
+    const outcome = await syncWithin(supabaseSyncDeps, SYNC_WAIT_MS);
+    if (isCancelled()) return;
+    setSyncFailed(outcome === 'failed');
+    setSyncSettled(true);
+    setRefreshKey((k) => k + 1);
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
@@ -53,17 +61,18 @@ export default function RaizScreen() {
           return;
         }
         setCheckedOnboarding(true);
-        const outcome = await syncWithin(supabaseSyncDeps, SYNC_WAIT_MS);
-        if (cancelled) return;
-        setSyncFailed(outcome === 'failed');
-        setSyncSettled(true);
-        setRefreshKey((k) => k + 1);
+        await runSync(() => cancelled);
       });
       return () => {
         cancelled = true;
       };
-    }, [router]),
+    }, [router, runSync]),
   );
+
+  // "Tentar de novo" on the empty-Raiz failure states: redo the sync AND the read.
+  const retryRaiz = useCallback(() => {
+    runSync(() => false);
+  }, [runSync]);
 
   useEffect(() => {
     if (checkedOnboarding) trackScreen('raiz');
@@ -141,7 +150,9 @@ export default function RaizScreen() {
           />
           <RaizBody
             trackedRows={trackedRows}
-            trackedLoading={trackedLoading || trackedError || syncFailed}
+            bodyState={raizBodyState({ rowCount: trackedRows.length, isLoading: trackedLoading, syncFailed, readFailed: trackedError })}
+            onRetry={retryRaiz}
+            onScanPress={() => router.push('/scan')}
             titlePhrase={titlePhrase}
             freshCount={freshCount}
             onProductPress={(id) => router.push(`/product/${id}`)}
@@ -200,24 +211,52 @@ function SearchHeader({
 
 function RaizBody({
   trackedRows,
-  trackedLoading,
+  bodyState,
+  onRetry,
+  onScanPress,
   titlePhrase,
   freshCount,
   onProductPress,
   onVerTodos,
 }: {
   trackedRows: ReturnType<typeof useTrackedSummary>['rows'];
-  trackedLoading: boolean;
+  bodyState: RaizBodyState;
+  onRetry: () => void;
+  onScanPress: () => void;
   titlePhrase: TitlePhrase | null;
   freshCount: number | null;
   onProductPress: (key: string) => void;
   onVerTodos: () => void;
 }) {
+  // Failure states with no rows: never "dia zero" / "nenhum item" — the empty
+  // list is our gap (sync pending or read failed), not the user having no items.
+  if (bodyState === 'sync-pending') {
+    return (
+      <StateBody
+        headline="Sem conexão"
+        support="Seus itens aparecem aqui assim que a rede voltar."
+        onRetry={onRetry}
+        linkLabel="Ajustes de rede do aparelho"
+        onLink={() => Linking.openSettings()}
+      />
+    );
+  }
+  if (bodyState === 'read-failed') {
+    return (
+      <StateBody
+        headline="Não deu para carregar seus itens"
+        support="Tente de novo em instantes."
+        onRetry={onRetry}
+        linkLabel="Escanear o código"
+        onLink={onScanPress}
+      />
+    );
+  }
   // Dia zero: no tracked items at all — a fact, not an empty list (nada de
   // convite, nada de bloco). Distinct from "still resolving prices"
-  // (trackedLoading), which renders nothing rather than flash dia zero first.
+  // ('loading'), which renders nothing rather than flash dia zero first.
   if (trackedRows.length === 0) {
-    if (trackedLoading) return <View style={styles.body} />;
+    if (bodyState === 'loading') return <View style={styles.body} />;
     return (
       <View style={styles.body}>
         <Text style={typography.phrase}>Preços de hoje nos {MATAO_CHAIN_COUNT} mercados de Matão</Text>
@@ -271,6 +310,33 @@ function RaizBody({
   );
 }
 
+// Shared layout of the "sem lista" failure states: gray headline + support, one
+// button, one text exit (mobile/CLAUDE.md "duas saídas").
+function StateBody({
+  headline,
+  support,
+  onRetry,
+  linkLabel,
+  onLink,
+}: {
+  headline: string;
+  support: string;
+  onRetry: () => void;
+  linkLabel: string;
+  onLink: () => void;
+}) {
+  return (
+    <View style={styles.body}>
+      <Text style={styles.stateHeadline}>{headline}</Text>
+      <Text style={styles.stateSupport}>{support}</Text>
+      <View style={styles.stateActions}>
+        <FilledButton label="Tentar de novo ›" onPress={onRetry} />
+        <TextLink label={linkLabel} onPress={onLink} />
+      </View>
+    </View>
+  );
+}
+
 function ResultadoBody({
   query,
   results,
@@ -298,14 +364,13 @@ function ResultadoBody({
 }) {
   if (onOffline) {
     return (
-      <View style={styles.body}>
-        <Text style={styles.stateHeadline}>Sem conexão</Text>
-        <Text style={styles.stateSupport}>Não deu para buscar os preços de hoje. Verifique a rede e tente de novo.</Text>
-        <View style={styles.stateActions}>
-          <FilledButton label="Tentar de novo ›" onPress={onRetry} />
-          <TextLink label="Ajustes de rede do aparelho" onPress={() => {}} />
-        </View>
-      </View>
+      <StateBody
+        headline="Sem conexão"
+        support="Não deu para buscar os preços de hoje. Verifique a rede e tente de novo."
+        onRetry={onRetry}
+        linkLabel="Ajustes de rede do aparelho"
+        onLink={() => Linking.openSettings()}
+      />
     );
   }
 
@@ -313,7 +378,7 @@ function ResultadoBody({
     const firstWord = query.trim().split(/\s+/)[0] ?? query.trim();
     return (
       <View style={styles.body}>
-        <Text style={[styles.stateHeadline, { color: colors.secondary }]}>Nenhum produto com &quot;{query.trim()}&quot;</Text>
+        <Text style={styles.stateHeadline}>Nenhum produto com &quot;{query.trim()}&quot;</Text>
         <Text style={styles.stateSupport}>nos {MATAO_CHAIN_COUNT} mercados de Matão hoje</Text>
         <View style={styles.stateActions}>
           <FilledButton label={`Buscar só "${firstWord}" ›`} onPress={onBuscarSoPrimeira} />
@@ -442,7 +507,8 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 26,
     letterSpacing: -0.22,
-    color: colors.ink,
+    // Estado sem lista é ausência (cinza), não fato dado (tinta).
+    color: colors.secondary,
     marginTop: spacing.lg,
   },
   stateSupport: {

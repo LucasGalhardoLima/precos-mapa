@@ -9,6 +9,8 @@ import {
   normalizeBaseName,
   resolveSizeAlternatives,
   selectSizeFamily,
+  classifyProductLoad,
+  sizeOptionTappedPayload,
   type ProductInfo,
   type SizeFamilyRow,
   type RawStorePrice,
@@ -343,7 +345,7 @@ describe('resolveSizeAlternatives — QUAL TAMANHO', () => {
     const result = resolveSizeAlternatives(current5kg, currentPerUnit, [candidate()]); // 9.49/2kg = 4.745/kg < 4.98
     expect(result).toEqual({
       kind: 'alternatives',
-      items: [{ productId: 'c1', name: 'Arroz Tio João tipo 1 · 2 kg', pricePerUnitLabel: expect.stringContaining('4,75'), storeName: 'Tenda' }],
+      items: [{ productId: 'c1', name: 'Arroz Tio João tipo 1 · 2 kg', sizeLabel: '2 kg', pricePerUnitLabel: expect.stringContaining('4,75'), storeName: 'Tenda' }],
     });
   });
 
@@ -453,5 +455,44 @@ describe('selectSizeFamily — o que conta como "tamanho alternativo"', () => {
   it('is empty when the current product has no brand or no size unit', () => {
     expect(selectSizeFamily(product({ brand: null }), [fam()])).toEqual([]);
     expect(selectSizeFamily(product({ sizeValue: null, sizeUnit: null }), [fam()])).toEqual([]);
+  });
+});
+
+describe('classifyProductLoad', () => {
+  const row = { id: 'p1' };
+  const netErr = { message: 'Network request failed' };
+
+  it('is ok when the product row and the prices both came back', () => {
+    expect(classifyProductLoad({ productData: row, productError: null, pricesError: null })).toBe('ok');
+  });
+
+  it('is not-found when the id does not exist (PGRST116 from a single-row read)', () => {
+    expect(classifyProductLoad({ productData: null, productError: { code: 'PGRST116' }, pricesError: null })).toBe('not-found');
+  });
+
+  it('is not-found when the id is a malformed uuid (22P02) on the product read or on the RPC', () => {
+    expect(classifyProductLoad({ productData: null, productError: { code: '22P02' }, pricesError: null })).toBe('not-found');
+    expect(classifyProductLoad({ productData: row, productError: null, pricesError: { code: '22P02' } })).toBe('not-found');
+  });
+
+  it('is not-found when the read succeeds but returns no row (maybeSingle)', () => {
+    expect(classifyProductLoad({ productData: null, productError: null, pricesError: null })).toBe('not-found');
+  });
+
+  it('keeps a network failure as error, with or without a code', () => {
+    expect(classifyProductLoad({ productData: null, productError: netErr, pricesError: null })).toBe('error');
+    expect(classifyProductLoad({ productData: row, productError: null, pricesError: { code: '57014', message: 'timeout' } })).toBe('error');
+  });
+
+  it('a network failure on one read wins over not-found on the other', () => {
+    expect(classifyProductLoad({ productData: null, productError: { code: 'PGRST116' }, pricesError: netErr })).toBe('error');
+  });
+});
+
+describe('sizeOptionTappedPayload', () => {
+  it('opens the tapped size (productId) and carries origin and both sizes in metadata', () => {
+    const current = product({ id: 'cur', sizeValue: 5000, sizeUnit: 'g' });
+    const item = { productId: 'alt', name: 'Arroz · 2 kg', sizeLabel: '2 kg', pricePerUnitLabel: 'R$ 4,75/kg', storeName: 'Tenda' };
+    expect(sizeOptionTappedPayload(current, item)).toEqual({ productId: 'alt', metadata: { from_product_id: 'cur', from_size: '5 kg', to_size: '2 kg' } });
   });
 });

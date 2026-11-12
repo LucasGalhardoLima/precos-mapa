@@ -29,13 +29,17 @@ export interface TrackedRow {
 // re-reads (Raiz bumps it on focus, so a removal in Ajustes shows up).
 export function useTrackedSummary(userLat: number, userLng: number, enabled: boolean, refreshKey: number) {
   const [rows, setRows] = useState<TrackedRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Loading is derived from "which request has settled", not a flag set inside
+  // the effect: a retry bumps refreshKey and must read as loading in the very
+  // render that follows, or Raiz would flash "dia zero" for a frame.
+  const requestKey = `${refreshKey}|${userLat}|${userLng}`;
+  const [settledKey, setSettledKey] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
+  const isLoading = !enabled || settledKey !== requestKey;
 
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
-    setIsLoading(true);
 
     (async () => {
       const result = await loadTrackedSummary({
@@ -72,13 +76,13 @@ export function useTrackedSummary(userLat: number, userLng: number, enabled: boo
       // A failed read keeps whatever was shown instead of falling to "dia zero".
       if (result.ok) setRows(result.rows);
       setHasError(!result.ok);
-      setIsLoading(false);
+      setSettledKey(requestKey);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [enabled, refreshKey, userLat, userLng]);
+  }, [enabled, refreshKey, userLat, userLng, requestKey]);
 
   return { rows, isLoading, hasError };
 }

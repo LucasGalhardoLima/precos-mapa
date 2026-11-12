@@ -1,4 +1,4 @@
-import { shouldProcessScan, SCAN_COOLDOWN_MS, type ScanGateState } from '../scan';
+import { shouldProcessScan, resolveScanSurface, SCAN_COOLDOWN_MS, type ScanGateState } from '../scan';
 
 describe('shouldProcessScan', () => {
   const emptyState: ScanGateState = { lastCode: null, lastReadAt: null };
@@ -20,5 +20,23 @@ describe('shouldProcessScan', () => {
   it('allows a different code immediately, even mid-cooldown for the previous one', () => {
     const state: ScanGateState = { lastCode: '7891234567890', lastReadAt: 1000 };
     expect(shouldProcessScan('7899999999999', state, 1000)).toBe(true);
+  });
+});
+
+describe('resolveScanSurface', () => {
+  it('shows the no-camera state when the permission check is over and there is no device', () => {
+    expect(resolveScanSurface('scanning', false)).toBe('no-camera');
+  });
+
+  it('denied permission wins over a missing device', () => {
+    expect(resolveScanSurface('denied', false)).toBe('denied');
+  });
+
+  it('does not flash no-camera while the permission is still being checked', () => {
+    expect(resolveScanSurface('checking', false)).toBe('camera');
+  });
+
+  it('shows the camera when there is a device', () => {
+    expect(resolveScanSurface('scanning', true)).toBe('camera');
   });
 });

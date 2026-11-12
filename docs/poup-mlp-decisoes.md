@@ -126,6 +126,32 @@ Supabase fica no plano Free (1 GB de Storage, 500 MB de banco; banco em 279 MB h
 - Retenção de 90 dias em `price_history` (ainda sem política).
 - Medir o tamanho do banco semanalmente.
 
+## Textos propostos (nov/2026) — aprovar
+
+Propostos pelo conselho de agentes (engenharia, design, produto) por delegação do Lucas ("GO mode"), **ausentes do artefato**. O CLAUDE.md do app manda parar e perguntar quando falta texto; aqui ficam registrados para revisão. Tom cinza (`secondary`) em todos; sem vermelho/âmbar. Rótulos de botão levam "›"; o TextLink acrescenta o dele.
+
+| Onde | Texto | Origem |
+|---|---|---|
+| Erro global (ErrorBoundary) | título "Algo deu errado" | pedido pelo conselho |
+| | apoio "Não deu para mostrar esta tela. Comece de novo pelo início." | **redação minha**, a aprovar |
+| | botão "Voltar ao início ›" (vai para a Raiz) | pedido pelo conselho |
+| | texto "Tentar esta tela de novo" (refaz a tela) | **redação minha**, a aprovar |
+| Resposta, produto inexistente / id malformado | título "Não achamos esse produto" (mesmo do cartão 5c do scanner) | pedido |
+| | botão "Buscar pelo nome ›" (Raiz com a busca em foco) | pedido |
+| | texto "Escanear o código" | pedido |
+| Folha Acompanhar, falha ao salvar | linha "Não deu para salvar. Tente de novo." (a folha não fecha) | pedido |
+| Raiz sem itens, sync pendente / offline | título "Sem conexão" | pedido |
+| | apoio "Seus itens aparecem aqui assim que a rede voltar." | pedido |
+| | botão "Tentar de novo ›" (refaz sync e leitura); texto "Ajustes de rede do aparelho" | pedido |
+| Raiz sem itens, leitura falhou com rede ok | título "Não deu para carregar seus itens" | pedido |
+| | apoio "Tente de novo em instantes."; botão "Tentar de novo ›"; texto "Escanear o código" | pedido |
+| Scanner sem câmera (hardware) | título "Sem câmera neste aparelho" | pedido |
+| | botão "Buscar pelo nome ›"; texto "Digitar o nome em vez disso" (mesmo destino do botão: "Abrir Ajustes" não ajuda sem câmera) | pedido (alternativa prevista) |
+
+Também mudou, sem texto novo: o título dos estados sem lista ("Sem conexão" da Resposta e do Resultado) passa de tinta para `secondary`, igual ao "Nenhum produto com ...". O texto "Ajustes de rede do aparelho" agora abre os Ajustes do app no iOS (`Linking.openSettings()`), que não tem página de rede; o rótulo é o do artefato.
+
+Evento novo: `size_option_tapped` (toque numa linha de QUAL TAMANHO). `product_id` = tamanho aberto (destino); `metadata`: `from_product_id`, `from_size`, `to_size`.
+
 ## Próximo passo
 
 Alta fidelidade completa. Próximo: implementação em React Native a partir do artefato e deste doc (o CLAUDE.md do app deve apontar para ambos).

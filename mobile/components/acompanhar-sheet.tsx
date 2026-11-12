@@ -22,6 +22,8 @@ interface AcompanharSheetProps {
   todayPrice: number | null;
   todayStoreName: string | null;
   isSubmitting: boolean;
+  // The last save did not go through; the sheet stays open and says so.
+  saveFailed: boolean;
   onClose: () => void;
   onTrackWithAlert: (targetPrice: number) => void;
   onTrackWithoutAlert: () => void;
@@ -40,6 +42,7 @@ export function AcompanharSheet({
   todayPrice,
   todayStoreName,
   isSubmitting,
+  saveFailed,
   onClose,
   onTrackWithAlert,
   onTrackWithoutAlert,
@@ -90,6 +93,8 @@ export function AcompanharSheet({
             </View>
             <Text style={styles.provenance}>{provenance}</Text>
           </View>
+
+          {saveFailed ? <Text style={styles.saveFailed}>Não deu para salvar. Tente de novo.</Text> : null}
 
           <View style={styles.actions}>
             {/* "nenhum botão fica desabilitado" (mobile/CLAUDE.md) — sempre
@@ -193,6 +198,10 @@ const styles = StyleSheet.create({
   },
   provenance: {
     ...typography.provenance,
+    color: colors.secondary,
+  },
+  saveFailed: {
+    ...typography.support,
     color: colors.secondary,
   },
   actions: {
