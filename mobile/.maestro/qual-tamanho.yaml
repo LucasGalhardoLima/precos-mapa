@@ -1,38 +1,35 @@
-# Resposta → bloco QUAL TAMANHO (só aparece com tamanho parseado + irmão de
-# tamanho mais barato por unidade, ou "X é o melhor por kg").
-# Rodado em 12/11/2026 (sem passar): "arroz" devolve ração (Dog Chow c/ arroz) em primeiro,
-# sem família de tamanhos; "arroz branco" cai num Camil sem preço de hoje (Savegnago
-# há 57 dias); "arroz agulhinha" também sem o bloco. Em todos o bloco some, que é o
-# comportamento correto — falta escolher um produto com família de tamanhos E preço de
-# hoje. Depende de dados reais — o produto escolhido precisa ter
-# size_value/size_unit e uma família de tamanhos com preço de hoje. Se o
-# primeiro resultado da busca não tiver, o bloco some (comportamento correto) e
-# o fluxo falha na asserção; troque o termo de busca.
+# Resposta → bloco QUAL TAMANHO. Só leitura. Fixado por id (produtos com família
+# de tamanhos E preço de hoje, achados por consulta read-only em 12/11/2026; o
+# "primeiro arroz" da busca não serve, ver histórico no git). Se o catálogo mudar,
+# repita a busca de dados e troque os ids.
+#   - Fanta Laranja Lata 220ml: há irmão mais barato por ml → lista de alternativas
+#     ("menor no <loja>");
+#   - Lasanha Sadia 1 kg: nenhum irmão bate o tamanho atual → fallback "é o melhor por kg".
 appId: com.poup.consumer
 ---
-- runFlow: _launch.yaml
-- tapOn: "Digitar minha cidade.*"
-- tapOn: "digite sua cidade"
-- inputText: "Matão"
-- tapOn: "Matão, SP"
-# Sem escolher item: com item, concluir o onboarding cria usuário anônimo e linha
-# em tracked_items em produção. Busca e Resposta não dependem de item acompanhado.
-- tapOn: "Ver preços de hoje.*"
-- extendedWaitUntil:
-    visible: "Preços de hoje nos 4 mercados de Matão"
-    timeout: 20000
-- tapOn: "buscar produto"
-- inputText: "arroz"
-- extendedWaitUntil:
-    visible: "[1-9][0-9]* PRODUTO.*"
-    timeout: 20000
-- tapOn: ".*, (menor|só) no .*, R\\$.*"
+- runFlow: _ate-raiz.yaml
+- runFlow:
+    file: _abrir.yaml
+    env:
+      URL: "poup://product/645906f8-69ea-43c9-953a-2be8ab6d0904"
 - extendedWaitUntil:
     visible: "ONDE"
     timeout: 20000
 - scrollUntilVisible:
     element: "QUAL TAMANHO"
     timeout: 10000
-- takeScreenshot: qual-tamanho
-# Ou uma alternativa mais barata por unidade (com "menor no <loja>"), ou o fallback.
-- assertVisible: ".*(menor no .*|é o melhor por (kg|litro|unidade|m)).*"
+- assertVisible: ".*menor no .*"
+- takeScreenshot: qual-tamanho-alternativas
+# Fallback: o tamanho atual já é o melhor por unidade.
+- runFlow:
+    file: _abrir.yaml
+    env:
+      URL: "poup://product/0353c2e5-b672-4d97-b4a9-3daca0ee9cb7"
+- extendedWaitUntil:
+    visible: "ONDE"
+    timeout: 20000
+- scrollUntilVisible:
+    element: "QUAL TAMANHO"
+    timeout: 10000
+- assertVisible: ".*é o melhor por (kg|litro|unidade|m).*"
+- takeScreenshot: qual-tamanho-melhor

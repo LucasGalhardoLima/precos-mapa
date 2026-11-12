@@ -6,15 +6,19 @@ appId: com.poup.consumer
 - launchApp:
     clearState: true
 - openLink: "exp+poup://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
-# O iOS pergunta "Open in Poup?" ao abrir o esquema por link (nem sempre aparece).
+# Corrida: o iOS pergunta "Open in Poup?" ao abrir o esquema por link, mas o
+# diálogo pode demorar ou nem vir. Um `when: visible` direto é avaliado antes de
+# ele surgir; por isso espera (opcional) por um dos três estados possíveis e só
+# então trata cada um, em ordem. Depois de tocar em "Open" pode vir o aviso do
+# menu de desenvolvedor, que também só surge depois que o Metro termina o bundle.
+- extendedWaitUntil:
+    visible: "Open in.*|Continue|Digitar minha cidade.*"
+    timeout: 90000
 - runFlow:
     when:
       visible: "Open in.*"
     commands:
       - tapOn: "Open"
-# O aviso "menu de desenvolvedor" só aparece na primeira abertura do dev client,
-# e só depois que o Metro termina o bundle (segundos). Sem esta espera, o `when`
-# abaixo é avaliado antes de o aviso surgir e o fluxo falha em "Digitar minha cidade".
 - extendedWaitUntil:
     visible: "Continue|Digitar minha cidade.*"
     timeout: 90000

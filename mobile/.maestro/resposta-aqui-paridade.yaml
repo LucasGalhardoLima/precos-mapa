@@ -1,0 +1,46 @@
+# Paridade do #94: a rede marcada "você está aqui" na Resposta é a mesma que
+# Ajustes mostra em "mais perto". Só leitura. Dois produtos, lidos da produção em
+# 12/11/2026 (se o catálogo mudar, troque os ids):
+#   - Toalha Snob (da1cb20c…): a rede mais perto TEM preço hoje → a linha dela
+#     leva "você está aqui", mesmo sem ser a mais barata;
+#   - Patéko 1 kg (a4b7679d…): a rede mais perto NÃO tem o produto → nenhuma
+#     linha leva "você está aqui" (antes do #94 caía na rede mais próxima que tinha).
+appId: com.poup.consumer
+---
+- runFlow: _ate-raiz.yaml
+- runFlow:
+    file: _abrir.yaml
+    env:
+      URL: "poup://settings"
+- extendedWaitUntil:
+    visible: "mais perto: .*"
+    timeout: 20000
+- copyTextFrom: "mais perto: .*"
+# "mais perto: Amarelinha · 0,4 km" → "Amarelinha"
+- evalScript: "${output.rede = maestro.copiedText.replace(/^mais perto: /, '').split(' · ')[0].trim()}"
+- takeScreenshot: paridade-ajustes
+- runFlow:
+    file: _abrir.yaml
+    env:
+      URL: "poup://product/da1cb20c-51fa-4ab6-8afa-ead7b8f87a7f"
+- extendedWaitUntil:
+    visible: "ONDE"
+    timeout: 20000
+- assertVisible: "${output.rede}.*"
+- assertVisible: "você está aqui.*"
+- takeScreenshot: paridade-resposta-rede-tem-preco
+# Mesma rede nas duas telas: o "você está aqui" fica logo abaixo do nome da rede.
+- assertVisible:
+    text: "você está aqui.*"
+    below: "${output.rede}.*"
+# Rede mais perto sem o produto: nenhuma linha afirma "você está aqui".
+- runFlow:
+    file: _abrir.yaml
+    env:
+      URL: "poup://product/a4b7679d-3f5b-4445-8624-7210f9f99be7"
+- extendedWaitUntil:
+    visible: "ONDE"
+    timeout: 20000
+- assertVisible: "Jaú Serve.*"
+- assertNotVisible: "você está aqui.*"
+- takeScreenshot: paridade-resposta-rede-sem-preco

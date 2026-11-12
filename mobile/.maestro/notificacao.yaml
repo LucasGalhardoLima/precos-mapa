@@ -1,0 +1,17 @@
+# PENDENTE DO #84 (push de preço-alvo; o handler que abre a Resposta ao tocar na
+# notificação ainda não está em main). Escrito, mas NÃO conta como falha enquanto
+# o #84 não for mergeado. Rodar com `./notificacao.sh <product-id>`, que dispara o
+# push pelo simctl depois que o app foi para segundo plano.
+appId: com.poup.consumer
+---
+- runFlow: _ate-raiz.yaml
+# Segundo plano: o banner só aparece com o app fora de primeiro plano.
+- pressKey: home
+- extendedWaitUntil:
+    visible: "Teste"
+    timeout: 90000
+- tapOn: "Teste"
+- extendedWaitUntil:
+    visible: "ONDE"
+    timeout: 20000
+- takeScreenshot: notificacao-abre-resposta

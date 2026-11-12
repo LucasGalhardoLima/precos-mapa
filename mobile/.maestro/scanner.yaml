@@ -1,0 +1,26 @@
+# Scanner no simulador. Só leitura. O simulador não tem câmera, então o app cai no
+# estado "Sem câmera neste aparelho" (hardware) ANTES de olhar a permissão: mesmo
+# com `xcrun simctl privacy <udid> revoke camera com.poup.consumer` o 5b "Sem
+# acesso à câmera" não aparece (verificado em 12/11/2026). 5b e a leitura real de
+# código de barras só no aparelho. Este fluxo cobre o estado de hardware e suas
+# duas saídas (botão "Buscar pelo nome" + texto "Digitar o nome em vez disso").
+appId: com.poup.consumer
+---
+- runFlow: _ate-raiz.yaml
+- runFlow:
+    file: _abrir.yaml
+    env:
+      URL: "poup://scan"
+- extendedWaitUntil:
+    visible: "Sem câmera neste aparelho"
+    timeout: 20000
+- assertVisible: "Buscar pelo nome.*"
+- assertVisible: "Digitar o nome em vez disso.*"
+- assertNotVisible: "Aponte para o código de barras"
+- takeScreenshot: scanner-sem-camera-hardware
+# Saída 1: Raiz com a busca em foco.
+- tapOn: "Buscar pelo nome.*"
+- extendedWaitUntil:
+    visible: "Preços de hoje nos 4 mercados de Matão"
+    timeout: 20000
+- takeScreenshot: scanner-saida-buscar

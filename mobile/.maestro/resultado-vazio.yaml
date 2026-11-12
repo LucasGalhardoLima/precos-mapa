@@ -1,0 +1,22 @@
+# Resultado vazio: "zzzzqq" não existe no catálogo. Estado sem lista tem duas
+# saídas (botão + texto), nenhuma "voltar". Só leitura.
+appId: com.poup.consumer
+---
+- runFlow: _ate-raiz.yaml
+- tapOn: "buscar produto"
+- inputText: "zzzzqq"
+- extendedWaitUntil:
+    visible: "Nenhum produto com .*zzzzqq.*"
+    timeout: 20000
+- assertVisible: "nos 4 mercados de Matão hoje"
+- assertVisible: "Buscar só .*zzzzqq.*"
+- assertVisible: "Escanear o código.*"
+- takeScreenshot: resultado-vazio-com-teclado
+- pressKey: Enter
+- takeScreenshot: resultado-vazio-sem-teclado
+# Saída 2 (texto): vai para o Scanner.
+- tapOn: "Escanear o código.*"
+- extendedWaitUntil:
+    visible: "Aponte para o código de barras|Sem acesso à câmera|Sem câmera neste aparelho"
+    timeout: 20000
+- takeScreenshot: resultado-vazio-saida-escanear

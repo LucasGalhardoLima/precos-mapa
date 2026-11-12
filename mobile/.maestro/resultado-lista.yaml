@@ -1,0 +1,37 @@
+# Resultado: lista com preço primeiro e sem-preço no fim (cinza, "—"), teto 5 com
+# teclado / 8 sem, "ver mais N". Só leitura. Depende de dados reais: "arroz branco"
+# devolve dezenas de produtos, alguns sem preço hoje (verificado em 12/11/2026).
+appId: com.poup.consumer
+---
+- runFlow: _ate-raiz.yaml
+- tapOn: "buscar produto"
+- inputText: "arroz branco"
+- extendedWaitUntil:
+    visible: "[1-9][0-9]* PRODUTOS.*"
+    timeout: 20000
+# Teclado aberto: teto 5.
+- copyTextFrom: "[1-9][0-9]* PRODUTOS.*"
+- evalScript: ${output.total = parseInt(maestro.copiedText, 10)}
+- takeScreenshot: resultado-lista-com-teclado
+# Teclado fechado (Enter): teto 8.
+- pressKey: Enter
+# O "ver mais N" fica abaixo da dobra (8 linhas altas): rola até ele.
+- scrollUntilVisible:
+    element: "ver mais [0-9]+.*"
+    timeout: 30000
+    direction: DOWN
+- copyTextFrom: "ver mais [0-9]+.*"
+# "ver mais N": N = total − 8, a aritmética do teto sem teclado.
+- evalScript: ${output.maisSemTeclado = parseInt(maestro.copiedText.replace(/[^0-9]/g, ''), 10)}
+- assertTrue: ${output.total - 8 == output.maisSemTeclado}
+- takeScreenshot: resultado-lista-sem-teclado
+# Estende a lista: o fim tem as linhas sem preço hoje, cinza com "—".
+- tapOn: "ver mais [0-9]+.*"
+- scrollUntilVisible:
+    element: ".*sem preço hoje.*"
+    timeout: 30000
+    direction: DOWN
+- takeScreenshot: resultado-lista-fim-sem-preco
+# Depois de "ver mais" o link some (a lista inteira está na tela).
+- scroll
+- assertNotVisible: "ver mais [0-9]+.*"
