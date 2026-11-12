@@ -13,6 +13,7 @@ import { useSearch, formatBRL } from '../hooks/use-search';
 import { useTrackedSummary } from '../hooks/use-tracked-summary';
 import { useMarketFreshness, MATAO_CHAIN_LABELS, MATAO_CHAIN_COUNT } from '../hooks/use-market-freshness';
 import { useAnalytics } from '../hooks/use-analytics';
+import { useNotificationTap } from '../hooks/use-notification-tap';
 import { isOnboardingDone } from '../lib/onboarding';
 import { syncWithin } from '../lib/onboarding-sync';
 import { supabaseSyncDeps } from '../lib/onboarding-sync-deps';
@@ -68,6 +69,10 @@ export default function RaizScreen() {
   useEffect(() => {
     if (checkedOnboarding) trackScreen('raiz');
   }, [checkedOnboarding, trackScreen]);
+
+  // Tap on a price push opens that item's Resposta — only after the guard
+  // above has resolved, so a cold start from a tap never skips onboarding.
+  useNotificationTap(checkedOnboarding);
 
   const [query, setQuery] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
