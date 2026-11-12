@@ -334,38 +334,21 @@ function aggregateChainMostRecent(rows: DatedRow[]): ChainPrice[] {
   return result;
 }
 
-// "'Você está aqui'. Mercado mais próximo pelo GPS, com um toque para
-// trocar" (doc decisão 5) — now resolved to a CHAIN, from the single
-// nearest physical branch overall (any chain, fresh or not: this is a
-// geography fact, independent of today's pricing data). `preferredChain`
-// (folha "trocar") overrides it outright when that chain has any row at
-// all among `rows`; otherwise falls back to GPS-nearest. Null when location
-// is unavailable and no preferred chain applies either.
-function findHereChain(rows: DatedRow[], preferredChain: string | null): string | null {
-  if (preferredChain && rows.some((r) => chainLabelForStore(r.store_name) === preferredChain)) {
-    return preferredChain;
-  }
-
-  let best: DatedRow | null = null;
-  for (const r of rows) {
-    if (r.distance_km == null) continue;
-    if (!best || r.distance_km < best.distance_km!) best = r;
-  }
-  return best ? chainLabelForStore(best.store_name) : null;
-}
-
 // The one function the Resposta screen actually calls. Everything above is
 // a building block kept separate for direct unit testing.
 export function buildRespostaView(
   product: ProductInfo,
   rawRows: RawStorePrice[],
   now: Date = new Date(),
-  preferredChain: string | null = null,
+  // The "aqui" chain, already resolved by resolveHereStore (lib/ajustes) over
+  // ALL active stores — the same one Ajustes shows. Deliberately NOT derived
+  // from `rawRows`: a chain with no price for this product can still be the
+  // closest, and then there is no "aqui" row (doc decisão 5, "sem 'aqui'").
+  hereChain: string | null = null,
 ): RespostaView {
   const withDays: DatedRow[] = rawRows.map((r) => ({ ...r, days: daysAgo(r.last_price_date, now) }));
   const fresh = withDays.filter((r) => !isStale(r.days));
   const stale = withDays.filter((r) => isStale(r.days));
-  const hereChain = findHereChain(withDays, preferredChain);
 
   const branchRows: BranchRow[] = withDays.map((r) => ({
     storeId: r.store_id,

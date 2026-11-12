@@ -24,6 +24,7 @@ import { formatBRL } from '../../hooks/use-search';
 import { freshnessLabel, formatSize, resolveSizeAlternatives, sizeOptionTappedPayload } from '../../lib/resposta';
 import { searchFieldRef } from '../../lib/search-focus';
 import { trackedRowLabel } from '../../lib/tracked-items';
+import { resolveHereStore } from '../../lib/ajustes';
 import { getPreferredChain, setPreferredChain } from '../../lib/preferred-store';
 
 export default function ProductScreen() {
@@ -45,8 +46,10 @@ export default function ProductScreen() {
     }, []),
   );
 
-  const { view, product, isLoading, error, notFound, retry } = useProduct({ productId: id, userLat: latitude, userLng: longitude, preferredChain });
   const { stores: nearbyStores, isLoading: storesLoading } = useStores(latitude, longitude);
+  // Same resolution Ajustes uses, over all active stores (not just those with a price for this product).
+  const hereChain = resolveHereStore(nearbyStores, preferredChain)?.chainLabel ?? null;
+  const { view, product, isLoading, error, notFound, retry } = useProduct({ productId: id, userLat: latitude, userLng: longitude, hereChain });
   const { trackedState, isSubmitting, error: trackError, clearError: clearTrackError, trackWithAlert, trackWithoutAlert } = useTrackedItems(id);
   const { candidates: sizeCandidates } = useSizeAlternatives(product);
   const [expanded, setExpanded] = useState(false);
@@ -167,8 +170,9 @@ export default function ProductScreen() {
 
   const nameLine = product.sizeValue != null ? `${product.name} · ${formatSize(product.sizeValue, product.sizeUnit)}` : product.name;
   const qualTamanho = view.pricePerUnit ? resolveSizeAlternatives(product, view.pricePerUnit.value, sizeCandidates) : null;
+  // Nearest priced branch OF the 'aqui' chain only (none if it has no price row).
   const nearestBranchId = view.branchRows.reduce<{ id: string; km: number } | null>((best, b) => {
-    if (b.distanceKm == null) return best;
+    if (b.distanceKm == null || b.chainLabel !== hereChain) return best;
     return !best || b.distanceKm < best.km ? { id: b.storeId, km: b.distanceKm } : best;
   }, null)?.id;
 
