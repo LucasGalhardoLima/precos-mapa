@@ -9,10 +9,11 @@ appId: com.poup.consumer
 - tapOn: "Matão, SP"
 # Não usar o link "Buscar agora" aqui: no dev client o botão flutuante "Tools"
 # fica por cima dele e o toque abre o menu de dev. Finaliza pelo botão de baixo.
-- tapOn: "Leite"
-- tapOn: "Ver preços de hoje · 1 item.*"
+# Sem escolher item: com item, concluir o onboarding cria usuário anônimo e linha
+# em tracked_items em produção. Busca e Resposta não dependem de item acompanhado.
+- tapOn: "Ver preços de hoje.*"
 - extendedWaitUntil:
-    visible: "SEUS ITENS"
+    visible: "Preços de hoje nos 4 mercados de Matão"
     timeout: 20000
 - tapOn: "buscar produto"
 - inputText: "leite"

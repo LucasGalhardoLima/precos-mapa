@@ -14,7 +14,16 @@ appId: com.poup.consumer
 - extendedWaitUntil:
     visible: "Preços de hoje nos 4 mercados de Matão"
     timeout: 20000
-- tapOn: "Ajustes"
+# No dev client o botão flutuante "Tools" cobre a engrenagem inteira (nem a borda
+# fica livre: toque por ponto abriu o menu de dev). Entra por deep link; o toque
+# na engrenagem em si fica sem cobertura E2E enquanto for dev client.
+- openLink: "poup://settings"
+# O iOS pergunta "Open in Poup?" ao abrir o esquema por link (nem sempre aparece).
+- runFlow:
+    when:
+      visible: "Open in.*"
+    commands:
+      - tapOn: "Open"
 - extendedWaitUntil:
     visible: "ITENS ACOMPANHADOS.*"
     timeout: 20000
