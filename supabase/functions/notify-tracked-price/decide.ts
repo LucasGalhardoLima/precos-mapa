@@ -70,6 +70,7 @@ export interface TrackedItem {
   product_id: string | null;
   target_price: number | null;
   notified_price: number | null;
+  notified_at: string | null; // timestamptz of the last push for this item
 }
 
 export interface Recipient {
@@ -80,19 +81,38 @@ export interface Recipient {
 export type Decision =
   | { action: 'send'; price: number; chainLabel: string }
   | { action: 'rearm' }
-  | { action: 'skip'; reason: 'no-target' | 'generic-item' | 'no-fresh-price' | 'above-target' | 'already-notified' | 'no-token' | 'muted' };
+  | {
+      action: 'skip';
+      reason: 'no-target' | 'generic-item' | 'no-fresh-price' | 'above-target' | 'already-notified' | 'drop-too-small' | 'already-today' | 'no-token' | 'muted';
+    };
 
-// Dedupe rule (stored in tracked_items.notified_price, migration 090):
-// - push once when today's lowest price reaches target or below;
-// - don't push again while it stays at/below target at the same or a higher
-//   price than what we last pushed;
-// - push again if it drops further below the last pushed price;
-// - once it goes back above target, re-arm so the next drop pushes again —
-//   but only when no chain still has a recent (≤ 3 days) price at/below
-//   target (see lowestRecentPrice).
+// Resend threshold in cents (decided 2026-11-12).
+export const MIN_RESEND_DROP_CENTS = 10;
+
+const cents = (v: number) => Math.round(v * 100);
+
+// Dedupe rule (tracked_items.notified_price / notified_at, migration 090):
+// - the first time today's lowest price reaches target or below: push, always;
+// - while it stays at/below target, push again only if it fell at least
+//   R$ 0,10 below the last pushed price AND nothing was pushed for this item
+//   on the same (UTC) day;
+// - once it goes back above target, re-arm (notified_price = null) so the next
+//   crossing counts as a first one — but only when no chain still has a
+//   recent (≤ 3 days) price at/below target (see lowestRecentPrice).
 // No-token / muted never mark the item as notified, so the push goes out on
 // the first run after the user grants permission or turns the switch back on.
-export function decide(item: TrackedItem, today: TodayPrice | null, recipient: Recipient, recentLowest: number | null = null): Decision {
+//
+// "Which chain": today.chainLabel is the cheapest fresh chain — the same
+// winner the Resposta shows (resposta.ts, freshChains[0]) for a product with
+// EAN. Without EAN the product exists in one chain only (decisão 3), so it is
+// that chain's own price, stated as a fact, never compared.
+export function decide(
+  item: TrackedItem,
+  today: TodayPrice | null,
+  recipient: Recipient,
+  recentLowest: number | null = null,
+  now: Date = new Date(),
+): Decision {
   if (item.target_price == null) return { action: 'skip', reason: 'no-target' };
   if (item.product_id == null) return { action: 'skip', reason: 'generic-item' };
   if (!today) return { action: 'skip', reason: 'no-fresh-price' };
@@ -104,7 +124,13 @@ export function decide(item: TrackedItem, today: TodayPrice | null, recipient: R
     if (notified == null || (recentLowest != null && recentLowest <= target)) return { action: 'skip', reason: 'above-target' };
     return { action: 'rearm' };
   }
-  if (notified != null && today.price >= notified) return { action: 'skip', reason: 'already-notified' };
+  if (notified != null) {
+    if (cents(today.price) >= cents(notified)) return { action: 'skip', reason: 'already-notified' };
+    if (cents(notified) - cents(today.price) < MIN_RESEND_DROP_CENTS) return { action: 'skip', reason: 'drop-too-small' };
+    if (item.notified_at && new Date(item.notified_at).toISOString().slice(0, 10) === now.toISOString().slice(0, 10)) {
+      return { action: 'skip', reason: 'already-today' };
+    }
+  }
   if (!recipient.pushToken) return { action: 'skip', reason: 'no-token' };
   if (!recipient.pushEnabled) return { action: 'skip', reason: 'muted' };
   return { action: 'send', price: today.price, chainLabel: today.chainLabel };
@@ -114,12 +140,49 @@ export function formatBRL(value: number): string {
   return `R$ ${value.toFixed(2).replace('.', ',')}`;
 }
 
-// Vocabulary: "acompanhando" — never favorito/alerta/oferta (mobile/CLAUDE.md).
-// Wording is a proposal pending Lucas's sign-off (see PR).
-export function buildMessage(productName: string, productId: string, price: number, chain: string, target: number) {
+// Same rules as mobile/lib/onboarding.ts formatSize/displayProductName (the
+// function can't import from mobile/): base units → "5 kg", and the size
+// token is stripped from the retailer name so it isn't shown twice.
+export function formatSize(value: number, unit: string): string {
+  const pt = (n: number) => String(n).replace('.', ',');
+  if (unit === 'g') return value >= 1000 ? `${pt(value / 1000)} kg` : `${pt(value)} g`;
+  if (unit === 'ml') return value >= 1000 ? `${pt(value / 1000)} L` : `${pt(value)} ml`;
+  return `${pt(value)} ${unit}`;
+}
+
+export function displayProductName(name: string, size: string): string {
+  const pattern = size
+    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    .trim()
+    .split(/\s+/)
+    .join('\\s*');
+  const stripped = name
+    .replace(new RegExp(`\\b${pattern}\\b`, 'i'), '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/[\s\-–·,]+$/, '')
+    .trim();
+  return stripped.length > 0 ? stripped : name;
+}
+
+export interface ProductLabel {
+  name: string;
+  size_value: number | null;
+  size_unit: string | null;
+}
+
+// Title = product name with its size at the end ("Arroz Tio João 5 kg").
+// Without a parsed size, the retailer name is used as-is.
+export function productTitle(p: ProductLabel): string {
+  if (p.size_value == null || !p.size_unit) return p.name;
+  const size = formatSize(Number(p.size_value), p.size_unit);
+  return `${displayProductName(p.name, size)} ${size}`;
+}
+
+// Text decided 2026-11-12: no "alerta/oferta/queda/favorito", no emoji.
+export function buildMessage(title: string, productId: string, price: number, chain: string, target: number) {
   return {
-    title: productName,
-    body: `${formatBRL(price)} hoje no ${chain}. Você está acompanhando abaixo de ${formatBRL(target)}.`,
+    title,
+    body: `${formatBRL(price)} hoje no ${chain} · abaixo de ${formatBRL(target)}`,
     data: { productId },
   };
 }

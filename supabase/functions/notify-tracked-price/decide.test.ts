@@ -1,5 +1,5 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { buildMessage, chainLabel, decide, lowestFreshPrice, lowestRecentPrice, type PriceRow, type TrackedItem } from './decide.ts';
+import { buildMessage, chainLabel, decide, lowestFreshPrice, lowestRecentPrice, productTitle, type PriceRow, type TrackedItem } from './decide.ts';
 
 const NOW = new Date('2026-11-12T09:30:00Z'); // after the 06:00 UTC scrape round
 
@@ -10,6 +10,7 @@ const item = (over: Partial<TrackedItem> = {}): TrackedItem => ({
   product_id: 'p1',
   target_price: 10,
   notified_price: null,
+  notified_at: null,
   ...over,
 });
 const withToken = { pushToken: 'ExponentPushToken[x]', pushEnabled: true };
@@ -98,12 +99,43 @@ Deno.test('decide: Ajustes switch off (push_alerts=false) skips', () => {
   assertEquals(decide(item(), today(9), { pushToken: 'ExponentPushToken[x]', pushEnabled: false }), { action: 'skip', reason: 'muted' });
 });
 
-Deno.test('buildMessage: uses "acompanhando", never the out-of-vocabulary terms', () => {
+Deno.test('decide resend: first crossing always pushes, even if an earlier push was today', () => {
+  assertEquals(decide(item({ notified_price: null, notified_at: '2026-11-12T09:00:00Z' }), today(9.99), withToken, null, NOW).action, 'send');
+});
+
+Deno.test('decide resend: a R$ 0,05 drop below the last push does not resend', () => {
+  assertEquals(decide(item({ notified_price: 9, notified_at: '2026-11-10T09:30:00Z' }), today(8.95), withToken, null, NOW), {
+    action: 'skip',
+    reason: 'drop-too-small',
+  });
+});
+
+Deno.test('decide resend: a R$ 0,10 drop below the last push resends (on another day)', () => {
+  assertEquals(decide(item({ notified_price: 9, notified_at: '2026-11-10T09:30:00Z' }), today(8.9), withToken, null, NOW).action, 'send');
+});
+
+Deno.test('decide resend: never a 2nd push for the same item on the same day', () => {
+  assertEquals(decide(item({ notified_price: 9, notified_at: '2026-11-12T06:00:00Z' }), today(5), withToken, null, NOW), {
+    action: 'skip',
+    reason: 'already-today',
+  });
+});
+
+Deno.test('productTitle: name with the size at the end, size not repeated', () => {
+  assertEquals(productTitle({ name: 'Arroz Tio João 5kg', size_value: 5000, size_unit: 'g' }), 'Arroz Tio João 5 kg');
+  assertEquals(productTitle({ name: 'Arroz Tio João', size_value: 5000, size_unit: 'g' }), 'Arroz Tio João 5 kg');
+  assertEquals(productTitle({ name: 'Leite Integral 1 L', size_value: 1000, size_unit: 'ml' }), 'Leite Integral 1 L');
+  assertEquals(productTitle({ name: 'Detergente Ypê', size_value: null, size_unit: null }), 'Detergente Ypê');
+});
+
+Deno.test('buildMessage: decided wording, no banned terms, no emoji', () => {
   const m = buildMessage('Arroz Tio João 5 kg', 'p1', 24.9, 'Tenda', 25);
-  assertEquals(m.body, 'R$ 24,90 hoje no Tenda. Você está acompanhando abaixo de R$ 25,00.');
+  assertEquals(m.title, 'Arroz Tio João 5 kg');
+  assertEquals(m.body, 'R$ 24,90 hoje no Tenda · abaixo de R$ 25,00');
   assertEquals(m.data, { productId: 'p1' });
   const text = `${m.title} ${m.body}`.toLowerCase();
-  for (const banned of ['favorito', 'alerta', 'oferta', 'promoç', 'lista']) {
+  for (const banned of ['favorito', 'alerta', 'oferta', 'queda', 'promoç', 'lista', 'você está acompanhando']) {
     assertEquals(text.includes(banned), false, banned);
   }
+  assertEquals(/\p{Extended_Pictographic}/u.test(text), false);
 });

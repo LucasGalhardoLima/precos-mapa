@@ -8,7 +8,7 @@
 // POST body (optional): { "dry_run": true } → returns the decisions without
 // sending any push or writing anything.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { buildMessage, decide, lowestFreshPrice, lowestRecentPrice, type Decision, type PriceRow, type TodayPrice, type TrackedItem } from './decide.ts';
+import { buildMessage, decide, lowestFreshPrice, lowestRecentPrice, productTitle, type Decision, type ProductLabel, type PriceRow, type TodayPrice, type TrackedItem } from './decide.ts';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 const EXPO_BATCH = 100; // Expo Push API limit per request
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
 
     const { data: items, error: itemsErr } = await supabase
       .from('tracked_items')
-      .select('id, user_id, product_id, target_price, notified_price')
+      .select('id, user_id, product_id, target_price, notified_price, notified_at')
       .not('target_price', 'is', null)
       .not('product_id', 'is', null);
     if (itemsErr) throw itemsErr;
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     const [profilesRes, prefsRes, productsRes, priceResults] = await Promise.all([
       supabase.from('profiles').select('id, push_token').in('id', userIds),
       supabase.from('notification_preferences').select('user_id, push_alerts').in('user_id', userIds),
-      supabase.from('products').select('id, name').in('id', productIds),
+      supabase.from('products').select('id, name, size_value, size_unit').in('id', productIds),
       Promise.all(productIds.map((id) => supabase.rpc('get_product_prices', { product_id: id }).then((r) => [id, r] as const))),
     ]);
     if (profilesRes.error) throw profilesRes.error;
@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
 
     const tokenByUser = new Map((profilesRes.data ?? []).map((p) => [p.id as string, (p.push_token as string | null) ?? null]));
     const enabledByUser = new Map((prefsRes.data ?? []).map((p) => [p.user_id as string, p.push_alerts !== false]));
-    const nameByProduct = new Map((productsRes.data ?? []).map((p) => [p.id as string, p.name as string]));
+    const productById = new Map((productsRes.data ?? []).map((p) => [p.id as string, p as ProductLabel]));
     const todayByProduct = new Map<string, TodayPrice | null>();
     const recentByProduct = new Map<string, number | null>();
     for (const [id, res] of priceResults) {
@@ -87,18 +87,19 @@ Deno.serve(async (req) => {
         todayByProduct.get(item.product_id!) ?? null,
         { pushToken: token, pushEnabled: enabledByUser.get(item.user_id) ?? true },
         recentByProduct.get(item.product_id!) ?? null,
+        now,
       );
       decisions.push({ id: item.id, decision });
 
       if (decision.action === 'rearm') rearmIds.push(item.id);
       if (decision.action === 'send') {
-        const name = nameByProduct.get(item.product_id!);
-        if (!name) continue;
+        const product = productById.get(item.product_id!);
+        if (!product) continue;
         sends.push({
           item,
           token: token!,
           price: decision.price,
-          message: buildMessage(name, item.product_id!, decision.price, decision.chainLabel, Number(item.target_price)),
+          message: buildMessage(productTitle(product), item.product_id!, decision.price, decision.chainLabel, Number(item.target_price)),
         });
       }
     }
@@ -137,7 +138,7 @@ Deno.serve(async (req) => {
           if (ticket?.details?.error === 'DeviceNotRegistered') deadUsers.add(s.item.user_id);
           return false;
         })
-        .map(({ s }) => supabase.from('tracked_items').update({ notified_price: s.price }).eq('id', s.item.id));
+        .map(({ s }) => supabase.from('tracked_items').update({ notified_price: s.price, notified_at: now.toISOString() }).eq('id', s.item.id));
       sent += marks.length; // accepted by Expo
       if (deadUsers.size > 0) {
         marks.push(supabase.from('profiles').update({ push_token: null }).in('id', [...deadUsers]));
