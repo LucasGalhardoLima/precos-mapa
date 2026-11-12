@@ -134,6 +134,14 @@ describe('parseDefaultSize', () => {
     expect(parseDefaultSize('kg')).toBeNull(); // no number
   });
 
+  // Live data 13/11 (read-only): Frango has 6 fresh products at 1000 g, none
+  // expressed "per kg"; Papel higiênico rolls are stored mostly in 'm', so
+  // '12 rolos' is deliberately the only item left without a size filter.
+  it('every generic item has a size the catalog can match, except Papel higiênico', () => {
+    const unparsed = GENERIC_ITEMS.filter((i) => parseDefaultSize(i.size) === null).map((i) => i.label);
+    expect(unparsed).toEqual(['Papel higiênico']);
+  });
+
   it('covers every generic item without throwing', () => {
     for (const item of GENERIC_ITEMS) expect(() => parseDefaultSize(item.size)).not.toThrow();
   });
