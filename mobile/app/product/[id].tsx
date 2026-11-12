@@ -67,18 +67,13 @@ export default function ProductScreen() {
   }, [view, id]);
 
   const goToSearch = useCallback(() => {
-    // Raiz is usually still mounted underneath (pushed from it, or replaced from
-    // /scan), so go back and focus its field. A deep link has nothing to go back
-    // to: replace and focus once Raiz has mounted.
-    // shortcut: fixed 400 ms wait for the cold-mount case — upgrade: Raiz reads a
-    // "focus search" flag in lib/search-focus.ts when it mounts.
-    if (router.canGoBack()) {
-      router.back();
-      requestAnimationFrame(() => searchFieldRef.current?.focus());
-    } else {
-      router.replace('/');
-      setTimeout(() => searchFieldRef.current?.focus(), 400);
-    }
+    // The screen underneath may be Raiz, another product (arrived via QUAL
+    // TAMANHO) or nothing (deep link), so go to Raiz explicitly: dismissTo pops
+    // back to it when it is in the stack and navigates to it otherwise.
+    // shortcut: fixed 400 ms wait before focusing, to cover a cold Raiz mount —
+    // upgrade: Raiz reads a "focus search" flag in lib/search-focus.ts on mount.
+    router.dismissTo('/');
+    setTimeout(() => searchFieldRef.current?.focus(), 400);
   }, [router]);
 
   const handleSwap = useCallback(async (chainLabel: string) => {
