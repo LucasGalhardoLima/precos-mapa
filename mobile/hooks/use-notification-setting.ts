@@ -15,10 +15,19 @@ const STORAGE_KEY = 'poup:notifications-enabled';
 // Mirrored instead of clearing profiles.push_token so turning it back on
 // needs no new token and no permission round-trip.
 //
-// With a session, the server copy wins: the session survives an app reinstall
-// (Keychain) but AsyncStorage doesn't, so a local-only read would show the
-// switch on while the server still has push_alerts=false.
+// Reconciling the two copies:
+// - a value stored locally is the user's own latest choice → it wins, and is
+//   pushed to the server if they differ (covers a session created elsewhere,
+//   e.g. onboarding-sync's signInAnonymously, after the switch was turned off);
+// - nothing stored locally (reinstall wipes AsyncStorage, the Keychain session
+//   survives) → the server copy wins and is cached locally.
 export async function readNotificationsEnabled(): Promise<boolean> {
+  let local: string | null = null;
+  try {
+    local = await AsyncStorage.getItem(STORAGE_KEY);
+  } catch {
+    // unreadable: treat as not stored
+  }
   try {
     const {
       data: { session },
@@ -26,18 +35,18 @@ export async function readNotificationsEnabled(): Promise<boolean> {
     if (session) {
       const { data, error } = await supabase.from('notification_preferences').select('push_alerts').eq('user_id', session.user.id).maybeSingle();
       if (!error && data) {
-        await AsyncStorage.setItem(STORAGE_KEY, String(data.push_alerts !== false)).catch(() => {});
-        return data.push_alerts !== false;
+        const server = data.push_alerts !== false;
+        if (local == null) {
+          await AsyncStorage.setItem(STORAGE_KEY, String(server)).catch(() => {});
+          return server;
+        }
+        if ((local !== 'false') !== server) await syncPushPreference(local !== 'false').catch(() => {});
       }
     }
   } catch {
-    // offline / no row: fall back to the local copy
+    // offline / no row: the local copy stands
   }
-  try {
-    return (await AsyncStorage.getItem(STORAGE_KEY)) !== 'false';
-  } catch {
-    return true;
-  }
+  return local !== 'false';
 }
 
 // No session yet = nobody to mute server-side; use-tracked-items calls this

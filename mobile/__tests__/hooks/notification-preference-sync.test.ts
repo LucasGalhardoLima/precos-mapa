@@ -57,6 +57,15 @@ describe('readNotificationsEnabled', () => {
     expect(mockFrom).toHaveBeenCalledWith('notification_preferences');
   });
 
+  it('an explicit local choice wins and is pushed to the server (session created elsewhere)', async () => {
+    mockGetSession.mockResolvedValue({ data: { session: { user: { id: 'anon-1' } } } });
+    mockMaybeSingle.mockResolvedValueOnce({ data: { push_alerts: true }, error: null });
+    jest.spyOn(AsyncStorage, 'getItem').mockResolvedValueOnce('false');
+
+    await expect(readNotificationsEnabled()).resolves.toBe(false);
+    expect(mockUpdate).toHaveBeenCalledWith({ push_alerts: false });
+  });
+
   it('defaults to on when nothing was stored', async () => {
     jest.spyOn(AsyncStorage, 'getItem').mockResolvedValueOnce(null);
     await expect(readNotificationsEnabled()).resolves.toBe(true);
