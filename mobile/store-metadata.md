@@ -41,7 +41,7 @@ Busque ou escaneie um produto e veja o preço de hoje nos 4 mercados de Matão, 
 
 O Poup responde uma pergunta: onde este produto está mais barato hoje?
 
-Busque pelo nome ou escaneie o código de barras. O Poup mostra o preço de hoje em cada um dos 4 mercados de Matão, SP (Savegnago, Jaú Serve, Tenda e Amarelinha), do menor para o maior, com a distância até cada um.
+Busque pelo nome ou escaneie o código de barras. O Poup mostra o preço de hoje em cada um dos 4 mercados de Matão, SP (Savegnago, Jaú Serve, Tenda e Amarelinha), do menor para o maior. Com a localização liberada, mostra também a distância até cada um.
 
 COMO FUNCIONA
 - Os preços são coletados uma vez por dia, de madrugada. O app informa de quando é cada preço.
@@ -123,7 +123,7 @@ Rascunho para App Privacy (App Store) e Segurança dos dados (Play). Confirmar c
 
 | Dado | Coletado | Vinculado à identidade | Uso |
 |---|---|---|---|
-| Localização aproximada | sim, em eventos de uso | `<PREENCHER>` | análise de produto |
+| Localização aproximada (cidade/região, sem coordenadas, conforme `use-analytics`) | sim, em eventos de uso | `<PREENCHER>` | análise de produto |
 | Localização precisa | usada no aparelho para distância; se sai do aparelho: `<PREENCHER>` | `<PREENCHER>` | funcionalidade do app |
 | Identificador (ID de usuário anônimo) | sim, ao acompanhar um item | `<PREENCHER>` | funcionalidade do app |
 | Dados de uso (buscas, scanner, telas) | sim | `<PREENCHER>` | análise de produto |
