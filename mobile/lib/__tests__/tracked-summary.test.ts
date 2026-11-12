@@ -20,13 +20,13 @@ const searchRow = (name: string): RawSearchRow => ({
   image_url: null,
   has_active_price: true,
   cheapest_price: 4,
-  prices: [{ store_id: 's1', store_name: 'Tenda', price: 4 }],
+  prices: [{ store_id: 's1', store_name: 'Tenda', price: 4, last_price_date: new Date().toISOString() }],
 });
 
 function deps(over: Partial<SummaryDeps> = {}): SummaryDeps {
   return {
     listTracked: async () => [productRec, genericRec],
-    productPrices: async () => [{ store_id: 's1', store_name: 'Savegnago', price: 5 }],
+    productPrices: async () => [{ store_id: 's1', store_name: 'Savegnago', price: 5, last_price_date: new Date().toISOString() }],
     genericSearch: async () => [searchRow('Dog Chow Arroz'), searchRow('Arroz Camil 1kg')],
     ...over,
   };
@@ -78,5 +78,35 @@ describe('loadTrackedSummary', () => {
     const r = await loadTrackedSummary(deps({ listTracked: async () => [productRec], productPrices: async () => [] }));
     if (!r.ok) throw new Error('expected ok');
     expect(r.rows[0]).toMatchObject({ hasPriceToday: false, winnerStoreName: null });
+  });
+
+  // Frescor (mobile/CLAUDE.md): get_product_prices applies no staleness cutoff
+  // to crawler rows, so a tracked product whose only price is weeks old must
+  // read "sem preço hoje" on Raiz, same as its Resposta.
+  it('product whose only price is 57 days old is "sem preço hoje"', async () => {
+    const old = new Date(Date.now() - 57 * 86_400_000).toISOString();
+    const r = await loadTrackedSummary(
+      deps({
+        listTracked: async () => [productRec],
+        productPrices: async () => [{ store_id: 's1', store_name: 'Savegnago', price: 3.99, last_price_date: old }],
+      }),
+    );
+    if (!r.ok) throw new Error('expected ok');
+    expect(r.rows[0]).toMatchObject({ hasPriceToday: false, priceLabel: '—', winnerStoreName: null });
+  });
+
+  it('skips a stale first entry and prices from the first fresh one', async () => {
+    const old = new Date(Date.now() - 57 * 86_400_000).toISOString();
+    const r = await loadTrackedSummary(
+      deps({
+        listTracked: async () => [productRec],
+        productPrices: async () => [
+          { store_id: 's1', store_name: 'Savegnago', price: 3.99, last_price_date: old },
+          { store_id: 's2', store_name: 'Tenda', price: 5.49, last_price_date: new Date().toISOString() },
+        ],
+      }),
+    );
+    if (!r.ok) throw new Error('expected ok');
+    expect(r.rows[0]).toMatchObject({ hasPriceToday: true, winnerStoreName: 'Tenda' });
   });
 });

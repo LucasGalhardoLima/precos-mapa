@@ -8,6 +8,9 @@ jest.mock('@/lib/supabase', () => ({ supabase: { rpc: jest.fn() } }));
 
 import { mapSearchRow, formatBRL } from '@/hooks/use-search';
 
+// Entries carry last_price_date as the RPC emits it; mapSearchRow drops undated/stale ones.
+const TODAY = new Date().toISOString();
+
 function row(overrides: Partial<Parameters<typeof mapSearchRow>[0]> = {}) {
   return {
     product_id: 'p1',
@@ -16,7 +19,7 @@ function row(overrides: Partial<Parameters<typeof mapSearchRow>[0]> = {}) {
     image_url: null,
     has_active_price: true,
     cheapest_price: 24.9,
-    prices: [{ store_id: 's1', store_name: 'Tenda', price: 24.9 }],
+    prices: [{ store_id: 's1', store_name: 'Tenda', price: 24.9, last_price_date: TODAY }],
     ...overrides,
   };
 }
@@ -42,8 +45,8 @@ describe('mapSearchRow — winner resolution', () => {
       row({
         cheapest_price: 22.9,
         prices: [
-          { store_id: 's1', store_name: 'Tenda', price: 24.9 },
-          { store_id: 's2', store_name: 'Savegnago', price: 22.9 },
+          { store_id: 's1', store_name: 'Tenda', price: 24.9, last_price_date: TODAY },
+          { store_id: 's2', store_name: 'Savegnago', price: 22.9, last_price_date: TODAY },
         ],
       }),
     );
@@ -51,17 +54,17 @@ describe('mapSearchRow — winner resolution', () => {
     expect(result.price).toBe(22.9);
   });
 
-  it('falls back to prices[0] if nothing matches cheapest_price exactly', () => {
+  it('ignores the RPC cheapest_price (it may count stale rows): price comes from the entries', () => {
     const result = mapSearchRow(
-      row({ cheapest_price: 99, prices: [{ store_id: 's1', store_name: 'Tenda', price: 24.9 }] }),
+      row({ cheapest_price: 99, prices: [{ store_id: 's1', store_name: 'Tenda', price: 24.9, last_price_date: TODAY }] }),
     );
-    expect(result.winnerStoreName).toBe('Tenda');
+    expect(result).toMatchObject({ winnerStoreName: 'Tenda', price: 24.9 });
   });
 });
 
 describe('mapSearchRow — singleStore ("só no X" vs "menor no X")', () => {
   it('is true with exactly one priced store', () => {
-    expect(mapSearchRow(row({ prices: [{ store_id: 's1', store_name: 'Jaú Serve', price: 8.99 }] })).singleStore).toBe(
+    expect(mapSearchRow(row({ prices: [{ store_id: 's1', store_name: 'Jaú Serve', price: 8.99, last_price_date: TODAY }] })).singleStore).toBe(
       true,
     );
   });
@@ -70,8 +73,8 @@ describe('mapSearchRow — singleStore ("só no X" vs "menor no X")', () => {
     const result = mapSearchRow(
       row({
         prices: [
-          { store_id: 's1', store_name: 'Tenda', price: 24.9 },
-          { store_id: 's2', store_name: 'Savegnago', price: 23.49 },
+          { store_id: 's1', store_name: 'Tenda', price: 24.9, last_price_date: TODAY },
+          { store_id: 's2', store_name: 'Savegnago', price: 23.49, last_price_date: TODAY },
         ],
       }),
     );
