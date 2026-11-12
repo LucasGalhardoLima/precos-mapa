@@ -3,7 +3,9 @@
 const mockGetSession = jest.fn();
 const mockEq = jest.fn().mockResolvedValue({ error: null });
 const mockUpdate = jest.fn(() => ({ eq: mockEq }));
-const mockFrom = jest.fn(() => ({ update: mockUpdate }));
+const mockMaybeSingle = jest.fn();
+const mockSelect = jest.fn(() => ({ eq: () => ({ maybeSingle: mockMaybeSingle }) }));
+const mockFrom = jest.fn(() => ({ update: mockUpdate, select: mockSelect }));
 jest.mock('@/lib/supabase', () => ({
   supabase: { from: (...a: unknown[]) => mockFrom(...(a as [])), auth: { getSession: () => mockGetSession() } },
 }));
@@ -28,6 +30,13 @@ describe('syncPushPreference', () => {
     expect(mockEq).toHaveBeenCalledWith('user_id', 'anon-1');
   });
 
+  it('throws when the write fails, so callers do not silently drift', async () => {
+    mockGetSession.mockResolvedValue({ data: { session: { user: { id: 'anon-1' } } } });
+    mockEq.mockResolvedValueOnce({ error: { message: 'rls' } });
+
+    await expect(syncPushPreference(true)).rejects.toEqual({ message: 'rls' });
+  });
+
   it('does nothing before any session exists (nothing to mute server-side yet)', async () => {
     mockGetSession.mockResolvedValue({ data: { session: null } });
 
@@ -38,6 +47,16 @@ describe('syncPushPreference', () => {
 });
 
 describe('readNotificationsEnabled', () => {
+  beforeEach(() => mockGetSession.mockResolvedValue({ data: { session: null } }));
+
+  it('trusts the server copy when there is a session (reinstall wipes AsyncStorage, not the session)', async () => {
+    mockGetSession.mockResolvedValue({ data: { session: { user: { id: 'anon-1' } } } });
+    mockMaybeSingle.mockResolvedValueOnce({ data: { push_alerts: false }, error: null });
+
+    await expect(readNotificationsEnabled()).resolves.toBe(false);
+    expect(mockFrom).toHaveBeenCalledWith('notification_preferences');
+  });
+
   it('defaults to on when nothing was stored', async () => {
     jest.spyOn(AsyncStorage, 'getItem').mockResolvedValueOnce(null);
     await expect(readNotificationsEnabled()).resolves.toBe(true);

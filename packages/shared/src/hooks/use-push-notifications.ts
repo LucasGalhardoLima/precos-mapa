@@ -67,7 +67,8 @@ export async function registerForPushToken(prompt: boolean): Promise<string | nu
     data: { session },
   } = await supabase.auth.getSession();
   if (session?.user?.id) {
-    await supabase.from('profiles').update({ push_token: token }).eq('id', session.user.id);
+    const { error } = await supabase.from('profiles').update({ push_token: token }).eq('id', session.user.id);
+    if (error) console.warn('push_token save failed', error);
   }
   return token;
 }

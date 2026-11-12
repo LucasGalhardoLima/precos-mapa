@@ -14,7 +14,25 @@ const STORAGE_KEY = 'poup:notifications-enabled';
 // users have it too), which notify-tracked-price reads before pushing.
 // Mirrored instead of clearing profiles.push_token so turning it back on
 // needs no new token and no permission round-trip.
+//
+// With a session, the server copy wins: the session survives an app reinstall
+// (Keychain) but AsyncStorage doesn't, so a local-only read would show the
+// switch on while the server still has push_alerts=false.
 export async function readNotificationsEnabled(): Promise<boolean> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session) {
+      const { data, error } = await supabase.from('notification_preferences').select('push_alerts').eq('user_id', session.user.id).maybeSingle();
+      if (!error && data) {
+        await AsyncStorage.setItem(STORAGE_KEY, String(data.push_alerts !== false)).catch(() => {});
+        return data.push_alerts !== false;
+      }
+    }
+  } catch {
+    // offline / no row: fall back to the local copy
+  }
   try {
     return (await AsyncStorage.getItem(STORAGE_KEY)) !== 'false';
   } catch {
@@ -24,13 +42,15 @@ export async function readNotificationsEnabled(): Promise<boolean> {
 
 // No session yet = nobody to mute server-side; use-tracked-items calls this
 // right after the first anonymous sign-in so a switch turned off before then
-// still holds.
+// still holds. Throws on a failed write (supabase-js returns errors instead of
+// throwing) so callers' .catch actually sees it.
 export async function syncPushPreference(enabled: boolean): Promise<void> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session) return;
-  await supabase.from('notification_preferences').update({ push_alerts: enabled }).eq('user_id', session.user.id);
+  const { error } = await supabase.from('notification_preferences').update({ push_alerts: enabled }).eq('user_id', session.user.id);
+  if (error) throw error;
 }
 
 export function useNotificationSetting() {
@@ -73,7 +93,7 @@ export function useNotificationSetting() {
     } catch {
       // best-effort: the in-memory choice still applies for this session
     }
-    await syncPushPreference(turnOn).catch(() => {});
+    await syncPushPreference(turnOn).catch((e) => console.warn('push_alerts sync failed', e));
     await refresh();
     return turnOn ? 'on' : 'off';
   }, [permission, enabled, requestPermission, refresh]);
