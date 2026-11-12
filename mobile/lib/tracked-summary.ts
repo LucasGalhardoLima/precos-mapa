@@ -1,4 +1,4 @@
-import { formatBRL, mapSearchRow, type RawSearchRow, type RawPriceEntry } from '@/hooks/use-search';
+import { formatBRL, isFreshEntry, mapSearchRow, type RawSearchRow, type RawPriceEntry } from '@/hooks/use-search';
 import type { TrackedRow } from '@/hooks/use-tracked-summary';
 import { displayProductName, formatSize } from '@/lib/onboarding';
 import { pickGenericWinner } from '@/lib/raiz';
@@ -30,7 +30,9 @@ export interface SummaryFetchers {
 export async function resolveTrackedRow(rec: TrackedRecordWithProduct, fetch: SummaryFetchers): Promise<TrackedRow> {
   if (rec.product_id) {
     const prices = await fetch.productPrices(rec.product_id);
-    const winner = prices[0] ?? null;
+    // get_product_prices has no staleness cutoff for crawler rows: skip >3-day-old
+    // entries (Frescor) so a weeks-old price never reads as today's.
+    const winner = prices.find(isFreshEntry) ?? null;
     const p = rec.products;
     const size = p && p.size_value != null && p.size_unit ? formatSize(p.size_value, p.size_unit) : null;
     return {
