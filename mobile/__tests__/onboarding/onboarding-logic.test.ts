@@ -75,6 +75,11 @@ describe('ctaLabel', () => {
   });
 });
 
+it('parseDefaultSize converts decimals to exact base units', () => {
+  expect(parseDefaultSize('1,1 L')).toEqual({ value: 1100, unit: 'ml' });
+  expect(parseDefaultSize('1.1 kg')).toEqual({ value: 1100, unit: 'g' });
+});
+
 describe('GENERIC_ITEMS', () => {
   it('has the 12 fixed chips, each with a size and no duplicate label', () => {
     expect(GENERIC_ITEMS).toHaveLength(12);
