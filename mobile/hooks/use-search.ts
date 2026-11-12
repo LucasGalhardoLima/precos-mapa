@@ -65,9 +65,12 @@ export function mapSearchRow(row: RawSearchRow): SearchResult {
   return { ...base, hasPriceToday: true, price: winner.price, winnerStoreName: winner.store_name, singleStore: fresh.length <= 1 };
 }
 
-// STUB (red-test commit): real ordering lands in the fix commit.
+// "Sem preço hoje" goes to the end of the list (docs/poup-mlp-decisoes.md,
+// Resultado 5a–5c). The RPC orders by tier on rows that may only be stale, so
+// once stale prices are dropped a no-price row can outrank priced ones.
+// Stable: Array.prototype.sort keeps the RPC order within each group.
 export function sortPricedFirst(results: SearchResult[]): SearchResult[] {
-  return results;
+  return [...results].sort((a, b) => Number(b.hasPriceToday) - Number(a.hasPriceToday));
 }
 
 export function formatBRL(value: number): string {
@@ -118,7 +121,7 @@ export function useSearch({ query, userLat, userLng, pageSize = 30 }: UseSearchP
         setResults([]);
       } else {
         setError(null);
-        setResults(((data as RawSearchRow[] | null) ?? []).map(mapSearchRow));
+        setResults(sortPricedFirst(((data as RawSearchRow[] | null) ?? []).map(mapSearchRow)));
       }
       setIsSearching(false);
     }, 200);
