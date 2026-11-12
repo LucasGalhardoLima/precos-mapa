@@ -32,14 +32,12 @@ export { Colors } from './constants/colors';
 export { DEMO_USER_LOCATION, getGamificationMessage } from './constants/messages';
 
 // Hooks
-export { useAuth } from './hooks/use-auth';
 export { useLocation, calculateDistanceKm } from './hooks/use-location';
 export { useRealtime } from './hooks/use-realtime';
 export { usePushNotifications } from './hooks/use-push-notifications';
 export type { NotificationData } from './hooks/use-push-notifications';
 
 // Components
-export { AuthButtons } from './components/auth-buttons';
 export { OfflineBanner } from './components/offline-banner';
 export { StyledButton } from './components/ui/button';
 export { Badge } from './components/ui/badge';

@@ -223,6 +223,7 @@ export interface SizeCandidate {
 export interface SizeAlternative {
   productId: string;
   name: string; // full name + size, e.g. "Arroz Tio João tipo 1 · 2 kg"
+  sizeLabel: string; // the size alone, e.g. "2 kg" (analytics to_size)
   pricePerUnitLabel: string; // "R$ 4,75/kg"
   storeName: string; // chain label
 }
@@ -254,6 +255,7 @@ export function resolveSizeAlternatives(current: ProductInfo, currentPricePerUni
     items: better.map((c) => ({
       productId: c.id,
       name: `${c.name} · ${formatSize(c.sizeValue, unit)}`,
+      sizeLabel: formatSize(c.sizeValue, unit),
       pricePerUnitLabel: `${formatBRL(c.perUnit)}/${UNIT_LABEL[unit]}`,
       storeName: chainLabelForStore(c.cheapestStoreName) ?? c.cheapestStoreName,
     })),
@@ -450,4 +452,40 @@ export function buildRespostaView(
         ? `preços de hoje, 03:00 · ${freshChains.length} de 4 mercados`
         : `preço de hoje, 03:00 · ${winner.chainLabel}`,
   };
+}
+
+// What a failed/empty load of the Resposta means. Only a network-ish failure is
+// "Sem conexão"; a product that does not exist (unknown id, malformed uuid) is
+// a different fact and must not be told as a connection problem.
+export type ProductLoadOutcome = 'ok' | 'not-found' | 'error';
+
+export interface PgLikeError {
+  code?: string | null;
+  message?: string | null;
+}
+
+export function classifyProductLoad(input: { productData: unknown | null; productError: PgLikeError | null; pricesError: PgLikeError | null }): ProductLoadOutcome {
+  // Not-found: PGRST116 (single-row read of an id that does not exist) and
+  // 22P02 (malformed uuid). Anything else, including an error with no code
+  // (network), stays 'error' and wins over not-found on the other read.
+  const errors = [input.productError, input.pricesError].filter((e): e is PgLikeError => !!e);
+  const isNotFoundCode = (e: PgLikeError) => e.code === 'PGRST116' || e.code === '22P02';
+  if (errors.some((e) => !isNotFoundCode(e))) return 'error';
+  if (errors.length > 0 || input.productData == null) return 'not-found';
+  return 'ok';
+}
+
+// Event names for the Resposta screen. AnalyticsEventType (packages/shared) is a
+// closed union that UI work may not edit, and analytics_events.event_type is
+// plain text with no CHECK (migration 020) — same arrangement as AjustesEventType.
+// shortcut: names declared locally — upgrade: move into AnalyticsEventType in
+// packages/shared when that package is open for changes.
+export type RespostaEventType = 'size_option_tapped';
+
+// Event payload for a tap on a QUAL TAMANHO row. productId is the size being
+// opened (the destination); the origin travels in metadata.
+export function sizeOptionTappedPayload(current: ProductInfo, item: SizeAlternative): { productId: string; metadata: { from_product_id: string; from_size: string; to_size: string } } {
+  // Alternatives only exist when the current product has a size.
+  const fromSize = current.sizeValue != null ? formatSize(current.sizeValue, current.sizeUnit) : '';
+  return { productId: item.productId, metadata: { from_product_id: current.id, from_size: fromSize, to_size: item.sizeLabel } };
 }
