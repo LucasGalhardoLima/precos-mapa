@@ -56,5 +56,7 @@ jobs:
         with:
           name: tenda-warmup-diagnostics
           path: scripts/.scrape-tenda-diagnostics/
-          if-no-files-found: ignore
+          # The dir is a dot-directory (matches the .scrape-* gitignore); v4.4+ skips hidden files by default.
+          include-hidden-files: true
+          if-no-files-found: warn
           retention-days: 14
