@@ -17,7 +17,7 @@ maestro --device <udid> test mobile/.maestro/ajustes.yaml
 
 | Fluxo | Cobre |
 |---|---|
-| `onboarding.yaml` | passo 1 → cidade → passo 2 (plural do botão) → raiz com itens |
+| `onboarding.yaml` | passo 1 → cidade → passo 2 (plural do botão) → raiz com itens → Ajustes com os mesmos 2 itens. **Escreve em produção** (usuário anônimo + 2 linhas em tracked_items) |
 | `busca-e-resposta.yaml` | busca → Resultado → toque na linha → Resposta (bloco ONDE) |
 | `ajustes.yaml` | raiz → engrenagem → Ajustes (seções, rodapé) → folha "trocar" → volta. Sem escrita em produção |
 | `qual-tamanho.yaml` | busca → Resposta → bloco QUAL TAMANHO (depende de dados; não rodado) |

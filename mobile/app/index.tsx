@@ -13,7 +13,9 @@ import { useSearch, formatBRL } from '../hooks/use-search';
 import { useTrackedSummary } from '../hooks/use-tracked-summary';
 import { useMarketFreshness, MATAO_CHAIN_LABELS, MATAO_CHAIN_COUNT } from '../hooks/use-market-freshness';
 import { useAnalytics } from '../hooks/use-analytics';
-import { loadOnboarding, type OnboardingItem } from '../lib/onboarding';
+import { isOnboardingDone } from '../lib/onboarding';
+import { syncOnboardingItems } from '../lib/onboarding-sync';
+import { supabaseSyncDeps } from '../lib/onboarding-sync-deps';
 import { computeTitlePhrase, type TitlePhrase } from '../lib/raiz';
 import { searchFieldRef } from '../lib/search-focus';
 
@@ -31,19 +33,26 @@ export default function RaizScreen() {
   // fresh on every focus, not just mount, so finishing onboarding and coming
   // back doesn't show a stale "still onboarding" read.
   const [checkedOnboarding, setCheckedOnboarding] = useState(false);
-  const [items, setItems] = useState<OnboardingItem[]>([]);
+  // The tracked_items read waits for the onboarding sync (a no-op once it has
+  // succeeded) so a first opening doesn't flash "dia zero" before the items
+  // land; `refreshKey` re-reads on every focus (e.g. after removing in Ajustes).
+  const [syncSettled, setSyncSettled] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      loadOnboarding().then((result) => {
+      isOnboardingDone().then(async (done) => {
         if (cancelled) return;
-        if (!result) {
+        if (!done) {
           router.replace('/onboarding');
           return;
         }
-        setItems(result.items);
         setCheckedOnboarding(true);
+        await syncOnboardingItems(supabaseSyncDeps).catch(() => null);
+        if (cancelled) return;
+        setSyncSettled(true);
+        setRefreshKey((k) => k + 1);
       });
       return () => {
         cancelled = true;
@@ -59,7 +68,7 @@ export default function RaizScreen() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const resultadoActive = query.trim().length >= 2;
 
-  const { rows: trackedRows, isLoading: trackedLoading } = useTrackedSummary(items, latitude, longitude);
+  const { rows: trackedRows, isLoading: trackedLoading, hasError: trackedError } = useTrackedSummary(latitude, longitude, syncSettled, refreshKey);
   const freshCount = useMarketFreshness();
 
   const { results, isSearching, error: searchError, retry: retrySearch } = useSearch({
@@ -127,13 +136,13 @@ export default function RaizScreen() {
           />
           <RaizBody
             trackedRows={trackedRows}
-            trackedLoading={trackedLoading}
+            trackedLoading={trackedLoading || trackedError}
             titlePhrase={titlePhrase}
             freshCount={freshCount}
             onProductPress={(id) => router.push(`/product/${id}`)}
-            // "ver todos" para itens acompanhados: routes.md lists no
-            // dedicated all-items screen — Ajustes (7a) already owns the
-            // full teto+"ver todos" list for the same concept.
+            // "ver todos" para itens acompanhados: no dedicated all-items
+            // screen exists — Ajustes (7a) lists the same tracked_items with
+            // its own teto+"ver todos".
             onVerTodos={() => router.push('/settings')}
           />
         </>
