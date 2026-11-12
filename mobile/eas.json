@@ -26,7 +26,7 @@
       },
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://zyhhcfkbzfbarnxlkfri.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_i2bNlmNLCTiFhlO0yk0U_A_VGND0g4j",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_i2bNlmNLCTiFhlO0yk0U_A_VGND0g4j"
       }
     },
     "production": {
