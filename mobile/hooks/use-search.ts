@@ -20,7 +20,10 @@ export interface RawPriceEntry {
 // same rule the Resposta uses. An entry with no date can't be shown as
 // today's, so it is treated as stale.
 export function isFreshEntry(p: RawPriceEntry): boolean {
-  return !!p.last_price_date && !isStale(daysAgo(p.last_price_date));
+  if (!p.last_price_date) return false;
+  const days = daysAgo(p.last_price_date);
+  // An unparseable date yields NaN, and isStale(NaN) is false — don't let it pass as fresh.
+  return !Number.isNaN(days) && !isStale(days);
 }
 
 // Exported for use-tracked-summary.ts, which reuses mapSearchRow for its
