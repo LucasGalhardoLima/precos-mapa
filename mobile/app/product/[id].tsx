@@ -23,6 +23,7 @@ import { triggerHaptic, triggerNotification } from '../../hooks/use-haptics';
 import { formatBRL } from '../../hooks/use-search';
 import { freshnessLabel, formatSize, resolveSizeAlternatives } from '../../lib/resposta';
 import { trackedRowLabel } from '../../lib/tracked-items';
+import { resolveHereStore } from '../../lib/ajustes';
 import { getPreferredChain, setPreferredChain } from '../../lib/preferred-store';
 
 export default function ProductScreen() {
@@ -44,8 +45,10 @@ export default function ProductScreen() {
     }, []),
   );
 
-  const { view, product, isLoading, error, retry } = useProduct({ productId: id, userLat: latitude, userLng: longitude, preferredChain });
   const { stores: nearbyStores, isLoading: storesLoading } = useStores(latitude, longitude);
+  // Same resolution Ajustes uses, over all active stores (not just those with a price for this product).
+  const hereChain = resolveHereStore(nearbyStores, preferredChain)?.chainLabel ?? null;
+  const { view, product, isLoading, error, retry } = useProduct({ productId: id, userLat: latitude, userLng: longitude, hereChain });
   const { trackedState, isSubmitting, trackWithAlert, trackWithoutAlert } = useTrackedItems(id);
   const { candidates: sizeCandidates } = useSizeAlternatives(product);
   const [expanded, setExpanded] = useState(false);
@@ -180,7 +183,7 @@ export default function ProductScreen() {
                   distanceKm={branch.distanceKm}
                   price={branch.price}
                   isWinner={false}
-                  isHere={branch.storeId === nearestBranchId}
+                  isHere={branch.chainLabel === hereChain && branch.storeId === nearestBranchId}
                   freshnessLabel={freshnessLabel(branch.daysAgo)}
                   muted={branch.isStale}
                   onSwap={() => setPickerVisible(true)}

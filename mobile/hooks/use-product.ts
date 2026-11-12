@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { buildRespostaView, type ProductInfo, type RawStorePrice, type RespostaView } from '@/lib/resposta';
 
@@ -6,7 +6,7 @@ interface UseProductOptions {
   productId: string;
   userLat: number | null;
   userLng: number | null;
-  preferredChain: string | null;
+  hereChain: string | null;
 }
 
 interface UseProductResult {
@@ -24,8 +24,8 @@ interface UseProductResult {
 // ean/size_value/size_unit either) — see [[live_price_scrapers_status]]-style
 // investigation notes for why this wasn't invented as a new migration:
 // simplest fit for two already-existing, already-indexed reads.
-export function useProduct({ productId, userLat, userLng, preferredChain }: UseProductOptions): UseProductResult {
-  const [view, setView] = useState<RespostaView | null>(null);
+export function useProduct({ productId, userLat, userLng, hereChain }: UseProductOptions): UseProductResult {
+  const [rows, setRows] = useState<RawStorePrice[] | null>(null);
   const [product, setProduct] = useState<ProductInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -59,17 +59,19 @@ export function useProduct({ productId, userLat, userLng, preferredChain }: UseP
         sizeValue: productRes.data.size_value,
         sizeUnit: productRes.data.size_unit,
       };
-      const rows = (pricesRes.data as RawStorePrice[] | null) ?? [];
-
       setProduct(p);
-      setView(buildRespostaView(p, rows, new Date(), preferredChain));
+      setRows((pricesRes.data as RawStorePrice[] | null) ?? []);
       setIsLoading(false);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [productId, userLat, userLng, preferredChain, attempt]);
+  }, [productId, userLat, userLng, attempt]);
+
+  // Derived, not fetched: `hereChain` arrives later than the rows (it comes from
+  // useStores) and must not trigger a second get_product_prices round-trip.
+  const view = useMemo(() => (product && rows ? buildRespostaView(product, rows, new Date(), hereChain) : null), [product, rows, hereChain]);
 
   return { view, product, isLoading, error, retry: () => setAttempt((a) => a + 1) };
 }

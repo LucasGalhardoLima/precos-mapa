@@ -83,7 +83,7 @@ describe('buildRespostaView — ONDE agrupa por rede, não por filial (Lucas, 20
       row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', price: 24.9, distance_km: 1.8 }),
       row({ store_id: 's-savegnago', store_name: 'Savegnago', price: 27.0, distance_km: 0.4 }), // nearest overall
     ];
-    const view = buildRespostaView(product(), rows, NOW);
+    const view = buildRespostaView(product(), rows, NOW, 'Savegnago');
     expect(view.whereRows.find((r) => r.chainLabel === 'Savegnago')?.isHere).toBe(true);
     expect(view.whereRows.find((r) => r.chainLabel === 'Tenda')?.isHere).toBe(false);
   });
@@ -127,7 +127,7 @@ describe('buildRespostaView — 3a: com EAN, "aqui" não vence', () => {
       row({ store_id: 's-savegnago', store_name: 'Savegnago', price: 27.0, distance_km: 0.6 }),
       row({ store_id: 's-jau', store_name: 'Jaú Serve', price: 27.49, distance_km: 2.4 }),
     ];
-    const view = buildRespostaView(product(), rows, NOW);
+    const view = buildRespostaView(product(), rows, NOW, 'Savegnago');
 
     expect(view.mode).toBe('comparison');
     expect(view.title).toBe('Menor preço no Tenda');
@@ -230,8 +230,8 @@ describe('buildRespostaView — 3d: sem preço hoje', () => {
   });
 });
 
-describe('buildRespostaView — preferredChain (folha "trocar")', () => {
-  it('overrides GPS-nearest when the preferred chain has a row', () => {
+describe('buildRespostaView — hereChain resolvida (folha "trocar")', () => {
+  it('marks the resolved chain, not the GPS-nearest priced row', () => {
     const rows = [
       row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', price: 24.9, distance_km: 0.2 }), // GPS-nearest, but not preferred
       row({ store_id: 's-amarelinha', store_name: 'Amarelinha Loja 21 Flamboyant', price: 27.0, distance_km: 3.1 }),
@@ -241,10 +241,10 @@ describe('buildRespostaView — preferredChain (folha "trocar")', () => {
     expect(view.whereRows.find((r) => r.chainLabel === 'Tenda')?.isHere).toBe(false);
   });
 
-  it('falls back to GPS-nearest when the preferred chain has no row at all', () => {
+  it('marks nothing when the resolved chain has no row — never substitutes a priced chain', () => {
     const rows = [row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', distance_km: 0.2 })];
     const view = buildRespostaView(product(), rows, NOW, 'Amarelinha');
-    expect(view.whereRows[0]?.isHere).toBe(true);
+    expect(view.whereRows.some((r) => r.isHere)).toBe(false);
   });
 });
 
