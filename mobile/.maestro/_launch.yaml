@@ -1,14 +1,26 @@
 # Sub-flow compartilhado: app zerado (onboarding de novo) conectado ao Metro.
 # Dev client: o clearState apaga também o servidor lembrado, então reconecta por link.
 # Metro precisa estar de pé: `npx expo start --dev-client`.
+# Roda em iOS e Android: os trechos que diferem ficam atrás de `when: platform:`.
 appId: com.poup.consumer
 ---
 - launchApp:
     clearState: true
+# Android: o emulador só alcança o Metro do host por localhost com `adb reverse`
+# (ver README). E o link aberto logo após o clearState se perde: o launcher do dev
+# client ainda não está de pé (medido: cai na lista de servidores). Espera a lista.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: "(?i)development servers"
+          timeout: 60000
 - openLink: "exp+poup://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
 # O iOS pergunta "Open in Poup?" ao abrir o esquema por link (nem sempre aparece).
 - runFlow:
     when:
+      platform: iOS
       visible: "Open in.*"
     commands:
       - tapOn: "Open"
@@ -24,8 +36,40 @@ appId: com.poup.consumer
     commands:
       - tapOn: "Continue"
       # O menu abre em seguida e cobre a tela; o ✕ não tem rótulo de acessibilidade.
+      # iOS: toque no ✕ por coordenada. Android: o botão Voltar fecha o menu.
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                point: "90%,48%"
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - back
+# Android: o diálogo "Location Accuracy" (abaixo) pode chegar antes ou depois do
+# texto do onboarding, e enquanto está aberto esconde a tela. Recusa nos dois pontos.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: "No thanks|Digitar minha cidade.*"
+          timeout: 60000
       - tapOn:
-          point: "90%,48%"
+          text: "No thanks"
+          optional: true
 - extendedWaitUntil:
     visible: "Digitar minha cidade.*"
     timeout: 60000
+# Android: com a localização do aparelho desligada (emulador novo), o Google Play
+# Services abre o diálogo "Location Accuracy" por cima do onboarding. Recusa para
+# seguir; opcional porque só aparece com a localização desligada.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          text: "No thanks"
+          optional: true
