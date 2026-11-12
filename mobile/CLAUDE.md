@@ -23,7 +23,7 @@ mobile/
   app/            # rotas novas (Expo Router). Só as listadas abaixo.
   components/     # componentes novos, um por arquivo, do design system Capital Verde
   hooks/          # hooks de dados reaproveitados (lista abaixo)
-  lib/            # supabase, posthog, cache — reaproveitados como estão
+  lib/            # supabase, cache — reaproveitados como estão
   legacy/         # app e componentes antigos. SOMENTE LEITURA. Nunca importar daqui.
 ```
 
