@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { daysAgo, isStale } from '@/lib/resposta';
 
 // Raw shape of one row inside search_products_with_prices' jsonb array
 // (supabase/migrations/072_hide_promotions_from_consumer_app.sql, the
@@ -9,6 +10,20 @@ export interface RawPriceEntry {
   store_id: string;
   store_name: string;
   price: number;
+  // Both RPCs emit it (migration 072); optional so a row without it is read
+  // as undated rather than crashing — see isFreshEntry.
+  last_price_date?: string;
+}
+
+// mobile/CLAUDE.md "Frescor": >3 days is never today's price. The RPCs apply
+// no (crawler) or a 14-day (crowdsourced) cutoff, so the client enforces the
+// same rule the Resposta uses. An entry with no date can't be shown as
+// today's, so it is treated as stale.
+export function isFreshEntry(p: RawPriceEntry): boolean {
+  if (!p.last_price_date) return false;
+  const days = daysAgo(p.last_price_date);
+  // An unparseable date yields NaN, and isStale(NaN) is false — don't let it pass as fresh.
+  return !Number.isNaN(days) && !isStale(days);
 }
 
 // Exported for use-tracked-summary.ts, which reuses mapSearchRow for its
@@ -42,29 +57,23 @@ export interface SearchResult {
 // Exported for direct unit testing, same pattern as use-analytics.ts's
 // resolveTrackedRegion — real logic under test, not a hand-copied replica.
 export function mapSearchRow(row: RawSearchRow): SearchResult {
-  if (!row.has_active_price || row.cheapest_price == null) {
-    return {
-      productId: row.product_id,
-      name: row.product_name,
-      brand: row.brand,
-      imageUrl: row.image_url,
-      hasPriceToday: false,
-      price: null,
-      winnerStoreName: null,
-      singleStore: row.prices.length <= 1,
-    };
+  const base = { productId: row.product_id, name: row.product_name, brand: row.brand, imageUrl: row.image_url };
+  // Recomputed from fresh entries only: the RPC's cheapest_price and
+  // has_active_price also count stale rows (and the reference price).
+  const fresh = row.has_active_price && row.cheapest_price != null ? row.prices.filter(isFreshEntry) : [];
+  if (fresh.length === 0) {
+    return { ...base, hasPriceToday: false, price: null, winnerStoreName: null, singleStore: row.prices.length <= 1 };
   }
-  const winner = row.prices.find((p) => p.price === row.cheapest_price) ?? row.prices[0];
-  return {
-    productId: row.product_id,
-    name: row.product_name,
-    brand: row.brand,
-    imageUrl: row.image_url,
-    hasPriceToday: true,
-    price: row.cheapest_price,
-    winnerStoreName: winner?.store_name ?? null,
-    singleStore: row.prices.length <= 1,
-  };
+  const winner = fresh.reduce((best, p) => (p.price < best.price ? p : best));
+  return { ...base, hasPriceToday: true, price: winner.price, winnerStoreName: winner.store_name, singleStore: fresh.length <= 1 };
+}
+
+// "Sem preço hoje" goes to the end of the list (docs/poup-mlp-decisoes.md,
+// Resultado 5a–5c). The RPC orders by tier on rows that may only be stale, so
+// once stale prices are dropped a no-price row can outrank priced ones.
+// Stable: Array.prototype.sort keeps the RPC order within each group.
+export function sortPricedFirst(results: SearchResult[]): SearchResult[] {
+  return [...results].sort((a, b) => Number(b.hasPriceToday) - Number(a.hasPriceToday));
 }
 
 export function formatBRL(value: number): string {
@@ -115,7 +124,7 @@ export function useSearch({ query, userLat, userLng, pageSize = 30 }: UseSearchP
         setResults([]);
       } else {
         setError(null);
-        setResults(((data as RawSearchRow[] | null) ?? []).map(mapSearchRow));
+        setResults(sortPricedFirst(((data as RawSearchRow[] | null) ?? []).map(mapSearchRow)));
       }
       setIsSearching(false);
     }, 200);

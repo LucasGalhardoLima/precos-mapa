@@ -4,7 +4,7 @@ Rodam no iOS Simulator, sem aparelho físico. Dados são reais (Supabase), entã
 
 ## Pré-requisitos
 - Maestro 2.x e **Java 17+** (`JAVA_HOME=$(/usr/libexec/java_home -v 21)`; o padrão da máquina pode ser o 11).
-- Build de dev instalado no simulador: `npx expo run:ios --device <udid> --no-bundler`.
+- Build de dev instalado no simulador: `npx expo run:ios --device <udid> --no-bundler`. Mudou `app.json` (ex.: texto de permissão)? Rode `npx expo prebuild --platform ios --no-install` antes (apaga e recria `ios/`, gitignored).
 - Metro de pé: `npx expo start --dev-client`.
 
 ## Rodar
@@ -17,14 +17,16 @@ maestro --device <udid> test mobile/.maestro/ajustes.yaml
 
 | Fluxo | Cobre |
 |---|---|
-| `onboarding.yaml` | passo 1 → cidade → passo 2 (plural do botão) → raiz com itens |
-| `busca-e-resposta.yaml` | busca → Resultado → toque na linha → Resposta (bloco ONDE) |
+| `onboarding.yaml` | passo 1 → cidade → passo 2 (plural do botão) → raiz com itens → Ajustes com os mesmos 2 itens. **Escreve em produção** (usuário anônimo + 2 linhas em tracked_items) |
+| `busca-e-resposta.yaml` | busca → Resultado → toque na linha → Resposta (bloco ONDE). Sem escrita em produção (não escolhe item no onboarding) |
 | `ajustes.yaml` | raiz → engrenagem → Ajustes (seções, rodapé) → folha "trocar" → volta. Sem escrita em produção |
-| `qual-tamanho.yaml` | busca → Resposta → bloco QUAL TAMANHO (depende de dados; não rodado) |
+| `qual-tamanho.yaml` | busca → Resposta → bloco QUAL TAMANHO. Sem escrita em produção. Rodado em 12/11/2026: **não passa** — o primeiro "arroz" não tem família de tamanhos com preço de hoje (ver comentário no arquivo) |
 | `_launch.yaml` | sub-fluxo: app zerado conectado ao Metro (não rodar sozinho) |
 
 ## Armadilhas
 - Texto com chevron ("Buscar agora ›"): casar com regex `Buscar agora.*`.
 - No dev client o botão flutuante "Tools" cobre o canto superior direito (ex.: link "Buscar agora"). Só existe em dev.
 - Cada linha de resultado é um elemento único: `"<nome>, menor no <loja>, R$ <preço>"`.
+- No dev client o botão "Tools" cobre a engrenagem inteira da raiz (toque por ponto na borda também abre o menu de dev): `ajustes.yaml` entra por `poup://settings`, então o toque na engrenagem fica sem cobertura E2E.
+- O iOS pergunta "Open in Poup?" ao abrir links de esquema; `_launch.yaml` e `ajustes.yaml` tocam em "Open" quando aparece (é uma corrida: se o diálogo aparecer depois, o próximo passo falha).
 - Asserção frouxa (`.*`) passa em tela em branco. Confira o screenshot.

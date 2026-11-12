@@ -17,6 +17,8 @@ import { useLocation } from '../hooks/use-location';
 import { useCities } from '../hooks/use-cities';
 import { useAnalytics } from '../hooks/use-analytics';
 import { saveCityInterest } from '../lib/city-interest';
+import { syncWithin } from '../lib/onboarding-sync';
+import { supabaseSyncDeps } from '../lib/onboarding-sync-deps';
 import {
   GENERIC_ITEMS,
   FALLBACK_COVERED_CITIES,
@@ -26,6 +28,7 @@ import {
   displayProductName,
   isValidEmail,
   saveOnboarding,
+  markOnboardingDone,
   type CoveredCity,
   type GenericItem,
   type OnboardingArea,
@@ -39,6 +42,8 @@ import {
 // artefato e é montada só com os componentes do sistema.
 // Permissão de localização só depois do toque em "Usar minha localização"
 // (decisão 10); notificação e câmera nunca aparecem aqui.
+const SYNC_WAIT_MS = 8000;
+
 type Step = 'location' | 'city' | 'items' | 'outside';
 
 export default function Onboarding() {
@@ -186,7 +191,11 @@ export default function Onboarding() {
       const items: OnboardingItem[] = skipped
         ? []
         : GENERIC_ITEMS.filter((i) => selected.includes(i.label)).map((i) => ({ ...i, product: pins[i.label] ?? null }));
+      // Local first: it keeps `area` and is the pending copy of the items
+      // until they are confirmed in tracked_items. The done flag is separate
+      // from it, so the Raiz guard no longer depends on this payload.
       await saveOnboarding({ items, area });
+      await markOnboardingDone();
       track('onboarding_completed', {
         metadata: {
           items_count: items.length,
@@ -196,6 +205,12 @@ export default function Onboarding() {
           left_email: leftEmail,
         },
       });
+      // Write the items to tracked_items, but never hold the user hostage to
+      // it: a failure (offline, sign-in refused) or a slow network just moves
+      // on to Raiz, which retries the same idempotent sync on every opening
+      // until it succeeds. The cap only bounds the wait; the sync itself keeps
+      // running and Raiz joins it.
+      await syncWithin(supabaseSyncDeps, SYNC_WAIT_MS);
       router.replace('/');
     },
     [selected, pins, area, leftEmail, track, router],

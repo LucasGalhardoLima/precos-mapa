@@ -1,3 +1,5 @@
+# ATENÇÃO: concluir com itens agora grava em tracked_items (usuário anônimo + 2 linhas) no
+# Supabase de produção. Rode com consciência disso.
 # Onboarding pelo caminho "digitar minha cidade" (não depende do diálogo de localização do iOS).
 appId: com.poup.consumer
 ---
@@ -20,3 +22,9 @@ appId: com.poup.consumer
     visible: "SEUS ITENS"
     timeout: 20000
 - takeScreenshot: raiz-com-itens
+# Mesma lista na Raiz e em Ajustes: os 2 itens escolhidos viraram linhas de tracked_items.
+- tapOn: "Ajustes"
+- extendedWaitUntil:
+    visible: "ITENS ACOMPANHADOS · 2"
+    timeout: 20000
+- takeScreenshot: ajustes-com-itens-do-onboarding
