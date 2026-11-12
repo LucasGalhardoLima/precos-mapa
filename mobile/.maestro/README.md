@@ -38,12 +38,14 @@ Fluxos só de leitura: Metro normal (`npx expo start --dev-client`). Atenção: 
 | `ajustes-vazio.yaml` | Ajustes vazio, folha "trocar" (4 mercados), rodapé sobre/termos | lê | passa |
 | `scanner.yaml` | Scanner no simulador = "Sem câmera neste aparelho" + 2 saídas | lê | passa |
 | `notificacao.yaml` + `notificacao.sh` | push → toque → Resposta | lê | **pendente do #84** (não conta como falha); o banner nem aparece sem permissão de notificação |
-| `onboarding.yaml` | onboarding completo + Raiz×Ajustes com a mesma lista (#85) | **escreve** | **bloqueado** (ver abaixo) |
-| `acompanhar.yaml` | acompanhar com alvo → editar → Ajustes → ✕ → desfazer | **escreve** | **nunca executado** (mesmo bloqueio) |
+| `escreve/onboarding.yaml` | onboarding completo + Raiz×Ajustes com a mesma lista (#85) | **escreve** | **bloqueado** (ver abaixo) |
+| `escreve/acompanhar.yaml` | acompanhar com alvo → editar → Ajustes → ✕ → desfazer | **escreve** | **nunca executado** (mesmo bloqueio) |
 
 Sub-fluxos: `_launch.yaml` (app zerado + Metro; trata a corrida do "Open in Poup?"), `_abrir.yaml` (deep link, mesma corrida), `_ate-raiz.yaml` (onboarding sem itens até a Raiz). Screenshots (`*.png` é gitignored aqui) ficam só locais; as da rodada de 12/11/2026 estão em `screenshots/` na máquina de quem rodou. O antigo `busca-e-resposta.yaml` foi substituído por `resultado-lista`/`resposta-*`.
 
 ### Fluxos que escrevem: bloqueados
+Ficam em `escreve/` de propósito: `maestro test .maestro/` não desce em subpastas, então rodar a suíte inteira nunca escreve em produção por acidente. Rode-os um a um, só com Metro e2e.
+
 O Supabase de produção está com `external_anonymous_users_enabled: false` (Management API, leitura). `signInAnonymously` falha, nenhum usuário (marcado ou não) é criado, e concluir o onboarding com 2 itens termina na Raiz em "Sem conexão / Seus itens aparecem aqui assim que a rede voltar." A marca e2e dos **eventos** funciona (5 `analytics_events` marcados); a do **usuário** não pôde ser confirmada (0 usuários criados), então a suíte parou aí. `acompanhar.yaml` e a parte Raiz×Ajustes de `onboarding.yaml` ficam escritos e sem validação até a opção ser ligada no projeto (decisão de Lucas).
 
 ### Não coberto (e por quê)

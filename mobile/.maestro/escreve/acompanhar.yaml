@@ -9,9 +9,9 @@
 # O iOS não tem `simctl privacy grant notifications`: o diálogo de notificação é tratado.
 appId: com.poup.consumer
 ---
-- runFlow: _ate-raiz.yaml
+- runFlow: ../_ate-raiz.yaml
 - runFlow:
-    file: _abrir.yaml
+    file: ../_abrir.yaml
     env:
       URL: "poup://product/a4b7679d-3f5b-4445-8624-7210f9f99be7"
 - extendedWaitUntil:
@@ -48,7 +48,7 @@ appId: com.poup.consumer
     timeout: 15000
 # Ajustes lista o item.
 - runFlow:
-    file: _abrir.yaml
+    file: ../_abrir.yaml
     env:
       URL: "poup://settings"
 - extendedWaitUntil:

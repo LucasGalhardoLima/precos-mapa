@@ -6,7 +6,7 @@ set -euo pipefail
 PRODUCT_ID="${1:?uso: $0 <product-id> [udid]}"
 UDID="${2:-52223F35-47B8-49FD-BE6F-BD3B3F1B8C03}"
 DIR="$(cd "$(dirname "$0")" && pwd)"
-PAYLOAD="$(mktemp -t poup-push).json"
+PAYLOAD="$(mktemp -t poup-push)"
 printf '{"aps":{"alert":{"title":"Teste","body":"x"}},"productId":"%s"}' "$PRODUCT_ID" > "$PAYLOAD"
 export JAVA_HOME="$(/usr/libexec/java_home -v 21)"
 # O push sai depois que o fluxo já mandou o app para segundo plano.

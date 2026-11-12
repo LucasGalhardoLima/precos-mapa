@@ -7,7 +7,7 @@
 # Cobre também a unificação do #85: Raiz e Ajustes mostram a MESMA lista.
 appId: com.poup.consumer
 ---
-- runFlow: _launch.yaml
+- runFlow: ../_launch.yaml
 - takeScreenshot: onboarding-1-localizacao
 - tapOn: "Digitar minha cidade.*"
 - assertVisible: "Qual é a sua cidade?"
@@ -32,7 +32,7 @@ appId: com.poup.consumer
 # Mesma lista na Raiz e em Ajustes (#85): os 2 itens escolhidos viraram linhas de
 # tracked_items. Entra por deep link: o "Tools" do dev client cobre a engrenagem.
 - runFlow:
-    file: _abrir.yaml
+    file: ../_abrir.yaml
     env:
       URL: "poup://settings"
 - extendedWaitUntil:

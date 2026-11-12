@@ -16,7 +16,7 @@ appId: com.poup.consumer
     visible: "ONDE"
     timeout: 20000
 - scrollUntilVisible:
-    element: "QUAL TAMANHO"
+    element: "preços de hoje, 03:00.*|últimos preços vistos.*"
     timeout: 10000
 - assertVisible: ".*menor no .*"
 - takeScreenshot: qual-tamanho-alternativas
@@ -29,7 +29,7 @@ appId: com.poup.consumer
     visible: "ONDE"
     timeout: 20000
 - scrollUntilVisible:
-    element: "QUAL TAMANHO"
+    element: "preços de hoje, 03:00.*|últimos preços vistos.*"
     timeout: 10000
 - assertVisible: ".*é o melhor por (kg|litro|unidade|m).*"
 - takeScreenshot: qual-tamanho-melhor

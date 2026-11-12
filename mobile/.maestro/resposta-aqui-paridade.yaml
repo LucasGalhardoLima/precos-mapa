@@ -18,6 +18,7 @@ appId: com.poup.consumer
 - copyTextFrom: "mais perto: .*"
 # "mais perto: Amarelinha · 0,4 km" → "Amarelinha"
 - evalScript: "${output.rede = maestro.copiedText.replace(/^mais perto: /, '').split(' · ')[0].trim()}"
+- assertTrue: ${output.rede.length > 2}
 - takeScreenshot: paridade-ajustes
 - runFlow:
     file: _abrir.yaml

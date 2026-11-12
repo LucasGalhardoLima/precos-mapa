@@ -33,5 +33,5 @@ appId: com.poup.consumer
     direction: DOWN
 - takeScreenshot: resultado-lista-fim-sem-preco
 # Depois de "ver mais" o link some (a lista inteira está na tela).
-- scroll
 - assertNotVisible: "ver mais [0-9]+.*"
+- assertVisible: ".*sem preço hoje.*"
