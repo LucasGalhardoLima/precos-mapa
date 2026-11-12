@@ -14,12 +14,13 @@ import { useTrackedSummary } from '../hooks/use-tracked-summary';
 import { useMarketFreshness, MATAO_CHAIN_LABELS, MATAO_CHAIN_COUNT } from '../hooks/use-market-freshness';
 import { useAnalytics } from '../hooks/use-analytics';
 import { isOnboardingDone } from '../lib/onboarding';
-import { syncOnboardingItems } from '../lib/onboarding-sync';
+import { syncWithin } from '../lib/onboarding-sync';
 import { supabaseSyncDeps } from '../lib/onboarding-sync-deps';
 import { computeTitlePhrase, type TitlePhrase } from '../lib/raiz';
 import { searchFieldRef } from '../lib/search-focus';
 
 const RAIZ_TETO = 4;
+const SYNC_WAIT_MS = 8000;
 const RESULTADO_TETO_TECLADO = 5;
 const RESULTADO_TETO_SEM_TECLADO = 8;
 
@@ -38,6 +39,9 @@ export default function RaizScreen() {
   // land; `refreshKey` re-reads on every focus (e.g. after removing in Ajustes).
   const [syncSettled, setSyncSettled] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  // Items still pending locally: an empty read is then not "no items", so the
+  // body stays blank instead of stating dia zero.
+  const [syncFailed, setSyncFailed] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -49,8 +53,9 @@ export default function RaizScreen() {
           return;
         }
         setCheckedOnboarding(true);
-        await syncOnboardingItems(supabaseSyncDeps).catch(() => null);
+        const outcome = await syncWithin(supabaseSyncDeps, SYNC_WAIT_MS);
         if (cancelled) return;
+        setSyncFailed(outcome === 'failed');
         setSyncSettled(true);
         setRefreshKey((k) => k + 1);
       });
@@ -136,7 +141,7 @@ export default function RaizScreen() {
           />
           <RaizBody
             trackedRows={trackedRows}
-            trackedLoading={trackedLoading || trackedError}
+            trackedLoading={trackedLoading || trackedError || syncFailed}
             titlePhrase={titlePhrase}
             freshCount={freshCount}
             onProductPress={(id) => router.push(`/product/${id}`)}

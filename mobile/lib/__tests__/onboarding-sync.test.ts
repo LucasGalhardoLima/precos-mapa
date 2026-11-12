@@ -109,6 +109,20 @@ describe('syncOnboardingItems', () => {
     expect(await syncOnboardingItems(deps())).toBe('synced');
   });
 
+  it('one unwritable row (e.g. a product merged out of the catalog) does not block the others', async () => {
+    await saveOnboarding({ items: [generic, pinned], area: 'covered' });
+    const written: NewTrackedRow[] = [];
+    const d = deps({
+      insert: async (rows) => {
+        if (rows.some((r) => r.product_id === 'prod-1')) throw new Error('fk violation');
+        written.push(...rows);
+      },
+    });
+    expect(await syncOnboardingItems(d)).toBe('synced');
+    expect(written.map((r) => r.category_label)).toEqual(['Arroz']);
+    expect(await areItemsMigrated()).toBe(true);
+  });
+
   it('with no items chosen writes nothing and marks migrated', async () => {
     await saveOnboarding({ items: [], area: 'covered' });
     const d = deps();

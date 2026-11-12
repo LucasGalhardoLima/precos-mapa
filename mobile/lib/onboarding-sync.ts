@@ -64,6 +64,31 @@ export interface SyncDeps {
 
 export type SyncOutcome = 'nothing-to-do' | 'synced' | 'failed';
 
+// Batch first. If the batch is rejected, retry row by row so one row that can
+// never be written (a pinned product that has since been merged out of the
+// catalog breaks the FK) cannot hold the user's other items hostage forever.
+// All rows failing means the problem is the connection/session, not the rows:
+// that stays a retryable failure.
+// shortcut: rows that fail while others succeed are dropped, not retried —
+// upgrade: tell FK/constraint errors from transient ones by error code.
+async function insertAll(deps: SyncDeps, rows: NewTrackedRow[]): Promise<boolean> {
+  try {
+    await deps.insert(rows);
+    return true;
+  } catch {
+    let written = 0;
+    for (const row of rows) {
+      try {
+        await deps.insert([row]);
+        written++;
+      } catch {
+        // dropped, see above
+      }
+    }
+    return written > 0;
+  }
+}
+
 async function run(deps: SyncDeps): Promise<SyncOutcome> {
   if (await areItemsMigrated()) return 'nothing-to-do';
   const onboarding = await loadOnboarding();
@@ -78,7 +103,7 @@ async function run(deps: SyncDeps): Promise<SyncOutcome> {
     if (!userId) return 'failed';
     const wanted = buildRows(onboarding.items, userId, deps.now());
     const missing = rowsToInsert(wanted, await deps.listExisting(userId));
-    if (missing.length > 0) await deps.insert(missing);
+    if (missing.length > 0 && !(await insertAll(deps, missing))) return 'failed';
     // Only after the rows are confirmed — a failure above leaves the flag unset.
     await markItemsMigrated();
     return 'synced';
@@ -98,4 +123,21 @@ export function syncOnboardingItems(deps: SyncDeps): Promise<SyncOutcome> {
     });
   }
   return inFlight;
+}
+
+// Bounded wait for screens: a hung sign-in/insert must not freeze the UI. On
+// timeout the outcome is 'failed' for the caller, while the run itself keeps
+// going and a later call joins it.
+export async function syncWithin(deps: SyncDeps, ms: number): Promise<SyncOutcome> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      syncOnboardingItems(deps).catch((): SyncOutcome => 'failed'),
+      new Promise<SyncOutcome>((resolve) => {
+        timer = setTimeout(() => resolve('failed'), ms);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }

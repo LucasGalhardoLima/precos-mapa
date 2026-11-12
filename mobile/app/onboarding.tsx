@@ -17,7 +17,7 @@ import { useLocation } from '../hooks/use-location';
 import { useCities } from '../hooks/use-cities';
 import { useAnalytics } from '../hooks/use-analytics';
 import { saveCityInterest } from '../lib/city-interest';
-import { syncOnboardingItems } from '../lib/onboarding-sync';
+import { syncWithin } from '../lib/onboarding-sync';
 import { supabaseSyncDeps } from '../lib/onboarding-sync-deps';
 import {
   GENERIC_ITEMS,
@@ -210,10 +210,7 @@ export default function Onboarding() {
       // on to Raiz, which retries the same idempotent sync on every opening
       // until it succeeds. The cap only bounds the wait; the sync itself keeps
       // running and Raiz joins it.
-      await Promise.race([
-        syncOnboardingItems(supabaseSyncDeps).catch(() => null),
-        new Promise((resolve) => setTimeout(resolve, SYNC_WAIT_MS)),
-      ]);
+      await syncWithin(supabaseSyncDeps, SYNC_WAIT_MS);
       router.replace('/');
     },
     [selected, pins, area, leftEmail, track, router],
