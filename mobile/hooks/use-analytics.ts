@@ -72,7 +72,7 @@ export function useAnalytics() {
         }
 
         // Build a dedup key from event type + store + product
-        const dedupKey = `${eventType}:${options.storeId ?? ''}:${options.productId ?? ''}`;
+        const dedupKey = `${eventType}:${options.storeId ?? ''}:${options.productId ?? ''}:${options.metadata ? JSON.stringify(options.metadata) : ''}`;
 
         // Skip if we already logged this exact event in the last 2 seconds
         if (recentEvents.current.has(dedupKey)) return;

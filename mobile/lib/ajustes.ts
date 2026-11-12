@@ -20,6 +20,7 @@ export const UNDO_MS = 5000;
 export type AjustesEventType =
   | 'settings_item_removed'
   | 'settings_item_restored'
+  | 'settings_item_opened'
   | 'settings_see_all_items'
   | 'settings_location_swap_opened'
   | 'settings_location_changed'
@@ -81,6 +82,9 @@ export function removeAt<T>(items: readonly T[], index: number): T[] {
 export interface HereStore {
   chainLabel: string;
   distanceKm: number | null;
+  // 'chosen' = picked in "trocar"; 'nearest' = by GPS. The label must not call
+  // a chosen market "mais perto".
+  source: 'chosen' | 'nearest';
 }
 
 // "Localização mostra o 'aqui' atual, coerente com a Resposta" (artifact 6b
@@ -90,20 +94,21 @@ export interface HereStore {
 export function resolveHereStore(stores: readonly NearbyStore[], preferredChain: string | null): HereStore | null {
   if (preferredChain) {
     const preferred = stores.find((s) => s.chainLabel === preferredChain);
-    if (preferred) return { chainLabel: preferred.chainLabel, distanceKm: preferred.distanceKm };
+    if (preferred) return { chainLabel: preferred.chainLabel, distanceKm: preferred.distanceKm, source: 'chosen' };
   }
   let best: NearbyStore | null = null;
   for (const s of stores) {
     if (s.distanceKm == null) continue;
     if (!best || s.distanceKm < best.distanceKm!) best = s;
   }
-  return best ? { chainLabel: best.chainLabel, distanceKm: best.distanceKm } : null;
+  return best ? { chainLabel: best.chainLabel, distanceKm: best.distanceKm, source: 'nearest' } : null;
 }
 
 export function hereSubtitle(here: HereStore | null): string | null {
   if (!here) return null;
-  if (here.distanceKm == null) return `mais perto: ${here.chainLabel}`;
-  return `mais perto: ${here.chainLabel} · ${here.distanceKm.toFixed(1).replace('.', ',')} km`;
+  const prefix = here.source === 'chosen' ? 'seu mercado' : 'mais perto';
+  if (here.distanceKm == null) return `${prefix}: ${here.chainLabel}`;
+  return `${prefix}: ${here.chainLabel} · ${here.distanceKm.toFixed(1).replace('.', ',')} km`;
 }
 
 // use-location falls back to a hardcoded city ("Matao", no tilde) that must

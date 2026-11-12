@@ -73,15 +73,15 @@ describe('localização', () => {
   const stores = [store('Savegnago', 2.4), store('Tenda', 1.8), store('Jaú Serve', null)];
 
   it('picks the nearest chain by GPS', () => {
-    expect(resolveHereStore(stores, null)).toEqual({ chainLabel: 'Tenda', distanceKm: 1.8 });
+    expect(resolveHereStore(stores, null)).toEqual({ chainLabel: 'Tenda', distanceKm: 1.8, source: 'nearest' });
   });
 
   it('a chain picked in "trocar" wins over GPS, with its own distance', () => {
-    expect(resolveHereStore(stores, 'Savegnago')).toEqual({ chainLabel: 'Savegnago', distanceKm: 2.4 });
+    expect(resolveHereStore(stores, 'Savegnago')).toEqual({ chainLabel: 'Savegnago', distanceKm: 2.4, source: 'chosen' });
   });
 
   it('ignores a preferred chain that is not among the stores', () => {
-    expect(resolveHereStore(stores, 'Inexistente')).toEqual({ chainLabel: 'Tenda', distanceKm: 1.8 });
+    expect(resolveHereStore(stores, 'Inexistente')).toEqual({ chainLabel: 'Tenda', distanceKm: 1.8, source: 'nearest' });
   });
 
   it('is null (line omitted) with no preference and no distances', () => {
@@ -90,9 +90,11 @@ describe('localização', () => {
   });
 
   it('formats the subtitle with a comma decimal, and without a distance when unknown', () => {
-    expect(hereSubtitle({ chainLabel: 'Tenda', distanceKm: 1.8 })).toBe('mais perto: Tenda · 1,8 km');
-    expect(hereSubtitle({ chainLabel: 'Jaú Serve', distanceKm: null })).toBe('mais perto: Jaú Serve');
+    expect(hereSubtitle({ chainLabel: 'Tenda', distanceKm: 1.8, source: 'nearest' })).toBe('mais perto: Tenda · 1,8 km');
+    expect(hereSubtitle({ chainLabel: 'Jaú Serve', distanceKm: null, source: 'nearest' })).toBe('mais perto: Jaú Serve');
     expect(hereSubtitle(null)).toBeNull();
+    // a market the user picked is not "o mais perto"
+    expect(hereSubtitle({ chainLabel: 'Savegnago', distanceKm: 2.4, source: 'chosen' })).toBe('seu mercado: Savegnago · 2,4 km');
   });
 
   it('never shows the hardcoded fallback city as the real one', () => {

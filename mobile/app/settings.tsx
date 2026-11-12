@@ -39,7 +39,9 @@ export default function SettingsScreen() {
   const [expanded, setExpanded] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [preferredChain, setPreferredChainState] = useState<string | null>(null);
-  const [undo, setUndo] = useState<{ item: TrackedListItem; index: number } | null>(null);
+  // Stack, so a second removal while the bar is up doesn't orphan the first.
+  const [undoStack, setUndoStack] = useState<{ item: TrackedListItem; index: number }[]>([]);
+  const undo = undoStack[undoStack.length - 1] ?? null;
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -70,8 +72,8 @@ export default function SettingsScreen() {
       const removed = await remove(item.id);
       if (!removed) return;
       track('settings_item_removed', { productId: item.productId ?? undefined });
-      setUndo(removed);
-      undoTimer.current = setTimeout(() => setUndo(null), UNDO_MS);
+      setUndoStack((st) => [...st, removed]);
+      undoTimer.current = setTimeout(() => setUndoStack([]), UNDO_MS);
     },
     [remove, track],
   );
@@ -80,10 +82,12 @@ export default function SettingsScreen() {
     if (!undo) return;
     if (undoTimer.current) clearTimeout(undoTimer.current);
     const { item, index } = undo;
-    setUndo(null);
+    const rest = undoStack.slice(0, -1);
+    setUndoStack(rest);
+    if (rest.length > 0) undoTimer.current = setTimeout(() => setUndoStack([]), UNDO_MS);
     const ok = await restore(item, index);
     if (ok) track('settings_item_restored', { productId: item.productId ?? undefined });
-  }, [undo, restore, track]);
+  }, [undo, undoStack, restore, track]);
 
   const handlePick = useCallback(
     async (chainLabel: string) => {
@@ -130,7 +134,14 @@ export default function SettingsScreen() {
                 chevronColor={colors.brand}
                 onRemove={() => handleRemove(item)}
                 // A generic item with no product pinned has no Resposta to open.
-                onPress={item.productId ? () => router.push(`/product/${item.productId}`) : undefined}
+                onPress={
+                  item.productId
+                    ? () => {
+                        track('settings_item_opened', { productId: item.productId! });
+                        router.push(`/product/${item.productId}`);
+                      }
+                    : undefined
+                }
               />
             ))}
           {status === 'items' && hasMoreItems(items.length, expanded) && (
