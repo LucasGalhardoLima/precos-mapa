@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { anonymousSignInArgs } from '@/lib/e2e';
 import { usePushNotifications } from '@poup/shared';
 
 export interface TrackedState {
@@ -47,7 +48,7 @@ export function useTrackedItems(productId: string) {
       } = await supabase.auth.getSession();
 
       if (!session) {
-        const { data, error } = await supabase.auth.signInAnonymously();
+        const { data, error } = await supabase.auth.signInAnonymously(...anonymousSignInArgs);
         if (error) return false;
         session = data.session;
       }
