@@ -5,7 +5,24 @@
 export interface PriceRow {
   store_name: string;
   price: number;
+  price_type: string; // 'crawler' | 'crowdsourced'
   last_price_date: string; // timestamptz
+}
+
+const DAY_MS = 86_400_000;
+
+function daysAgo(lastPriceDate: string, now: Date): number {
+  const day = (d: Date) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  return Math.round((day(now) - day(new Date(lastPriceDate))) / DAY_MS);
+}
+
+// Only scraper rows: get_product_prices also returns crowdsourced prices, which
+// are not part of the daily round and must not trigger a push on their own.
+function crawlerPrices(rows: PriceRow[], maxDays: number, now: Date): PriceRow[] {
+  return rows.filter((r) => {
+    const price = Number(r.price);
+    return r.price_type === 'crawler' && Number.isFinite(price) && price > 0 && daysAgo(r.last_price_date, now) <= maxDays;
+  });
 }
 
 export interface TodayPrice {
@@ -22,8 +39,10 @@ export function chainLabel(storeName: string): string {
   return CHAIN_LABELS.find((l) => storeName.startsWith(l)) ?? storeName;
 }
 
-function utcDay(d: Date): string {
-  return d.toISOString().slice(0, 10);
+function cheapest(rows: PriceRow[]): PriceRow | null {
+  let best: PriceRow | null = null;
+  for (const r of rows) if (!best || Number(r.price) < Number(best.price)) best = r;
+  return best;
 }
 
 // "Preço de hoje" = updated in the last scraper round, i.e. the same UTC
@@ -31,15 +50,18 @@ function utcDay(d: Date): string {
 // use-market-freshness.ts already use. 2–3-day-old prices still show in the
 // Resposta's ONDE with "há N dias", but are not pushed as today's price.
 export function lowestFreshPrice(rows: PriceRow[], now: Date): TodayPrice | null {
-  const today = utcDay(now);
-  let best: PriceRow | null = null;
-  for (const r of rows) {
-    const price = Number(r.price);
-    if (!Number.isFinite(price) || price <= 0) continue;
-    if (utcDay(new Date(r.last_price_date)) !== today) continue;
-    if (!best || price < Number(best.price)) best = r;
-  }
+  const best = cheapest(crawlerPrices(rows, 0, now));
   return best ? { price: Number(best.price), chainLabel: chainLabel(best.store_name) } : null;
+}
+
+// Lowest crawler price still inside the ONDE window (≤ 3 days, decisão 2).
+// Used only to decide re-arming: when one chain's job fails, today's lowest
+// comes from the other chains and can sit above target while the cheap
+// chain's price hasn't actually changed — re-arming then would push the same
+// price again the next day.
+export function lowestRecentPrice(rows: PriceRow[], now: Date): number | null {
+  const best = cheapest(crawlerPrices(rows, 3, now));
+  return best ? Number(best.price) : null;
 }
 
 export interface TrackedItem {
@@ -65,10 +87,12 @@ export type Decision =
 // - don't push again while it stays at/below target at the same or a higher
 //   price than what we last pushed;
 // - push again if it drops further below the last pushed price;
-// - once it goes back above target, re-arm so the next drop pushes again.
+// - once it goes back above target, re-arm so the next drop pushes again —
+//   but only when no chain still has a recent (≤ 3 days) price at/below
+//   target (see lowestRecentPrice).
 // No-token / muted never mark the item as notified, so the push goes out on
 // the first run after the user grants permission or turns the switch back on.
-export function decide(item: TrackedItem, today: TodayPrice | null, recipient: Recipient): Decision {
+export function decide(item: TrackedItem, today: TodayPrice | null, recipient: Recipient, recentLowest: number | null = null): Decision {
   if (item.target_price == null) return { action: 'skip', reason: 'no-target' };
   if (item.product_id == null) return { action: 'skip', reason: 'generic-item' };
   if (!today) return { action: 'skip', reason: 'no-fresh-price' };
@@ -77,7 +101,8 @@ export function decide(item: TrackedItem, today: TodayPrice | null, recipient: R
   const notified = item.notified_price == null ? null : Number(item.notified_price);
 
   if (today.price > target) {
-    return notified == null ? { action: 'skip', reason: 'above-target' } : { action: 'rearm' };
+    if (notified == null || (recentLowest != null && recentLowest <= target)) return { action: 'skip', reason: 'above-target' };
+    return { action: 'rearm' };
   }
   if (notified != null && today.price >= notified) return { action: 'skip', reason: 'already-notified' };
   if (!recipient.pushToken) return { action: 'skip', reason: 'no-token' };

@@ -1,9 +1,9 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { buildMessage, chainLabel, decide, lowestFreshPrice, type PriceRow, type TrackedItem } from './decide.ts';
+import { buildMessage, chainLabel, decide, lowestFreshPrice, lowestRecentPrice, type PriceRow, type TrackedItem } from './decide.ts';
 
 const NOW = new Date('2026-11-12T09:30:00Z'); // after the 06:00 UTC scrape round
 
-const row = (store_name: string, price: number, last_price_date: string): PriceRow => ({ store_name, price, last_price_date });
+const row = (store_name: string, price: number, last_price_date: string, price_type = 'crawler'): PriceRow => ({ store_name, price, price_type, last_price_date });
 const item = (over: Partial<TrackedItem> = {}): TrackedItem => ({
   id: 't1',
   user_id: 'u1',
@@ -31,6 +31,16 @@ Deno.test('lowestFreshPrice: ignores prices not from the last round, even if che
 Deno.test('lowestFreshPrice: null when nothing is fresh today', () => {
   assertEquals(lowestFreshPrice([row('Savegnago', 8, '2026-11-11T23:59:00Z')], NOW), null);
   assertEquals(lowestFreshPrice([], NOW), null);
+});
+
+Deno.test('lowestFreshPrice: crowdsourced prices never count, even from today', () => {
+  const res = lowestFreshPrice([row('Savegnago', 3, '2026-11-12T08:00:00Z', 'crowdsourced'), row('Jaú Serve', 11, '2026-11-12T07:00:00Z')], NOW);
+  assertEquals(res, { price: 11, chainLabel: 'Jaú Serve' });
+});
+
+Deno.test('lowestRecentPrice: keeps crawler prices up to 3 days old, drops older', () => {
+  assertEquals(lowestRecentPrice([row('Tenda Atacado - Matão', 8, '2026-11-09T07:00:00Z'), row('Savegnago', 12, '2026-11-12T07:00:00Z')], NOW), 8);
+  assertEquals(lowestRecentPrice([row('Tenda Atacado - Matão', 8, '2026-11-08T07:00:00Z'), row('Savegnago', 12, '2026-11-12T07:00:00Z')], NOW), 12);
 });
 
 Deno.test('chainLabel: falls back to the store name for an unknown store', () => {
@@ -71,6 +81,13 @@ Deno.test('decide dedupe: resends when it drops further below the last pushed pr
 Deno.test('decide dedupe: going back above target re-arms; next drop sends again', () => {
   assertEquals(decide(item({ notified_price: 9 }), today(11), withToken), { action: 'rearm' });
   assertEquals(decide(item({ notified_price: null }), today(9.5), withToken).action, 'send');
+});
+
+Deno.test('decide dedupe: no re-arm when the cheap chain only missed today\'s round', () => {
+  // Today's lowest (11, other chains) is above target, but the chain that was
+  // at 9 two days ago didn't scrape today — re-arming would re-push 9 tomorrow.
+  assertEquals(decide(item({ notified_price: 9 }), today(11), withToken, 9), { action: 'skip', reason: 'above-target' });
+  assertEquals(decide(item({ notified_price: 9 }), today(11), withToken, 11), { action: 'rearm' });
 });
 
 Deno.test('decide: missing token skips without marking as notified', () => {

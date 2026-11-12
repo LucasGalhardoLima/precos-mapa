@@ -59,7 +59,7 @@ jobs:
   notify:
     name: Notify tracked prices
     needs: scrape
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

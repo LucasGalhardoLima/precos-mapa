@@ -8,7 +8,7 @@
 // POST body (optional): { "dry_run": true } → returns the decisions without
 // sending any push or writing anything.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { buildMessage, decide, lowestFreshPrice, type Decision, type PriceRow, type TodayPrice, type TrackedItem } from './decide.ts';
+import { buildMessage, decide, lowestFreshPrice, lowestRecentPrice, type Decision, type PriceRow, type TodayPrice, type TrackedItem } from './decide.ts';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 const EXPO_BATCH = 100; // Expo Push API limit per request
@@ -25,7 +25,10 @@ function json(body: unknown, status = 200) {
 }
 
 Deno.serve(async (req) => {
-  if (req.headers.get('authorization') !== `Bearer ${Deno.env.get('EDGE_FUNCTION_SECRET')}`) {
+  // verify_jwt is off for this function, so an unset secret must not turn into
+  // an accepted literal "Bearer undefined".
+  const secret = Deno.env.get('EDGE_FUNCTION_SECRET');
+  if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) {
     return new Response('Unauthorized', { status: 401 });
   }
 
@@ -64,9 +67,12 @@ Deno.serve(async (req) => {
     const enabledByUser = new Map((prefsRes.data ?? []).map((p) => [p.user_id as string, p.push_alerts !== false]));
     const nameByProduct = new Map((productsRes.data ?? []).map((p) => [p.id as string, p.name as string]));
     const todayByProduct = new Map<string, TodayPrice | null>();
+    const recentByProduct = new Map<string, number | null>();
     for (const [id, res] of priceResults) {
       if (res.error) console.error('get_product_prices failed', id, res.error);
-      todayByProduct.set(id, res.error ? null : lowestFreshPrice((res.data ?? []) as PriceRow[], now));
+      const rows = res.error ? [] : ((res.data ?? []) as PriceRow[]);
+      todayByProduct.set(id, lowestFreshPrice(rows, now));
+      recentByProduct.set(id, lowestRecentPrice(rows, now));
     }
 
     const decisions: { id: string; decision: Decision }[] = [];
@@ -76,10 +82,12 @@ Deno.serve(async (req) => {
     for (const raw of items) {
       const item = raw as TrackedItem;
       const token = tokenByUser.get(item.user_id) ?? null;
-      const decision = decide(item, todayByProduct.get(item.product_id!) ?? null, {
-        pushToken: token,
-        pushEnabled: enabledByUser.get(item.user_id) ?? true,
-      });
+      const decision = decide(
+        item,
+        todayByProduct.get(item.product_id!) ?? null,
+        { pushToken: token, pushEnabled: enabledByUser.get(item.user_id) ?? true },
+        recentByProduct.get(item.product_id!) ?? null,
+      );
       decisions.push({ id: item.id, decision });
 
       if (decision.action === 'rearm') rearmIds.push(item.id);
@@ -118,18 +126,24 @@ Deno.serve(async (req) => {
         console.error('Expo Push API error', res.status, await res.text());
         continue;
       }
-      const tickets = ((await res.json())?.data ?? []) as { status: string; details?: unknown }[];
+      const tickets = ((await res.json())?.data ?? []) as { status: string; details?: { error?: string } }[];
+      const deadUsers = new Set<string>();
       const marks = batch
         .map((s, idx) => ({ s, ticket: tickets[idx] }))
         .filter(({ s, ticket }) => {
           if (ticket?.status === 'ok') return true;
           console.error('Expo ticket not ok', s.item.id, ticket);
+          // App uninstalled / token revoked: drop it, or we'd retry it forever.
+          if (ticket?.details?.error === 'DeviceNotRegistered') deadUsers.add(s.item.user_id);
           return false;
         })
         .map(({ s }) => supabase.from('tracked_items').update({ notified_price: s.price }).eq('id', s.item.id));
+      sent += marks.length; // accepted by Expo
+      if (deadUsers.size > 0) {
+        marks.push(supabase.from('profiles').update({ push_token: null }).in('id', [...deadUsers]));
+      }
       const results = await Promise.all(marks);
-      for (const r of results) if (r.error) console.error('mark notified failed', r.error);
-      sent += marks.length;
+      for (const r of results) if (r.error) console.error('post-send write failed', r.error);
     }
 
     return json({ dry_run: false, items: items.length, sent, rearmed: rearmIds.length });
