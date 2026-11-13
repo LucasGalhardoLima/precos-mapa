@@ -71,7 +71,11 @@ export function ListRow({
               200ml") can run longer than the artifact's own examples. */}
           <Text style={[styles.title, muted && styles.titleMuted]}>{title}</Text>
           {subtitle ? (
-            <Text style={styles.subtitle} numberOfLines={1}>
+            // 2 lines, not 1: the subtitle carries the winning branch name
+            // ("menor no Tenda Atacado - Matão"), and cutting it to "Tenda
+            // Atacado - Mat…" hides which branch wins. Still capped so a
+            // pathological name can't grow the row without bound.
+            <Text style={styles.subtitle} numberOfLines={2}>
               {subtitle}
             </Text>
           ) : null}
