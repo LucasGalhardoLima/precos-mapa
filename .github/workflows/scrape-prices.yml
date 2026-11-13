@@ -60,3 +60,26 @@ jobs:
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
+
+  # "Acompanhar e avisar": once every retailer job has finished (success or
+  # not — one chain failing must not hold back pushes for the other three's
+  # fresh prices), ask notify-tracked-price to compare today's round against
+  # each tracked item's target. Chosen over pg_cron because it runs exactly
+  # after the round instead of at a guessed hour (job durations vary 46-181min).
+  # Needs repo secret EDGE_FUNCTION_SECRET (same value as the function's).
+  notify:
+    name: Notify tracked prices
+    needs: scrape
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Call notify-tracked-price
+        run: |
+          curl -fsS -X POST "$SUPABASE_URL/functions/v1/notify-tracked-price" \
+            -H "Authorization: Bearer $EDGE_FUNCTION_SECRET" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EDGE_FUNCTION_SECRET: ${{ secrets.EDGE_FUNCTION_SECRET }}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { anonymousSignInArgs } from '@/lib/e2e';
 import { usePushNotifications } from '@poup/shared';
+import { readNotificationsEnabled, syncPushPreference } from './use-notification-setting';
 import { readTrackedState, saveTrackedItem, type TrackedReadDeps, type TrackedSaveDeps } from '@/lib/tracked-items';
 
 export interface TrackedState {
@@ -37,7 +38,12 @@ const saveDeps: TrackedSaveDeps = {
   getUserId: readDeps.getUserId,
   async signInAnonymously() {
     const { data, error } = await supabase.auth.signInAnonymously(...anonymousSignInArgs);
-    return error ? null : (data.session?.user.id ?? null);
+    if (error || !data.session) return null;
+    // A switch turned off in Ajustes before this point only lived locally —
+    // push it to the new profile's notification_preferences so the server
+    // respects it.
+    if (!(await readNotificationsEnabled())) await syncPushPreference(false).catch(() => {});
+    return data.session.user.id;
   },
   selectExisting: (userId, productId) =>
     supabase.from('tracked_items').select('id').eq('user_id', userId).eq('product_id', productId).maybeSingle(),
@@ -83,7 +89,12 @@ export function useTrackedItems(productId: string) {
   );
 
   const trackWithAlert = useCallback(
-    (targetPrice: number): Promise<boolean> => {
+    async (targetPrice: number): Promise<boolean> => {
+      // Session first: registerForPushToken saves the token against the
+      // session that exists when permission resolves, so asking before
+      // signInAnonymously lost the token on the very first "acompanhar".
+      // If sign-in fails here, save() retries it and reports the failure.
+      if (!(await saveDeps.getUserId())) await saveDeps.signInAnonymously();
       // Fire-and-forget, and deliberately not awaited before the write —
       // a denied/skipped permission must never block saving the alert.
       requestPermission().catch(() => {});
