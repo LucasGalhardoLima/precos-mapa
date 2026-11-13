@@ -53,7 +53,7 @@ export default function PublicLayout({
               <Link href="/indice" className="hover:text-[var(--color-primary-deep)]">
                 Indice Regional
               </Link>
-              <Link href="/privacy" className="hover:text-[var(--color-primary-deep)]">
+              <Link href="/privacidade" className="hover:text-[var(--color-primary-deep)]">
                 Privacidade
               </Link>
             </div>

@@ -26,7 +26,8 @@ export type AjustesEventType =
   | 'settings_location_changed'
   | 'settings_notifications_on'
   | 'settings_notifications_off'
-  | 'settings_notifications_blocked_link';
+  | 'settings_notifications_blocked_link'
+  | 'settings_link_opened';
 
 export function trackedHeader(count: number): string {
   return `ITENS ACOMPANHADOS · ${count}`;
