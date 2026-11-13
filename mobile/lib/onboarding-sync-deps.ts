@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { anonymousSignInArgs } from '@/lib/e2e';
 import type { SyncDeps } from '@/lib/onboarding-sync';
 
 // Real Supabase wiring for syncOnboardingItems. Same anonymous-session pattern
@@ -11,7 +12,7 @@ export const supabaseSyncDeps: SyncDeps = {
     return session?.user.id ?? null;
   },
   async signInAnonymously() {
-    const { data, error } = await supabase.auth.signInAnonymously();
+    const { data, error } = await supabase.auth.signInAnonymously(...anonymousSignInArgs);
     if (error) return null;
     return data.session?.user.id ?? null;
   },

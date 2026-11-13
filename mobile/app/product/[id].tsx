@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Image, ScrollView, StyleSheet, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { colors, fontFamily, typography, spacing, targets, radii } from '../../constants/tokens';
@@ -21,15 +21,17 @@ import { useSizeAlternatives } from '../../hooks/use-size-alternatives';
 import { useAnalytics } from '../../hooks/use-analytics';
 import { triggerHaptic, triggerNotification } from '../../hooks/use-haptics';
 import { formatBRL } from '../../hooks/use-search';
-import { freshnessLabel, formatSize, resolveSizeAlternatives } from '../../lib/resposta';
+import { freshnessLabel, formatSize, nameWithSize, resolveSizeAlternatives, sizeOptionTappedPayload } from '../../lib/resposta';
+import { searchFieldRef } from '../../lib/search-focus';
 import { trackedRowLabel } from '../../lib/tracked-items';
+import { resolveHereStore } from '../../lib/ajustes';
 import { getPreferredChain, setPreferredChain } from '../../lib/preferred-store';
 
 export default function ProductScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { latitude, longitude } = useLocation({ autoRequest: false });
-  const { trackScreen, trackProductView, trackListAdd, trackAlertCreated } = useAnalytics();
+  const { track, trackScreen, trackProductView, trackListAdd, trackAlertCreated } = useAnalytics();
 
   const [preferredChain, setPreferredChainState] = useState<string | null>(null);
   useFocusEffect(
@@ -44,9 +46,11 @@ export default function ProductScreen() {
     }, []),
   );
 
-  const { view, product, isLoading, error, retry } = useProduct({ productId: id, userLat: latitude, userLng: longitude, preferredChain });
   const { stores: nearbyStores, isLoading: storesLoading } = useStores(latitude, longitude);
-  const { trackedState, isSubmitting, trackWithAlert, trackWithoutAlert } = useTrackedItems(id);
+  // Same resolution Ajustes uses, over all active stores (not just those with a price for this product).
+  const hereChain = resolveHereStore(nearbyStores, preferredChain)?.chainLabel ?? null;
+  const { view, product, isLoading, error, notFound, retry } = useProduct({ productId: id, userLat: latitude, userLng: longitude, hereChain });
+  const { trackedState, isSubmitting, error: trackError, clearError: clearTrackError, trackWithAlert, trackWithoutAlert } = useTrackedItems(id);
   const { candidates: sizeCandidates } = useSizeAlternatives(product);
   const [expanded, setExpanded] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -64,6 +68,16 @@ export default function ProductScreen() {
     // trackProductView identity change (same pattern as Raiz's trackSearch).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, id]);
+
+  const goToSearch = useCallback(() => {
+    // The screen underneath may be Raiz, another product (arrived via QUAL
+    // TAMANHO) or nothing (deep link), so go to Raiz explicitly: dismissTo pops
+    // back to it when it is in the stack and navigates to it otherwise.
+    // shortcut: fixed 400 ms wait before focusing, to cover a cold Raiz mount —
+    // upgrade: Raiz reads a "focus search" flag in lib/search-focus.ts on mount.
+    router.dismissTo('/');
+    setTimeout(() => searchFieldRef.current?.focus(), 400);
+  }, [router]);
 
   const handleSwap = useCallback(async (chainLabel: string) => {
     await setPreferredChain(chainLabel);
@@ -105,6 +119,29 @@ export default function ProductScreen() {
     }
   }, [trackWithoutAlert, id, winnerStoreId, trackListAdd]);
 
+  const openAcompanhar = () => {
+    clearTrackError();
+    setAcompanharVisible(true);
+  };
+
+  // Id that does not exist / is not a uuid (deep link, stale link): a fact about
+  // the product, not a connection problem. Two exits; the search one reuses the
+  // Raiz field via lib/search-focus.ts.
+  if (notFound) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <Header onBack={() => router.back()} />
+        <View style={styles.body}>
+          <Text style={styles.stateHeadline}>Não achamos esse produto</Text>
+          <View style={styles.stateActions}>
+            <FilledButton label="Buscar pelo nome ›" onPress={goToSearch} />
+            <TextLink label="Escanear o código" onPress={() => router.replace('/scan')} />
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (isLoading || !view || !product) {
     // Reuses the exact offline pattern already shipped for Resultado
     // (mobile/app/index.tsx) — same underlying reality (a failed Supabase
@@ -118,7 +155,7 @@ export default function ProductScreen() {
             <Text style={styles.stateSupport}>Não deu para buscar os preços de hoje. Verifique a rede e tente de novo.</Text>
             <View style={styles.stateActions}>
               <FilledButton label="Tentar de novo ›" onPress={retry} />
-              <TextLink label="Ajustes de rede do aparelho" onPress={() => {}} />
+              <TextLink label="Ajustes de rede do aparelho" onPress={() => Linking.openSettings()} />
             </View>
           </View>
         </SafeAreaView>
@@ -131,10 +168,11 @@ export default function ProductScreen() {
     );
   }
 
-  const nameLine = product.sizeValue != null ? `${product.name} · ${formatSize(product.sizeValue, product.sizeUnit)}` : product.name;
+  const nameLine = nameWithSize(product.name, product.sizeValue, product.sizeUnit);
   const qualTamanho = view.pricePerUnit ? resolveSizeAlternatives(product, view.pricePerUnit.value, sizeCandidates) : null;
+  // Nearest priced branch OF the 'aqui' chain only (none if it has no price row).
   const nearestBranchId = view.branchRows.reduce<{ id: string; km: number } | null>((best, b) => {
-    if (b.distanceKm == null) return best;
+    if (b.distanceKm == null || b.chainLabel !== hereChain) return best;
     return !best || b.distanceKm < best.km ? { id: b.storeId, km: b.distanceKm } : best;
   }, null)?.id;
 
@@ -195,7 +233,6 @@ export default function ProductScreen() {
                   isWinner={row.isWinner}
                   isHere={row.isHere}
                   freshnessLabel={freshnessLabel(row.daysAgo)}
-                  muted={row.isStale}
                   onSwap={() => setPickerVisible(true)}
                 />
               ))}
@@ -203,10 +240,10 @@ export default function ProductScreen() {
           {trackedState?.isTracked ? (
             <View style={styles.trackedBlock}>
               <Text style={styles.trackedLabel}>{trackedRowLabel(trackedState)}</Text>
-              <TextLink label="editar" onPress={() => setAcompanharVisible(true)} />
+              <TextLink label="editar" onPress={openAcompanhar} />
             </View>
           ) : (
-            <TextLink label="acompanhar este item" onPress={() => setAcompanharVisible(true)} />
+            <TextLink label="acompanhar este item" onPress={openAcompanhar} />
           )}
         </View>
 
@@ -223,7 +260,11 @@ export default function ProductScreen() {
                   subtitle={`${item.pricePerUnitLabel} · menor no ${item.storeName}`}
                   chevron
                   chevronColor={colors.brand}
-                  onPress={() => router.push(`/product/${item.productId}`)}
+                  onPress={() => {
+                    const { productId, metadata } = sizeOptionTappedPayload(product, item);
+                    track('size_option_tapped', { productId, metadata });
+                    router.push(`/product/${item.productId}`);
+                  }}
                 />
               ))
             )}
@@ -243,6 +284,7 @@ export default function ProductScreen() {
         todayPrice={view.price}
         todayStoreName={view.whereRows.find((r) => r.isWinner)?.chainLabel ?? null}
         isSubmitting={isSubmitting}
+        saveFailed={trackError}
         onClose={() => setAcompanharVisible(false)}
         onTrackWithAlert={handleTrackWithAlert}
         onTrackWithoutAlert={handleTrackWithoutAlert}
@@ -326,7 +368,9 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 26,
     letterSpacing: -0.22,
-    color: colors.ink,
+    // Estado sem lista é ausência, não fato dado: cinza (secondary), como o
+    // "Nenhum produto com ..." da Raiz.
+    color: colors.secondary,
     marginTop: spacing.lg,
   },
   stateSupport: {

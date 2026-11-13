@@ -2,7 +2,7 @@ jest.mock('@react-native-async-storage/async-storage', () => require('@react-nat
 jest.mock('@/lib/supabase', () => ({ supabase: {} }));
 
 import { loadTrackedSummary, type SummaryDeps, type TrackedRecordWithProduct } from '@/lib/tracked-summary';
-import type { RawSearchRow } from '@/hooks/use-search';
+import type { SizedSearchRow } from '@/lib/raiz';
 
 const productRec: TrackedRecordWithProduct = {
   id: 't1',
@@ -13,7 +13,7 @@ const productRec: TrackedRecordWithProduct = {
 };
 const genericRec: TrackedRecordWithProduct = { id: 't2', product_id: null, category_label: 'Arroz', category_size: '5 kg', products: null };
 
-const searchRow = (name: string): RawSearchRow => ({
+const searchRow = (name: string, size: [number, string] = [5000, 'g']): SizedSearchRow => ({
   product_id: 'p9',
   product_name: name,
   brand: null,
@@ -21,13 +21,15 @@ const searchRow = (name: string): RawSearchRow => ({
   has_active_price: true,
   cheapest_price: 4,
   prices: [{ store_id: 's1', store_name: 'Tenda', price: 4, last_price_date: new Date().toISOString() }],
+  size_value: size[0],
+  size_unit: size[1],
 });
 
 function deps(over: Partial<SummaryDeps> = {}): SummaryDeps {
   return {
     listTracked: async () => [productRec, genericRec],
     productPrices: async () => [{ store_id: 's1', store_name: 'Savegnago', price: 5, last_price_date: new Date().toISOString() }],
-    genericSearch: async () => [searchRow('Dog Chow Arroz'), searchRow('Arroz Camil 1kg')],
+    genericSearch: async () => [searchRow('Dog Chow Arroz'), searchRow('Arroz Camil 5kg')],
     ...over,
   };
 }
@@ -37,7 +39,7 @@ describe('loadTrackedSummary', () => {
     const r = await loadTrackedSummary(deps());
     if (!r.ok) throw new Error('expected ok');
     expect(r.rows[0]).toMatchObject({ key: 't1', productId: 'p1', hasPriceToday: true, winnerStoreName: 'Savegnago' });
-    expect(r.rows[1]).toMatchObject({ key: 't2', productId: 'p9', name: 'Arroz Camil 1kg', size: null, winnerStoreName: 'Tenda' });
+    expect(r.rows[1]).toMatchObject({ key: 't2', productId: 'p9', name: 'Arroz Camil 5kg', size: null, winnerStoreName: 'Tenda' });
   });
 
   it('no session is an empty list, not an error', async () => {

@@ -46,7 +46,7 @@ App atual em React Native, 5 abas (Início, Busca, Mapa, Lista, Alertas), rankin
 
 Artefato: https://claude.ai/artifact/2iTFp1CFYKN3kVAtMr6p8C (design system + Raiz, Resposta, Resultado, Scanner, Ajustes, Onboarding). O que mudou na revisão da alta fidelidade, além do que já estava nos esboços:
 
-**Base visual (Capital Verde).** Manrope, números tabulares. Marca #12A08C; verde-texto e botão preenchido #0E7F6F (contraste); selo #E4F3EF; fundo #F2F5F4; tinta #16201D; secundário #5B6965; ausência #A3AEAA; borda #DCE3E0; âmbar #9A5B00 sobre #FBF1DC; vermelho só para erro de bloqueio. Escala: título 26/700, frase 20/600, preço 22/800, corpo 16/500, apoio 14/500, rótulo 13/700 caps, procedência 13. Nada abaixo de 13 px. Raio 16/20, alvo 44, botão 52, cartão com borda 1,5 px sem sombra. Verde tem três usos: marca, vencedor de bloco, toque com chevron. Fato nunca leva chevron. Uma borda colorida por linha. Superfície escura só no scanner.
+**Base visual (Capital Verde).** Manrope, números tabulares. Marca #12A08C; verde-texto e botão preenchido #0E7F6F (contraste); selo #E4F3EF; fundo #F2F5F4; tinta #16201D; secundário #5B6965; ausência #A3AEAA; borda #DCE3E0; âmbar #9A5B00 sobre #FBF1DC; vermelho só para erro de bloqueio. Escala: título 26/700, frase 20/600, preço 22/800, corpo 16/500, apoio 14/500, rótulo 13/700 caps, procedência 13. Nada abaixo de 13 px. Raio 16/20, alvo 44, botão 52, cartão com borda 1,5 px sem sombra. Verde tem três usos: marca, vencedor de bloco, toque com chevron. Fato nunca leva chevron. Uma borda colorida por linha. Superfície escura só no scanner; exceção: a faixa transitória de desfazer (5 s) em Ajustes, conforme artefato.
 
 **Raiz.** Nome do mercado na frase-título em tinta 800, não verde (frase não é toque).
 
@@ -82,7 +82,7 @@ Nada mais do mockup entrou: sem formas de fundo, gradiente, tagline, "dica", sel
 
 **Pré-requisito de câmera nativa.** `react-native-vision-camera` estava no `package.json`/`Podfile.lock`, mas o `ios/` local (não versionado — gerado via Expo CNG a partir do `app.json`, que já registra o plugin) e o `.app` instalado no simulador eram de antes dela entrar no projeto: `nm` no binário confirmou zero símbolos da lib. `npx expo run:ios --no-bundler` rodou `pod install` (resolveu e compilou `libVisionCamera.a`, antes ausente) e o rebuild nativo — sucesso, 0 erros. Confirmado depois via `nm` no `Poup.debug.dylib` instalado (3465+ símbolos, incluindo `CameraViewManager`/`CameraDevicesManager`). Como `ios/` não é versionado, isso não é um fix de config — é só o build local ficando desatualizado. Lucas provavelmente precisa do mesmo `npx expo run:ios` (ou equivalente via Xcode) no aparelho físico antes de testar 5a.
 
-**Superfície escura.** Única tela do app nesse tratamento (mobile/CLAUDE.md). Sem hex documentado pro fundo em si — reaproveitado `colors.ink` (já o tom mais escuro do sistema) em vez de inventar um novo. Laser `#7FD9C8` e cantos da moldura `#12A08C`, ambos dados explicitamente na spec. `claude_design` MCP seguiu indisponível nesta sessão (mesma falha de auth já registrada na Etapa 5) — não deu pra conferir pixel a pixel contra o artefato; a leitura de "toque com chevron" = verde-marca (regra das três cores) definiu o teto da folha de texto em `colors.brand`, adicionado como prop opcional em `TextLink` (default seguindo `brandInk`, sem mudar nenhum chamador existente).
+**Superfície escura.** Única tela do app nesse tratamento (mobile/CLAUDE.md); a única outra superfície escura é a faixa de desfazer de Ajustes (ver Base visual). Sem hex documentado pro fundo em si — reaproveitado `colors.ink` (já o tom mais escuro do sistema) em vez de inventar um novo. Laser `#7FD9C8` e cantos da moldura `#12A08C`, ambos dados explicitamente na spec. `claude_design` MCP seguiu indisponível nesta sessão (mesma falha de auth já registrada na Etapa 5) — não deu pra conferir pixel a pixel contra o artefato; a leitura de "toque com chevron" = verde-marca (regra das três cores) definiu o teto da folha de texto em `colors.brand`, adicionado como prop opcional em `TextLink` (default seguindo `brandInk`, sem mudar nenhum chamador existente).
 
 **Leitura → Resposta.** `products.ean` (já existente, migration 030) → `router.replace` pra `/product/{id}` (replace, não push: voltar da Resposta retorna pra Raiz, não pra câmera ainda aberta). EAN conhecido sem preço hoje cai sozinho no estado 3d da Resposta — Resposta já decide isso, o scanner não precisa saber.
 
@@ -125,6 +125,32 @@ Supabase fica no plano Free (1 GB de Storage, 500 MB de banco; banco em 279 MB h
 **Pendências:**
 - Retenção de 90 dias em `price_history` (ainda sem política).
 - Medir o tamanho do banco semanalmente.
+
+## Textos propostos (nov/2026) — aprovar
+
+Propostos pelo conselho de agentes (engenharia, design, produto) por delegação do Lucas ("GO mode"), **ausentes do artefato**. O CLAUDE.md do app manda parar e perguntar quando falta texto; aqui ficam registrados para revisão. Tom cinza (`secondary`) em todos; sem vermelho/âmbar. Rótulos de botão levam "›"; o TextLink acrescenta o dele.
+
+| Onde | Texto | Origem |
+|---|---|---|
+| Erro global (ErrorBoundary) | título "Algo deu errado" | pedido pelo conselho |
+| | apoio "Não deu para mostrar esta tela. Comece de novo pelo início." | **redação minha**, a aprovar |
+| | botão "Voltar ao início ›" (vai para a Raiz) | pedido pelo conselho |
+| | texto "Tentar esta tela de novo" (refaz a tela) | **redação minha**, a aprovar |
+| Resposta, produto inexistente / id malformado | título "Não achamos esse produto" (mesmo do cartão 5c do scanner) | pedido |
+| | botão "Buscar pelo nome ›" (Raiz com a busca em foco) | pedido |
+| | texto "Escanear o código" | pedido |
+| Folha Acompanhar, falha ao salvar | linha "Não deu para salvar. Tente de novo." (a folha não fecha) | pedido |
+| Raiz sem itens, sync pendente / offline | título "Sem conexão" | pedido |
+| | apoio "Seus itens aparecem aqui assim que a rede voltar." | pedido |
+| | botão "Tentar de novo ›" (refaz sync e leitura); texto "Ajustes de rede do aparelho" | pedido |
+| Raiz sem itens, leitura falhou com rede ok | título "Não deu para carregar seus itens" | pedido |
+| | apoio "Tente de novo em instantes."; botão "Tentar de novo ›"; texto "Escanear o código" | pedido |
+| Scanner sem câmera (hardware) | título "Sem câmera neste aparelho" | pedido |
+| | botão "Buscar pelo nome ›"; texto "Digitar o nome em vez disso" (mesmo destino do botão: "Abrir Ajustes" não ajuda sem câmera) | pedido (alternativa prevista) |
+
+Também mudou, sem texto novo: o título dos estados sem lista ("Sem conexão" da Resposta e do Resultado) passa de tinta para `secondary`, igual ao "Nenhum produto com ...". O texto "Ajustes de rede do aparelho" agora abre os Ajustes do app no iOS (`Linking.openSettings()`), que não tem página de rede; o rótulo é o do artefato.
+
+Evento novo: `size_option_tapped` (toque numa linha de QUAL TAMANHO). `product_id` = tamanho aberto (destino); `metadata`: `from_product_id`, `from_size`, `to_size`.
 
 ## Próximo passo
 

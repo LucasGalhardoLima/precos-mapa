@@ -23,7 +23,7 @@ mobile/
   app/            # rotas novas (Expo Router). Só as listadas abaixo.
   components/     # componentes novos, um por arquivo, do design system Capital Verde
   hooks/          # hooks de dados reaproveitados (lista abaixo)
-  lib/            # supabase, posthog, cache — reaproveitados como estão
+  lib/            # supabase, cache — reaproveitados como estão
   legacy/         # app e componentes antigos. SOMENTE LEITURA. Nunca importar daqui.
 ```
 
@@ -66,7 +66,7 @@ Scanner usa `react-native-vision-camera` (já instalado). Câmera é pedida no p
 
 Estas não são preferências. Uma PR que quebra qualquer uma volta.
 
-- **Cores**: só os tokens do design system. Verde tem exatamente três usos: marca, vencedor de bloco, toque com chevron. Vermelho só em erro de bloqueio. Ausência é cinza, nunca vermelho nem âmbar.
+- **Cores**: só os tokens do design system. Verde tem exatamente três usos: marca, vencedor de bloco, toque com chevron. Vermelho só em erro de bloqueio. Ausência é cinza, nunca vermelho nem âmbar. Superfície escura só no scanner; exceção: a faixa transitória de desfazer (5 s) em Ajustes, conforme artefato.
 - **Tipografia**: Manrope, números tabulares. Nada abaixo de 13 px.
 - **Chevron** só em linha tocável. Fato nunca leva chevron. Uma borda colorida por linha.
 - **Tetos**: Raiz 4 itens + "ver todos"; Resultado 5 com teclado / 8 sem + "ver mais N"; ONDE até 4 linhas + "ver todos os mercados". A lista rola sob o teclado; o teto é limite de carga, não promessa de caber.

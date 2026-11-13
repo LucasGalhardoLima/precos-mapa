@@ -1,0 +1,27 @@
+# Resposta, estado 3d "Sem preço hoje": o Camil 1 kg é achado pela busca (não por
+# id) para cobrir também a linha cinza "—" do Resultado levando a esta tela.
+# Só leitura. Depende de dados reais: o Camil precisa seguir sem preço de hoje.
+appId: com.poup.consumer
+---
+- runFlow: _ate-raiz.yaml
+- tapOn: "buscar produto"
+- inputText: "arroz branco"
+- extendedWaitUntil:
+    visible: "[1-9][0-9]* PRODUTOS.*"
+    timeout: 20000
+- pressKey: Enter
+# Linhas sem preço hoje ficam no fim da lista (cinza, "—"): estende e rola até o Camil.
+- scrollUntilVisible:
+    element: "ver mais [0-9]+.*"
+    timeout: 30000
+- tapOn: "ver mais [0-9]+.*"
+- scrollUntilVisible:
+    element: "Arroz Branco Camil Tipo 1 1kg.*"
+    timeout: 30000
+- tapOn: "Arroz Branco Camil Tipo 1 1kg.*"
+- extendedWaitUntil:
+    visible: "ONDE"
+    timeout: 20000
+- assertVisible: "Sem preço hoje.*"
+- assertVisible: "Nenhum dos 4 mercados atualizou este produto na rodada de hoje."
+- takeScreenshot: resposta-sem-preco-hoje

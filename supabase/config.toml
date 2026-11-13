@@ -405,6 +405,9 @@ verify_jwt = false
 [functions.notify-favorite-match]
 verify_jwt = false
 
+[functions.notify-tracked-price]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

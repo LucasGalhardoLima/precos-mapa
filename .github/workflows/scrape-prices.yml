@@ -49,3 +49,37 @@ jobs:
           # automatically (each script's own `directUrl ? ... : ...` check),
           # so this is safe to leave set even once the restriction lifts.
           SCRAPER_DATABASE_URL: ${{ secrets.SCRAPER_DATABASE_URL }}
+      - name: Upload warmup diagnostics
+        # Only tenda-atacado writes this dir (screenshot/HTML of the failed warmup).
+        if: failure() && matrix.retailer == 'tenda-atacado'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tenda-warmup-diagnostics
+          path: scripts/.scrape-tenda-diagnostics/
+          # The dir is a dot-directory (matches the .scrape-* gitignore); v4.4+ skips hidden files by default.
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
+
+  # "Acompanhar e avisar": once every retailer job has finished (success or
+  # not — one chain failing must not hold back pushes for the other three's
+  # fresh prices), ask notify-tracked-price to compare today's round against
+  # each tracked item's target. Chosen over pg_cron because it runs exactly
+  # after the round instead of at a guessed hour (job durations vary 46-181min).
+  # Needs repo secret EDGE_FUNCTION_SECRET (same value as the function's).
+  notify:
+    name: Notify tracked prices
+    needs: scrape
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Call notify-tracked-price
+        run: |
+          curl -fsS -X POST "$SUPABASE_URL/functions/v1/notify-tracked-price" \
+            -H "Authorization: Bearer $EDGE_FUNCTION_SECRET" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EDGE_FUNCTION_SECRET: ${{ secrets.EDGE_FUNCTION_SECRET }}

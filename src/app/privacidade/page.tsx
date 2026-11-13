@@ -13,9 +13,10 @@
  * packages/shared use-location (coordenadas só na consulta; reverse geocode
  * do sistema), migrations 079 (city_interest, sem id de usuário), 084
  * (tracked_items), 049 (eventos anônimos); use-push-notifications
- * (getExpoPushTokenAsync). PostHog está no package.json e no env de produção
- * do eas.json, mas nada em mobile/app, hooks ou lib o importa (só legacy/,
- * fora do app) — por isso não aparece aqui. Se voltar a ser usado, entra aqui.
+ * (getExpoPushTokenAsync; token gravado em profiles.push_token e preferência em
+ * notification_preferences.push_alerts desde o #84). PostHog está no package.json, mas nada em
+ * mobile/app, hooks ou lib o importa (só legacy/, fora do app; as chaves já
+ * saíram do eas.json no #90) — por isso não aparece aqui. Se voltar a ser usado, entra aqui.
  *
  * Se o que o app coleta mudar, esta página muda no mesmo PR.
  */
@@ -120,12 +121,12 @@ export default function PrivacidadePage() {
               sua conta anônima.
             </p>
             <p>
-              <strong>Token de notificação.</strong> Só se você ativar os avisos e permitir
-              notificações. O sistema do aparelho (Apple ou Google) gera um token, que o app registra no
-              serviço de notificações da Expo para poder enviar o aviso de preço.{" "}
-              <Pendente>
-                {"<DEFINIR: confirmar se, na data de vigência, o token já é gravado no nosso servidor, ligado à conta anônima — hoje, em main, não é>"}
-              </Pendente>
+              <strong>Token de notificação.</strong> Só se você permitir notificações. O sistema do
+              aparelho (Apple ou Google) gera um token, que o app registra no serviço de notificações
+              da Expo e grava no nosso servidor, ligado à conta anônima, para podermos enviar o aviso
+              de preço. O app o grava de novo a cada abertura, sem pedir a permissão outra vez, e só
+              enquanto a permissão estiver concedida. Guardamos também a sua escolha de receber ou não
+              os avisos.
             </p>
             <p>
               <strong>E-mail, só em &quot;Fora de Matão&quot;.</strong> Se você está em outra cidade,
@@ -139,8 +140,10 @@ export default function PrivacidadePage() {
               data e hora.
             </p>
             <p>
-              O mercado que você marcou como &quot;onde você está&quot; e a preferência de avisos são
-              guardados no seu aparelho; a mudança em si entra nos eventos de uso descritos acima.
+              O mercado que você marcou como &quot;onde você está&quot; fica guardado no seu aparelho; a
+              mudança em si entra nos eventos de uso descritos acima. A preferência de avisos fica no
+              aparelho e também no nosso servidor, para que o interruptor de Ajustes valha para os
+              avisos enviados.
             </p>
           </Secao>
 

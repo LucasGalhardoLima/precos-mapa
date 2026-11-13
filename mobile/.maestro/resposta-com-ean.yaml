@@ -1,0 +1,18 @@
+# Resposta, produto com EAN e preço hoje: título "Menor preço no X: R$ Y", ONDE
+# com vencedor, rodapé de procedência. Só leitura. Id lido da produção em
+# 12/11/2026 (Patéko 1 kg); se sumir do catálogo, o fluxo falha na espera do ONDE.
+appId: com.poup.consumer
+---
+- runFlow: _ate-raiz.yaml
+- runFlow:
+    file: _abrir.yaml
+    env:
+      URL: "poup://product/a4b7679d-3f5b-4445-8624-7210f9f99be7"
+- extendedWaitUntil:
+    visible: "ONDE"
+    timeout: 20000
+- assertVisible: "Arroz Branco Patéko.*"
+- assertVisible: "Menor preço no .*"
+- assertVisible: "acompanhar este item.*"
+- assertVisible: "preços de hoje, 03:00.*"
+- takeScreenshot: resposta-com-ean

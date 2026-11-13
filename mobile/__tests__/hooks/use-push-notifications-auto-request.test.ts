@@ -4,8 +4,13 @@ import * as Device from 'expo-device';
 // use-push-notifications.ts imports the shared supabase client at module
 // scope, which eagerly creates a real client on import (fails without live
 // env vars) — same issue and same fix as use-analytics.test.ts's note.
-jest.mock('@poup/shared/lib/supabase', () => ({ supabase: { from: jest.fn() } }));
-jest.mock('@poup/shared/store/auth-store', () => ({ useAuthStore: () => null }));
+const mockGetSession = jest.fn();
+const mockEq = jest.fn().mockResolvedValue({ error: null });
+const mockUpdate = jest.fn(() => ({ eq: mockEq }));
+const mockFrom = jest.fn(() => ({ update: mockUpdate }));
+jest.mock('@poup/shared/lib/supabase', () => ({
+  supabase: { from: (...a: unknown[]) => mockFrom(...(a as [])), auth: { getSession: () => mockGetSession() } },
+}));
 
 import { registerForPushToken } from '@poup/shared/hooks/use-push-notifications';
 
@@ -27,7 +32,10 @@ jest.mock('expo-notifications', () => ({
 const mockedNotifications = Notifications as jest.Mocked<typeof Notifications>;
 const status = (s: string) => ({ status: s }) as Notifications.NotificationPermissionsStatus;
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockGetSession.mockResolvedValue({ data: { session: null } });
+});
 
 describe('registerForPushToken', () => {
   it('never prompts when already granted, regardless of the prompt flag', async () => {
@@ -68,5 +76,31 @@ describe('registerForPushToken', () => {
     } finally {
       (Device as { isDevice: boolean }).isDevice = original;
     }
+  });
+});
+
+// The MLP never fills useAuthStore — its only session is the anonymous one
+// that use-tracked-items creates with supabase.auth.signInAnonymously(). The
+// token must be saved against that session, or the server has nobody to
+// notify when a tracked item's price drops below its target.
+describe('registerForPushToken — saving the token', () => {
+  it('writes profiles.push_token for the current (anonymous) supabase session', async () => {
+    mockedNotifications.getPermissionsAsync.mockResolvedValue(status('granted'));
+    mockGetSession.mockResolvedValue({ data: { session: { user: { id: 'anon-user-1' } } } });
+
+    await registerForPushToken(false);
+
+    expect(mockFrom).toHaveBeenCalledWith('profiles');
+    expect(mockUpdate).toHaveBeenCalledWith({ push_token: 'ExponentPushToken[mock-token]' });
+    expect(mockEq).toHaveBeenCalledWith('id', 'anon-user-1');
+  });
+
+  it('writes nothing when there is no session yet', async () => {
+    mockedNotifications.getPermissionsAsync.mockResolvedValue(status('granted'));
+
+    const token = await registerForPushToken(false);
+
+    expect(token).toBe('ExponentPushToken[mock-token]');
+    expect(mockFrom).not.toHaveBeenCalled();
   });
 });

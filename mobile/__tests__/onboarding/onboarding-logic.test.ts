@@ -75,6 +75,11 @@ describe('ctaLabel', () => {
   });
 });
 
+it('parseDefaultSize converts decimals to exact base units', () => {
+  expect(parseDefaultSize('1,1 L')).toEqual({ value: 1100, unit: 'ml' });
+  expect(parseDefaultSize('1.1 kg')).toEqual({ value: 1100, unit: 'g' });
+});
+
 describe('GENERIC_ITEMS', () => {
   it('has the 12 fixed chips, each with a size and no duplicate label', () => {
     expect(GENERIC_ITEMS).toHaveLength(12);
@@ -127,6 +132,21 @@ describe('parseDefaultSize', () => {
   it('returns null where products.size_* has no counterpart, so no size is claimed', () => {
     expect(parseDefaultSize('12 rolos')).toBeNull(); // not a unit the size parser knows
     expect(parseDefaultSize('kg')).toBeNull(); // no number
+  });
+
+  // Live data 13/11 (read-only): Frango has 6 fresh products at 1000 g, none
+  // expressed "per kg"; Papel higiênico rolls are stored mostly in 'm', so
+  // '12 rolos' is deliberately the only item left without a size filter.
+  it('every generic item has a size the catalog can match, except Papel higiênico', () => {
+    const unparsed = GENERIC_ITEMS.filter((i) => parseDefaultSize(i.size) === null).map((i) => i.label);
+    expect(unparsed).toEqual(['Papel higiênico']);
+  });
+
+  // Live data 13/11 (read-only): Sabão em pó has no fresh product at 1000 g
+  // (0 of 8) but 10 at 800 g. Product decision, to be reviewed by Lucas.
+  it('Sabão em pó defaults to a size that has fresh products (800 g)', () => {
+    const item = GENERIC_ITEMS.find((i) => i.label === 'Sabão em pó');
+    expect(parseDefaultSize(item!.size)).toEqual({ value: 800, unit: 'g' });
   });
 
   it('covers every generic item without throwing', () => {

@@ -1,0 +1,44 @@
+# ESCREVE EM PRODUÇÃO — só com Metro e2e (`EXPO_PUBLIC_E2E=1 npx expo start --dev-client`)
+# e depois de confirmar a marca (README). Concluir o onboarding com itens cria 1
+# usuário anônimo (marcado e2e) + 2 linhas em tracked_items + eventos marcados.
+# Uma execução, sem loops. NUNCA preencher o e-mail de "Fora de Matão" (city_interest
+# não tem dono nem marca; o cleanup não acha).
+# Onboarding pelo caminho "digitar minha cidade" (não depende do diálogo de localização do iOS).
+# Cobre também a unificação do #85: Raiz e Ajustes mostram a MESMA lista.
+appId: com.poup.consumer
+---
+- runFlow: ../_launch.yaml
+- takeScreenshot: onboarding-1-localizacao
+- tapOn: "Digitar minha cidade.*"
+- assertVisible: "Qual é a sua cidade?"
+- tapOn: "digite sua cidade"
+- inputText: "Matão"
+- assertVisible: "Matão, SP"
+- tapOn: "Matão, SP"
+- assertVisible: "O que você compra sempre?"
+- takeScreenshot: onboarding-2-itens
+- tapOn: "Leite"
+- tapOn: "Arroz"
+# O rótulo acompanha a contagem (plural certo): é parte do que se verifica.
+- assertVisible: "Ver preços de hoje · 2 itens.*"
+- takeScreenshot: onboarding-2-itens-escolhidos
+- tapOn: "Ver preços de hoje · 2 itens.*"
+- extendedWaitUntil:
+    visible: "SEUS ITENS"
+    timeout: 20000
+- assertVisible: "Leite.*"
+- assertVisible: "Arroz.*"
+- takeScreenshot: raiz-com-itens
+# Mesma lista na Raiz e em Ajustes (#85): os 2 itens escolhidos viraram linhas de
+# tracked_items. Entra por deep link: o "Tools" do dev client cobre a engrenagem.
+- runFlow:
+    file: ../_abrir.yaml
+    env:
+      URL: "poup://settings"
+- extendedWaitUntil:
+    visible: "ITENS ACOMPANHADOS · 2"
+    timeout: 20000
+- assertVisible: "Leite.*"
+- assertVisible: "Arroz.*"
+- assertNotVisible: "Nenhum ainda.*"
+- takeScreenshot: ajustes-com-itens-do-onboarding
