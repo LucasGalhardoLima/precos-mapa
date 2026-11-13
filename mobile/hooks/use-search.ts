@@ -87,6 +87,18 @@ interface UseSearchParams {
   pageSize?: number;
 }
 
+export type SearchOutcome = { results: SearchResult[]; error: null } | { results: []; error: Error };
+
+// One RPC attempt turned into an outcome.
+export async function runSearch(
+  call: () => PromiseLike<{ data: unknown; error: { message: string } | null }>,
+  _opts?: { isCancelled?: () => boolean },
+): Promise<SearchOutcome> {
+  const { data, error } = await call();
+  if (error) return { results: [], error: new Error(error.message) };
+  return { results: sortPricedFirst(((data as RawSearchRow[] | null) ?? []).map(mapSearchRow)), error: null };
+}
+
 // Powers Resultado (esboços 5a–5c) via search_products_with_prices. 200ms
 // debounce, 2-char minimum (matches the RPC's own floor — shorter queries
 // return '[]' server-side).
@@ -110,22 +122,19 @@ export function useSearch({ query, userLat, userLng, pageSize = 30 }: UseSearchP
     let cancelled = false;
 
     const timer = setTimeout(async () => {
-      const { data, error: rpcErr } = await supabase.rpc('search_products_with_prices', {
-        query: trimmed,
-        user_lat: userLat,
-        user_lng: userLng,
-        page_size: pageSize,
-      });
+      const outcome = await runSearch(() =>
+        supabase.rpc('search_products_with_prices', {
+          query: trimmed,
+          user_lat: userLat,
+          user_lng: userLng,
+          page_size: pageSize,
+        }),
+      );
 
       if (cancelled) return;
 
-      if (rpcErr) {
-        setError(new Error(rpcErr.message));
-        setResults([]);
-      } else {
-        setError(null);
-        setResults(sortPricedFirst(((data as RawSearchRow[] | null) ?? []).map(mapSearchRow)));
-      }
+      setError(outcome.error);
+      setResults(outcome.results);
       setIsSearching(false);
     }, 200);
 
