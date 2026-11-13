@@ -1,0 +1,72 @@
+# ESCREVE EM PRODUÇÃO (usuário anônimo +
+# tracked_items + notification_preferences) — só com Metro e2e e marca confirmada.
+# Rode com o keychain do simulador zerado (`xcrun simctl keychain <udid> reset`): o
+# keychain sobrevive ao clearState e uma sessão anterior com itens faz `_ate-raiz`
+# cair na Raiz com itens, não no dia zero.
+# Cobre: acompanhar com preço-alvo → "acompanhando · avisar abaixo de R$ X" → editar →
+# Ajustes lista o item → ✕ remove → "desfazer" restaura. Uma execução, sem loops.
+# O iOS não tem `simctl privacy grant notifications`: o diálogo de notificação é tratado.
+appId: com.poup.consumer
+---
+- runFlow: ../_ate-raiz.yaml
+- runFlow:
+    file: ../_abrir.yaml
+    env:
+      URL: "poup://product/a4b7679d-3f5b-4445-8624-7210f9f99be7"
+- extendedWaitUntil:
+    visible: "ONDE"
+    timeout: 20000
+- tapOn: "acompanhar este item.*"
+- extendedWaitUntil:
+    visible: "AVISAR QUANDO CAIR ABAIXO DE"
+    timeout: 10000
+- tapOn: "Acompanhar e avisar.*"
+- extendedWaitUntil:
+    visible: "Allow|Permitir|acompanhando.*"
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "Allow|Permitir"
+    commands:
+      - tapOn: "Allow|Permitir"
+- extendedWaitUntil:
+    visible: "acompanhando · avisar abaixo de R\\$.*"
+    timeout: 15000
+- takeScreenshot: acompanhar-acompanhando
+# Editar o alvo. Digita com o teclado aberto e exige os dois botões visíveis acima
+# dele (a folha tinha o teclado por cima dos botões; corrigido com KeyboardAvoidingView).
+- tapOn: "editar.*"
+- extendedWaitUntil:
+    visible: "AVISAR QUANDO CAIR ABAIXO DE"
+    timeout: 10000
+- tapOn: "0,00|[0-9]+,[0-9]{2}"
+- eraseText: 10
+- inputText: "5,00"
+- assertVisible: "Acompanhar e avisar.*"
+- assertVisible: "Acompanhar sem avisos.*"
+- takeScreenshot: acompanhar-teclado-aberto
+- tapOn: "Acompanhar e avisar.*"
+- extendedWaitUntil:
+    visible: "acompanhando · avisar abaixo de R\\$.5,00"  # "." casa o espaço (formatBRL usa NBSP)
+    timeout: 15000
+# Ajustes lista o item.
+- runFlow:
+    file: ../_abrir.yaml
+    env:
+      URL: "poup://settings"
+- extendedWaitUntil:
+    visible: "ITENS ACOMPANHADOS · 1"
+    timeout: 20000
+- assertVisible: "Arroz Branco Patéko.*"
+- takeScreenshot: acompanhar-ajustes-com-item
+# ✕ remove, "desfazer" restaura.
+- tapOn: "Remover .*"
+- extendedWaitUntil:
+    visible: ".* removido"
+    timeout: 10000
+- takeScreenshot: acompanhar-removido
+- tapOn: "desfazer"
+- extendedWaitUntil:
+    visible: "ITENS ACOMPANHADOS · 1"
+    timeout: 10000
+- takeScreenshot: acompanhar-desfeito

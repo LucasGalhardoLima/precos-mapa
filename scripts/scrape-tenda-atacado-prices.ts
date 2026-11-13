@@ -75,7 +75,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Client } from 'pg';
 import { chromium, type Page } from 'playwright';
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { connectAsServiceRole, createDirectScraperDb, createRestScraperDb, type ScraperDb } from '../src/lib/scraper-db';
 
@@ -110,6 +110,9 @@ const BATCH = 10000; // deliberately >> catalog size (~5,300 in-stock observed) 
 
 const CHECKPOINT_FILE = resolve(process.cwd(), 'scripts/.scrape-tenda-checkpoint.json');
 const DISCOVERY_CHECKPOINT_FILE = resolve(process.cwd(), 'scripts/.scrape-tenda-discovery-checkpoint.json');
+// Warmup failure evidence (screenshot + HTML + shipping-options response), uploaded as an
+// Actions artifact on failure. Matches the `scripts/.scrape-*` gitignore pattern.
+const WARMUP_DIAG_DIR = resolve(process.cwd(), 'scripts/.scrape-tenda-diagnostics');
 const REVIEW_FILE = resolve(process.cwd(), 'scripts/.scrape-tenda-review.csv');
 
 // Set to false only after reviewing a sample run's output.
@@ -289,16 +292,20 @@ interface DiscoveredProduct {
  * the 500 pattern specifically and re-run this warmup mid-script instead of
  * aborting the whole run.
  */
-async function warmupMataoOnce(): Promise<{ cartId: string; branchId: string }> {
+async function warmupMataoOnce(attempt: number): Promise<{ cartId: string; branchId: string }> {
   const browser = await chromium.launch({ headless: true });
+  let page: Page | undefined;
+  let shippingInfo = 'shipping-options response not seen';
   try {
     const context = await browser.newContext({ userAgent: USER_AGENT, viewport: { width: 1280, height: 900 } });
-    const page: Page = await context.newPage();
+    page = await context.newPage();
 
     await page.goto(HOME_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForTimeout(1200);
     try {
-      const cookieBtn = page.getByText('CONCORDO E FECHAR', { exact: false });
+      // 2026-11-12: the live button reads "Concordar e fechar"; the old exact-ish
+      // "CONCORDO E FECHAR" no longer matched. Regex covers both wordings.
+      const cookieBtn = page.getByText(/concord(o|ar) e fechar/i);
       if (await cookieBtn.isVisible({ timeout: 4000 })) await cookieBtn.click();
     } catch {
       // banner not present — fine
@@ -308,10 +315,15 @@ async function warmupMataoOnce(): Promise<{ cartId: string; branchId: string }> 
     await cepInput.first().fill(CEP_MATAO);
     const shippingResp = page.waitForResponse((r) => r.url().includes('/store/shipping-options/'), { timeout: 15000 });
     await page.getByRole('button', { name: /enviar/i }).first().click();
-    await shippingResp;
+    const resp = await shippingResp;
+    // Recorded so a CI-only failure shows whether the API answered differently
+    // (status / empty options) rather than the UI merely rendering late.
+    shippingInfo = `status=${resp.status()} body=${(await resp.text().catch(() => '')).slice(0, 500)}`;
     await page.waitForTimeout(2000);
 
-    await page.getByText('Clique & Retire', { exact: false }).first().click({ timeout: 10000 });
+    // 30s, not 10s: on 2026-11-12 the modal never appeared within 10s on the runner
+    // while the same flow renders it immediately from a residential IP.
+    await page.getByText('Clique & Retire', { exact: false }).first().click({ timeout: 30000 });
     await page.waitForTimeout(1500);
     await page.getByText('Matão', { exact: false }).first().click({ timeout: 10000 });
     await page.waitForTimeout(2500);
@@ -323,25 +335,50 @@ async function warmupMataoOnce(): Promise<{ cartId: string; branchId: string }> 
       throw new Error(`Warmup did not produce cartID/branchID cookies (cartId=${cartId}, branchId=${branchId})`);
     }
     return { cartId, branchId };
+  } catch (err) {
+    await captureWarmupDiagnostics(page, attempt, shippingInfo);
+    throw err;
   } finally {
     await browser.close();
   }
 }
 
+/** Best-effort: a diagnostics failure must never replace the original warmup error. */
+async function captureWarmupDiagnostics(page: Page | undefined, attempt: number, shippingInfo: string): Promise<void> {
+  if (!page) return;
+  try {
+    mkdirSync(WARMUP_DIAG_DIR, { recursive: true });
+    const base = resolve(WARMUP_DIAG_DIR, `attempt-${attempt}`);
+    writeFileSync(`${base}.txt`, `url=${page.url()}\nshipping-options: ${shippingInfo}\n`);
+    writeFileSync(`${base}.html`, await page.content());
+    await page.screenshot({ path: `${base}.png`, fullPage: true });
+    console.warn(`  [warmup attempt ${attempt}] shipping-options: ${shippingInfo}; diagnostics saved to ${WARMUP_DIAG_DIR}`);
+  } catch {
+    // ignore
+  }
+}
+
 /**
- * The Clique & Retire click intermittently times out on the GitHub runner
- * (2026-10-07: failed once, passed on rerun with no code change), and a
- * failed warmup costs the whole ~3h run. Each attempt launches a fresh
- * browser, so a bad page state never carries over.
+ * The Clique & Retire step fails intermittently on the GitHub runner
+ * (2026-10-07: failed once, passed on rerun; 2026-11-12: failed 3/3 within
+ * ~2 min, so the old 3s/6s backoff was too short to outlast whatever was
+ * wrong). A failed warmup costs the whole ~3h run. Each attempt launches a
+ * fresh browser, so a bad page state never carries over.
+ *
+ * shortcut: fixed linear backoff (20s, 40s, 60s) — a guess that the cause is
+ * transient on the order of a minute. Upgrade: if the diagnostics artifact
+ * shows the shipping-options API answering differently from the runner's IP,
+ * that is an IP-level block and needs a job-level delayed rerun, not more
+ * in-process retries.
  */
-async function warmupMatao(maxAttempts = 3): Promise<{ cartId: string; branchId: string }> {
+async function warmupMatao(maxAttempts = 4): Promise<{ cartId: string; branchId: string }> {
   for (let attempt = 1; ; attempt++) {
     try {
-      return await warmupMataoOnce();
+      return await warmupMataoOnce(attempt);
     } catch (err) {
       if (attempt >= maxAttempts) throw err;
       console.warn(`Warmup attempt ${attempt}/${maxAttempts} failed: ${err instanceof Error ? err.message.split('\n')[0] : err}; retrying...`);
-      await sleep(3000 * attempt);
+      await sleep(20000 * attempt);
     }
   }
 }

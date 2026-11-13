@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Modal, View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { Modal, View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Keyboard, Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fontFamily, typography, radii, spacing, targets, borderWidth, tabularNums } from '../constants/tokens';
 import { BlockLabel } from './block-label';
@@ -22,6 +22,8 @@ interface AcompanharSheetProps {
   todayPrice: number | null;
   todayStoreName: string | null;
   isSubmitting: boolean;
+  // The last save did not go through; the sheet stays open and says so.
+  saveFailed: boolean;
   onClose: () => void;
   onTrackWithAlert: (targetPrice: number) => void;
   onTrackWithoutAlert: () => void;
@@ -40,6 +42,7 @@ export function AcompanharSheet({
   todayPrice,
   todayStoreName,
   isSubmitting,
+  saveFailed,
   onClose,
   onTrackWithAlert,
   onTrackWithoutAlert,
@@ -60,10 +63,21 @@ export function AcompanharSheet({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.root}>
+      {/* O teclado decimal sobe por cima do Modal (que é uma janela nativa à
+          parte): sem isto ele cobre os dois botões e o alvo digitado nunca
+          pode ser confirmado. 'padding' empurra a folha para cima do teclado;
+          o ScrollView encolhe o corpo em telas pequenas e o toque fora do
+          campo (fundo da folha) recolhe o teclado. */}
+      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Fechar" />
         <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.xl) }]}>
           <View style={styles.handle} />
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
+          <Pressable accessible={false} onPress={Keyboard.dismiss} style={styles.body}>
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
             <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Fechar" hitSlop={8} style={styles.closeTarget}>
@@ -91,6 +105,8 @@ export function AcompanharSheet({
             <Text style={styles.provenance}>{provenance}</Text>
           </View>
 
+          {saveFailed ? <Text style={styles.saveFailed}>Não deu para salvar. Tente de novo.</Text> : null}
+
           <View style={styles.actions}>
             {/* "nenhum botão fica desabilitado" (mobile/CLAUDE.md) — sempre
                 tocável; um preço vazio/inválido só faz o toque não fazer nada,
@@ -103,8 +119,10 @@ export function AcompanharSheet({
             />
             <TextLink label="Acompanhar sem avisos" onPress={() => !isSubmitting && onTrackWithoutAlert()} />
           </View>
+          </Pressable>
+          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -129,6 +147,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.lg,
     paddingHorizontal: 20,
     paddingTop: spacing.sm,
+    flexShrink: 1,
+  },
+  body: {
     gap: spacing.xl,
   },
   handle: {
@@ -137,7 +158,7 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     backgroundColor: colors.border,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.sm + spacing.xl, // spacing.sm + o gap entre blocos (agora em body)
   },
   header: {
     flexDirection: 'row',
@@ -193,6 +214,10 @@ const styles = StyleSheet.create({
   },
   provenance: {
     ...typography.provenance,
+    color: colors.secondary,
+  },
+  saveFailed: {
+    ...typography.support,
     color: colors.secondary,
   },
   actions: {

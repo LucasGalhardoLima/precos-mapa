@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { Session } from '@supabase/supabase-js';
+import { anonymousSignInArgs } from '@/lib/e2e';
 import { usePushNotifications } from '@poup/shared';
 import { readNotificationsEnabled, syncPushPreference } from './use-notification-setting';
+import { readTrackedState, saveTrackedItem, type TrackedReadDeps, type TrackedSaveDeps } from '@/lib/tracked-items';
 
 export interface TrackedState {
   isTracked: boolean;
@@ -11,8 +12,7 @@ export interface TrackedState {
 
 // Folha "Acompanhar" (artefato seção 8, spec do Lucas 2026-09-23):
 // - "Acompanhar e avisar ›": signInAnonymously (só se não há sessão) →
-//   pedido de permissão de notificação (o token vai para profiles.push_token
-//   dessa sessão) → grava com target_price. Permissão
+//   pedido de permissão de notificação → grava com target_price. Permissão
 //   negada NÃO bloqueia a gravação ("negada insere sem push") — o alerta
 //   fica pronto no banco, só sem como notificar até o usuário conceder a
 //   permissão depois (ex.: pelos Ajustes do sistema).
@@ -21,21 +21,50 @@ export interface TrackedState {
 // Ambos fazem upsert manual (select + insert/update) em vez de
 // `.upsert(...)` — a constraint única em tracked_items é um índice parcial
 // (migration 084), e o onConflict do supabase-js não mira índices parciais.
-export function useTrackedItems(productId: string) {
-  const [trackedState, setTrackedState] = useState<TrackedState | null>(null); // null = ainda resolvendo
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { requestPermission } = usePushNotifications({ autoRequest: false });
+// O tratamento de erro (leitura e gravação) vive em lib/tracked-items.ts.
 
-  const refresh = useCallback(async () => {
+const readDeps: TrackedReadDeps = {
+  async getUserId() {
     const {
       data: { session },
     } = await supabase.auth.getSession();
-    if (!session) {
-      setTrackedState({ isTracked: false, targetPrice: null });
-      return;
-    }
-    const { data } = await supabase.from('tracked_items').select('target_price').eq('user_id', session.user.id).eq('product_id', productId).maybeSingle();
-    setTrackedState({ isTracked: !!data, targetPrice: data?.target_price ?? null });
+    return session?.user.id ?? null;
+  },
+  selectTarget: (userId, productId) =>
+    supabase.from('tracked_items').select('target_price').eq('user_id', userId).eq('product_id', productId).maybeSingle(),
+};
+
+const saveDeps: TrackedSaveDeps = {
+  getUserId: readDeps.getUserId,
+  async signInAnonymously() {
+    const { data, error } = await supabase.auth.signInAnonymously(...anonymousSignInArgs);
+    if (error || !data.session) return null;
+    // A switch turned off in Ajustes before this point only lived locally —
+    // push it to the new profile's notification_preferences so the server
+    // respects it.
+    if (!(await readNotificationsEnabled())) await syncPushPreference(false).catch(() => {});
+    return data.session.user.id;
+  },
+  selectExisting: (userId, productId) =>
+    supabase.from('tracked_items').select('id').eq('user_id', userId).eq('product_id', productId).maybeSingle(),
+  update: (id, targetPrice) => supabase.from('tracked_items').update({ target_price: targetPrice }).eq('id', id),
+  insert: (userId, productId, targetPrice) =>
+    supabase.from('tracked_items').insert({ user_id: userId, product_id: productId, target_price: targetPrice }),
+};
+
+export function useTrackedItems(productId: string) {
+  // null = ainda resolvendo, ou a leitura falhou (fica null: desconhecido não
+  // é "não acompanhado"; o link "acompanhar" segue funcionando e um save atualiza).
+  const [trackedState, setTrackedState] = useState<TrackedState | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  // A última tentativa de salvar falhou. Zera a cada tentativa e em clearError
+  // (chamado por quem reabre a folha).
+  const [error, setError] = useState(false);
+  const { requestPermission } = usePushNotifications({ autoRequest: false });
+
+  const refresh = useCallback(async () => {
+    const result = await readTrackedState(readDeps, productId);
+    if (result.status === 'ok') setTrackedState(result.state);
   }, [productId]);
 
   useEffect(() => {
@@ -43,68 +72,40 @@ export function useTrackedItems(productId: string) {
     refresh();
   }, [refresh]);
 
-  // Anonymous session, created on the first "acompanhar". A switch turned off
-  // in Ajustes before this point only lived locally — push it to the new
-  // profile's notification_preferences so the server respects it.
-  const ensureSession = useCallback(async (): Promise<Session | null> => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (session) return session;
-
-    const { data, error } = await supabase.auth.signInAnonymously();
-    if (error || !data.session) return null;
-    if (!(await readNotificationsEnabled())) await syncPushPreference(false).catch(() => {});
-    return data.session;
-  }, []);
-
-  const write = useCallback(
-    async (userId: string, targetPrice: number | null): Promise<boolean> => {
-      const { data: existing } = await supabase.from('tracked_items').select('id').eq('user_id', userId).eq('product_id', productId).maybeSingle();
-
-      const { error: writeError } = existing
-        ? await supabase.from('tracked_items').update({ target_price: targetPrice }).eq('id', existing.id)
-        : await supabase.from('tracked_items').insert({ user_id: userId, product_id: productId, target_price: targetPrice });
-
-      return !writeError;
-    },
-    [productId],
-  );
-
-  const trackWithAlert = useCallback(
-    async (targetPrice: number): Promise<boolean> => {
+  const save = useCallback(
+    async (targetPrice: number | null): Promise<boolean> => {
       setIsSubmitting(true);
+      setError(false);
       try {
-        // Session first: registerForPushToken saves the token against the
-        // session that exists when permission resolves, so asking before
-        // signInAnonymously lost the token on the very first "acompanhar".
-        const session = await ensureSession();
-        if (!session) return false;
-        // Fire-and-forget, and deliberately not awaited before the write —
-        // a denied/skipped permission must never block saving the alert.
-        requestPermission().catch(() => {});
-        const ok = await write(session.user.id, targetPrice);
+        const ok = await saveTrackedItem(saveDeps, productId, targetPrice);
         if (ok) await refresh();
+        else setError(true);
         return ok;
       } finally {
         setIsSubmitting(false);
       }
     },
-    [ensureSession, requestPermission, write, refresh],
+    [productId, refresh],
   );
 
-  const trackWithoutAlert = useCallback(async (): Promise<boolean> => {
-    setIsSubmitting(true);
-    try {
-      const session = await ensureSession();
-      if (!session) return false;
-      const ok = await write(session.user.id, null);
-      if (ok) await refresh();
-      return ok;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [ensureSession, write, refresh]);
+  const trackWithAlert = useCallback(
+    async (targetPrice: number): Promise<boolean> => {
+      // Session first: registerForPushToken saves the token against the
+      // session that exists when permission resolves, so asking before
+      // signInAnonymously lost the token on the very first "acompanhar".
+      // If sign-in fails here, save() retries it and reports the failure.
+      if (!(await saveDeps.getUserId())) await saveDeps.signInAnonymously();
+      // Fire-and-forget, and deliberately not awaited before the write —
+      // a denied/skipped permission must never block saving the alert.
+      requestPermission().catch(() => {});
+      return save(targetPrice);
+    },
+    [requestPermission, save],
+  );
 
-  return { trackedState, isSubmitting, trackWithAlert, trackWithoutAlert };
+  const trackWithoutAlert = useCallback((): Promise<boolean> => save(null), [save]);
+
+  const clearError = useCallback(() => setError(false), []);
+
+  return { trackedState, isSubmitting, error, clearError, trackWithAlert, trackWithoutAlert };
 }

@@ -1,17 +1,16 @@
-import { formatBRL, isFreshEntry, mapSearchRow, type RawSearchRow, type RawPriceEntry } from '@/hooks/use-search';
+import { formatBRL, isFreshEntry, mapSearchRow, type RawPriceEntry } from '@/hooks/use-search';
 import type { TrackedRow } from '@/hooks/use-tracked-summary';
-import { displayProductName, formatSize } from '@/lib/onboarding';
-import { pickGenericWinner } from '@/lib/raiz';
+import { displayProductName, formatSize, parseDefaultSize, type SizeFilter } from '@/lib/onboarding';
+import { pickGenericWinner, type SizedSearchRow } from '@/lib/raiz';
 
 // Raiz's "Seus itens": one TrackedRow per tracked_items row, same source as
 // Ajustes. Pure resolution lives here; the hook only injects the Supabase
 // calls.
 
-// Wide enough that the label's actual category products (price-ordered
-// within their tier) are reliably present alongside any irrelevant
-// ingredient-mention matches ranked ahead of them by price — see
-// pickGenericWinner for the concrete case this covers.
-export const GENERIC_SEARCH_PAGE_SIZE = 15;
+// Upper bound on same-category, same-size products priced per generic item
+// (one get_product_prices call each). shortcut: first N by name, not by price
+// — upgrade: a server-side "cheapest of category+size" RPC (needs a migration).
+export const GENERIC_CANDIDATE_LIMIT = 20;
 
 // tracked_items row joined with its product (null for generic rows).
 export interface TrackedRecordWithProduct {
@@ -24,7 +23,7 @@ export interface TrackedRecordWithProduct {
 
 export interface SummaryFetchers {
   productPrices(productId: string): Promise<RawPriceEntry[]>;
-  genericSearch(label: string): Promise<RawSearchRow[]>;
+  genericSearch(label: string, size: SizeFilter | null): Promise<SizedSearchRow[]>;
 }
 
 export async function resolveTrackedRow(rec: TrackedRecordWithProduct, fetch: SummaryFetchers): Promise<TrackedRow> {
@@ -47,7 +46,8 @@ export async function resolveTrackedRow(rec: TrackedRecordWithProduct, fetch: Su
   }
 
   const label = rec.category_label ?? '';
-  const rawRow = pickGenericWinner(await fetch.genericSearch(label), label);
+  const size = parseDefaultSize(rec.category_size ?? '');
+  const rawRow = pickGenericWinner(await fetch.genericSearch(label, size), label, size);
   if (!rawRow) {
     return { key: rec.id, productId: null, name: label, size: rec.category_size, hasPriceToday: false, priceLabel: '—', winnerStoreName: null };
   }

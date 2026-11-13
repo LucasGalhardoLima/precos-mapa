@@ -1,5 +1,6 @@
 import type { TrackedRow } from '@/hooks/use-tracked-summary';
-import type { RawSearchRow } from '@/hooks/use-search';
+import { mapSearchRow, type RawSearchRow } from '@/hooks/use-search';
+import type { SizeFilter } from '@/lib/onboarding';
 
 function normalize(s: string): string {
   return s
@@ -9,19 +10,47 @@ function normalize(s: string): string {
     .toLowerCase();
 }
 
-// A generic item's category search (e.g. "Arroz") ranks by price tier, not
-// text relevance — verified live 2026-09-22: querying "Arroz" with a small
-// page returns dog food ("Dog Chow Cordeiro E Arroz") ahead of actual rice,
-// because "arroz" is a listed ingredient in the pet food's own name and it
-// happens to be cheaper. Every real rice result in that same response
-// (Arroz Branco Camil, Arroz Solito, ...) starts with the label; every false
-// positive doesn't. Requiring a name-starts-with match is a real filter, not
-// a guess — it's what actually distinguished them in the live data.
-// Returns null rather than a wrong product when nothing qualifies: an
-// honest "sem preço hoje" beats a confident wrong price.
-export function pickGenericWinner(rows: RawSearchRow[], label: string): RawSearchRow | null {
+// A search row plus the product's normalized size (products.size_value /
+// size_unit, base units g/ml/un — migration 074). search_products_with_prices
+// does not return the size, so the generic-item fetcher builds these from
+// `products` + get_product_prices.
+export interface SizedSearchRow extends RawSearchRow {
+  size_value: number | null;
+  size_unit: string | null;
+}
+
+// A generic item is category + default size (docs/poup-mlp-decisoes.md,
+// "Item genérico vs. item-produto"): the winner is the cheapest FRESH price
+// among products of that size, never a product of another size. A name-prefix
+// match alone let "Leite Fermentado Jamava 120g" answer "Leite · 1 L".
+// Name prefix stays as the category proxy: a free-text search ranks by price,
+// and dog food ("...Cordeiro E Arroz") outranked real rice (verified live
+// 2026-09-22); every real hit starts with the label.
+// Products without a normalized size (~36% of the catalog) are never matched,
+// and neither is a generic item whose default size has no parsable form
+// (size === null: "kg", "12 rolos"): an honest "sem preço hoje" beats a
+// confident wrong price. Matches with only stale prices are returned so the
+// row still reads "sem preço hoje" for the right product.
+export function pickGenericWinner(rows: SizedSearchRow[], label: string, size: SizeFilter | null): SizedSearchRow | null {
+  if (!size) return null;
   const target = normalize(label);
-  return rows.find((r) => normalize(r.product_name).startsWith(target)) ?? null;
+  const matches = rows.filter(
+    (r) =>
+      normalize(r.product_name).startsWith(target) &&
+      r.size_value != null &&
+      r.size_unit === size.unit &&
+      Number(r.size_value) === size.value,
+  );
+  let best: SizedSearchRow | null = null;
+  let bestPrice = Infinity;
+  for (const r of matches) {
+    const m = mapSearchRow(r);
+    if (m.hasPriceToday && m.price != null && m.price < bestPrice) {
+      best = r;
+      bestPrice = m.price;
+    }
+  }
+  return best ?? matches[0] ?? null;
 }
 
 export interface TitlePhrase {
@@ -56,4 +85,19 @@ export function computeTitlePhrase(rows: TrackedRow[]): TitlePhrase | null {
   }
 
   return winner ? { winner, count: winnerCount, total: rows.length } : null;
+}
+
+// What Raiz renders below the header. A failed sync or a failed read with no
+// rows is NOT "dia zero": the empty list is our gap, not the user's.
+export type RaizBodyState = 'items' | 'loading' | 'sync-pending' | 'read-failed' | 'dia-zero';
+
+export function raizBodyState(input: { rowCount: number; isLoading: boolean; syncFailed: boolean; readFailed: boolean }): RaizBodyState {
+  if (input.rowCount > 0) return 'items';
+  // Failures outrank loading: a retry flips isLoading back on, and the failure
+  // message must not flash back to a blank body while it runs. Sync first:
+  // with the sync pending there is nothing for the read to find yet.
+  if (input.syncFailed) return 'sync-pending';
+  if (input.readFailed) return 'read-failed';
+  if (input.isLoading) return 'loading';
+  return 'dia-zero';
 }

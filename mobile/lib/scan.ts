@@ -20,3 +20,14 @@ export function shouldProcessScan(code: string, state: ScanGateState, now: numbe
   }
   return true;
 }
+
+export type ScanPhase = 'checking' | 'denied' | 'scanning' | 'reading' | 'unknown';
+export type ScanSurface = 'denied' | 'no-camera' | 'camera';
+
+// Which screen the scanner shows. Denied permission wins; a device with no
+// camera (hardware absent) is its own state once the permission check is over.
+export function resolveScanSurface(phase: ScanPhase, hasDevice: boolean): ScanSurface {
+  if (phase === 'denied') return 'denied';
+  if (phase !== 'checking' && !hasDevice) return 'no-camera';
+  return 'camera';
+}

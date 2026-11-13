@@ -7,6 +7,7 @@ import {
   visibleItems,
   hasMoreItems,
   undoText,
+  undoAnnouncement,
   trackedListStatus,
   trackedItemName,
   insertAt,
@@ -40,6 +41,12 @@ describe('teto 4 + ver todos', () => {
     expect(trackedHeader(6)).toBe('ITENS ACOMPANHADOS · 6');
     expect(verTodosLabel(6)).toBe('ver todos os 6');
     expect(undoText('Arroz Tio João tipo 1 · 5 kg')).toBe('Arroz Tio João tipo 1 · 5 kg removido');
+  });
+});
+
+describe('undoAnnouncement', () => {
+  it('names the item and the way back, so the transient bar is not silent', () => {
+    expect(undoAnnouncement('Arroz 5 kg')).toBe('Arroz 5 kg removido. Toque em desfazer para voltar.');
   });
 });
 

@@ -1,9 +1,11 @@
 import { useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useLocation, getAnonymousId } from '@poup/shared';
+import { withE2EMetadata } from '../lib/e2e';
 import { clearInheritedLoginOnce } from '../lib/inherited-session';
 import type { AnalyticsEventType } from '@poup/shared';
 import type { AjustesEventType } from '../lib/ajustes';
+import type { RespostaEventType } from '../lib/resposta';
 
 interface TrackOptions {
   storeId?: string;
@@ -55,7 +57,7 @@ export function useAnalytics() {
   const recentEvents = useRef<Set<string>>(new Set());
 
   const track = useCallback(
-    (eventType: AnalyticsEventType | AjustesEventType, options: TrackOptions = {}) => {
+    (eventType: AnalyticsEventType | AjustesEventType | RespostaEventType, options: TrackOptions = {}) => {
       const region = resolveTrackedRegion(hasResolvedLocation, locationLabel);
 
       (async () => {
@@ -84,7 +86,7 @@ export function useAnalytics() {
           ...identity,
           store_id: options.storeId ?? null,
           product_id: options.productId ?? null,
-          metadata: options.metadata ?? {},
+          metadata: withE2EMetadata(options.metadata),
           region,
         });
         // Never surfaced to the user, but not invisible in dev: a refused

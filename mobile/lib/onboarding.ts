@@ -16,9 +16,9 @@ export const GENERIC_ITEMS: readonly GenericItem[] = [
   { label: 'Açúcar', size: '1 kg' },
   { label: 'Café', size: '500 g' },
   { label: 'Ovos', size: '30 un' },
-  { label: 'Frango', size: 'kg' },
+  { label: 'Frango', size: '1 kg' },
   { label: 'Papel higiênico', size: '12 rolos' },
-  { label: 'Sabão em pó', size: '1 kg' },
+  { label: 'Sabão em pó', size: '800 g' },
   { label: 'Detergente', size: '500 ml' },
   { label: 'Refrigerante', size: '2 L' },
 ];
@@ -95,15 +95,16 @@ export interface SizeFilter {
 // Returns null when the default size has no counterpart there — "12 rolos" is
 // not a unit the size parser knows, and "kg" alone has no number — so the
 // sheet must not claim a size it did not filter on.
+// Math.round: 1.1 * 1000 is 1100.0000000000002, which never equals the stored 1100.
 export function parseDefaultSize(size: string): SizeFilter | null {
   const match = size.trim().toLowerCase().match(/^(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml|un)$/);
   if (!match) return null;
   const n = Number(match[1].replace(',', '.'));
   switch (match[2]) {
     case 'kg':
-      return { value: n * 1000, unit: 'g' };
+      return { value: Math.round(n * 1000), unit: 'g' };
     case 'l':
-      return { value: n * 1000, unit: 'ml' };
+      return { value: Math.round(n * 1000), unit: 'ml' };
     case 'g':
     case 'ml':
     case 'un':
