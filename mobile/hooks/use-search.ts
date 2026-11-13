@@ -89,14 +89,35 @@ interface UseSearchParams {
 
 export type SearchOutcome = { results: SearchResult[]; error: null } | { results: []; error: Error };
 
-// One RPC attempt turned into an outcome.
+const RETRY_DELAY_MS = 400;
+
+// Never throws. A failed attempt (dropped request, 5xx, statement timeout, or a
+// rejected promise) is retried once after a short pause, silently: "Sem conexão"
+// only appears if the second attempt fails too. Before this, one transient blip
+// showed the offline state with the network fine, and a rejection left the
+// screen on "searching" forever. All errors are retried alike — the RPC is a
+// read-only, idempotent search, so a retry is harmless even for a real 4xx.
+// shortcut: no error classification (4xx retried too) — upgrade: skip the retry
+// for non-network/non-5xx codes if the extra ~400ms on a real failure matters.
 export async function runSearch(
   call: () => PromiseLike<{ data: unknown; error: { message: string } | null }>,
-  _opts?: { isCancelled?: () => boolean },
+  opts: { isCancelled?: () => boolean } = {},
 ): Promise<SearchOutcome> {
-  const { data, error } = await call();
-  if (error) return { results: [], error: new Error(error.message) };
-  return { results: sortPricedFirst(((data as RawSearchRow[] | null) ?? []).map(mapSearchRow)), error: null };
+  const attempt = async (): Promise<SearchOutcome> => {
+    try {
+      const { data, error } = await call();
+      if (error) return { results: [], error: new Error(error.message) };
+      return { results: sortPricedFirst(((data as RawSearchRow[] | null) ?? []).map(mapSearchRow)), error: null };
+    } catch (e) {
+      return { results: [], error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  };
+
+  const first = await attempt();
+  if (!first.error || opts.isCancelled?.()) return first;
+  await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+  if (opts.isCancelled?.()) return first;
+  return attempt();
 }
 
 // Powers Resultado (esboços 5a–5c) via search_products_with_prices. 200ms
@@ -119,6 +140,9 @@ export function useSearch({ query, userLat, userLng, pageSize = 30 }: UseSearchP
     }
 
     setIsSearching(true);
+    // A new query (or "tentar de novo") must not keep showing the previous
+    // query's "Sem conexão" while its own request is in flight.
+    setError(null);
     let cancelled = false;
 
     const timer = setTimeout(async () => {
@@ -129,6 +153,7 @@ export function useSearch({ query, userLat, userLng, pageSize = 30 }: UseSearchP
           user_lng: userLng,
           page_size: pageSize,
         }),
+        { isCancelled: () => cancelled },
       );
 
       if (cancelled) return;
