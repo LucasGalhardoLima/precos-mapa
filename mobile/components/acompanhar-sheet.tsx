@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Modal, View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Keyboard, Platform, StyleSheet } from 'react-native';
+import { Modal, View, Text, TextInput, Pressable, ScrollView, Keyboard, Platform, Dimensions, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fontFamily, typography, radii, spacing, targets, borderWidth, tabularNums } from '../constants/tokens';
 import { BlockLabel } from './block-label';
@@ -50,6 +50,23 @@ export function AcompanharSheet({
   const insets = useSafeAreaInsets();
   const [priceText, setPriceText] = useState('');
   const [fieldFocused, setFieldFocused] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // KeyboardAvoidingView não empurrou a folha dentro deste Modal (iOS 26,
+  // simulador: o teclado seguiu cobrindo os botões mesmo com behavior='padding').
+  // Mede o teclado direto e sobe a folha por padding no fundo.
+  useEffect(() => {
+    const ios = Platform.OS === 'ios';
+    const show = Keyboard.addListener(ios ? 'keyboardWillChangeFrame' : 'keyboardDidShow', (e) => {
+      // iOS: com o teclado fora da tela o frame final começa abaixo da janela.
+      setKeyboardHeight(ios && e.endCoordinates.screenY >= Dimensions.get('window').height ? 0 : e.endCoordinates.height);
+    });
+    const hide = Keyboard.addListener(ios ? 'keyboardWillHide' : 'keyboardDidHide', () => setKeyboardHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (!visible) return;
@@ -65,12 +82,12 @@ export function AcompanharSheet({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       {/* O teclado decimal sobe por cima do Modal (que é uma janela nativa à
           parte): sem isto ele cobre os dois botões e o alvo digitado nunca
-          pode ser confirmado. 'padding' empurra a folha para cima do teclado;
+          pode ser confirmado. O padding no fundo empurra a folha para cima do teclado;
           o ScrollView encolhe o corpo em telas pequenas e o toque fora do
           campo (fundo da folha) recolhe o teclado. */}
-      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={[styles.root, { paddingBottom: keyboardHeight }]}>
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Fechar" />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.xl) }]}>
+        <View style={[styles.sheet, { paddingBottom: keyboardHeight > 0 ? spacing.xl : Math.max(insets.bottom, spacing.xl) }]}>
           <View style={styles.handle} />
           <ScrollView
             keyboardShouldPersistTaps="handled"
@@ -122,7 +139,7 @@ export function AcompanharSheet({
           </Pressable>
           </ScrollView>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }

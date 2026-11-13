@@ -39,7 +39,7 @@ Fluxos só de leitura: Metro normal (`npx expo start --dev-client`). Atenção: 
 | `scanner.yaml` | Scanner no simulador = "Sem câmera neste aparelho" + 2 saídas | lê | passa |
 | `notificacao.yaml` + `notificacao.sh` | push → toque → Resposta | lê | **pendente do #84** (não conta como falha); o banner nem aparece sem permissão de notificação |
 | `escreve/onboarding.yaml` | onboarding completo + Raiz×Ajustes com a mesma lista (#85) | **escreve** | passa (13/11/2026, anônimo ligado) |
-| `escreve/acompanhar.yaml` | acompanhar com alvo → editar → Ajustes → ✕ → desfazer | **escreve** | **nunca executado** (mesmo bloqueio) |
+| `escreve/acompanhar.yaml` | acompanhar com alvo → editar → Ajustes → ✕ → desfazer | **escreve** | passa (13/11/2026, depois do fix do teclado) |
 
 Sub-fluxos: `_launch.yaml` (app zerado + Metro; trata a corrida do "Open in Poup?"), `_abrir.yaml` (deep link, mesma corrida), `_ate-raiz.yaml` (onboarding sem itens até a Raiz). Screenshots (`*.png` é gitignored aqui) ficam só locais; as da rodada de 12/11/2026 estão em `screenshots/` na máquina de quem rodou. O antigo `busca-e-resposta.yaml` foi substituído por `resultado-lista`/`resposta-*`.
 
@@ -48,7 +48,8 @@ Ficam em `escreve/` de propósito: `maestro test .maestro/` não desce em subpas
 
 O login anônimo do Supabase de produção foi ligado (`external_anonymous_users_enabled: true`, 30/h por IP). Confirmado: o usuário anônimo nasce com a marca e2e (`marked_users` 0 → 1, com 1 profile e 2 `tracked_items`) e nenhum usuário sem marca surge.
 - **Zere o keychain antes de cada fluxo** (`xcrun simctl keychain <udid> reset`): ele sobrevive ao `clearState`, e uma sessão anterior com itens faz `_ate-raiz` cair na Raiz com itens em vez do dia zero. Cada rodada cria um usuário marcado novo.
-- `acompanhar.yaml` não digita um novo alvo: o teclado decimal cobre o botão "Acompanhar e avisar" (`components/acompanhar-sheet.tsx`, Modal sem `KeyboardAvoidingView`) e o Maestro não fecha esse teclado. O fluxo reabre a folha por "editar", confere o alvo gravado (R$ 5,49) e confirma.
+- `acompanhar.yaml` digita um novo alvo (5,00) com o teclado aberto e toca em "Acompanhar e avisar". Isso só funciona porque a folha sobe por um listener de teclado; o `KeyboardAvoidingView` do #99 não empurrava a folha dentro do Modal no iOS 26.5.
+- **Metro velho serve bundle velho:** um Metro de vida longa deixou de ver edições (o app rodou JS sem a correção). Se um fluxo contradiz o código, confira com `curl` no bundle (`grep` por uma string nova) ou reinicie com `--clear`.
 - O app não pede permissão de notificação em lugar nenhum (nenhum `requestPermissionsAsync`); o diálogo nunca aparece, e o passo condicional "Allow" é pulado. `profiles.push_token` fica nulo (#84).
 
 ### Não coberto (e por quê)
