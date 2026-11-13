@@ -83,7 +83,7 @@ Revalidar o questionário antes de cada envio, porque as respostas dependem do q
 
 | Campo | Valor |
 |---|---|
-| URL da política de privacidade (obrigatória nas duas lojas) | `<PREENCHER>` |
+| URL da política de privacidade (obrigatória nas duas lojas) | `https://precos-mapa.vercel.app/privacidade` (no ar, HTTP 200, 13/11/2026; trocar se houver domínio próprio; a página ainda tem campos `<PREENCHER>` que bloqueiam o envio) |
 | URL de suporte (App Store) | `<PREENCHER>` |
 | URL de marketing (App Store, opcional) | `<PREENCHER>` |
 | E-mail de contato (Google Play, obrigatório) | `<PREENCHER>` |
@@ -119,18 +119,36 @@ Pontos que o revisor costuma questionar e a resposta curta:
 
 ## Privacidade (rótulos)
 
-Rascunho para App Privacy (App Store) e Segurança dos dados (Play). Confirmar contra o binário final antes de enviar.
+Respostas derivadas do que o app faz em `main` (política em `/privacidade`, `hooks/use-analytics.ts`, `use-push-notifications.ts`, migrations 079/084/090). Confirmar contra o binário final antes de enviar. Tudo é ligado ao identificador anônimo (sem nome, e-mail ou telefone), exceto o e-mail de "Fora de Matão".
 
-| Dado | Coletado | Vinculado à identidade | Uso |
-|---|---|---|---|
-| Localização aproximada (cidade/região, sem coordenadas, conforme `use-analytics`) | sim, em eventos de uso | `<PREENCHER>` | análise de produto |
-| Localização precisa | usada no aparelho para distância; se sai do aparelho: `<PREENCHER>` | `<PREENCHER>` | funcionalidade do app |
-| Identificador (ID de usuário anônimo) | sim, ao acompanhar um item | `<PREENCHER>` | funcionalidade do app |
-| Dados de uso (buscas, scanner, telas) | sim | `<PREENCHER>` | análise de produto |
-| E-mail | opcional, só fora de Matão | sim | aviso de cobertura |
-| Câmera | não coletado (leitura local do código) | não se aplica | funcionalidade do app |
+### App Store (App Privacy)
 
-Rastreamento (ATT): o app não usa dados para rastrear entre apps de terceiros. Confirmar `<PREENCHER>` antes de responder "não" no App Store Connect.
+| Tipo de dado (Apple) | Coletado | Ligado à identidade | Uso | Origem no app |
+|---|---|---|---|---|
+| Localização aproximada | sim | sim (ID anônimo) | Análise; funcionalidade | só a cidade vai nos eventos; as coordenadas vão ao servidor na consulta de distância e não são gravadas |
+| Histórico de busca | sim | sim | Análise | texto digitado na busca, em `analytics_events` |
+| Interação com produto | sim | sim | Análise | telas, produtos abertos, scanner, mercado escolhido |
+| ID de usuário | sim | sim | Funcionalidade; análise | conta anônima criada ao acompanhar o 1º item |
+| ID do dispositivo (token de push) | sim, só com permissão de notificação | sim | Funcionalidade | `profiles.push_token` (desde #84); a Apple pode não exigir declarar o token, declarar por prudência |
+| Endereço de e-mail | sim, opcional (só "Fora de Matão") | **não** (`city_interest` não tem ID de usuário) | Funcionalidade (aviso de cobertura) | consentimento explícito na tela |
+| Câmera / fotos | não | não se aplica | não se aplica | leitura do código é local; nenhuma imagem sai do aparelho |
+
+- **Rastreamento (ATT): não.** Nenhum dado é usado para rastrear entre apps ou sites de terceiros, e nenhum é compartilhado com corretores de dados. Não há SDK de anúncios nem PostHog em uso. Responder "Não" a "Os dados são usados para rastrear você".
+- `ITSAppUsesNonExemptEncryption` já é `false` no `app.json`.
+
+### Google Play (Segurança dos dados)
+
+| Categoria (Google) | Coleta | Compartilha | Opcional | Finalidade |
+|---|---|---|---|---|
+| Localização aproximada | sim | não | sim (o app funciona digitando a cidade) | Funcionalidade; análise |
+| Atividade no app: histórico de busca e interações | sim | não | não | Análise |
+| IDs de dispositivo ou outros (ID anônimo, token de push) | sim | não (a Expo entra como prestadora de serviço de envio) | token: sim | Funcionalidade; análise |
+| Endereço de e-mail | sim | não | sim | Funcionalidade (aviso de cobertura) |
+
+- Dados criptografados em trânsito: **sim** (HTTPS).
+- O usuário pode pedir exclusão: **sim**, por e-mail ao encarregado (`<PREENCHER>` na política até o e-mail existir). A Play exige um caminho de exclusão; sem o e-mail, esta resposta não pode ser dada.
+- Estatísticas agregadas, sem identificador, podem ir a mercados e parceiros; como não são dados pessoais, não entram como "compartilhado".
+- Permissões Android declaradas: `ACCESS_FINE_LOCATION` e `ACCESS_COARSE_LOCATION` (justificativa na nota ao revisor).
 
 ## Capturas de tela
 
