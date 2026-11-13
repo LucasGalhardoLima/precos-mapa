@@ -6,6 +6,7 @@ import {
   freshnessLabel,
   isStale,
   formatSize,
+  nameWithSize,
   normalizeBaseName,
   resolveSizeAlternatives,
   selectSizeFamily,
@@ -196,7 +197,7 @@ describe('buildRespostaView — 3c: sem EAN, fato de um mercado só', () => {
 });
 
 describe('buildRespostaView — 3d: sem preço hoje', () => {
-  it('falls back to the flat muted list when nothing fresh exists, one row per chain, even with EAN', () => {
+  it('keeps stale chains out of ONDE when nothing fresh exists (even with EAN); they live behind "ver todos os mercados"', () => {
     const rows = [
       row({ store_id: 's-tenda', store_name: 'Tenda Atacado - Matão', price: 8.49, distance_km: 1.8, last_price_date: '2026-09-17T10:00:00Z' }), // 6 days
       row({ store_id: 's-savegnago', store_name: 'Savegnago', price: 8.99, distance_km: 0.6, last_price_date: '2026-09-14T10:00:00Z' }), // 9 days
@@ -206,28 +207,31 @@ describe('buildRespostaView — 3d: sem preço hoje', () => {
     expect(view.mode).toBe('no-price');
     expect(view.title).toBe('Sem preço hoje');
     expect(view.price).toBeNull();
-    expect(view.whereRows).toHaveLength(2);
-    expect(view.whereRows.every((r) => r.isStale)).toBe(true);
-    expect(view.whereRows.every((r) => !r.isWinner)).toBe(true);
+    // Doc decisão 2 + "Resposta": >3 dias sai do ONDE; só "ver todos os mercados"
+    // mostra. Nada defasado pode aparecer como linha do ONDE.
+    expect(view.whereRows).toEqual([]);
+    expect(view.whereHasMore).toBe(true);
+    expect(view.branchRows).toHaveLength(2);
+    expect(view.branchRows.every((b) => b.isStale)).toBe(true);
     expect(view.footerNote).toBe('últimos preços vistos · 2 de 4 mercados');
   });
 
-  it('picks the MOST RECENT branch per chain, not the cheapest — "últimos preços vistos" means recency, not price', () => {
-    // Both Amarelinha branches beyond 3 days (so buildRespostaView stays in
-    // 3d), different recency and different price.
+  it('lists every stale branch (unfiltered) behind "ver todos os mercados", none in the default ONDE', () => {
     const staleRows = [
-      row({ store_id: 's-loja21', store_name: 'Amarelinha Loja 21 Flamboyant', price: 20.0, last_price_date: '2026-09-17T10:00:00Z' }), // 6 days, cheaper
-      row({ store_id: 's-loja17', store_name: 'Amarelinha Loja 17', price: 25.0, last_price_date: '2026-09-19T10:00:00Z' }), // 4 days, more recent
+      row({ store_id: 's-loja21', store_name: 'Amarelinha Loja 21 Flamboyant', price: 20.0, last_price_date: '2026-09-17T10:00:00Z' }), // 6 days
+      row({ store_id: 's-loja17', store_name: 'Amarelinha Loja 17', price: 25.0, last_price_date: '2026-09-19T10:00:00Z' }), // 4 days
     ];
     const view = buildRespostaView(product(), staleRows, NOW);
-    expect(view.whereRows).toHaveLength(1);
-    expect(view.whereRows[0]).toMatchObject({ price: 25.0, daysAgo: 4 }); // the more recent branch wins, not the cheaper one
+    expect(view.whereRows).toEqual([]);
+    expect(view.whereHasMore).toBe(true);
+    expect(view.branchRows.map((b) => b.storeId).sort()).toEqual(['s-loja17', 's-loja21']);
   });
 
   it('renders an empty ONDE, not an error, when there are zero rows at all', () => {
     const view = buildRespostaView(product(), [], NOW);
     expect(view.mode).toBe('no-price');
     expect(view.whereRows).toEqual([]);
+    expect(view.whereHasMore).toBe(false); // nothing to expand
     expect(view.footerNote).toBe('últimos preços vistos · 0 de 4 mercados');
   });
 });
@@ -358,10 +362,11 @@ describe('resolveSizeAlternatives — QUAL TAMANHO', () => {
 
   it('caps at 3 alternatives, sorted ascending by price/unit', () => {
     const candidates = [
+      // Distinct sizes: same-size rows are catalog duplicates and collapse to one.
       candidate({ id: 'a', sizeValue: 1000, cheapestPriceToday: 4.5 }), // 4.50/kg
-      candidate({ id: 'b', sizeValue: 1000, cheapestPriceToday: 4.0 }), // 4.00/kg
-      candidate({ id: 'c', sizeValue: 1000, cheapestPriceToday: 4.9 }), // 4.90/kg
-      candidate({ id: 'd', sizeValue: 1000, cheapestPriceToday: 4.2 }), // 4.20/kg
+      candidate({ id: 'b', sizeValue: 2000, cheapestPriceToday: 8.0 }), // 4.00/kg
+      candidate({ id: 'c', sizeValue: 3000, cheapestPriceToday: 14.7 }), // 4.90/kg
+      candidate({ id: 'd', sizeValue: 4000, cheapestPriceToday: 16.8 }), // 4.20/kg
     ];
     const result = resolveSizeAlternatives(current5kg, currentPerUnit, candidates);
     expect(result.kind).toBe('alternatives');
@@ -390,6 +395,31 @@ describe('resolveSizeAlternatives — QUAL TAMANHO', () => {
     const current1L = product({ sizeValue: 1000, sizeUnit: 'ml' });
     const result = resolveSizeAlternatives(current1L, 4.79, [candidate({ cheapestPriceToday: 100 })]);
     expect(result).toEqual({ kind: 'current-best', label: '1 L é o melhor por litro' });
+  });
+});
+
+describe('resolveSizeAlternatives — linha duplicada e tamanho repetido no nome', () => {
+  const current5kg = product({ name: 'Arroz Tio João tipo 1', sizeValue: 5000, sizeUnit: 'g' });
+  const cand = (overrides: Partial<SizeCandidate> = {}): SizeCandidate => ({
+    id: 'c1', name: 'Arroz Tio João tipo 1', sizeValue: 2000, cheapestPriceToday: 9.0, cheapestStoreName: 'Tenda Atacado - Matão', ...overrides,
+  });
+
+  it('collapses duplicate catalog products of the same size into ONE row (keeps the cheapest per unit)', () => {
+    const result = resolveSizeAlternatives(current5kg, 4.98, [
+      cand({ id: 'dup-a', cheapestPriceToday: 9.49 }),
+      cand({ id: 'dup-b', cheapestPriceToday: 9.0 }),
+    ]);
+    expect(result.kind === 'alternatives' && result.items.map((i) => i.productId)).toEqual(['dup-b']);
+  });
+
+  it('does not offer a duplicate of the CURRENT size as an "other size"', () => {
+    const result = resolveSizeAlternatives(current5kg, 4.98, [cand({ id: 'twin', sizeValue: 5000, cheapestPriceToday: 20 })]);
+    expect(result).toEqual({ kind: 'current-best', label: '5 kg é o melhor por kg' });
+  });
+
+  it('does not repeat the size when the product name already carries it', () => {
+    const result = resolveSizeAlternatives(current5kg, 4.98, [cand({ name: 'Arroz Tio João tipo 1 2kg' })]);
+    expect(result.kind === 'alternatives' && result.items[0]?.name).toBe('Arroz Tio João tipo 1 2kg');
   });
 });
 
@@ -547,5 +577,23 @@ describe('sizeOptionTappedPayload', () => {
     const current = product({ id: 'cur', sizeValue: 5000, sizeUnit: 'g' });
     const item = { productId: 'alt', name: 'Arroz · 2 kg', sizeLabel: '2 kg', pricePerUnitLabel: 'R$ 4,75/kg', storeName: 'Tenda' };
     expect(sizeOptionTappedPayload(current, item)).toEqual({ productId: 'alt', metadata: { from_product_id: 'cur', from_size: '5 kg', to_size: '2 kg' } });
+  });
+});
+
+describe('nameWithSize — header name line', () => {
+  it('appends the size when the name does not carry it', () => {
+    expect(nameWithSize('Arroz Tio João tipo 1', 5000, 'g')).toBe('Arroz Tio João tipo 1 · 5 kg');
+  });
+  it('does not repeat a size the name already carries, in any spelling', () => {
+    expect(nameWithSize('Arroz Tio João 5kg', 5000, 'g')).toBe('Arroz Tio João 5kg');
+    expect(nameWithSize('Arroz Tio João 5 KG', 5000, 'g')).toBe('Arroz Tio João 5 KG');
+    expect(nameWithSize('Leite Italac 1,5L', 1500, 'ml')).toBe('Leite Italac 1,5L');
+    expect(nameWithSize('Biscoito 500g', 500, 'g')).toBe('Biscoito 500g');
+  });
+  it('keeps both when the name carries a DIFFERENT size (mismatch stays visible)', () => {
+    expect(nameWithSize('Arroz 2kg', 5000, 'g')).toBe('Arroz 2kg · 5 kg');
+  });
+  it('is the bare name without a parsed size', () => {
+    expect(nameWithSize('Arroz', null, null)).toBe('Arroz');
   });
 });

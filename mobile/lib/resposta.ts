@@ -59,7 +59,8 @@ export function isStale(days: number): boolean {
 
 // null = last round, no label. 1–3 = "há N dias". Caller decides what to do
 // with a stale (>3) day count — this just formats it for when it's still
-// shown (3d's "últimos preços vistos" list keeps stale rows visible).
+// shown (only inside "ver todos os mercados" — stale rows never sit in the
+// default ONDE).
 export function freshnessLabel(days: number): string | null {
   if (days === 0) return null;
   return `há ${days} dia${days === 1 ? '' : 's'}`;
@@ -76,7 +77,6 @@ export interface WhereRow {
   daysAgo: number;
   isWinner: boolean;
   isHere: boolean;
-  isStale: boolean; // only true in 3d's flat list — elsewhere a fully-stale chain routes to staleStores instead
 }
 
 // One physical location — only shown when "ver todos os mercados" expands
@@ -151,6 +151,29 @@ export function formatSize(value: number, unit: ProductInfo['sizeUnit']): string
   if (unit === 'g' && value >= 1000) return `${trim(value / 1000)} kg`;
   if (unit === 'ml' && value >= 1000) return `${trim(value / 1000)} L`;
   return `${trim(value)} ${unit ?? ''}`.trim();
+}
+
+// "Arroz Tio João 5kg" + 5000 g -> already says its size, so adding " · 5 kg"
+// would print it twice. Compares by value in the base unit (kg=1000 g, l=1000
+// ml), so "1,5L" matches 1500 ml and "500 g" matches 500 g regardless of
+// spacing/case. A size in the name that DIFFERS from the parsed one is left
+// alone: then both are shown and the mismatch stays visible instead of hidden.
+function nameCarriesSize(name: string, value: number, unit: NonNullable<ProductInfo['sizeUnit']>): boolean {
+  const re = /(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l|un(?:idades?)?)(?![a-z])/gi;
+  for (const m of name.matchAll(re)) {
+    const n = parseFloat(m[1]!.replace(',', '.'));
+    const u = m[2]!.toLowerCase();
+    const [baseValue, baseUnit] = u === 'kg' ? [n * 1000, 'g'] : u === 'l' ? [n * 1000, 'ml'] : u.startsWith('un') ? [n, 'un'] : [n, u];
+    if (baseUnit === unit && Math.abs(baseValue - value) < 1e-6) return true;
+  }
+  return false;
+}
+
+// Product name followed by its size (" · 5 kg"), unless the name already
+// carries that size. No parsed size: the bare name.
+export function nameWithSize(name: string, sizeValue: number | null, sizeUnit: ProductInfo['sizeUnit']): string {
+  if (sizeValue == null || sizeUnit == null) return name;
+  return nameCarriesSize(name, sizeValue, sizeUnit) ? name : `${name} · ${formatSize(sizeValue, sizeUnit)}`;
 }
 
 const UNIT_PHRASE: Record<NonNullable<ProductInfo['sizeUnit']>, string> = {
@@ -243,7 +266,17 @@ export function resolveSizeAlternatives(current: ProductInfo, currentPricePerUni
 
   if (priced.length === 0) return { kind: 'none' };
 
-  const better = priced
+  // The catalog can hold the same pack twice (same brand/name/size under two
+  // ids, e.g. an EAN-less scrape next to the EAN one): one row per size, the
+  // cheapest per unit wins. A twin of the CURRENT size is not an "other size".
+  const cheapestPerSize = new Map<number, (typeof priced)[number]>();
+  for (const c of priced) {
+    if (c.sizeValue === current.sizeValue) continue;
+    const seen = cheapestPerSize.get(c.sizeValue);
+    if (!seen || c.perUnit < seen.perUnit) cheapestPerSize.set(c.sizeValue, c);
+  }
+
+  const better = [...cheapestPerSize.values()]
     .filter((c) => c.perUnit < currentPricePerUnit)
     .sort((a, b) => a.perUnit - b.perUnit)
     .slice(0, 3);
@@ -254,7 +287,7 @@ export function resolveSizeAlternatives(current: ProductInfo, currentPricePerUni
     kind: 'alternatives',
     items: better.map((c) => ({
       productId: c.id,
-      name: `${c.name} · ${formatSize(c.sizeValue, unit)}`,
+      name: nameWithSize(c.name, c.sizeValue, unit),
       sizeLabel: formatSize(c.sizeValue, unit),
       pricePerUnitLabel: `${formatBRL(c.perUnit)}/${UNIT_LABEL[unit]}`,
       storeName: chainLabelForStore(c.cheapestStoreName) ?? c.cheapestStoreName,
@@ -310,9 +343,9 @@ function aggregateChainPrices(rows: DatedRow[]): ChainPrice[] {
 
 // Same grouping, different representative pick: the MOST RECENT branch
 // (smallest days-stale, price as a tiebreak) rather than the cheapest —
-// used where the point is "last known data", not "who's winning": 3d's flat
-// list ("últimos preços vistos") and the amber band's one-line-per-chain
-// summary for a fully-stale chain.
+// used where the point is "last known data", not "who's winning": the amber
+// band's one-line-per-chain summary for a fully-stale chain, and 3d's
+// "últimos preços vistos · N de 4" footer count.
 function aggregateChainMostRecent(rows: DatedRow[]): ChainPrice[] {
   const byChain = new Map<string, DatedRow[]>();
   for (const r of rows) {
@@ -360,33 +393,23 @@ export function buildRespostaView(
     isStale: isStale(r.days),
   }));
 
-  // Nothing fresh anywhere: 3d. Everything available (even stale) renders
-  // as a flat, muted fact list, one row per chain — doc/artifact never rank
-  // or exclude here, there's nothing to rank ("últimos preços vistos", not
-  // "menor preço").
+  // Nothing fresh anywhere: 3d ("sem preço hoje"). Doc decisão 2 / "Resposta":
+  // a chain past 3 days leaves the ONDE entirely and only shows behind "ver
+  // todos os mercados" (branchRows) — so the default ONDE is empty here, and
+  // the link is what reveals the last-seen prices. Nothing to rank, no winner.
   if (fresh.length === 0) {
-    const chains = aggregateChainMostRecent(withDays);
-    const whereRows: WhereRow[] = chains.map((c) => ({
-      chainLabel: c.chainLabel,
-      price: c.price,
-      distanceKm: c.distanceKm,
-      daysAgo: c.daysAgo,
-      isWinner: false,
-      isHere: c.chainLabel === hereChain,
-      isStale: true,
-    }));
     return {
       mode: 'no-price',
       title: 'Sem preço hoje',
       price: null,
       pricePerUnit: null,
       comparison: null,
-      whereRows,
-      whereHasMore: false,
+      whereRows: [],
+      whereHasMore: branchRows.length > 0,
       branchRows,
       staleStores: [],
       freshCount: 0,
-      footerNote: `últimos preços vistos · ${whereRows.length} de 4 mercados`,
+      footerNote: `últimos preços vistos · ${aggregateChainMostRecent(withDays).length} de 4 mercados`,
     };
   }
 
@@ -425,7 +448,6 @@ export function buildRespostaView(
     daysAgo: c.daysAgo,
     isWinner: mode === 'comparison' && c.chainLabel === winner.chainLabel,
     isHere: c.chainLabel === hereChain,
-    isStale: false,
   }));
 
   // A chain routes to the amber band only when NONE of its branches made it
