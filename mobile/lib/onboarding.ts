@@ -18,7 +18,7 @@ export const GENERIC_ITEMS: readonly GenericItem[] = [
   { label: 'Ovos', size: '30 un' },
   { label: 'Frango', size: '1 kg' },
   { label: 'Papel higiênico', size: '12 rolos' },
-  { label: 'Sabão em pó', size: '1 kg' },
+  { label: 'Sabão em pó', size: '800 g' },
   { label: 'Detergente', size: '500 ml' },
   { label: 'Refrigerante', size: '2 L' },
 ];
