@@ -1,4 +1,6 @@
 // mobile/__tests__/hooks/raiz-title-phrase.test.ts
+jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
+jest.mock('@/lib/supabase', () => ({ supabase: { rpc: jest.fn() } }));
 
 import { computeTitlePhrase } from '@/lib/raiz';
 import type { TrackedRow } from '@/hooks/use-tracked-summary';

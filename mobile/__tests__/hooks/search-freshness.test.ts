@@ -72,10 +72,10 @@ describe("mapSearchRow — Frescor (>3 days is never today's price)", () => {
 describe('resolveTrackedRow — generic item shares the same rule', () => {
   it('stale-only winner renders "—" / sem preço hoje on Raiz', async () => {
     const out = await resolveTrackedRow(
-      { id: 't1', product_id: null, category_label: 'Arroz', category_size: null, products: null },
+      { id: 't1', product_id: null, category_label: 'Arroz', category_size: '1 kg', products: null },
       {
         productPrices: async () => [],
-        genericSearch: async () => [row([entry('Savegnago', 3.99, 57)])],
+        genericSearch: async () => [{ ...row([entry('Savegnago', 3.99, 57)]), size_value: 1000, size_unit: 'g' }],
       },
     );
     expect(out.hasPriceToday).toBe(false);
