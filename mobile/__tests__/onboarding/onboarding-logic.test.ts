@@ -142,6 +142,13 @@ describe('parseDefaultSize', () => {
     expect(unparsed).toEqual(['Papel higiênico']);
   });
 
+  // Live data 13/11 (read-only): Sabão em pó has no fresh product at 1000 g
+  // (0 of 8) but 10 at 800 g. Product decision, to be reviewed by Lucas.
+  it('Sabão em pó defaults to a size that has fresh products (800 g)', () => {
+    const item = GENERIC_ITEMS.find((i) => i.label === 'Sabão em pó');
+    expect(parseDefaultSize(item!.size)).toEqual({ value: 800, unit: 'g' });
+  });
+
   it('covers every generic item without throwing', () => {
     for (const item of GENERIC_ITEMS) expect(() => parseDefaultSize(item.size)).not.toThrow();
   });
