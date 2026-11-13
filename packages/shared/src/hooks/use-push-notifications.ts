@@ -55,7 +55,7 @@ export async function registerForPushToken(prompt: boolean): Promise<string | nu
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'Ofertas',
+      name: 'Avisos de preço',
       importance: Notifications.AndroidImportance.MAX,
     });
   }
