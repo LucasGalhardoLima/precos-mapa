@@ -6,6 +6,7 @@ import {
   freshnessLabel,
   isStale,
   formatSize,
+  nameWithSize,
   normalizeBaseName,
   resolveSizeAlternatives,
   selectSizeFamily,
@@ -361,10 +362,11 @@ describe('resolveSizeAlternatives — QUAL TAMANHO', () => {
 
   it('caps at 3 alternatives, sorted ascending by price/unit', () => {
     const candidates = [
+      // Distinct sizes: same-size rows are catalog duplicates and collapse to one.
       candidate({ id: 'a', sizeValue: 1000, cheapestPriceToday: 4.5 }), // 4.50/kg
-      candidate({ id: 'b', sizeValue: 1000, cheapestPriceToday: 4.0 }), // 4.00/kg
-      candidate({ id: 'c', sizeValue: 1000, cheapestPriceToday: 4.9 }), // 4.90/kg
-      candidate({ id: 'd', sizeValue: 1000, cheapestPriceToday: 4.2 }), // 4.20/kg
+      candidate({ id: 'b', sizeValue: 2000, cheapestPriceToday: 8.0 }), // 4.00/kg
+      candidate({ id: 'c', sizeValue: 3000, cheapestPriceToday: 14.7 }), // 4.90/kg
+      candidate({ id: 'd', sizeValue: 4000, cheapestPriceToday: 16.8 }), // 4.20/kg
     ];
     const result = resolveSizeAlternatives(current5kg, currentPerUnit, candidates);
     expect(result.kind).toBe('alternatives');
@@ -575,5 +577,23 @@ describe('sizeOptionTappedPayload', () => {
     const current = product({ id: 'cur', sizeValue: 5000, sizeUnit: 'g' });
     const item = { productId: 'alt', name: 'Arroz · 2 kg', sizeLabel: '2 kg', pricePerUnitLabel: 'R$ 4,75/kg', storeName: 'Tenda' };
     expect(sizeOptionTappedPayload(current, item)).toEqual({ productId: 'alt', metadata: { from_product_id: 'cur', from_size: '5 kg', to_size: '2 kg' } });
+  });
+});
+
+describe('nameWithSize — header name line', () => {
+  it('appends the size when the name does not carry it', () => {
+    expect(nameWithSize('Arroz Tio João tipo 1', 5000, 'g')).toBe('Arroz Tio João tipo 1 · 5 kg');
+  });
+  it('does not repeat a size the name already carries, in any spelling', () => {
+    expect(nameWithSize('Arroz Tio João 5kg', 5000, 'g')).toBe('Arroz Tio João 5kg');
+    expect(nameWithSize('Arroz Tio João 5 KG', 5000, 'g')).toBe('Arroz Tio João 5 KG');
+    expect(nameWithSize('Leite Italac 1,5L', 1500, 'ml')).toBe('Leite Italac 1,5L');
+    expect(nameWithSize('Biscoito 500g', 500, 'g')).toBe('Biscoito 500g');
+  });
+  it('keeps both when the name carries a DIFFERENT size (mismatch stays visible)', () => {
+    expect(nameWithSize('Arroz 2kg', 5000, 'g')).toBe('Arroz 2kg · 5 kg');
+  });
+  it('is the bare name without a parsed size', () => {
+    expect(nameWithSize('Arroz', null, null)).toBe('Arroz');
   });
 });

@@ -21,7 +21,7 @@ import { useSizeAlternatives } from '../../hooks/use-size-alternatives';
 import { useAnalytics } from '../../hooks/use-analytics';
 import { triggerHaptic, triggerNotification } from '../../hooks/use-haptics';
 import { formatBRL } from '../../hooks/use-search';
-import { freshnessLabel, formatSize, resolveSizeAlternatives, sizeOptionTappedPayload } from '../../lib/resposta';
+import { freshnessLabel, formatSize, nameWithSize, resolveSizeAlternatives, sizeOptionTappedPayload } from '../../lib/resposta';
 import { searchFieldRef } from '../../lib/search-focus';
 import { trackedRowLabel } from '../../lib/tracked-items';
 import { resolveHereStore } from '../../lib/ajustes';
@@ -168,7 +168,7 @@ export default function ProductScreen() {
     );
   }
 
-  const nameLine = product.sizeValue != null ? `${product.name} · ${formatSize(product.sizeValue, product.sizeUnit)}` : product.name;
+  const nameLine = nameWithSize(product.name, product.sizeValue, product.sizeUnit);
   const qualTamanho = view.pricePerUnit ? resolveSizeAlternatives(product, view.pricePerUnit.value, sizeCandidates) : null;
   // Nearest priced branch OF the 'aqui' chain only (none if it has no price row).
   const nearestBranchId = view.branchRows.reduce<{ id: string; km: number } | null>((best, b) => {
@@ -233,7 +233,6 @@ export default function ProductScreen() {
                   isWinner={row.isWinner}
                   isHere={row.isHere}
                   freshnessLabel={freshnessLabel(row.daysAgo)}
-                  muted={row.isStale}
                   onSwap={() => setPickerVisible(true)}
                 />
               ))}
