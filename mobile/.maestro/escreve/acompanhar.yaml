@@ -1,9 +1,8 @@
-# BLOQUEADO / NÃO EXECUTADO (12/11/2026). ESCREVE EM PRODUÇÃO (usuário anônimo +
+# ESCREVE EM PRODUÇÃO (usuário anônimo +
 # tracked_items + notification_preferences) — só com Metro e2e e marca confirmada.
-# Bloqueio: o Supabase de produção está com `external_anonymous_users_enabled: false`
-# (Management API, leitura), então `signInAnonymously` falha, nenhum usuário (marcado
-# ou não) é criado e o onboarding com itens termina em "Sem conexão" (ver README).
-# Este fluxo não pode ser validado enquanto isso não mudar; o YAML nunca rodou.
+# Rode com o keychain do simulador zerado (`xcrun simctl keychain <udid> reset`): o
+# keychain sobrevive ao clearState e uma sessão anterior com itens faz `_ate-raiz`
+# cair na Raiz com itens, não no dia zero.
 # Cobre: acompanhar com preço-alvo → "acompanhando · avisar abaixo de R$ X" → editar →
 # Ajustes lista o item → ✕ remove → "desfazer" restaura. Uma execução, sem loops.
 # O iOS não tem `simctl privacy grant notifications`: o diálogo de notificação é tratado.
@@ -34,17 +33,20 @@ appId: com.poup.consumer
     visible: "acompanhando · avisar abaixo de R\\$.*"
     timeout: 15000
 - takeScreenshot: acompanhar-acompanhando
-# Editar o alvo.
+# Editar: a folha reabre com o alvo já gravado (R$ 5,49 = menor preço de hoje, o
+# pré-preenchimento) e confirmar sem tocar no campo mantém o valor. NÃO digita um
+# novo alvo: o teclado decimal sobe por cima da folha e cobre "Acompanhar e avisar"
+# (bug de app, components/acompanhar-sheet.tsx: Modal sem KeyboardAvoidingView;
+# o Maestro não tem como fechar o teclado decimal). Voltar a digitar aqui quando
+# o app resolver isso.
 - tapOn: "editar.*"
 - extendedWaitUntil:
     visible: "AVISAR QUANDO CAIR ABAIXO DE"
     timeout: 10000
-- tapOn: "0,00|[0-9]+,[0-9]{2}"
-- eraseText: 10
-- inputText: "5,00"
+- assertVisible: "5,49"
 - tapOn: "Acompanhar e avisar.*"
 - extendedWaitUntil:
-    visible: "acompanhando · avisar abaixo de R\\$ 5,00"
+    visible: "acompanhando · avisar abaixo de R\\$.5,49"  # "." casa o espaço (formatBRL usa NBSP)
     timeout: 15000
 # Ajustes lista o item.
 - runFlow:
