@@ -54,14 +54,16 @@ export function AcompanharSheet({
 
   // KeyboardAvoidingView não empurrou a folha dentro deste Modal (iOS 26,
   // simulador: o teclado seguiu cobrindo os botões mesmo com behavior='padding').
-  // Mede o teclado direto e sobe a folha por padding no fundo.
+  // Mede o teclado direto e sobe a folha por padding no fundo. Só no iOS: no
+  // Android a janela do Modal já redimensiona (SOFT_INPUT_ADJUST_RESIZE), e
+  // somar padding contaria o teclado duas vezes.
   useEffect(() => {
-    const ios = Platform.OS === 'ios';
-    const show = Keyboard.addListener(ios ? 'keyboardWillChangeFrame' : 'keyboardDidShow', (e) => {
-      // iOS: com o teclado fora da tela o frame final começa abaixo da janela.
-      setKeyboardHeight(ios && e.endCoordinates.screenY >= Dimensions.get('window').height ? 0 : e.endCoordinates.height);
+    if (Platform.OS !== 'ios') return;
+    const show = Keyboard.addListener('keyboardWillChangeFrame', (e) => {
+      // Sobreposição real: frame fora da tela (ou teclado flutuante) dá 0.
+      setKeyboardHeight(Math.max(0, Dimensions.get('window').height - e.endCoordinates.screenY));
     });
-    const hide = Keyboard.addListener(ios ? 'keyboardWillHide' : 'keyboardDidHide', () => setKeyboardHeight(0));
+    const hide = Keyboard.addListener('keyboardWillHide', () => setKeyboardHeight(0));
     return () => {
       show.remove();
       hide.remove();
