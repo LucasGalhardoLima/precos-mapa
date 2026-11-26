@@ -14,7 +14,7 @@
         "EXPO_PUBLIC_SUPABASE_URL": "https://zyhhcfkbzfbarnxlkfri.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_i2bNlmNLCTiFhlO0yk0U_A_VGND0g4j",
         "EXPO_PUBLIC_ENABLE_DEV_TOOLS": "true",
-        "EXPO_PUBLIC_PRIVACY_URL": "https://<PREENCHER>/privacidade"
+        "EXPO_PUBLIC_PRIVACY_URL": "https://precos-mapa.vercel.app/privacidade"
       }
     },
     "e2e": {
@@ -41,7 +41,7 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://zyhhcfkbzfbarnxlkfri.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_i2bNlmNLCTiFhlO0yk0U_A_VGND0g4j",
-        "EXPO_PUBLIC_PRIVACY_URL": "https://<PREENCHER>/privacidade"
+        "EXPO_PUBLIC_PRIVACY_URL": "https://precos-mapa.vercel.app/privacidade"
       }
     },
     "production": {
@@ -56,7 +56,7 @@
         "EXPO_PUBLIC_SUPABASE_URL": "https://zyhhcfkbzfbarnxlkfri.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_i2bNlmNLCTiFhlO0yk0U_A_VGND0g4j",
         "EXPO_PUBLIC_API_URL": "https://precos-mapa.vercel.app",
-        "EXPO_PUBLIC_PRIVACY_URL": "https://<PREENCHER>/privacidade"
+        "EXPO_PUBLIC_PRIVACY_URL": "https://precos-mapa.vercel.app/privacidade"
       }
     }
   },
