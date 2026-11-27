@@ -40,7 +40,7 @@ import { createClient } from "@supabase/supabase-js";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
-  BATCH_SIZE, NORMALIZATION_MODEL, batchCostUsd, buildSystemPrompt, buildUserMessage, responseSchema,
+  BATCH_SIZE, NORMALIZATION_MODEL, applyPlantPotRule, batchCostUsd, buildSystemPrompt, buildUserMessage, responseSchema,
   seededShuffle, validateBatchResponse,
   type Candidate, type Category, type Proposal,
 } from "../src/lib/catalog-normalization";
@@ -249,12 +249,16 @@ async function sample() {
 
 async function ingest(file: string) {
   const results: ResultsFile = JSON.parse(readFileSync(file, "utf8"));
-  const rows = results.rows.filter((r) => r.origin === "llm").map((r) => ({
-    run_id: results.run_id, product_id: r.product.id, model: results.model, batch_id: results.batch_id,
-    category_l2: r.proposal!.category_l2, brand_norm: r.proposal!.brand_norm, base_name: r.proposal!.base_name,
-    size_value: r.proposal!.size_value, size_unit: r.proposal!.size_unit, confidence: r.proposal!.confidence,
-    invalid_reason: r.proposal!.invalid_reason,
-  }));
+  const rows = results.rows.filter((r) => r.origin === "llm").map((r) => {
+    // Name rules run here, the one path every result takes to the database.
+    const p = applyPlantPotRule(r.product.name, r.proposal!);
+    return {
+      run_id: results.run_id, product_id: r.product.id, model: results.model, batch_id: results.batch_id,
+      category_l2: p.category_l2, brand_norm: p.brand_norm, base_name: p.base_name,
+      size_value: p.size_value, size_unit: p.size_unit, confidence: p.confidence,
+      invalid_reason: p.invalid_reason,
+    };
+  });
   console.log(`${flag("--dry-run") ? "DRY RUN — would upsert" : "Upserting"} ${rows.length} rows into product_normalization_staging (run ${results.run_id}).`);
   if (flag("--dry-run")) return;
   for (let i = 0; i < rows.length; i += 500) {

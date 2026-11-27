@@ -222,3 +222,18 @@ export function seededShuffle<T>(items: T[], seed: number): T[] {
   }
   return out;
 }
+
+/**
+ * Potted plants are sold in the Jaú Serve garden aisle as "<name> Pote 14" / "<name> Cuia 21"
+ * (the number is the pot size in cm, not a package size). Names like "Pimenta Bode" or
+ * "Ora Pro Nóbis" read as food to the model, so a rule that looks only at the name overrides it.
+ * Skips decimals and units ("Pote 1,5l", "Pote 150g"), pet grass ("Plantas para Pets") and
+ * gift kits ("Kit … + Bombom").
+ */
+const PLANT_POT = /\b(?:Pote|Cuia)\s*\d{1,2}\b(?![,.]\d|\s*(?:g|ml|l|kg|un)\b)/i;
+const NOT_A_PLANT = /plantas? para pets|graminha|^kit\b/i;
+
+export function applyPlantPotRule(name: string, proposal: Proposal): Proposal {
+  if (!PLANT_POT.test(name) || NOT_A_PLANT.test(name)) return proposal;
+  return { ...proposal, category_l2: "outros", brand_norm: null, base_name: null, invalid_reason: "plant_pot_rule" };
+}
