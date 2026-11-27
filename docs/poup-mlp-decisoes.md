@@ -126,7 +126,9 @@ Supabase fica no plano Free (1 GB de Storage, 500 MB de banco; banco em 279 MB h
 - Retenção de 90 dias em `price_history` (ainda sem política).
 - Medir o tamanho do banco semanalmente.
 
-## Textos propostos (nov/2026) — aprovar
+## Textos propostos (nov/2026) — aprovados
+
+**Aprovado por Lucas em 27/11/2026, todos como estão na tabela** (incluindo as duas redações da engenharia: "Não deu para mostrar esta tela. Comece de novo pelo início." e "Tentar esta tela de novo"). Já implementados no app.
 
 Propostos pelo conselho de agentes (engenharia, design, produto) por delegação do Lucas ("GO mode"), **ausentes do artefato**. O CLAUDE.md do app manda parar e perguntar quando falta texto; aqui ficam registrados para revisão. Tom cinza (`secondary`) em todos; sem vermelho/âmbar. Rótulos de botão levam "›"; o TextLink acrescenta o dele.
 
