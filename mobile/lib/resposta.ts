@@ -471,8 +471,8 @@ export function buildRespostaView(
     freshCount: freshChains.length,
     footerNote:
       mode === 'comparison'
-        ? `preços de hoje, 03:00 · ${freshChains.length} de 4 mercados`
-        : `preço de hoje, 03:00 · ${winner.chainLabel}`,
+        ? `preços de hoje · ${freshChains.length} de 4 mercados`
+        : `preço de hoje · ${winner.chainLabel}`,
   };
 }
 

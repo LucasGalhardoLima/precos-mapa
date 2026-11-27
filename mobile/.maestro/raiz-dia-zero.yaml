@@ -2,7 +2,7 @@
 appId: com.poup.consumer
 ---
 - runFlow: _ate-raiz.yaml
-- assertVisible: "atualizados às 03:00 · Savegnago, Jaú Serve, Tenda, Amarelinha"
+- assertVisible: "atualizados todo dia · Savegnago, Jaú Serve, Tenda, Amarelinha"
 - assertVisible: "buscar produto"
 - assertVisible: "Escanear"
 # Dia zero não tem lista de itens: SEUS ITENS não pode aparecer.

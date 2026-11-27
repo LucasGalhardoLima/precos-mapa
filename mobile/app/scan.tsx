@@ -229,7 +229,7 @@ function UnknownCard({
       <Text style={styles.cardTitle}>Não achamos esse produto</Text>
       <Text style={styles.cardEan}>{ean}</Text>
       <View style={styles.cardProvenance}>
-        <Provenance>{`preços de hoje, 03:00${freshCount != null ? ` · ${freshCount} de ${MATAO_CHAIN_COUNT} mercados` : ''}`}</Provenance>
+        <Provenance>{`preços de hoje${freshCount != null ? ` · ${freshCount} de ${MATAO_CHAIN_COUNT} mercados` : ''}`}</Provenance>
       </View>
       <View style={styles.stateActions}>
         <FilledButton label="Buscar pelo nome ›" onPress={onBuscar} />
