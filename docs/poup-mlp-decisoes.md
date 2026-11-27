@@ -28,7 +28,7 @@ App atual em React Native, 5 abas (Início, Busca, Mapa, Lista, Alertas), rankin
 
 ## Telas fechadas nos esboços (doc "Poup MLP - Esboços")
 
-**Raiz (2a/2b).** Cabeçalho fixo: campo "buscar produto" + botão "Escanear" com texto, mesmo peso. Abaixo: frase-título ("Hoje o Tenda tem o menor preço em 4 dos seus 6 itens"), procedência, "Seus itens" (teto 4 + "ver todos"), cada linha = item + produto vencedor + mercado + preço. Dia zero: frase-fato ("Preços de hoje nos 4 mercados de Matão · atualizados às 03:00"), sem bloco de itens, sem convite. Ajustes por ícone (engrenagem) em linha própria com a marca. Resultado substitui daqui para baixo; nunca empilha.
+**Raiz (2a/2b).** Cabeçalho fixo: campo "buscar produto" + botão "Escanear" com texto, mesmo peso. Abaixo: frase-título ("Hoje o Tenda tem o menor preço em 4 dos seus 6 itens"), procedência, "Seus itens" (teto 4 + "ver todos"), cada linha = item + produto vencedor + mercado + preço. Dia zero: frase-fato ("Preços de hoje nos 4 mercados de Matão") com procedência "atualizados às 03:00 · Savegnago, Jaú Serve, Tenda, Amarelinha" (nomes das redes mantidos por Lucas em 27/11/2026: respondem "quais são os 4?"), sem bloco de itens, sem convite. Ajustes por ícone (engrenagem) em linha própria com a marca. Resultado substitui daqui para baixo; nunca empilha.
 
 **Resultado (5a–5c).** Contador "N produtos · menor preço de hoje". Linha = produto + menor preço + mercado vencedor (sem EAN: "só no X"). Ordem: relevância textual + popularidade, nunca por preço. Teto 5 com teclado / 8 sem; "ver mais N" estende na tela. Sem preço hoje: fim da lista, cinza, "—". Vazio: "nenhum produto com X" + "buscar só [1ª palavra]" + "escanear". Offline: "tentar de novo" + "ajustes de rede". Todo estado sem lista tem duas saídas.
 
@@ -126,7 +126,9 @@ Supabase fica no plano Free (1 GB de Storage, 500 MB de banco; banco em 279 MB h
 - Retenção de 90 dias em `price_history` (ainda sem política).
 - Medir o tamanho do banco semanalmente.
 
-## Textos propostos (nov/2026) — aprovar
+## Textos propostos (nov/2026) — aprovados
+
+**Aprovado por Lucas em 27/11/2026, todos como estão na tabela** (incluindo as duas redações da engenharia: "Não deu para mostrar esta tela. Comece de novo pelo início." e "Tentar esta tela de novo"). Já implementados no app.
 
 Propostos pelo conselho de agentes (engenharia, design, produto) por delegação do Lucas ("GO mode"), **ausentes do artefato**. O CLAUDE.md do app manda parar e perguntar quando falta texto; aqui ficam registrados para revisão. Tom cinza (`secondary`) em todos; sem vermelho/âmbar. Rótulos de botão levam "›"; o TextLink acrescenta o dele.
 
