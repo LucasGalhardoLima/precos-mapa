@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet, type GestureResponderEvent } from 'react-native';
 import { colors, fontFamily, radii, borderWidth, spacing, tabularNums } from '../constants/tokens';
 import { formatBRL } from '../hooks/use-search';
+import { ChainLogo } from './chain-logo';
 
 interface StoreRowProps {
   storeName: string;
@@ -26,6 +27,8 @@ export function StoreRow({ storeName, distanceKm, price, isWinner, isHere, fresh
 
   return (
     <View style={[styles.row, { borderColor }]}>
+      {/* Ink normally; gray once the price is not from the last round ("há N dias") or the row is muted. */}
+      <ChainLogo chain={storeName} color={muted || freshnessLabel ? colors.secondary : colors.ink} />
       <View style={styles.textColumn}>
         <Text style={[styles.name, muted && styles.mutedText]}>
           {storeName}
