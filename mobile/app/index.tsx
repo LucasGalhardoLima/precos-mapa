@@ -265,7 +265,7 @@ function RaizBody({
     return (
       <View style={styles.body}>
         <Text style={typography.phrase}>Preços de hoje nos {MATAO_CHAIN_COUNT} mercados de Matão</Text>
-        <Text style={styles.diaZeroSub}>atualizados às 03:00 · {MATAO_CHAIN_LABELS.join(', ')}</Text>
+        <Text style={styles.diaZeroSub}>atualizados todo dia · {MATAO_CHAIN_LABELS.join(', ')}</Text>
       </View>
     );
   }
@@ -285,7 +285,7 @@ function RaizBody({
           <Text style={typography.phrase}>Preços de hoje dos seus itens</Text>
         )}
         <Text style={styles.provenance}>
-          preços de hoje, 03:00{freshCount != null ? ` · ${freshCount} de ${MATAO_CHAIN_COUNT} mercados` : ''}
+          preços de hoje{freshCount != null ? ` · ${freshCount} de ${MATAO_CHAIN_COUNT} mercados` : ''}
         </Text>
       </View>
 

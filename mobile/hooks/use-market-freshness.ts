@@ -7,7 +7,7 @@ import { MATAO_CHAINS, MATAO_CHAIN_LABELS, MATAO_CHAIN_COUNT } from '@/lib/chain
 // also used by lib/resposta.ts (ONDE groups by chain).
 export { MATAO_CHAINS, MATAO_CHAIN_LABELS, MATAO_CHAIN_COUNT };
 
-// "preços de hoje, 03:00 · N de 4 mercados" (Raiz, artifact 2a) — N is how
+// "preços de hoje · N de 4 mercados" (Raiz, artifact 2a) — N is how
 // many of the 4 chains have a store_prices row from today, not from any
 // tracked item specifically: a market-wide freshness fact, per mobile/
 // CLAUDE.md's "Frescor" rule (never show a stale round as if it were today's).

@@ -168,7 +168,7 @@ describe('buildRespostaView — 3b: "aqui" vence, rede defasada', () => {
     expect(view.whereRows.some((r) => r.chainLabel === 'Amarelinha')).toBe(false);
     expect(view.staleStores).toEqual([{ storeName: 'Amarelinha', daysAgo: 5 }]);
     expect(view.freshCount).toBe(3);
-    expect(view.footerNote).toBe('preços de hoje, 03:00 · 3 de 4 mercados');
+    expect(view.footerNote).toBe('preços de hoje · 3 de 4 mercados');
   });
 
   it('a chain with one fresh AND one stale branch keeps its ONDE row — only a fully-stale chain goes to the amber band', () => {
@@ -192,7 +192,7 @@ describe('buildRespostaView — 3c: sem EAN, fato de um mercado só', () => {
     expect(view.comparison).toBeNull();
     expect(view.whereRows).toHaveLength(1);
     expect(view.whereRows[0]?.isWinner).toBe(false);
-    expect(view.footerNote).toBe('preço de hoje, 03:00 · Jaú Serve');
+    expect(view.footerNote).toBe('preço de hoje · Jaú Serve');
   });
 });
 

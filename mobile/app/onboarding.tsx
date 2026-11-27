@@ -232,7 +232,7 @@ export default function Onboarding() {
           </View>
           <Text style={styles.headline}>O menor preço de hoje nos mercados perto de você</Text>
           <Text style={styles.lead}>
-            Comparamos as 4 redes de Matão todo dia às 03:00. Para saber qual está mais perto, precisamos da sua
+            Comparamos as 4 redes de Matão todo dia. Para saber qual está mais perto, precisamos da sua
             localização.
           </Text>
         </View>

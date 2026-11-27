@@ -14,5 +14,5 @@ appId: com.poup.consumer
 - assertVisible: "Arroz Branco Patéko.*"
 - assertVisible: "Menor preço no .*"
 - assertVisible: "acompanhar este item.*"
-- assertVisible: "preços de hoje, 03:00.*"
+- assertVisible: "preços de hoje.*"
 - takeScreenshot: resposta-com-ean
