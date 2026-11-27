@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { View, Text, Image, Pressable, StyleSheet, type GestureResponderEvent } from 'react-native';
 import { ChevronRight, X } from 'lucide-react-native';
 import { colors, fontFamily, radii, targets, borderWidth, spacing, tabularNums } from '../constants/tokens';
@@ -22,6 +23,7 @@ interface ListRowProps {
   // Ajustes rows without a subtitle are 56 tall on the artifact; every other
   // screen keeps 64.
   compact?: boolean;
+  leading?: ReactNode; // e.g. a chain logo, before the text
   onRemove?: (e: GestureResponderEvent) => void; // presence alone shows the leading ✕
   onPress?: (e: GestureResponderEvent) => void;
 }
@@ -39,6 +41,7 @@ export function ListRow({
   chevron,
   chevronColor = colors.brandInk,
   compact,
+  leading,
   onRemove,
   onPress,
 }: ListRowProps) {
@@ -61,6 +64,7 @@ export function ListRow({
         onPress={onPress}
         accessibilityRole={onPress ? 'button' : undefined}
       >
+        {leading}
         {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.thumbnail} /> : null}
         <View style={styles.textColumn}>
           {/* No numberOfLines cap: "nome quebra em 2 linhas, nunca reticências

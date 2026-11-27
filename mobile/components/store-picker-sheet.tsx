@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, radii, spacing } from '../constants/tokens';
 import { ListRow } from './list-row';
 import { BackLink } from './back-link';
+import { ChainLogo } from './chain-logo';
 import type { NearbyStore } from '../hooks/use-stores';
 
 interface StorePickerSheetProps {
@@ -39,6 +40,7 @@ export function StorePickerSheet({ visible, stores, isLoading, onClose, onPick }
                 <ListRow
                   key={s.chainLabel}
                   title={s.chainLabel}
+                  leading={<ChainLogo chain={s.chainLabel} color={colors.ink} />}
                   subtitle={s.distanceKm != null ? `${s.distanceKm.toFixed(1).replace('.', ',')} km` : undefined}
                   chevron
                   onPress={() => onPick(s.chainLabel)}
