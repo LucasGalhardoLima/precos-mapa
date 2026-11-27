@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
-  batchCostUsd, buildSystemPrompt, buildUserMessage, responseSchema, seededShuffle, validateBatchResponse,
-  type Candidate, type Category,
+  applyPlantPotRule, batchCostUsd, buildSystemPrompt, buildUserMessage, responseSchema, seededShuffle, validateBatchResponse,
+  type Candidate, type Category, type Proposal,
 } from "../catalog-normalization";
 
 const slugs = new Set(["arroz", "leite"]);
@@ -124,5 +124,38 @@ describe("batchCostUsd / seededShuffle", () => {
     expect(seededShuffle(xs, 42)).toEqual(seededShuffle(xs, 42));
     expect([...seededShuffle(xs, 42)].sort((a, b) => a - b)).toEqual(xs);
     expect(seededShuffle(xs, 42)).not.toEqual(seededShuffle(xs, 43));
+  });
+});
+
+describe("applyPlantPotRule", () => {
+  const proposal = (over: Partial<Proposal> = {}): Proposal => ({
+    category_l2: "temperos", brand_norm: "Hot Burrito", base_name: "pimenta", size_value: null, size_unit: null, confidence: 0.6, invalid_reason: null, ...over,
+  });
+
+  it.each([
+    "Pimenta Hot Burrito Pote 14",
+    "Ora Pro Nóbis Dourada Cuia 21",
+    "Erva Aromática Hortelã Pote 15",
+    "Pimenta Ornamental Pote 06 Sortida",
+  ])("sends the potted plant %s to outros and drops the invented brand and base name", (name) => {
+    expect(applyPlantPotRule(name, proposal())).toEqual({
+      ...proposal(), category_l2: "outros", brand_norm: null, base_name: null, invalid_reason: "plant_pot_rule",
+    });
+  });
+
+  it("also fills in a plant the model left without a category", () => {
+    expect(applyPlantPotRule("Primavera Pote 17 - Sortida", proposal({ category_l2: null })).category_l2).toBe("outros");
+  });
+
+  it.each([
+    "Sorvete Pudim Dubom Pote 1,5l",
+    "Açaí Premium Uni Sabor Pote 1,020l",
+    "Paçoca Pote 150g",
+    "Pote Hermético Vidro Retangular Uni Lar 640ml",
+    "Aveia Orgânica Plantas para Pets Pote 10",
+    "Graminha para Pets Aveia Pote 11",
+    "Kit Violeta Pote 11 Sortida + Bombom Ferrero Rocher Caixa C/8 Unidades",
+  ])("leaves %s as the model answered", (name) => {
+    expect(applyPlantPotRule(name, proposal())).toEqual(proposal());
   });
 });
