@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  applyPlantPotRule, batchCostUsd, buildSystemPrompt, buildUserMessage, responseSchema, seededShuffle, validateBatchResponse,
+  applyBasketRule, applyPlantPotRule, batchCostUsd, buildSystemPrompt, buildUserMessage, responseSchema, seededShuffle, validateBatchResponse,
   type Candidate, type Category, type Proposal,
 } from "../catalog-normalization";
 
@@ -157,5 +157,47 @@ describe("applyPlantPotRule", () => {
     "Kit Violeta Pote 11 Sortida + Bombom Ferrero Rocher Caixa C/8 Unidades",
   ])("leaves %s as the model answered", (name) => {
     expect(applyPlantPotRule(name, proposal())).toEqual(proposal());
+  });
+});
+
+describe("applyBasketRule", () => {
+  const proposal = (over: Partial<Proposal> = {}): Proposal => ({
+    category_l2: null, brand_norm: "Calvo", base_name: null, size_value: null, size_unit: null, confidence: 0.4, invalid_reason: null, ...over,
+  });
+
+  // The model answered "outros" for some of these and left others empty for the very same name
+  // ("Cesta de Natal Ouro" has 17 rows split between the two), so the rule makes it consistent.
+  it.each([
+    "Cesta Básica Econômica",
+    "Cesta Básica Ouro 19 itens Tenda",
+    "Cesta de Natal de Vime Calvo",
+    "Cesta Natal Premium",
+    "Cesta de Páscoa",
+    "Cesta Presente Dia dos Pais Bebida",
+    "Cesta da Solidariedade",
+    "Kit Natal Pequeno Número 2",
+  ])("sends the mixed basket %s to outros", (name) => {
+    expect(applyBasketRule(name, proposal())).toEqual({ ...proposal(), category_l2: "outros", invalid_reason: "basket_rule" });
+  });
+
+  it("matches a name stored with a combining accent (NFD)", () => {
+    expect(applyBasketRule("Cesta Ba\u0301sica Econo\u0302mica".normalize("NFD"), proposal()).category_l2).toBe("outros");
+    expect(applyBasketRule("Cesta de Pa\u0301scoa", proposal()).category_l2).toBe("outros");
+  });
+
+  it("overrides a real category the model picked for a basket", () => {
+    expect(applyBasketRule("Cesta Básica Família", proposal({ category_l2: "arroz" })).category_l2).toBe("outros");
+  });
+
+  // "cesta" also names a punnet, a plastic basket and an egg-shaped chocolate: only baskets of goods count.
+  it.each([
+    "Tomate Cereja Adajor Cesta 450g",
+    "Cesta Empilhável Plástica SanRemo 746ml Leve 4 Pague 3",
+    "Agulheiro Cesta Cicley",
+    "Ovo de Chocolate ao Leite Cesta Montevérgine 40g",
+    "Mini Cesta de Mercado de Brinquedo Cardoso com Acessórios",
+    "Cesta Aramada Porta Ovos Mod Galinha Ref-g4403",
+  ])("leaves %s as the model answered", (name) => {
+    expect(applyBasketRule(name, proposal({ category_l2: "utensilios" }))).toEqual(proposal({ category_l2: "utensilios" }));
   });
 });
