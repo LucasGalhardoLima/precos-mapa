@@ -40,7 +40,7 @@ import { createClient } from "@supabase/supabase-js";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
-  BATCH_SIZE, NORMALIZATION_MODEL, applyPlantPotRule, batchCostUsd, buildSystemPrompt, buildUserMessage, responseSchema,
+  BATCH_SIZE, NORMALIZATION_MODEL, applyBasketRule, applyPlantPotRule, batchCostUsd, buildSystemPrompt, buildUserMessage, responseSchema,
   seededShuffle, validateBatchResponse,
   type Candidate, type Category, type Proposal,
 } from "../src/lib/catalog-normalization";
@@ -251,7 +251,7 @@ async function ingest(file: string) {
   const results: ResultsFile = JSON.parse(readFileSync(file, "utf8"));
   const rows = results.rows.filter((r) => r.origin === "llm").map((r) => {
     // Name rules run here, the one path every result takes to the database.
-    const p = applyPlantPotRule(r.product.name, r.proposal!);
+    const p = applyBasketRule(r.product.name, applyPlantPotRule(r.product.name, r.proposal!));
     return {
       run_id: results.run_id, product_id: r.product.id, model: results.model, batch_id: results.batch_id,
       category_l2: p.category_l2, brand_norm: p.brand_norm, base_name: p.base_name,

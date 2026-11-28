@@ -237,3 +237,18 @@ export function applyPlantPotRule(name: string, proposal: Proposal): Proposal {
   if (!PLANT_POT.test(name) || NOT_A_PLANT.test(name)) return proposal;
   return { ...proposal, category_l2: "outros", brand_norm: null, base_name: null, invalid_reason: "plant_pot_rule" };
 }
+
+/**
+ * Mixed baskets ("Cesta Básica Econômica", "Cesta de Natal Ouro", "Kit Natal …") fit none of the
+ * closed categories (the Savegnago leaf map leaves them null on purpose), and the model split the
+ * very same name between "outros" and empty. Only names that start with the basket wording count:
+ * "cesta" alone also names a produce punnet, a plastic basket and a chocolate egg. Brand and base
+ * name are kept, since "Calvo" or "Bauducco" on a basket is real. Baskets with no keyword ("Cesta
+ * Aconchego") stay with the model.
+ */
+const MIXED_BASKET = /^(?:cesta\s+(?:b[áa]sica|de\s+natal|natal|de\s+p[áa]scoa|presente|da\s+solidariedade)|kit\s+natal)(?![\p{L}])/iu;
+
+export function applyBasketRule(name: string, proposal: Proposal): Proposal {
+  if (!MIXED_BASKET.test(name.normalize("NFC").trim())) return proposal;
+  return { ...proposal, category_l2: "outros", invalid_reason: "basket_rule" };
+}
