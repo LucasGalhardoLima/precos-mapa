@@ -1,19 +1,28 @@
 # Catalog normalization, phase C (docs/poup-prd-normalizacao-catalogo.md): sends every
 # unassigned fresh-cohort product through the Haiku 4.5 Batch API, lands the proposals in
-# product_normalization_staging, and reports what publishing would do.
+# product_normalization_staging, and publishes them to `products` (normalized_by = llm).
 #
-# Manual only (workflow_dispatch). Publishing to `products` is behind the explicit
-# `publish` input, off by default: a run without it stops after the dry-run counts.
-# The daily schedule (after the 03:00 scrape) is a separate change.
+# Daily at 22:30 UTC (19:30 BRT), after the scrapers: GitHub starts them between ~10:50 and
+# ~13:57 BRT and the prices land by ~18:00 BRT. It publishes on its own, so two guards:
+#   * no unassigned products -> the script stops before the batch (no spend, no file);
+#   * more than MAX_AUTO_PUBLISH products in one run (first run after an outage, a new
+#     chain) -> staging + dry-run only, and the run says so; publish it by hand after a look.
+# Manual runs (workflow_dispatch) publish only with the `publish` input.
 name: Normalize catalog (LLM)
 
 on:
+  schedule:
+    - cron: '30 22 * * *'
   workflow_dispatch:
     inputs:
       publish:
         description: "Publish the run to products (normalized_by = llm). Off: staging + dry-run counts only."
         type: boolean
         default: false
+
+concurrency:
+  group: normalize-catalog
+  cancel-in-progress: false
 
 jobs:
   normalize:
@@ -27,18 +36,25 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - name: Batch, staging, publish dry-run
+      - name: Batch, staging, publish
         run: |
           set -euo pipefail
+          MAX_AUTO_PUBLISH=3000
           npx tsx scripts/normalize-catalog-llm.ts --full
-          FILE=$(ls scripts/.scrape-normalize-full-*.json | head -1)
+          FILE=$(ls scripts/.scrape-normalize-full-*.json 2>/dev/null | head -1 || true)
+          if [ -z "$FILE" ]; then echo "No unassigned products today."; exit 0; fi
           RUN=$(basename "$FILE" .json | sed 's/^\.scrape-normalize-//')
-          echo "run_id=$RUN"
+          COUNT=$(jq '.rows | length' "$FILE")
+          echo "run_id=$RUN products=$COUNT"
           npx tsx scripts/normalize-catalog-llm.ts --ingest "$FILE" --dry-run
           npx tsx scripts/normalize-catalog-llm.ts --ingest "$FILE"
           npx tsx scripts/normalize-catalog-llm.ts --publish "$RUN" --dry-run
-          if [ "${{ inputs.publish }}" = "true" ]; then
-            npx tsx scripts/normalize-catalog-llm.ts --publish "$RUN"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.publish }}" = "true" ]; then
+            if [ "${{ github.event_name }}" = "schedule" ] && [ "$COUNT" -gt "$MAX_AUTO_PUBLISH" ]; then
+              echo "::warning::$COUNT products (> $MAX_AUTO_PUBLISH): staged but NOT published. Look at staging run $RUN, then publish it by hand: npx tsx scripts/normalize-catalog-llm.ts --publish $RUN."
+            else
+              npx tsx scripts/normalize-catalog-llm.ts --publish "$RUN"
+            fi
           fi
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

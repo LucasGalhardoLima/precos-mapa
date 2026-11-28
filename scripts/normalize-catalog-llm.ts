@@ -273,6 +273,11 @@ async function full() {
   const [categories, fresh] = await Promise.all([fetchCategories(), fetchFreshProducts()]);
   const unassigned = fresh.filter((p) => p.normalized_by === null);
   console.log(`Fresh cohort: ${fresh.length} · unassigned ${unassigned.length} → all go through the batch (${Math.ceil(unassigned.length / BATCH_SIZE)} requests).`);
+  if (unassigned.length === 0) {
+    // The daily job relies on this: no new products, no batch, no results file, no spend.
+    console.log("Nothing to normalize.");
+    return;
+  }
 
   const { batchId, proposals, usage, failed } = await runBatch(unassigned.map(toCandidate), categories);
   const rows: SampleRow[] = unassigned.map((product, i): SampleRow => ({ origin: "llm", product, proposal: proposals[i] }));
